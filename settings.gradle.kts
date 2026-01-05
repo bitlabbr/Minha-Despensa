@@ -1,4 +1,4 @@
-rootProject.name = "minhadispensa"
+rootProject.name = "MinhaDespensa"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
@@ -29,3 +29,5 @@ dependencyResolutionManagement {
 }
 
 include(":composeApp")
+include(":core")
+include(":uisystem")
