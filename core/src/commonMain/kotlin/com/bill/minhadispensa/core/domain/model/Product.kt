@@ -13,12 +13,23 @@
  * License: https://creativecommons.org/licenses/by-nc/4.0/
  */
 
-package com.bill.minhadispensa.minhadispensa
+package com.bill.minhadispensa.core.domain.model
 
-import platform.UIKit.UIDevice
+import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
-class IOSPlatform : Platform {
-    override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
+@Serializable
+data class Product(
+    val id: String,
+    val name: String,
+    val amount: Double,
+    val unitMeasure: MeasureUnit,
+    val expirationDate: Instant?,
+    val imgUrl: String? = null
+)
+enum class MeasureUnit {
+    UNITY,
+    KILOGRAM,
+    LITER,
+    PACKAGE
 }
-
-actual fun getPlatform(): Platform = IOSPlatform()

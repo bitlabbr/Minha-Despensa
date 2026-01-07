@@ -13,12 +13,15 @@
  * License: https://creativecommons.org/licenses/by-nc/4.0/
  */
 
-package com.bill.minhadispensa.minhadispensa
 
-import platform.UIKit.UIDevice
+package com.bill.minhadispensa.core.domain.repository
 
-class IOSPlatform : Platform {
-    override val name: String = UIDevice.currentDevice.systemName() + " " + UIDevice.currentDevice.systemVersion
+import com.bill.minhadispensa.core.domain.model.Product
+import kotlinx.coroutines.flow.Flow
+
+interface ProductRepository {
+    fun getAllProducts(): Flow<List<Product>>
+    suspend fun insertProduct(product: Product)
+    suspend fun deleteProductById(id: String)
+    suspend fun getProductById(id: String): Product?
 }
-
-actual fun getPlatform(): Platform = IOSPlatform()
