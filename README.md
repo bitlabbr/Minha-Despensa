@@ -34,3 +34,14 @@ in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and r
 ---
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+
+## License
+
+This project is licensed under the  
+Creative Commons Attribution-NonCommercial 4.0 International License.
+
+Commercial use is prohibited for third parties.
+The copyright holder retains full commercial rights.
+
+© 2026 Willian Santos
+
