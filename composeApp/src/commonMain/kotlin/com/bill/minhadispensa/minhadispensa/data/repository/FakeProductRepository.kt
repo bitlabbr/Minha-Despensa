@@ -19,12 +19,16 @@ package com.bill.minhadispensa.minhadispensa.data.repository
 import com.bill.minhadispensa.core.domain.model.MeasureUnit
 import com.bill.minhadispensa.core.domain.model.Product
 import com.bill.minhadispensa.core.domain.repository.ProductRepository
+import com.bill.minhadispensa.core.domain.util.AppLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.datetime.Clock
 
-class FakeProductRepository : ProductRepository {
+class FakeProductRepository(
+    private val logger: AppLogger
+) : ProductRepository {
 
+    private val TAG = "FakeProductRepository"
     private val bulkInsert = mutableListOf(
         Product(
             id = "1",
@@ -53,17 +57,18 @@ class FakeProductRepository : ProductRepository {
     )
 
     override fun getAllProducts(): Flow<List<Product>> = flow {
+        logger.d(TAG, "getAllProducts()")
         emit(bulkInsert)
     }
 
     override suspend fun insertProduct(product: Product) {
         bulkInsert.add(product)
-        println("Adicionando: ${product.name}")
+        logger.d(TAG, "Adding: ${product.name}")
     }
 
     override suspend fun deleteProductById(id: String) {
         bulkInsert.remove(bulkInsert.find { it.id == id })
-        println("Removendo ID: $id")
+        logger.d(TAG, "Removing ID: $id")
     }
 
     override suspend fun getProductById(id: String): Product? {

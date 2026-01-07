@@ -11,9 +11,10 @@
  * license this work under different terms.
  *
  * License: https://creativecommons.org/licenses/by-nc/4.0/
+ *
  */
 
-package com.bill.minhadispensa.uisystem.theme
+package com.bill.minhadespensa.uisystem.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme

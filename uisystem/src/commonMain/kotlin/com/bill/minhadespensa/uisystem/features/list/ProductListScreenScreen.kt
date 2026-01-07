@@ -11,9 +11,10 @@
  * license this work under different terms.
  *
  * License: https://creativecommons.org/licenses/by-nc/4.0/
+ *
  */
 
-package com.bill.minhadispensa.uisystem.theme.features.list
+package com.bill.minhadespensa.uisystem.features.list
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,18 +25,29 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.bill.minhadispensa.core.domain.model.Product
+import com.bill.minhadispensa.core.domain.util.AppLogger
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.qualifier.named
 
 
 @Composable
 fun ProductsListScreen() {
     val viewModel = koinViewModel<ProductsListViewModel>()
     val products by viewModel.uiState.collectAsState()
+    val logger: AppLogger = koinInject(named("ui_logger"))
+
+    val TAG = "ProductsListScreen"
+
+    LaunchedEffect(Unit) {
+        logger.d(TAG, "LaunchedEffect")
+    }
 
     Scaffold { paddingValues ->
         LazyColumn(

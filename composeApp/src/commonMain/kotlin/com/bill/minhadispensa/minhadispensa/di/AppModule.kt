@@ -16,22 +16,35 @@
 
 package com.bill.minhadispensa.minhadispensa.di
 
+import com.bill.minhadispensa.core.domain.repository.ProductRepository
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.koin.dsl.KoinAppDeclaration
-import com.bill.minhadispensa.core.domain.repository.ProductRepository
+import com.bill.minhadispensa.core.domain.util.AppLogger
+import com.bill.minhadispensa.core.domain.util.ConsoleLogger
 import com.bill.minhadispensa.minhadispensa.data.repository.FakeProductRepository
-import com.bill.minhadispensa.uisystem.theme.features.list.ProductsListViewModel
-import org.koin.core.module.dsl.viewModelOf
+import com.bill.minhadespensa.uisystem.di.uiModule
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 
 
 val appModule = module {
-    single { FakeProductRepository() } bind ProductRepository::class
-    viewModelOf(::ProductsListViewModel)
+    factory<AppLogger>(named("app_logger")) {
+        ConsoleLogger(moduleName = "App/Data")
+    }
+
+    factory<AppLogger>(named("core_logger")) {
+        ConsoleLogger(moduleName = "Core")
+    }
+
+    single {
+        FakeProductRepository(
+            logger = get(named("app_logger"))
+        )
+    } bind ProductRepository::class
 }
 
 fun initKoin(appDeclaration: KoinAppDeclaration = {}) = startKoin {
     appDeclaration()
-    modules(appModule)
+    modules(appModule, uiModule)
 }

@@ -15,7 +15,6 @@
 
 package com.bill.minhadispensa.minhadispensa
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,8 +22,8 @@ import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.bill.minhadispensa.uisystem.theme.MinhaDespensaTheme
-import com.bill.minhadispensa.uisystem.theme.features.list.ProductsListScreen
+import com.bill.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bill.minhadespensa.uisystem.features.list.ProductsListScreen
 
 
 @Composable

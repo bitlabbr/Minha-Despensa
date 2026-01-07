@@ -11,10 +11,12 @@
  * license this work under different terms.
  *
  * License: https://creativecommons.org/licenses/by-nc/4.0/
+ *
  */
 
-package com.bill.minhadispensa.uisystem.theme
+package com.bill.minhadispensa.core.domain.util
 
-import androidx.compose.material3.Typography
-
-val AppTypography = Typography()
+interface AppLogger {
+    fun d(tag: String, message: String)
+    fun e(tag: String, message: String, error: Throwable? = null)
+}
