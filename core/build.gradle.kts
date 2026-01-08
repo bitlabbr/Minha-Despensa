@@ -29,7 +29,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.bill.minhadespensa.core"
+    namespace = "com.bitlabbr.minhadespensa.core"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()

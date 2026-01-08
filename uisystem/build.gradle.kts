@@ -34,7 +34,7 @@ kotlin {
 }
 
 android {
-    namespace = "com.bill.minhadespensa.uisystem"
+    namespace = "com.bitlabbr.minhadespensa.uisystem"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     defaultConfig {
         minSdk = libs.versions.android.minSdk.get().toInt()
