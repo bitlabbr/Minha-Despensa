@@ -22,7 +22,7 @@ import kotlinx.datetime.toLocalDateTime
 
 class ConsoleLogger(private val moduleName: String) : AppLogger {
 
-    private val appName = "Minha Despensa"
+    private val appName = "Minha Despensa:"
 
     override fun d(tag: String, message: String) {
         println(buildLogLine("D", tag, message))

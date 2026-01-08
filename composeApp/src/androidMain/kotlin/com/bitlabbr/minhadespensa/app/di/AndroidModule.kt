@@ -14,20 +14,20 @@
  *
  */
 
-package com.bitlabbr.minhadespensa.app
+package com.bitlabbr.minhadespensa.app.di
 
-import android.app.Application
-import com.bitlabbr.minhadespensa.app.di.androidDatabaseModule
-import com.bitlabbr.minhadespensa.app.di.initKoin
+import androidx.room.Room
+import androidx.room.RoomDatabase
+import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import org.koin.android.ext.koin.androidContext
+import org.koin.dsl.module
 
-class MinhaDespensaApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        initKoin {
-            androidContext(this@MinhaDespensaApplication)
-            modules(androidDatabaseModule)
-        }
+val androidDatabaseModule = module {
+    single<RoomDatabase.Builder<AppDatabase>> {
+        val dbFile = androidContext().getDatabasePath("minha_despensa.db")
+        Room.databaseBuilder<AppDatabase>(
+            context = androidContext(),
+            name = dbFile.absolutePath
+        )
     }
 }

@@ -30,7 +30,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
 import com.bitlabbr.minhadespensa.core.domain.model.Product
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import org.koin.compose.koinInject
@@ -71,7 +70,7 @@ fun ProductItem(product: Product) {
     Card(modifier = Modifier.padding(vertical = 8.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = product.name)
-            Text(text = "${product.amount} ${product.unitMeasure}")
+            Text(text = "${product.amount} ${product.measureUnit}")
         }
     }
 }

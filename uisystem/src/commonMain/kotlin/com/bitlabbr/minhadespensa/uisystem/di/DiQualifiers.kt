@@ -20,4 +20,5 @@ object DiQualifiers {
     const val APP_LOGGER = "app_logger"
     const val CORE_LOGGER = "core_logger"
     const val UI_LOGGER = "ui_logger"
+    const val DATA_LOGGER = "data_logger"
 }

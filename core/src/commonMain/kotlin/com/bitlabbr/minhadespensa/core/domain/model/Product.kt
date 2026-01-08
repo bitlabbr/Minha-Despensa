@@ -24,7 +24,7 @@ data class Product(
     val id: String,
     val name: String,
     val amount: Double,
-    val unitMeasure: MeasureUnit,
+    val measureUnit: MeasureUnit,
     val expirationDate: Instant?,
     val imgUrl: String? = null
 )

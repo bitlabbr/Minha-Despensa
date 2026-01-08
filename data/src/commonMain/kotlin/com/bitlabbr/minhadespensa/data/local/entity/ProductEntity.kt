@@ -14,12 +14,19 @@
  *
  */
 
-package com.bitlabbr.minhadespensa.app
+package com.bitlabbr.minhadespensa.data.local.entity
 
-class Greeting {
-    private val platform = getPlatform()
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 
-    fun greet(): String {
-        return "Hello world from, ${platform.name}!"
-    }
-}
+import kotlinx.datetime.Instant
+
+@Entity(tableName = "product")
+data class ProductEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val amount: Double,
+    val measureUnit: MeasureUnit,
+    val expirationDate: Instant?
+)

@@ -6,7 +6,13 @@ plugins {
 }
 
 kotlin {
-    androidTarget { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11) } }
+    androidTarget {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xexpect-actual-classes")
+        }
+    }
+
     listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach {
         it.binaries.framework {
             baseName = "data"
@@ -17,10 +23,11 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core"))
+            implementation(project(":uisystem"))
 
             // Room e SQLite
-            implementation(libs.room.runtime)
-            implementation(libs.sqlite.bundled)
+            api(libs.room.runtime)
+            api(libs.sqlite.bundled)
 
             // Coroutines
             implementation(libs.kotlinx.coroutines.core)
@@ -46,4 +53,12 @@ room {
 
 dependencies {
     add("kspCommonMainMetadata", libs.room.compiler)
+
+    // Android
+    add("kspAndroid", libs.room.compiler)
+
+    // IOS
+    add("kspIosX64", libs.room.compiler)
+    add("kspIosArm64", libs.room.compiler)
+    add("kspIosSimulatorArm64", libs.room.compiler)
 }
