@@ -16,15 +16,19 @@
 package com.bitlabbr.minhadespensa.app
 
 import androidx.compose.ui.window.ComposeUIViewController
+import com.bitlabbr.minhadespensa.app.di.appModule
 import com.bitlabbr.minhadespensa.app.di.initKoin
-import com.bitlabbr.minhadespensa.app.App
+import com.bitlabbr.minhadespensa.app.di.iosDatabaseModule
+import com.bitlabbr.minhadespensa.uisystem.di.uiModule
 import platform.UIKit.UIViewController
 
 fun MainViewController(): UIViewController {
     try {
-        initKoin()
+        initKoin{
+            modules(iosDatabaseModule)
+        }
     } catch (e: Exception) {
-        println("Koin já iniciado ou erro: ${e.message}")
+        println("Koin already initiated: ${e.message}")
     }
 
     return ComposeUIViewController {

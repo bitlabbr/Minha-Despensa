@@ -27,6 +27,7 @@ val uiModule = module {
     factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
         ConsoleLogger(moduleName = "UISystem")
     }
+
     viewModel {
         ProductsListViewModel(
             repository = get(),

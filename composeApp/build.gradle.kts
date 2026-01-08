@@ -33,6 +33,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core"))
             implementation(project(":uisystem"))
+            implementation(project(":data"))
 
             implementation(compose.runtime)
             implementation(compose.ui)

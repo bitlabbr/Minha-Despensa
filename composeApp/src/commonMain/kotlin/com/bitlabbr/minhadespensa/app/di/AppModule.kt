@@ -17,36 +17,38 @@
 
 package com.bitlabbr.minhadespensa.app.di
 
-import com.bitlabbr.minhadespensa.core.domain.repository.ProductRepository
 import org.koin.core.context.startKoin
 import org.koin.dsl.module
 import org.koin.dsl.KoinAppDeclaration
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
-import com.bitlabbr.minhadespensa.app.data.repository.FakeProductRepository
 import com.bitlabbr.minhadespensa.uisystem.di.DiQualifiers
 import com.bitlabbr.minhadespensa.uisystem.di.uiModule
 import org.koin.core.qualifier.named
-import org.koin.dsl.bind
+import com.bitlabbr.minhadespensa.data.di.dataModule
 
 
 val appModule = module {
     factory<AppLogger>(named(DiQualifiers.APP_LOGGER)) {
-        ConsoleLogger(moduleName = "App/Data")
+        ConsoleLogger(moduleName = "App")
     }
 
     factory<AppLogger>(named(DiQualifiers.CORE_LOGGER)) {
         ConsoleLogger(moduleName = "Core")
     }
 
-    single {
-        FakeProductRepository(
-            logger = get(named(DiQualifiers.APP_LOGGER))
-        )
-    } bind ProductRepository::class
+    factory<AppLogger>(named(DiQualifiers.DATA_LOGGER)) {
+        ConsoleLogger(moduleName = "Data")
+    }
 }
+
+val sharedModules = listOf(
+    appModule,
+    uiModule,
+    dataModule
+)
 
 fun initKoin(appDeclaration: KoinAppDeclaration = {}) = startKoin {
     appDeclaration()
-    modules(appModule, uiModule)
+    modules(sharedModules)
 }
