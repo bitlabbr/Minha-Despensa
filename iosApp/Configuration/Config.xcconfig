@@ -1,7 +1,7 @@
 TEAM_ID=
 
-PRODUCT_NAME=minhadispensa
-PRODUCT_BUNDLE_IDENTIFIER=com.bill.minhadispensa.minhadispensa.minhadispensa$(TEAM_ID)
+PRODUCT_NAME=minhadespensa
+PRODUCT_BUNDLE_IDENTIFIER=com.bitlabbr.minhadespensa.iosapp$(TEAM_ID)
 
 CURRENT_PROJECT_VERSION=1
 MARKETING_VERSION=1.0

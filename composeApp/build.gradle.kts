@@ -48,11 +48,11 @@ kotlin {
 }
 
 android {
-    namespace = "com.bill.minhadispensa.minhadispensa"
+    namespace = "com.bitlabbr.minhadespensa.app"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.bill.minhadispensa.minhadispensa"
+        applicationId = "com.bitlabbr.minhadespensa.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
