@@ -1,0 +1,41 @@
+name: CI Check
+on:
+  push:
+    branches: [ "main", "dev", "hotfix" ]
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixar o código
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Configurar o java
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Configurar e cachear o Gradle
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      # 4. Verificar se o Build
+      # O comando 'assembleDebug' foca no Android, mas compila o commonMain junto.
+      - name: Build with Gradle
+        run: ./gradlew assembleDebug
+
+      # 5. Rodar os Testes Unitários
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest
+      
+      - name: Publish Test Report
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: '**/build/test-results/**/TEST-*.xml'
