@@ -18,13 +18,19 @@ package com.bitlabbr.minhadespensa.uisystem.features.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.Product
 import com.bitlabbr.minhadespensa.core.domain.repository.ProductRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlin.random.Random
 
 class ProductsListViewModel(
     private val repository: ProductRepository,
@@ -32,23 +38,51 @@ class ProductsListViewModel(
 ) : ViewModel() {
     private val TAG = "ProductsListViewModel"
     private val _uiState = MutableStateFlow<List<Product>>(emptyList())
-    val uiState: StateFlow<List<Product>> = _uiState.asStateFlow()
+    val uiState: StateFlow<ProductsUiState> = repository.getAllProducts()
+        .map<List<Product>, ProductsUiState> { product ->
+            logger.d(TAG, "Lista atualizada do banco. Itens: ${product.size}")
+            val total = product.sumOf { it.amount * 1.0 }
 
-    init {
-        loadAllProducts()
-    }
+            ProductsUiState.Success(
+                produtos = product,
+                totalEstimado = total
+            )
+        }
+        .catch { e ->
+            logger.e(TAG, "Erro ao carregar produtos: ${e.message}")
+            emit(ProductsUiState.Error("Falha ao carregar dados."))
+        }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ProductsUiState.Loading
+        )
 
-    private fun loadAllProducts() {
-        logger.d(TAG, "Loading all products...")
+    fun addProductTest() {
         viewModelScope.launch {
-            try {
-                repository.getAllProducts().collect { products ->
-                    logger.d(TAG, "Success! Products loaded: ${products.size}")
-                    _uiState.value = products
-                }
-            } catch (e: Exception) {
-                logger.e(TAG, "Failure to load items", e)
-            }
+            val novoProduto = Product(
+                id = "${Clock.System.now().toEpochMilliseconds()}",
+                name = "Produto ${Random.nextInt(100, 999)}",
+                amount = Random.nextDouble(1.0, 5.0),
+                measureUnit = MeasureUnit.UNITY,
+                expirationDate = null
+            )
+            logger.d(TAG, "Tentando salvar: ${novoProduto.name}")
+            repository.insertProduct(novoProduto)
         }
     }
+
+    fun removerProduct(id: String) {
+        viewModelScope.launch {
+            logger.d(TAG, "Removendo: $id")
+            repository.deleteProductById(id)
+        }
+    }
+}
+
+
+sealed interface ProductsUiState {
+    data object Loading : ProductsUiState
+    data class Success(val produtos: List<Product>, val totalEstimado: Double) : ProductsUiState
+    data class Error(val message: String) : ProductsUiState
 }

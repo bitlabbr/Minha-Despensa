@@ -16,61 +16,99 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.list
 
-import androidx.compose.foundation.layout.Column
+
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.core.domain.model.Product
-import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import org.koin.compose.koinInject
+
 import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.qualifier.named
+import org.koin.core.annotation.KoinExperimentalAPI
 
-
+@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
-fun ProductsListScreen() {
+fun ProductListScreen() {
     val viewModel = koinViewModel<ProductsListViewModel>()
-    val products by viewModel.uiState.collectAsState()
-    val logger: AppLogger = koinInject(named("ui_logger"))
-
-    val TAG = "ProductsListScreen"
-
-    LaunchedEffect(Unit) {
-        logger.d(TAG, "LaunchedEffect")
-    }
-
-    Scaffold { paddingValues ->
-        LazyColumn(
-            contentPadding = paddingValues,
-            modifier = Modifier.fillMaxSize().padding(16.dp)
-        ) {
-            item {
-                Text("Minha Despensa", modifier = Modifier.padding(bottom = 16.dp))
-            }
-
-            items(products) { product ->
-                ProductItem(product)
+    val state by viewModel.uiState.collectAsState()
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Minha Despensa") },
+                colors = TopAppBarDefaults.topAppBarColors()
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = { viewModel.addProductTest() }
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Add Item")
             }
         }
-    }
-}
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .padding(paddingValues)
+                .fillMaxSize()
+        ) {
+            when (val uiState = state) {
+                is ProductsUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
 
-@Composable
-fun ProductItem(product: Product) {
-    Card(modifier = Modifier.padding(vertical = 8.dp)) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = product.name)
-            Text(text = "${product.amount} ${product.measureUnit}")
+                is ProductsUiState.Error -> {
+                    Text(
+                        text = uiState.message,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+
+                is ProductsUiState.Success -> {
+                    if (uiState.produtos.isEmpty()) {
+                        Text(
+                            text = "Nenhum produto. Clique no +",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(uiState.produtos) { product ->
+                                ListItem(
+                                    headlineContent = { Text(product.name) },
+                                    supportingContent = {
+                                        Text("${product.amount} ${product.measureUnit}")
+                                    },
+                                    trailingContent = {
+                                        IconButton(onClick = { viewModel.removerProduct(product.id) }) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Remove Item")
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
