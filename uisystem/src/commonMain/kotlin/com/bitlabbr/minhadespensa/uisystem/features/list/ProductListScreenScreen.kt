@@ -37,12 +37,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
@@ -51,7 +57,13 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @Composable
 fun ProductListScreen() {
     val viewModel = koinViewModel<ProductsListViewModel>()
-    val state by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
+    val formState by viewModel.formState.collectAsState()
+
+    val sheetState = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    var showBottomSheet by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -61,7 +73,7 @@ fun ProductListScreen() {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.addProductTest() }
+                onClick = { showBottomSheet = true }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Add Item")
             }
@@ -72,35 +84,27 @@ fun ProductListScreen() {
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
-            when (val uiState = state) {
+            when (val state = uiState) {
                 is ProductsUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-
                 is ProductsUiState.Error -> {
-                    Text(
-                        text = uiState.message,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Text(text = state.message, modifier = Modifier.align(Alignment.Center))
                 }
-
                 is ProductsUiState.Success -> {
-                    if (uiState.produtos.isEmpty()) {
-                        Text(
-                            text = "Nenhum produto. Clique no +",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                    if (state.products.isEmpty()) {
+                        Text("No products. Tap + to add.", modifier = Modifier.align(Alignment.Center))
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(items = uiState.produtos, key = { it.id }) { product ->
+                            items(state.products) { product ->
                                 ListItem(
                                     headlineContent = { Text(product.name) },
                                     supportingContent = {
                                         Text("${product.amount} ${product.measureUnit}")
                                     },
                                     trailingContent = {
-                                        IconButton(onClick = { viewModel.removerProduct(product.id) }) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Remove Item")
+                                        IconButton(onClick = { viewModel.removeProduct(product.id) }) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Remove")
                                         }
                                     }
                                 )
@@ -108,6 +112,25 @@ fun ProductListScreen() {
                         }
                     }
                 }
+            }
+            if (showBottomSheet) {
+                AddProductSheet(
+                    state = formState,
+                    sheetState = sheetState,
+                    onNameChange = viewModel::onNameChange,
+                    onQuantityChange = viewModel::onQuantityChange,
+                    onUnitChange = viewModel::onUnitChange,
+                    onSaveClick = {
+                        viewModel.saveProduct()
+                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+                            if (!sheetState.isVisible) showBottomSheet = false
+                        }
+                    },
+                    onDismiss = {
+                        showBottomSheet = false
+                        viewModel.resetForm()
+                    }
+                )
             }
         }
     }
