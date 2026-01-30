@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListScreen
+import com.bitlabbr.minhadespensa.uisystem.features.list.ProductListScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 
@@ -40,7 +40,7 @@ fun App() {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                ProductsListScreen()
+                ProductListScreen()
             }
         }
     }
