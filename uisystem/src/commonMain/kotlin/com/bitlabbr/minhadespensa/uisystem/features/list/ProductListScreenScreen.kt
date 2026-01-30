@@ -92,7 +92,7 @@ fun ProductListScreen() {
                         )
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            items(uiState.produtos) { product ->
+                            items(items = uiState.produtos, key = { it.id }) { product ->
                                 ListItem(
                                     headlineContent = { Text(product.name) },
                                     supportingContent = {
