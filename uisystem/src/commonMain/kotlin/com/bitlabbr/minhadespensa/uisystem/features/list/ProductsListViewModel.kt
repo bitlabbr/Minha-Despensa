@@ -45,9 +45,7 @@ class ProductsListViewModel(
 
     val uiState: StateFlow<ProductsUiState> = repository.getAllProducts()
         .map<List<Product>, ProductsUiState> { product ->
-           // logger.d(TAG, "Lista atualizada do banco. Itens: ${product.size}")
             val total = product.sumOf { it.amount }
-
             ProductsUiState.Success(product, total)
         }
         .catch { e ->
@@ -82,13 +80,14 @@ class ProductsListViewModel(
 
             try {
                 val qtyDouble = currentState.quantity.toDoubleOrNull() ?: 0.0
-
+                val currentTimeStamp = Clock.System.now().toEpochMilliseconds()
                 val newProduct = Product(
-                    id = "${Clock.System.now().toEpochMilliseconds()}",
+                    id = "$currentTimeStamp",
                     name = currentState.name,
                     amount = qtyDouble,
                     measureUnit = currentState.unit,
-                    expirationDate = null
+                    expirationDate = null,
+                    updatedAt = currentTimeStamp
                 )
 
                 logger.d(TAG, "Saving product: ${newProduct.name}")
@@ -110,28 +109,6 @@ class ProductsListViewModel(
     fun removeProduct(id: String) {
         logger.d(TAG, "removeProduct: $id")
         viewModelScope.launch {
-            repository.deleteProductById(id)
-        }
-    }
-
-
-    fun addProductTest() {
-        viewModelScope.launch {
-            val novoProduto = Product(
-                id = "${Clock.System.now().toEpochMilliseconds()}",
-                name = "Produto ${Random.nextInt(100, 999)}",
-                amount = Random.nextDouble(1.0, 5.0),
-                measureUnit = MeasureUnit.UNITY,
-                expirationDate = null
-            )
-            logger.d(TAG, "Tentando salvar: ${novoProduto.name}")
-            repository.insertProduct(novoProduto)
-        }
-    }
-
-    fun removerProduct(id: String) {
-        viewModelScope.launch {
-            logger.d(TAG, "Removendo: $id")
             repository.deleteProductById(id)
         }
     }

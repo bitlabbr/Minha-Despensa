@@ -24,9 +24,12 @@ import kotlinx.datetime.Instant
 
 @Entity(tableName = "product")
 data class ProductEntity(
-    @PrimaryKey val id: String,
+    @PrimaryKey(autoGenerate = false)
+    val id: String,
     val name: String,
     val amount: Double,
     val measureUnit: MeasureUnit,
-    val expirationDate: Instant?
+    val expirationDate: Instant?,
+    val updatedAt: Long,
+    val isDeleted: Boolean = false
 )
