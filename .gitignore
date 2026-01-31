@@ -1,7 +1,6 @@
 # IntelliJ / Android Studio
 .idea/
 *.iml
-data/schemas/
 
 # Gradle
 .gradle/

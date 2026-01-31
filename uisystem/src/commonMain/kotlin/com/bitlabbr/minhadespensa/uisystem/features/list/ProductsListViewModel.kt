@@ -80,14 +80,14 @@ class ProductsListViewModel(
 
             try {
                 val qtyDouble = currentState.quantity.toDoubleOrNull() ?: 0.0
-
+                val currentTimeStamp = Clock.System.now().toEpochMilliseconds()
                 val newProduct = Product(
-                    id = "${Clock.System.now().toEpochMilliseconds()}",
+                    id = "$currentTimeStamp",
                     name = currentState.name,
                     amount = qtyDouble,
                     measureUnit = currentState.unit,
                     expirationDate = null,
-                    updatedAt = Clock.System.now().toEpochMilliseconds()
+                    updatedAt = currentTimeStamp
                 )
 
                 logger.d(TAG, "Saving product: ${newProduct.name}")

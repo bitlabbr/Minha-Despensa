@@ -23,8 +23,6 @@ import com.bitlabbr.minhadespensa.data.local.dao.ProductDao
 import com.bitlabbr.minhadespensa.data.local.entity.ProductEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
-import kotlin.math.log
 
 class RoomProductRepository(
     private val dao: ProductDao,
@@ -44,7 +42,7 @@ class RoomProductRepository(
 
     override suspend fun deleteProductById(id: String) {
         logger.d(TAG, "delete product $id")
-        dao.deleteById(id)
+        dao.markAsDeleted(id)
     }
 
     override suspend fun getProductById(id: String): Product? {
