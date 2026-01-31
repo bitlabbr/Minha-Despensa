@@ -45,9 +45,7 @@ class ProductsListViewModel(
 
     val uiState: StateFlow<ProductsUiState> = repository.getAllProducts()
         .map<List<Product>, ProductsUiState> { product ->
-           // logger.d(TAG, "Lista atualizada do banco. Itens: ${product.size}")
             val total = product.sumOf { it.amount }
-
             ProductsUiState.Success(product, total)
         }
         .catch { e ->
