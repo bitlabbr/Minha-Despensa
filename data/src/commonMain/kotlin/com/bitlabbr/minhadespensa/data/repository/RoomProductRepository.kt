@@ -23,6 +23,7 @@ import com.bitlabbr.minhadespensa.data.local.dao.ProductDao
 import com.bitlabbr.minhadespensa.data.local.entity.ProductEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Clock
 import kotlin.math.log
 
 class RoomProductRepository(
@@ -57,7 +58,9 @@ class RoomProductRepository(
             name = this.name,
             amount = this.amount,
             measureUnit = this.measureUnit,
-            expirationDate = this.expirationDate
+            expirationDate = this.expirationDate,
+            updatedAt = this.updatedAt,
+            isDeleted = this.isDeleted
         )
     }
 
@@ -67,7 +70,9 @@ class RoomProductRepository(
             name = this.name,
             amount = this.amount,
             measureUnit = this.measureUnit,
-            expirationDate = this.expirationDate
+            expirationDate = this.expirationDate,
+            updatedAt = this.updatedAt,
+            isDeleted = this.isDeleted
         )
     }
 }

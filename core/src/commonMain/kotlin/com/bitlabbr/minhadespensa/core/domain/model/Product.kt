@@ -26,7 +26,9 @@ data class Product(
     val amount: Double,
     val measureUnit: MeasureUnit,
     val expirationDate: Instant?,
-    val imgUrl: String? = null
+    val imgUrl: String? = null,
+    val updatedAt: Long,
+    val isDeleted: Boolean = false
 )
 enum class MeasureUnit {
     UNITY,

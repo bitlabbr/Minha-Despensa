@@ -88,7 +88,8 @@ class ProductsListViewModel(
                     name = currentState.name,
                     amount = qtyDouble,
                     measureUnit = currentState.unit,
-                    expirationDate = null
+                    expirationDate = null,
+                    updatedAt = Clock.System.now().toEpochMilliseconds()
                 )
 
                 logger.d(TAG, "Saving product: ${newProduct.name}")
@@ -110,28 +111,6 @@ class ProductsListViewModel(
     fun removeProduct(id: String) {
         logger.d(TAG, "removeProduct: $id")
         viewModelScope.launch {
-            repository.deleteProductById(id)
-        }
-    }
-
-
-    fun addProductTest() {
-        viewModelScope.launch {
-            val novoProduto = Product(
-                id = "${Clock.System.now().toEpochMilliseconds()}",
-                name = "Produto ${Random.nextInt(100, 999)}",
-                amount = Random.nextDouble(1.0, 5.0),
-                measureUnit = MeasureUnit.UNITY,
-                expirationDate = null
-            )
-            logger.d(TAG, "Tentando salvar: ${novoProduto.name}")
-            repository.insertProduct(novoProduto)
-        }
-    }
-
-    fun removerProduct(id: String) {
-        viewModelScope.launch {
-            logger.d(TAG, "Removendo: $id")
             repository.deleteProductById(id)
         }
     }
