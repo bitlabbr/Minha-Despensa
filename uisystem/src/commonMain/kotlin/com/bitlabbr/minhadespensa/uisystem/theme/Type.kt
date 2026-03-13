@@ -1,18 +1,24 @@
 /*
- * Copyright (c) 2026 Willian Santos
+ *   Copyright (c) 2026 Willian Santos
  *
- * This file is part of an open-source project licensed under the
- * Creative Commons Attribution-NonCommercial 4.0 International License.
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
  *
- * You are free to:
- *  - Use, copy, modify, and distribute this file
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
  *
- * Under the following conditions:
- *  - Attribution: You must give appropriate credit to the author.
- *  - NonCommercial: You may not use this work for commercial purposes.
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
  *
- * License details:
- * https://creativecommons.org/licenses/by-nc/4.0/
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
 package com.bitlabbr.minhadespensa.uisystem.theme

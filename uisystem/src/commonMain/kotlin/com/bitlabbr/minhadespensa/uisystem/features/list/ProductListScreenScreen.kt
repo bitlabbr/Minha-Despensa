@@ -1,24 +1,35 @@
 /*
- * Copyright (c) 2026 Willian Santos
+ *   Copyright (c) 2026 Willian Santos
  *
- * Licensed under the Creative Commons Attribution-NonCommercial 4.0
- * International License (CC BY-NC 4.0).
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
  *
- * You may use, copy, modify, and distribute this file for non-commercial
- * purposes only, provided that proper attribution is given.
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
  *
- * The copyright holder retains all commercial rights and may
- * license this work under different terms.
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
  *
- * License: https://creativecommons.org/licenses/by-nc/4.0/
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
  *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
 package com.bitlabbr.minhadespensa.uisystem.features.list
 
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,6 +59,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+
+import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
 import kotlinx.coroutines.launch
 
 import org.koin.compose.viewmodel.koinViewModel
@@ -97,6 +112,25 @@ fun ProductListScreen() {
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(state.products) { product ->
+                                GlassCard(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(24.dp)
+                                    ) {
+                                        Text(
+                                            text = "Macarrão São João",
+                                            color = Color.White
+                                        )
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        Text(
+                                            text = "2.0 UNIDADES",
+                                            color = Color.White.copy(alpha = 0.7f)
+                                        )
+                                    }
+                                }
                                 ListItem(
                                     headlineContent = { Text(product.name) },
                                     supportingContent = {
