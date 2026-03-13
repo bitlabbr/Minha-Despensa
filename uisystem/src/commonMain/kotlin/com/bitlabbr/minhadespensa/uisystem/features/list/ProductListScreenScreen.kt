@@ -26,10 +26,8 @@ package com.bitlabbr.minhadespensa.uisystem.features.list
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -44,6 +42,7 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -61,8 +60,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
-import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
+import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import kotlinx.coroutines.launch
 
 import org.koin.compose.viewmodel.koinViewModel
@@ -82,15 +82,25 @@ fun ProductListScreen() {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Minha Despensa") },
+                title = {
+                    CustomText(
+                    text = "Minha Despensa",
+                    color = MinhaDespensaTheme.color.onTertiary,
+                    fontStyle = MinhaDespensaTheme.typography.displayMedium
+                )},
                 colors = TopAppBarDefaults.topAppBarColors()
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showBottomSheet = true }
+                onClick = { showBottomSheet = true },
+                containerColor = MinhaDespensaTheme.color.onSecondary,
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Item")
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add Item",
+                    tint = MinhaDespensaTheme.color.onTertiary
+                )
             }
         }
     ) { paddingValues ->
@@ -112,36 +122,47 @@ fun ProductListScreen() {
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(state.products) { product ->
+                                val appDimens = MinhaDespensaTheme.dimens
                                 GlassCard(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(16.dp)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(24.dp)
-                                    ) {
-                                        Text(
-                                            text = "Macarrão São João",
-                                            color = Color.White
+                                        .padding(
+                                            start = appDimens.paddingSmall,
+                                            end = appDimens.paddingSmall,
+                                            top = appDimens.paddingSmall /2,
+                                            bottom = appDimens.paddingSmall /2
                                         )
-                                        Spacer(modifier = Modifier.height(8.dp))
-                                        Text(
-                                            text = "2.0 UNIDADES",
-                                            color = Color.White.copy(alpha = 0.7f)
+                                ) {
+                                    Column() {
+                                        ListItem(
+                                            colors = ListItemDefaults.colors(
+                                                containerColor = Color.Transparent,
+                                            ),
+                                            headlineContent = {
+                                                CustomText(
+                                                    text = product.name,
+                                                    color = MinhaDespensaTheme.color.onTertiary,
+                                                    fontStyle = MinhaDespensaTheme.typography.bodyLarge
+                                                )},
+                                            supportingContent = {
+                                                CustomText(
+                                                    text = "${product.amount} ${product.measureUnit}",
+                                                    color = MinhaDespensaTheme.color.onTertiary,
+                                                    fontStyle = MinhaDespensaTheme.typography.bodyLarge
+                                                )
+                                            },
+                                            trailingContent = {
+                                                IconButton(onClick = { viewModel.removeProduct(product.id) }) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Delete,
+                                                        contentDescription = "Remove",
+                                                        tint = MinhaDespensaTheme.color.onTertiary
+                                                    )
+                                                }
+                                            }
                                         )
                                     }
                                 }
-                                ListItem(
-                                    headlineContent = { Text(product.name) },
-                                    supportingContent = {
-                                        Text("${product.amount} ${product.measureUnit}")
-                                    },
-                                    trailingContent = {
-                                        IconButton(onClick = { viewModel.removeProduct(product.id) }) {
-                                            Icon(Icons.Default.Delete, contentDescription = "Remove")
-                                        }
-                                    }
-                                )
                             }
                         }
                     }

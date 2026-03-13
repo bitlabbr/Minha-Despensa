@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -44,10 +45,17 @@ fun GlassCard(
     borderWidth: Dp = 1.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
+
+    val isDark = isSystemInDarkTheme()
+    val tintColor = if (isDark) Color.White else Color.Black
+    val primaryAlpha = if (isDark) 0.2f else 0.08f
+    val secondaryAlpha = if (isDark) 0.05f else 0.02f
+    val borderAlpha = if (isDark) 0.4f else 0.15f
+
     val glassBrush = Brush.linearGradient(
         colors = listOf(
-            Color.White.copy(alpha = 0.2f),
-            Color.White.copy(alpha = 0.05f)
+            tintColor.copy(alpha = primaryAlpha),
+            tintColor.copy(alpha = secondaryAlpha)
         ),
         start = Offset(0f, 0f),
         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
@@ -55,9 +63,9 @@ fun GlassCard(
 
     val borderBrush = Brush.linearGradient(
         colors = listOf(
-            Color.White.copy(alpha = 0.4f),
+            tintColor.copy(alpha = borderAlpha),
             Color.Transparent,
-            Color.White.copy(alpha = 0.1f)
+            tintColor.copy(alpha = secondaryAlpha)
         )
     )
 

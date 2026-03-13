@@ -21,27 +21,27 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.app
+package com.bitlabbr.minhadespensa.uisystem.theme
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductListScreen
-import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
+data class AppDimens(
+    val paddingSmall: Dp,
+    val paddingMedium: Dp,
+    val paddingLarge: Dp
+)
 
-@Composable
-fun App() {
-    MinhaDespensaTheme {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            ProductListScreen()
-        }
-    }
+val compactDimens = AppDimens(paddingSmall = 8.dp, paddingMedium = 16.dp, paddingLarge = 24.dp)
+val expandedDimens = AppDimens(paddingSmall = 12.dp, paddingMedium = 24.dp, paddingLarge = 36.dp)
+
+val LocalAppDimens = staticCompositionLocalOf { compactDimens }
+
+fun AppDimens.withScale(scaleFactor: Float): AppDimens {
+    return AppDimens(
+        paddingSmall = this.paddingSmall * scaleFactor,
+        paddingMedium = this.paddingMedium * scaleFactor,
+        paddingLarge = this.paddingLarge * scaleFactor
+    )
 }
