@@ -47,7 +47,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.SettingsRoute
 import com.bitlabbr.minhadespensa.uisystem.features.list.ProductListScreen
 import com.bitlabbr.minhadespensa.uisystem.features.list.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-
+import androidx.compose.foundation.layout.consumeWindowInsets
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,6 +88,7 @@ fun App() {
                 navController = navController,
                 startDestination = ProductListRoute,
                 modifier = Modifier.padding(innerPadding)
+                    .consumeWindowInsets(innerPadding)
             ) {
                 composable<ProductListRoute> {
                     ProductListScreen()

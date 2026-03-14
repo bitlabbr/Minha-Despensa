@@ -78,12 +78,11 @@ fun ProductListScreen() {
                     tint = MinhaDespensaTheme.color.onTertiary
                 )
             }
-        }
+        },
+        containerColor = MinhaDespensaTheme.color.background
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
             when (val state = uiState) {
                 is ProductsUiState.Loading -> {
@@ -98,7 +97,10 @@ fun ProductListScreen() {
                     if (state.products.isEmpty()) {
                         Text("No products. Tap + to add.", modifier = Modifier.align(Alignment.Center))
                     } else {
-                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = paddingValues
+                        ) {
                             items(state.products) { product ->
                                 val appDimens = MinhaDespensaTheme.dimens
                                 GlassCard(
