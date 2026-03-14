@@ -23,25 +23,80 @@
 
 package com.bitlabbr.minhadespensa.app
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.bitlabbr.minhadespensa.uisystem.components.BottomNavItem
+import com.bitlabbr.minhadespensa.uisystem.components.CustomText
+import com.bitlabbr.minhadespensa.uisystem.components.ProductListRoute
+import com.bitlabbr.minhadespensa.uisystem.components.SettingsRoute
 import com.bitlabbr.minhadespensa.uisystem.features.list.ProductListScreen
+import com.bitlabbr.minhadespensa.uisystem.features.list.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App() {
     MinhaDespensaTheme {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            ProductListScreen()
+        val navController = rememberNavController()
+        Scaffold(
+            bottomBar = {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentDestination = navBackStackEntry?.destination
+                val bottomNavItems = listOf(
+                    BottomNavItem("Despensa", Icons.Default.Home, ProductListRoute),
+                    BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute)
+                )
+                NavigationBar {
+                    bottomNavItems.forEach { item ->
+                        val isSelected = currentDestination?.hierarchy?.any {
+                            it.hasRoute(item.route::class)
+                        } == true
+
+                        NavigationBarItem(
+                            icon = { Icon(item.icon, contentDescription = item.title) },
+                            label = { CustomText(text = item.title) },
+                            selected = isSelected,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.startDestinationRoute!!) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = ProductListRoute,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable<ProductListRoute> {
+                    ProductListScreen()
+                }
+
+                composable<SettingsRoute> {
+                    SettingsScreen()
+                }
+            }
         }
     }
 }
