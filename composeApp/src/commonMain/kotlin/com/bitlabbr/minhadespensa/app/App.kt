@@ -49,6 +49,11 @@ import com.bitlabbr.minhadespensa.uisystem.features.list.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import androidx.compose.foundation.layout.consumeWindowInsets
 
+private val bottomNavItems = listOf(
+    BottomNavItem("Despensa", Icons.Default.Home, ProductListRoute),
+    BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute)
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App() {
@@ -58,10 +63,6 @@ fun App() {
             bottomBar = {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
-                val bottomNavItems = listOf(
-                    BottomNavItem("Despensa", Icons.Default.Home, ProductListRoute),
-                    BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute)
-                )
                 NavigationBar {
                     bottomNavItems.forEach { item ->
                         val isSelected = currentDestination?.hierarchy?.any {
