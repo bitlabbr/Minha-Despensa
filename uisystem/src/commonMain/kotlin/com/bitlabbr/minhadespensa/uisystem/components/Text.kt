@@ -21,20 +21,32 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.app
+package com.bitlabbr.minhadespensa.uisystem.components
 
-import android.app.Application
-import com.bitlabbr.minhadespensa.app.di.androidDatabaseModule
-import com.bitlabbr.minhadespensa.app.di.initKoin
-import org.koin.android.ext.koin.androidContext
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
-class MinhaDespensaApplication : Application() {
-    override fun onCreate() {
-        super.onCreate()
-
-        initKoin {
-            androidContext(this@MinhaDespensaApplication)
-            modules(androidDatabaseModule)
-        }
-    }
+@Composable
+fun CustomText(
+    text: String?,
+    alignment: TextAlign = TextAlign.Left,
+    color: Color = MinhaDespensaTheme.color.onPrimary,
+    fontStyle: TextStyle = MinhaDespensaTheme.typography.displayMedium,
+    modifier: Modifier = Modifier
+        .wrapContentWidth()
+) {
+    val customText = text ?: ""
+    Text(
+        textAlign = alignment,
+        text = customText,
+        color = color,
+        modifier = modifier,
+        style = fontStyle
+    )
 }

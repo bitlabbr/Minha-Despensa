@@ -21,35 +21,15 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local
+package com.bitlabbr.minhadespensa.uisystem.components
 
-import androidx.room.TypeConverter
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
-class Converters {
+@Serializable
+data object ProductListRoute
 
-    @TypeConverter
-    fun fromTimestamp(value: Long?): Instant? {
-        return value?.let { Instant.fromEpochMilliseconds(it) }
-    }
+@Serializable
+data object SettingsRoute
 
-    @TypeConverter
-    fun dateToTimestamp(date: Instant?): Long? {
-        return date?.toEpochMilliseconds()
-    }
-
-    @TypeConverter
-    fun fromUnityString(value: String): MeasureUnit {
-        return try {
-            MeasureUnit.valueOf(value)
-        } catch (e: Exception) {
-            MeasureUnit.UNITY
-        }
-    }
-
-    @TypeConverter
-    fun unityToString(unity: MeasureUnit): String {
-        return unity.name
-    }
-}
+@Serializable
+data class ProductDetailsRoute(val productId: String)

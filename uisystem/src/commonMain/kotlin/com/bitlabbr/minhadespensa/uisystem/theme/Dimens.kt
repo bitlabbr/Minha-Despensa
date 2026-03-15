@@ -21,35 +21,27 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local
+package com.bitlabbr.minhadespensa.uisystem.theme
 
-import androidx.room.TypeConverter
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import kotlinx.datetime.Instant
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
-class Converters {
+data class AppDimens(
+    val paddingSmall: Dp,
+    val paddingMedium: Dp,
+    val paddingLarge: Dp
+)
 
-    @TypeConverter
-    fun fromTimestamp(value: Long?): Instant? {
-        return value?.let { Instant.fromEpochMilliseconds(it) }
-    }
+val compactDimens = AppDimens(paddingSmall = 8.dp, paddingMedium = 16.dp, paddingLarge = 24.dp)
+val expandedDimens = AppDimens(paddingSmall = 12.dp, paddingMedium = 24.dp, paddingLarge = 36.dp)
 
-    @TypeConverter
-    fun dateToTimestamp(date: Instant?): Long? {
-        return date?.toEpochMilliseconds()
-    }
+val LocalAppDimens = staticCompositionLocalOf { compactDimens }
 
-    @TypeConverter
-    fun fromUnityString(value: String): MeasureUnit {
-        return try {
-            MeasureUnit.valueOf(value)
-        } catch (e: Exception) {
-            MeasureUnit.UNITY
-        }
-    }
-
-    @TypeConverter
-    fun unityToString(unity: MeasureUnit): String {
-        return unity.name
-    }
+fun AppDimens.withScale(scaleFactor: Float): AppDimens {
+    return AppDimens(
+        paddingSmall = this.paddingSmall * scaleFactor,
+        paddingMedium = this.paddingMedium * scaleFactor,
+        paddingLarge = this.paddingLarge * scaleFactor
+    )
 }
