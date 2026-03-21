@@ -57,27 +57,28 @@ class RoomPantryRepository(
         dao.markAsDeleted(id, updatedAt)
     }
 
-    fun PantryItemEntity.toDomain(): PantryItem {
-        return PantryItem(
-            id = this.id,
-            productId = this.productId,
-            quantity = this.quantity,
-            expirationDate = this.expirationDate,
-            updatedAt = this.updatedAt,
-            isDeleted = this.isDeleted,
-            batchNumber = this.batchNumber,
-        )
-    }
+}
 
-    fun PantryItem.toEntity(): PantryItemEntity {
-        return PantryItemEntity(
-            id = this.id,
-            productId = this.productId,
-            quantity = this.quantity,
-            expirationDate = this.expirationDate,
-            updatedAt = this.updatedAt,
-            isDeleted = this.isDeleted,
-            batchNumber = this.batchNumber
-        )
-    }
+fun PantryItemEntity.toDomain(): PantryItem {
+    return PantryItem(
+        id = this.id,
+        productId = this.productId,
+        quantity = this.quantity,
+        expirationDate = this.expirationDate,
+        updatedAt = this.updatedAt,
+        isDeleted = this.isDeleted,
+        batchNumber = this.batchNumber,
+    )
+}
+
+fun PantryItem.toEntity(): PantryItemEntity {
+    return PantryItemEntity(
+        id = this.id,
+        productId = this.productId,
+        quantity = this.quantity,
+        expirationDate = this.expirationDate,
+        updatedAt = this.updatedAt,
+        isDeleted = this.isDeleted,
+        batchNumber = this.batchNumber
+    )
 }

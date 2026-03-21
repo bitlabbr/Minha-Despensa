@@ -21,31 +21,15 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local.entity
+package com.bitlabbr.minhadespensa.data.local
 
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room.Room
+import androidx.room.RoomDatabase
 
-@Entity(
-    tableName = "shopping_items",
-    indices = [Index(value = ["productId"])],
-    foreignKeys = [
-        ForeignKey(
-            entity = CatalogProductEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["productId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
-)
-data class ShoppingItemEntity(
-    @PrimaryKey val id: String,
-    val productId: String,
-    val quantity: Double,
-    val priceAtTime: Long?,
-    val isChecked: Boolean,
-    val updatedAt: Long,
-    val isDeleted: Boolean
-)
+actual fun getTestDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
+    return Room.inMemoryDatabaseBuilder<AppDatabase>(
+        factory = { AppDatabaseConstructor.initialize() }
+    ).setDriver(androidx.sqlite.driver.bundled.BundledSQLiteDriver())
+}
+
+actual abstract class BaseTest actual constructor()

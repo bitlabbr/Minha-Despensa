@@ -59,21 +59,21 @@ class RoomPriceRepository(
         dao.markAsDeleted(id, getCurrentTime())
     }
 
-    fun PriceEntryEntity.toDomain() = PriceEntry(
-        id = this.id,
-        productId = this.productId,
-        priceInCents = this.priceInCents,
-        storeName = this.storeName,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted
-    )
-
-    fun PriceEntry.toEntity() = PriceEntryEntity(
-        id = this.id,
-        productId = this.productId,
-        priceInCents = this.priceInCents,
-        storeName = this.storeName,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted
-    )
 }
+fun PriceEntryEntity.toDomain() = PriceEntry(
+    id = this.id,
+    productId = this.productId,
+    priceInCents = this.priceInCents,
+    storeName = this.storeName,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted
+)
+
+fun PriceEntry.toEntity() = PriceEntryEntity(
+    id = this.id,
+    productId = this.productId,
+    priceInCents = this.priceInCents,
+    storeName = this.storeName,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted
+)

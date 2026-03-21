@@ -54,6 +54,20 @@ kotlin {
             // Coroutines
             implementation(libs.kotlinx.coroutines.core)
         }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.turbine)
+        }
+
+        val androidUnitTest by getting {
+            dependencies {
+                implementation(libs.androidx.test.core)
+                implementation(libs.robolectric)
+                runtimeOnly(libs.sqlite.bundled)
+            }
+        }
     }
 }
 
@@ -66,6 +80,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    }
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
     }
 }
 

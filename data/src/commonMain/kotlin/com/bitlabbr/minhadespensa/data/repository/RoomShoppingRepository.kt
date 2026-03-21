@@ -25,6 +25,8 @@ package com.bitlabbr.minhadespensa.data.repository
 
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
@@ -84,13 +86,11 @@ class RoomShoppingRepository(
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
                 try {
                     val now = getCurrentTime()
-                    val checkedItems = db.shoppingItemDao().getActiveItems()
-                        .map { list -> list.filter { it.isChecked } }
-                        .first()
+                    val checkedItems = shoppingDao.getCheckedItemsSync()
 
                     checkedItems.forEach { item ->
                         db.pantryDao().insertOrUpdate(
-                            PantryItemEntity(
+                            PantryItem(
                                 id = Uuid.random().toString(),
                                 productId = item.productId,
                                 quantity = item.quantity,
@@ -98,50 +98,51 @@ class RoomShoppingRepository(
                                 isDeleted = false,
                                 expirationDate = now, // TODO need to change this
                                 batchNumber = null // TODO need to change this
-                            )
+                            ).toEntity()
                         )
 
                         item.priceAtTime?.let { price ->
                             db.priceDao().insertOrUpdate(
-                                PriceEntryEntity(
+                                PriceEntry(
                                     id = Uuid.random().toString(),
                                     productId = item.productId,
                                     priceInCents = price,
                                     updatedAt = now,
                                     isDeleted = false,
-                                    storeName = "No name" // TODO need to change this
-                                )
+                                    storeName = "nome da loja" // TODO need to change this
+                                ).toEntity()
                             )
                         }
                     }
 
                     db.shoppingItemDao().deleteAllLogical(now)
-                    logger.d("RoomShoppingRepository", "Checkout atômico concluído via SQLite Connection.")
+                    logger.d(TAG, "Checkout atômico concluído via SQLite Connection.")
                 } catch (e: Exception) {
-                    logger.e("RoomShoppingRepository", "Erro no checkout: ${e.message}")
+                    logger.e(TAG, "Erro no checkout: ${e.message}")
                     throw e
                 }
             }
         }
     }
 
-    fun ShoppingItemEntity.toDomain() = ShoppingItem(
-        id = this.id,
-        productId = this.productId,
-        quantity = this.quantity,
-        priceAtTime = this.priceAtTime,
-        isChecked = this.isChecked,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted
-    )
-
-    fun ShoppingItem.toEntity() = ShoppingItemEntity(
-        id = this.id,
-        productId = this.productId,
-        quantity = this.quantity,
-        priceAtTime = this.priceAtTime,
-        isChecked = this.isChecked,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted
-    )
 }
+
+fun ShoppingItemEntity.toDomain() = ShoppingItem(
+    id = this.id,
+    productId = this.productId,
+    quantity = this.quantity,
+    priceAtTime = this.priceAtTime,
+    isChecked = this.isChecked,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted
+)
+
+fun ShoppingItem.toEntity() = ShoppingItemEntity(
+    id = this.id,
+    productId = this.productId,
+    quantity = this.quantity,
+    priceAtTime = this.priceAtTime,
+    isChecked = this.isChecked,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted
+)

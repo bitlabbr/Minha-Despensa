@@ -37,7 +37,7 @@ import kotlinx.datetime.Clock
 class RoomCatalogRepository(
     private val dao: CatalogProductDao,
     private val logger: AppLogger
-): CatalogRepository {
+) : CatalogRepository {
     private val TAG = "RoomCatalogRepository"
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
@@ -67,29 +67,30 @@ class RoomCatalogRepository(
         dao.markAsDeleted(id, getCurrentTime())
     }
 
-    private fun CatalogProductEntity.toDomain() = CatalogProduct(
-        id = this.id,
-        ean = this.ean,
-        name = this.name,
-        brand = this.brand,
-        measureUnit = MeasureUnit.valueOf(this.measureUnit),
-        netWeight = this.netWeight,
-        thumbnailUrl = this.thumbnailUrl,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted,
-        manuallyAdded = this.manuallyAdded
-    )
-
-    private fun CatalogProduct.toEntity() = CatalogProductEntity(
-        id = this.id,
-        ean = this.ean,
-        name = this.name,
-        brand = this.brand,
-        measureUnit = this.measureUnit.name,
-        netWeight = this.netWeight,
-        thumbnailUrl = this.thumbnailUrl,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted,
-        manuallyAdded = this.manuallyAdded
-    )
 }
+
+fun CatalogProductEntity.toDomain() = CatalogProduct(
+    id = this.id,
+    ean = this.ean,
+    name = this.name,
+    brand = this.brand,
+    measureUnit = MeasureUnit.valueOf(this.measureUnit),
+    netWeight = this.netWeight,
+    thumbnailUrl = this.thumbnailUrl,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted,
+    manuallyAdded = this.manuallyAdded
+)
+
+fun CatalogProduct.toEntity() = CatalogProductEntity(
+    id = this.id,
+    ean = this.ean,
+    name = this.name,
+    brand = this.brand,
+    measureUnit = this.measureUnit.name,
+    netWeight = this.netWeight,
+    thumbnailUrl = this.thumbnailUrl,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted,
+    manuallyAdded = this.manuallyAdded
+)

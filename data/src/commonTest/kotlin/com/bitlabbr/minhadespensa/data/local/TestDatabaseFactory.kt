@@ -21,31 +21,13 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local.entity
+package com.bitlabbr.minhadespensa.data.local
 
-import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.PrimaryKey
+import androidx.room.RoomDatabase
+import kotlinx.coroutines.Dispatchers
 
-@Entity(
-    tableName = "shopping_items",
-    indices = [Index(value = ["productId"])],
-    foreignKeys = [
-        ForeignKey(
-            entity = CatalogProductEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["productId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
-)
-data class ShoppingItemEntity(
-    @PrimaryKey val id: String,
-    val productId: String,
-    val quantity: Double,
-    val priceAtTime: Long?,
-    val isChecked: Boolean,
-    val updatedAt: Long,
-    val isDeleted: Boolean
-)
+fun createInMemoryDatabase(builder: RoomDatabase.Builder<AppDatabase>): AppDatabase {
+    return builder
+        .setQueryCoroutineContext(Dispatchers.Main.immediate)
+        .build()
+}

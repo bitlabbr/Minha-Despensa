@@ -46,4 +46,7 @@ interface ShoppingItemDao {
 
     @Query("UPDATE shopping_items SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id")
     suspend fun markAsDeleted(id: String, updatedAt: Long)
+
+    @Query("SELECT * FROM shopping_items WHERE isChecked = 1 AND isDeleted = 0")
+    suspend fun getCheckedItemsSync(): List<ShoppingItemEntity>
 }
