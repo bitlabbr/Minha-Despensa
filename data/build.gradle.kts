@@ -46,7 +46,6 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":core"))
-            implementation(project(":uisystem"))
 
             // Room e SQLite
             api(libs.room.runtime)

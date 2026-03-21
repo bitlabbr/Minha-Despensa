@@ -21,27 +21,30 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.di
+package com.bitlabbr.minhadespensa.data.local.entity
 
-import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
-import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
-import org.koin.core.module.dsl.viewModel
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
-val uiModule = module {
-    factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
-        ConsoleLogger(moduleName = "UISystem")
-    }
-
-    viewModel {
-        ProductsListViewModel(
-            catalogRepository = get(),
-            pantryRepository = get(),
-            priceRepository = get(),
-            logger = get(named(DiQualifiers.UI_LOGGER))
+@Entity(
+    tableName = "price_entries",
+    foreignKeys = [
+        ForeignKey(
+            entity = CatalogProductEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["productId"],
+            onDelete = ForeignKey.CASCADE
         )
-    }
-}
+    ],
+    indices = [Index(value = ["productId"])]
+)
+data class PriceEntryEntity(
+    @PrimaryKey val id: String,
+    val productId: String,
+    val priceInCents: Long,
+    val storeName: String?,
+    val updatedAt: Long,
+    val isDeleted: Boolean
+)

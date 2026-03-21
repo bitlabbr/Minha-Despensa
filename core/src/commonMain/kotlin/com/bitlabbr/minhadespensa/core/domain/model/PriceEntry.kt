@@ -21,27 +21,25 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.di
+package com.bitlabbr.minhadespensa.core.domain.model
 
-import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
-import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
-import org.koin.core.module.dsl.viewModel
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import kotlinx.serialization.Serializable
 
-val uiModule = module {
-    factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
-        ConsoleLogger(moduleName = "UISystem")
-    }
-
-    viewModel {
-        ProductsListViewModel(
-            catalogRepository = get(),
-            pantryRepository = get(),
-            priceRepository = get(),
-            logger = get(named(DiQualifiers.UI_LOGGER))
-        )
+@Serializable
+data class PriceEntry(
+    val id: String,
+    val productId: String,
+    val priceInCents: Long,
+    val storeName: String? = null,
+    val updatedAt: Long,
+    val isDeleted: Boolean = false
+) {
+    override fun toString(): String {
+        return "PriceEntry(id='$id', " +
+                "productId='$productId', " +
+                "priceInCents=$priceInCents, " +
+                "storeName=$storeName, " +
+                "timestamp=$updatedAt, " +
+                "isDeleted=$isDeleted)"
     }
 }

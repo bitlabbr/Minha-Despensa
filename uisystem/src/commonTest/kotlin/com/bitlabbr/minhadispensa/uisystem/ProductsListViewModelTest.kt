@@ -23,8 +23,6 @@
 package com.bitlabbr.minhadispensa.uisystem
 
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.core.domain.model.Product
-import com.bitlabbr.minhadespensa.core.domain.repository.ProductRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
 import kotlinx.coroutines.Dispatchers

@@ -21,27 +21,14 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.di
+package com.bitlabbr.minhadespensa.core.domain.repository
 
-import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
-import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
-import org.koin.core.module.dsl.viewModel
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
+import kotlinx.coroutines.flow.Flow
 
-val uiModule = module {
-    factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
-        ConsoleLogger(moduleName = "UISystem")
-    }
-
-    viewModel {
-        ProductsListViewModel(
-            catalogRepository = get(),
-            pantryRepository = get(),
-            priceRepository = get(),
-            logger = get(named(DiQualifiers.UI_LOGGER))
-        )
-    }
+interface PriceRepository {
+    fun getPriceHistory(productId: String): Flow<List<PriceEntry?>>
+    fun getLatestPrice(productId: String): Flow<PriceEntry?>
+    suspend fun addPriceEntry(entry: PriceEntry)
+    suspend fun deletePriceEntry(id: String)
 }

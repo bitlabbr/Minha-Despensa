@@ -23,23 +23,34 @@
 
 package com.bitlabbr.minhadespensa.core.domain.model
 
-import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Product(
+data class CatalogProduct(
     val id: String,
+    val ean: String? = null,
     val name: String,
-    val amount: Double,
+    val brand: String? = null,
     val measureUnit: MeasureUnit,
-    val expirationDate: Instant?,
-    val imgUrl: String? = null,
+    val netWeight: Long,
+    val thumbnailUrl: String? = null,
     val updatedAt: Long,
-    val isDeleted: Boolean = false
-)
-enum class MeasureUnit {
-    UNITY,
-    KILOGRAM,
-    LITER,
-    PACKAGE
+    val isDeleted: Boolean = false,
+    val manuallyAdded: Boolean = true
+) {
+
+    override fun toString(): String {
+        return "CatalogProduct(" +
+                "id='$id', " +
+                "ean=$ean, " +
+                "name='$name', " +
+                "brand=$brand, " +
+                "measureUnit=$measureUnit, " +
+                "thumbnailUrl=$thumbnailUrl," +
+                " updatedAt=$updatedAt, " +
+                "isDeleted=$isDeleted, " +
+                "manuallyAdded=$manuallyAdded" +
+                ")"
+    }
+
 }

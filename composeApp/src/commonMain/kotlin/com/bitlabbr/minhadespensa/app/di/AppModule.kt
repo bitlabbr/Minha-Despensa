@@ -29,7 +29,7 @@ import org.koin.dsl.module
 import org.koin.dsl.KoinAppDeclaration
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
-import com.bitlabbr.minhadespensa.uisystem.di.DiQualifiers
+import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.uisystem.di.uiModule
 import org.koin.core.qualifier.named
 import com.bitlabbr.minhadespensa.data.di.dataModule

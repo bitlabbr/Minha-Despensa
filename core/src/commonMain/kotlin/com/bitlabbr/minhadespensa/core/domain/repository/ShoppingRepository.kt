@@ -21,11 +21,16 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.di
+package com.bitlabbr.minhadespensa.core.domain.repository
 
-object DiQualifiers {
-    const val APP_LOGGER = "app_logger"
-    const val CORE_LOGGER = "core_logger"
-    const val UI_LOGGER = "ui_logger"
-    const val DATA_LOGGER = "data_logger"
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
+import kotlinx.coroutines.flow.Flow
+
+interface ShoppingRepository {
+    fun getActiveShoppingList(): Flow<List<ShoppingItem>>
+    suspend fun saveItem(item: ShoppingItem)
+    suspend fun toggleCheck(id: String, isChecked: Boolean)
+    suspend fun deleteItem(id: String)
+    suspend fun clearSession()
+    suspend fun finalizePurchase()
 }

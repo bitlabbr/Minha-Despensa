@@ -25,10 +25,15 @@ package com.bitlabbr.minhadespensa.uisystem.features.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.core.domain.model.Product
-import com.bitlabbr.minhadespensa.core.domain.repository.ProductRepository
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
+import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,24 +44,29 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlin.random.Random
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
+@OptIn(ExperimentalUuidApi::class)
 class ProductsListViewModel(
-    private val repository: ProductRepository,
+    private val catalogRepository: CatalogRepository,
+    private val pantryRepository: PantryRepository,
+    private val priceRepository: PriceRepository,
     private val logger: AppLogger
 ) : ViewModel() {
     private val TAG = "ProductsListViewModel"
-    private val _uiState = MutableStateFlow<List<Product>>(emptyList())
     private val _formState = MutableStateFlow(ProductFormState())
     val formState = _formState.asStateFlow()
 
-    val uiState: StateFlow<ProductsUiState> = repository.getAllProducts()
-        .map<List<Product>, ProductsUiState> { product ->
-            val total = product.sumOf { it.amount }
-            ProductsUiState.Success(product, total)
+    val productUiState: StateFlow<ProductsUiState> = pantryRepository.getAllActiveInventory()
+        .map<List<PantryItem>, ProductsUiState> { pantryItems ->
+            ProductsUiState.Success(
+                items = emptyList(),
+                totalQuantity = pantryItems.sumOf { it.quantity }
+            )
         }
         .catch { e ->
-            logger.e(TAG, "Erro ao carregar produtos: ${e.message}")
+            logger.e(TAG, "Failure while loading pantry items: ${e.message}")
             emit(ProductsUiState.Error("Falha ao carregar dados."))
         }
         .stateIn(
@@ -65,58 +75,92 @@ class ProductsListViewModel(
             initialValue = ProductsUiState.Loading
         )
 
-    fun onNameChange(newName: String) {
-        _formState.update { it.copy(name = newName) }
-    }
-
-    fun onQuantityChange(newQuantity: String) {
-        // Only allows numeric input (optional regex check can be added here)
-        _formState.update { it.copy(quantity = newQuantity) }
-    }
-
-    fun onUnitChange(newUnit: MeasureUnit) {
-        _formState.update { it.copy(unit = newUnit) }
-    }
-
     fun saveProduct() {
-        val currentState = _formState.value
-        if (currentState.name.isBlank() || currentState.quantity.isBlank()) return
+        val state = _formState.value
+        if (state.name.isBlank() || state.quantity.isBlank()) return
 
         viewModelScope.launch {
             _formState.update { it.copy(isSaving = true) }
-
             try {
-                val qtyDouble = currentState.quantity.toDoubleOrNull() ?: 0.0
-                val currentTimeStamp = Clock.System.now().toEpochMilliseconds()
-                val newProduct = Product(
-                    id = "$currentTimeStamp",
-                    name = currentState.name,
-                    amount = qtyDouble,
-                    measureUnit = currentState.unit,
-                    expirationDate = null,
-                    updatedAt = currentTimeStamp
+                val now = getCurrentTime()
+                val productId = Uuid.random().toString()
+
+                val catalogProduct = CatalogProduct(
+                    id = productId,
+                    name = state.name,
+                    brand = state.brand.ifBlank { null },
+                    measureUnit = state.unit,
+                    netWeight = state.netWeight.toLongOrNull() ?: 0L,
+                    updatedAt = now,
+                    manuallyAdded = true
                 )
+                catalogRepository.saveProduct(catalogProduct)
 
-                logger.d(TAG, "Saving product: ${newProduct.name}")
-                repository.insertProduct(newProduct)
+                val pantryItem = PantryItem(
+                    id = Uuid.random().toString(),
+                    productId = productId,
+                    quantity = state.quantity.toDoubleOrNull() ?: 0.0,
+                    expirationDate = state.expirationDate,
+                    updatedAt = now
+                )
+                pantryRepository.saveItem(pantryItem)
+
+                state.price?.let { priceStr ->
+                    val priceCents = ((priceStr.toDoubleOrNull() ?: (0.0 * 100))).toLong()
+                    if (priceCents > 0) {
+                        priceRepository.addPriceEntry(
+                            PriceEntry(
+                                id = Uuid.random().toString(),
+                                productId = productId,
+                                priceInCents = priceCents,
+                                updatedAt = now
+                            )
+                        )
+                    }
+                }
+
                 resetForm()
-
             } catch (e: Exception) {
-                logger.e(TAG, "Error saving: ${e.message}")
+                logger.e(TAG, "Failure while trying to save the product: ${e.message}")
             } finally {
                 _formState.update { it.copy(isSaving = false) }
             }
         }
     }
 
-    fun resetForm() {
-        _formState.update { ProductFormState() }
+    fun removeProduct(pantryId: String) {
+        viewModelScope.launch {
+            pantryRepository.deleteItem(pantryId, getCurrentTime())
+        }
     }
 
-    fun removeProduct(id: String) {
-        logger.d(TAG, "removeProduct: $id")
-        viewModelScope.launch {
-            repository.deleteProductById(id)
-        }
+    fun resetForm() = _formState.update { ProductFormState() }
+
+    fun onBrandChange(newBrand: String) {
+        _formState.update { it.copy(brand = newBrand) }
+    }
+
+    fun onNetWeightChange(newWeight: String) {
+        _formState.update { it.copy(netWeight = newWeight) }
+    }
+
+    fun onPriceChange(newPrice: String) {
+        _formState.update { it.copy(price = newPrice) }
+    }
+
+    fun onExpirationDateChange(date: Long?) {
+        _formState.update { it.copy(expirationDate = date) }
+    }
+
+    fun onNameChange(newName: String) {
+        _formState.update { it.copy(name = newName) }
+    }
+
+    fun onQuantityChange(newQuantity: String) {
+        _formState.update { it.copy(quantity = newQuantity) }
+    }
+
+    fun onUnitChange(newUnit: MeasureUnit) {
+        _formState.update { it.copy(unit = newUnit) }
     }
 }

@@ -21,35 +21,11 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local
+package com.bitlabbr.minhadespensa.core.domain.util
 
-import androidx.room.TypeConverter
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import kotlinx.datetime.Instant
-
-class Converters {
-
-    @TypeConverter
-    fun fromTimestamp(value: Long?): Instant? {
-        return value?.let { Instant.fromEpochMilliseconds(it) }
-    }
-
-    @TypeConverter
-    fun dateToTimestamp(date: Instant?): Long? {
-        return date?.toEpochMilliseconds()
-    }
-
-    @TypeConverter
-    fun fromUnityString(value: String): MeasureUnit {
-        return try {
-            MeasureUnit.valueOf(value)
-        } catch (e: Exception) {
-            MeasureUnit.UNITY
-        }
-    }
-
-    @TypeConverter
-    fun unityToString(unity: MeasureUnit): String {
-        return unity.name
-    }
+object DiQualifiers {
+    const val APP_LOGGER = "app_logger"
+    const val CORE_LOGGER = "core_logger"
+    const val UI_LOGGER = "ui_logger"
+    const val DATA_LOGGER = "data_logger"
 }

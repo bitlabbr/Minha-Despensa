@@ -21,27 +21,15 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.di
+package com.bitlabbr.minhadespensa.core.domain.repository
 
-import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
-import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
-import org.koin.core.module.dsl.viewModel
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
+import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import kotlinx.coroutines.flow.Flow
 
-val uiModule = module {
-    factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
-        ConsoleLogger(moduleName = "UISystem")
-    }
-
-    viewModel {
-        ProductsListViewModel(
-            catalogRepository = get(),
-            pantryRepository = get(),
-            priceRepository = get(),
-            logger = get(named(DiQualifiers.UI_LOGGER))
-        )
-    }
+interface CatalogRepository {
+    fun getProductByEan(ean: String): Flow<CatalogProduct?>
+    fun getProductById(id: String): Flow<CatalogProduct?>
+    fun searchProducts(query: String): Flow<List<CatalogProduct?>>
+    suspend fun saveProduct(product: CatalogProduct)
+    suspend fun deleteProduct(id: String)
 }

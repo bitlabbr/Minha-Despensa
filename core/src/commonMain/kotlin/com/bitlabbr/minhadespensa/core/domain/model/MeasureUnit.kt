@@ -21,22 +21,11 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local.entity
+package com.bitlabbr.minhadespensa.core.domain.model
 
-import androidx.room.Entity
-import androidx.room.PrimaryKey
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-
-import kotlinx.datetime.Instant
-
-@Entity(tableName = "product")
-data class ProductEntity(
-    @PrimaryKey(autoGenerate = false)
-    val id: String,
-    val name: String,
-    val amount: Double,
-    val measureUnit: MeasureUnit,
-    val expirationDate: Instant?,
-    val updatedAt: Long,
-    val isDeleted: Boolean = false
-)
+enum class MeasureUnit {
+    UNITY,
+    KILOGRAM,
+    LITER,
+    PACKAGE
+}

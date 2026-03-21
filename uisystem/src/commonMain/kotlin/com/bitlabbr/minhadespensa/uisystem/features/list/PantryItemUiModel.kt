@@ -21,14 +21,17 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.repository
+package com.bitlabbr.minhadespensa.uisystem.features.list
 
-import com.bitlabbr.minhadespensa.core.domain.model.Product
-import kotlinx.coroutines.flow.Flow
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 
-interface ProductRepository {
-    fun getAllProducts(): Flow<List<Product>>
-    suspend fun insertProduct(product: Product)
-    suspend fun deleteProductById(id: String)
-    suspend fun getProductById(id: String): Product?
-}
+data class PantryItemUiModel(
+    val id: String,
+    val name: String,
+    val brand: String?,
+    val quantity: Double,
+    val measureUnit: MeasureUnit,
+    val netWeight: Long,
+    val expirationDate: Long?,
+    val isExpired: Boolean = false
+)

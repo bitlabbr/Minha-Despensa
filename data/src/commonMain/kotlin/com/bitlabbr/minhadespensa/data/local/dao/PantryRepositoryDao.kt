@@ -27,20 +27,24 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import com.bitlabbr.minhadespensa.data.local.entity.ProductEntity
+import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface ProductDao {
-    @Query("SELECT * FROM product WHERE isDeleted = false")
-    fun getAll(): Flow<List<ProductEntity>>
-
+interface PantryRepositoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(product: ProductEntity)
+    suspend fun insertOrUpdate(item: PantryItemEntity)
 
-    @Query("UPDATE product SET isDeleted = true WHERE id = :id")
-    suspend fun markAsDeleted(id: String)
+    @Query("SELECT * FROM pantry_items WHERE productId = :productId AND isDeleted = 0")
+    fun getItemsByProduct(productId: String): Flow<List<PantryItemEntity>>
 
-    @Query("SELECT * FROM product WHERE id = :id LIMIT 1")
-    suspend fun findById(id: String): ProductEntity?
+    @Query("SELECT * FROM pantry_items WHERE isDeleted = 0")
+    fun getAllActive(): Flow<List<PantryItemEntity>>
+
+    @Query("""
+        UPDATE pantry_items 
+        SET isDeleted = 1, updatedAt = :updatedAt 
+        WHERE id = :id
+    """)
+    suspend fun markAsDeleted(id: String, updatedAt: Long)
 }
