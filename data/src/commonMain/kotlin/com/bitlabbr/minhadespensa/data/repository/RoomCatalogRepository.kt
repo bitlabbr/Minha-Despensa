@@ -23,50 +23,71 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
+import androidx.room.Transactor
+import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
-import com.bitlabbr.minhadespensa.data.local.dao.CatalogProductDao
+import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
 
 class RoomCatalogRepository(
-    private val dao: CatalogProductDao,
+    private val db: AppDatabase,
     private val logger: AppLogger
 ) : CatalogRepository {
     private val TAG = "RoomCatalogRepository"
+    private val productDao = db.catalogDao()
+    private val mediaDao = db.productMediaDao()
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
         logger.d(TAG, "searchProducts: ean: $ean")
-        return dao.findByEan(ean).map { it?.toDomain() }
+        return productDao.findByEan(ean).map { it?.toDomain() }
     }
 
     override fun getProductById(id: String): Flow<CatalogProduct?> {
         logger.d(TAG, "searchProducts: id: $id")
-        return dao.findById(id).map { it?.toDomain() }
+        return productDao.findById(id).map { it?.toDomain() }
     }
 
     override fun searchProducts(query: String): Flow<List<CatalogProduct>> {
         logger.d(TAG, "searchProducts: query: $query")
-        return dao.searchByNameOrBrand(query).map { entities ->
+        return productDao.searchByNameOrBrand(query).map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     override suspend fun saveProduct(product: CatalogProduct) {
         logger.d(TAG, "saveProduct:  ${product.name}")
-        dao.insertOrUpdate(product.toEntity())
+        saveProductWithImage(product, null)
     }
 
     override suspend fun deleteProduct(id: String) {
         logger.d(TAG, "deleteProduct id:  $id")
-        dao.markAsDeleted(id, getCurrentTime())
+        productDao.markAsDeleted(id, getCurrentTime())
     }
 
+    suspend fun saveProductWithImage(product: CatalogProduct, imageBytes: ByteArray?) {
+        logger.d(TAG, "saveProductWithImage: ${product.name} (hasImage: ${imageBytes != null})")
+        db.useWriterConnection { conn ->
+            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                productDao.insertOrUpdate(product.toEntity())
+                if (imageBytes != null) {
+                    mediaDao.insertOrUpdate(
+                        ProductMediaEntity(
+                            productId = product.id,
+                            blob = imageBytes,
+                            updatedAt = getCurrentTime()
+                        )
+                    )
+                }
+            }
+        }
+    }
 }
 
 fun CatalogProductEntity.toDomain() = CatalogProduct(

@@ -32,10 +32,12 @@ import com.bitlabbr.minhadespensa.data.local.converter.Converters
 import com.bitlabbr.minhadespensa.data.local.dao.CatalogProductDao
 import com.bitlabbr.minhadespensa.data.local.dao.PantryRepositoryDao
 import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
+import com.bitlabbr.minhadespensa.data.local.dao.ProductMediaDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingItemDao
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 
 @Database(
@@ -43,9 +45,10 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
         CatalogProductEntity::class,
         PantryItemEntity::class,
         PriceEntryEntity::class,
-        ShoppingItemEntity::class
+        ShoppingItemEntity::class,
+        ProductMediaEntity::class
     ],
-    version = 1
+    version = 2
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -54,6 +57,7 @@ abstract class AppDatabase: RoomDatabase() {
     abstract fun pantryDao(): PantryRepositoryDao
     abstract fun priceDao(): PriceEntryDao
     abstract fun shoppingItemDao(): ShoppingItemDao
+    abstract fun productMediaDao(): ProductMediaDao
 }
 
 expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
