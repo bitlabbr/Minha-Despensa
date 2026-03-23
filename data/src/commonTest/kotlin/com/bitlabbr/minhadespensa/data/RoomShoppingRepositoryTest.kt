@@ -33,6 +33,7 @@ import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
 import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
+import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingRepository
 import com.bitlabbr.minhadespensa.data.repository.toEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -49,6 +50,7 @@ import kotlin.uuid.Uuid
 class RoomShoppingRepositoryTest: BaseTest() {
     private lateinit var db: AppDatabase
     private lateinit var shoppingRepository: RoomShoppingRepository
+    private lateinit var catalogRepository: RoomCatalogRepository
     private val logger = ConsoleLogger("Test")
 
     @BeforeTest
@@ -56,6 +58,7 @@ class RoomShoppingRepositoryTest: BaseTest() {
         val builder = getTestDatabaseBuilder()
         db = createInMemoryDatabase(builder)
         shoppingRepository = RoomShoppingRepository(db, logger)
+        catalogRepository = RoomCatalogRepository(db, logger)
     }
 
     @AfterTest
@@ -78,7 +81,7 @@ class RoomShoppingRepositoryTest: BaseTest() {
                 name = "Leite integral",
                 brand = "Betânia",
                 measureUnit = MeasureUnit.LITER,
-                netWeight = 1,
+                netWeight = 1.0,
                 updatedAt = now,
                 isDeleted = false,
                 manuallyAdded = true,

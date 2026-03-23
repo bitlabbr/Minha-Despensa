@@ -24,16 +24,18 @@
 package com.bitlabbr.minhadespensa.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "catalog_products")
+@Entity(tableName = "catalog_products",
+    indices = [Index(value = ["ean"], unique = true)])
 data class CatalogProductEntity(
     @PrimaryKey val id: String,
     val ean: String?,
     val name: String,
     val brand: String?,
     val measureUnit: String,
-    val netWeight: Long,
+    val netWeight: Double,
     val thumbnailUrl: String?,
     val updatedAt: Long,
     val isDeleted: Boolean,

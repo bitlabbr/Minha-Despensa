@@ -32,7 +32,7 @@ data class CatalogProduct(
     val name: String,
     val brand: String? = null,
     val measureUnit: MeasureUnit,
-    val netWeight: Long,
+    val netWeight: Double,
     val thumbnailUrl: String? = null,
     val updatedAt: Long,
     val isDeleted: Boolean = false,

@@ -30,6 +30,6 @@ interface CatalogRepository {
     fun getProductByEan(ean: String): Flow<CatalogProduct?>
     fun getProductById(id: String): Flow<CatalogProduct?>
     fun searchProducts(query: String): Flow<List<CatalogProduct?>>
-    suspend fun saveProduct(product: CatalogProduct)
+    suspend fun saveProduct(product: CatalogProduct, imageBytes: ByteArray?)
     suspend fun deleteProduct(id: String)
 }

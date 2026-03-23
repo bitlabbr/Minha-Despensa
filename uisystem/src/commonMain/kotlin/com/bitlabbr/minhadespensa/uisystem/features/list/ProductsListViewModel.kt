@@ -94,7 +94,7 @@ class ProductsListViewModel(
                     updatedAt = now,
                     manuallyAdded = true
                 )
-                catalogRepository.saveProduct(catalogProduct)
+                catalogRepository.saveProduct(catalogProduct, null)
 
                 val pantryItem = PantryItem(
                     id = Uuid.random().toString(),

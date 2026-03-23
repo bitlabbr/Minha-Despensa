@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "fe1f058be2a52f601a036963f023a43b",
+    "identityHash": "84e9521e41633ebcc7e17b587ec89b3f",
     "entities": [
       {
         "tableName": "catalog_products",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ean` TEXT, `name` TEXT NOT NULL, `brand` TEXT, `measureUnit` TEXT NOT NULL, `netWeight` INTEGER NOT NULL, `thumbnailUrl` TEXT, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `manuallyAdded` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ean` TEXT, `name` TEXT NOT NULL, `brand` TEXT, `measureUnit` TEXT NOT NULL, `netWeight` REAL NOT NULL, `thumbnailUrl` TEXT, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `manuallyAdded` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -39,7 +39,7 @@
           {
             "fieldPath": "netWeight",
             "columnName": "netWeight",
-            "affinity": "INTEGER",
+            "affinity": "REAL",
             "notNull": true
           },
           {
@@ -71,7 +71,18 @@
           "columnNames": [
             "id"
           ]
-        }
+        },
+        "indices": [
+          {
+            "name": "index_catalog_products_ean",
+            "unique": true,
+            "columnNames": [
+              "ean"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_catalog_products_ean` ON `${TABLE_NAME}` (`ean`)"
+          }
+        ]
       },
       {
         "tableName": "pantry_items",
@@ -354,7 +365,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fe1f058be2a52f601a036963f023a43b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '84e9521e41633ebcc7e17b587ec89b3f')"
     ]
   }
 }

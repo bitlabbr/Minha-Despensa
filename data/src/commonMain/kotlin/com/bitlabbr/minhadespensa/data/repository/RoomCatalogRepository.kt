@@ -56,23 +56,15 @@ class RoomCatalogRepository(
 
     override fun searchProducts(query: String): Flow<List<CatalogProduct>> {
         logger.d(TAG, "searchProducts: query: $query")
+        require(query.isNotBlank() && query.length < 50 ) { "O termo de busca deve ter entre 1 e 50 caracteres" }
         return productDao.searchByNameOrBrand(query).map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
-    override suspend fun saveProduct(product: CatalogProduct) {
-        logger.d(TAG, "saveProduct:  ${product.name}")
-        saveProductWithImage(product, null)
-    }
-
-    override suspend fun deleteProduct(id: String) {
-        logger.d(TAG, "deleteProduct id:  $id")
-        productDao.markAsDeleted(id, getCurrentTime())
-    }
-
-    suspend fun saveProductWithImage(product: CatalogProduct, imageBytes: ByteArray?) {
-        logger.d(TAG, "saveProductWithImage: ${product.name} (hasImage: ${imageBytes != null})")
+    override suspend fun saveProduct(product: CatalogProduct, imageBytes: ByteArray?) {
+        logger.d(TAG, "saveProduct: ${product.name} (hasImage: ${imageBytes != null})")
+        validateProduct(product)
         db.useWriterConnection { conn ->
             conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
                 productDao.insertOrUpdate(product.toEntity())
@@ -87,6 +79,26 @@ class RoomCatalogRepository(
                 }
             }
         }
+    }
+
+    override suspend fun deleteProduct(id: String) {
+        logger.d(TAG, "deleteProduct id:  $id")
+        productDao.markAsDeleted(id, getCurrentTime())
+    }
+
+    private fun validateProduct(product: CatalogProduct) {
+        require(product.name.isNotBlank()) { "O nome do produto não pode ser vazio" }
+        require(product.name.length <= 100) { "O nome do produto deve ter no máximo 100 caracteres" }
+
+        product.brand?.let {
+            require(it.length <= 50) { "A marca deve ter no máximo 50 caracteres" }
+        }
+
+        product.ean?.let {
+            require(it.length in listOf(8, 13, 14)) { "EAN inválido: deve ter 8, 13 ou 14 dígitos" }
+        }
+
+        require(product.netWeight > 0) { "O conteúdo do produto deve ser maior que zero" }
     }
 }
 
