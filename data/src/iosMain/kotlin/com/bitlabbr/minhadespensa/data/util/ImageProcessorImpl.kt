@@ -28,6 +28,7 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.pin
+import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
@@ -44,34 +45,46 @@ actual class ImageProcessorImpl : ImageProcessor {
     @OptIn(ExperimentalForeignApi::class)
     actual override suspend fun processForThumbnail(input: ByteArray): ByteArray {
         val data = input.toNSData()
-        val image = UIImage.imageWithData(data = data) ?: return byteArrayOf()
-        val size = CGSizeMake(300.0, 300.0)
-        UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
-        image.drawInRect(rect = CGRectMake(0.0, 0.0, 300.0, 300.0))
+        val image = UIImage.imageWithData(data = data) ?: throw IllegalArgumentException("Invalid image")
+
+        val width = image.size.useContents { width }
+        val height = image.size.useContents { height }
+        val minEdge = minOf(width, height)
+        val scale = 300.0 / minEdge
+
+        val drawWidth = width * scale
+        val drawHeight = height * scale
+        val drawX = (300.0 - drawWidth) / 2.0
+        val drawY = (300.0 - drawHeight) / 2.0
+
+        val targetSize = CGSizeMake(300.0, 300.0)
+        UIGraphicsBeginImageContextWithOptions(targetSize, false, 1.0)
+        image.drawInRect(rect = CGRectMake(drawX, drawY, drawWidth, drawHeight))
         val resizedImage = UIGraphicsGetImageFromCurrentImageContext()
         UIGraphicsEndImageContext()
+
         return resizedImage?.let {
             UIImageJPEGRepresentation(it, 0.8)?.toByteArray()
         } ?: byteArrayOf()
     }
+}
 
-    @OptIn(ExperimentalForeignApi::class)
-    fun ByteArray.toNSData(): NSData = memScoped {
-        val pinned = this@toNSData.pin()
-        NSData.dataWithBytes(pinned.addressOf(0), this@toNSData.size.toULong()).also {
-            pinned.unpin()
+@OptIn(ExperimentalForeignApi::class)
+fun ByteArray.toNSData(): NSData = memScoped {
+    val pinned = this@toNSData.pin()
+    NSData.dataWithBytes(pinned.addressOf(0), this@toNSData.size.toULong()).also {
+        pinned.unpin()
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class)
+fun NSData.toByteArray(): ByteArray {
+    val size = length.toInt()
+    val byteArray = ByteArray(size)
+    if (size > 0) {
+        byteArray.usePinned { pinned ->
+            memcpy(pinned.addressOf(0), bytes, length)
         }
     }
-
-    @OptIn(ExperimentalForeignApi::class)
-    fun NSData.toByteArray(): ByteArray {
-        val size = length.toInt()
-        val byteArray = ByteArray(size)
-        if (size > 0) {
-            byteArray.usePinned { pinned ->
-                memcpy(pinned.addressOf(0), bytes, length)
-            }
-        }
-        return byteArray
-    }
+    return byteArray
 }

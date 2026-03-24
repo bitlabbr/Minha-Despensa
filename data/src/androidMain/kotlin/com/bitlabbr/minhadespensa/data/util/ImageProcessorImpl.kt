@@ -30,17 +30,50 @@ import java.io.ByteArrayOutputStream
 
 actual class ImageProcessorImpl : ImageProcessor {
     actual override suspend fun processForThumbnail(input: ByteArray): ByteArray {
+        // 1. Decodifica apenas as bordas para descobrir o tamanho original sem carregar na RAM
         val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(input, 0, input.size, options)
+
+        // 2. Calcula o downsampling inicial (economiza memória)
         options.inSampleSize = calculateInSampleSize(options, 300, 300)
         options.inJustDecodeBounds = false
+
+        // 3. Decodifica a imagem real (com o tamanho já reduzido pelo inSampleSize)
         val sampledBitmap = BitmapFactory.decodeByteArray(input, 0, input.size, options)
-        val finalBitmap = Bitmap.createScaledBitmap(sampledBitmap, 300, 300, true)
+            ?: throw IllegalArgumentException("Falha ao decodificar a imagem. Formato incompatível ou corrompido.")
+
+        // 4. Lógica de Center Crop (Igual ao iOS)
+        val width = sampledBitmap.width
+        val height = sampledBitmap.height
+        val minEdge = minOf(width, height) // Identifica o menor lado para ser a base do quadrado
+
+        // Calcula o ponto inicial para o corte ser no centro
+        val startX = (width - minEdge) / 2
+        val startY = (height - minEdge) / 2
+
+        // Cria o bitmap quadrado a partir do centro
+        val croppedBitmap = Bitmap.createBitmap(
+            sampledBitmap,
+            startX,
+            startY,
+            minEdge,
+            minEdge
+        )
+
+        // 5. Redimensiona o quadrado centralizado para os 300x300 finais
+        // O parâmetro 'filter = true' ativa a filtragem bilinear (mais nitidez)
+        val finalBitmap = Bitmap.createScaledBitmap(croppedBitmap, 300, 300, true)
+
+        // 6. Comprime para JPEG com 80% de qualidade
         val outputStream = ByteArrayOutputStream()
-        finalBitmap.compress(Bitmap.CompressFormat.WEBP, 80, outputStream)
+        finalBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+
+        // Limpeza de memória manual para Bitmaps intermediários
+        if (sampledBitmap != croppedBitmap) sampledBitmap.recycle()
+        // O finalBitmap será reciclado pelo GC após o retorno
+
         return outputStream.toByteArray()
     }
-
     private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
         val (height: Int, width: Int) = options.outHeight to options.outWidth
         var inSampleSize = 1
