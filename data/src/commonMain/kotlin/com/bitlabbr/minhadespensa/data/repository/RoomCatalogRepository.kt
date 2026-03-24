@@ -30,11 +30,14 @@ import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
+import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class RoomCatalogRepository(
     private val db: AppDatabase,
@@ -54,20 +57,31 @@ class RoomCatalogRepository(
         return productDao.findById(id).map { it?.toDomain() }
     }
 
-    override fun searchProducts(query: String): Flow<List<CatalogProduct>> {
-        logger.d(TAG, "searchProducts: query: $query")
-        require(query.isNotBlank() && query.length < 50 ) { "O termo de busca deve ter entre 1 e 50 caracteres" }
+    override fun getAllActives(): Flow<List<CatalogProduct>> {
+        logger.d(TAG, "getAllActives")
+        return productDao.getAllActive().map { it.map { it.toDomain() } }
+    }
+
+    override fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>> {
+        logger.d(TAG, "searchProductsByNameOrBrand: query: $query")
+        require(query.isNotBlank() && query.length < 50) { "the term should have between 1 and 50 characters" }
         return productDao.searchByNameOrBrand(query).map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
-    override suspend fun saveProduct(product: CatalogProduct, imageBytes: ByteArray?) {
-        logger.d(TAG, "saveProduct: ${product.name} (hasImage: ${imageBytes != null})")
+    override suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?) {
+        logger.d(TAG, "insertProduct: ${product.name} (hasImage: ${imageBytes != null})")
+        if (imageBytes != null) {
+            val imageSizeKb = imageBytes.size / 1024
+            require(imageSizeKb <= 100) {
+                "File is too large (size: ${imageSizeKb}KB)"
+            }
+        }
         validateProduct(product)
         db.useWriterConnection { conn ->
             conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                productDao.insertOrUpdate(product.toEntity())
+                productDao.insert(product.toEntity())
                 if (imageBytes != null) {
                     mediaDao.insertOrUpdate(
                         ProductMediaEntity(
@@ -81,24 +95,70 @@ class RoomCatalogRepository(
         }
     }
 
-    override suspend fun deleteProduct(id: String) {
-        logger.d(TAG, "deleteProduct id:  $id")
-        productDao.markAsDeleted(id, getCurrentTime())
+    override suspend fun updateProduct(
+        product: CatalogProduct,
+        imageBytes: ByteArray?
+    ) {
+        logger.d(TAG, "updateProduct: ${product.name} (hasImage: ${imageBytes != null})")
+        if (imageBytes != null) {
+            val imageSizeKb = imageBytes.size / 1024
+            require(imageSizeKb <= 100) {
+                "File is too large (size: ${imageSizeKb}KB)"
+            }
+        }
+        validateProduct(product)
+        db.useWriterConnection { conn ->
+            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                productDao.update(product.toEntity())
+                if (imageBytes != null) {
+                    mediaDao.insertOrUpdate(
+                        ProductMediaEntity(
+                            productId = product.id,
+                            blob = imageBytes,
+                            updatedAt = getCurrentTime()
+                        )
+                    )
+                }
+            }
+        }
     }
 
+    override suspend fun deleteProductById(id: String) {
+        logger.d(TAG, "deleteProduct id:  $id")
+        productDao.deleteProductById(id)
+    }
+
+    override fun exists(id: String): Flow<Boolean> {
+        logger.d(TAG, "exists id:  $id")
+        return productDao.exists(id)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
     private fun validateProduct(product: CatalogProduct) {
-        require(product.name.isNotBlank()) { "O nome do produto não pode ser vazio" }
-        require(product.name.length <= 100) { "O nome do produto deve ter no máximo 100 caracteres" }
+        require(product.name.isNotBlank()) { "The name of the product shouldn`t be empty" }
+        require(product.name.length <= 100) { "The name of the product should have at least 100 characters" }
 
         product.brand?.let {
-            require(it.length <= 50) { "A marca deve ter no máximo 50 caracteres" }
+            require(it.length <= 50) { "The brand should have at least 50 characters" }
         }
 
         product.ean?.let {
-            require(it.length in listOf(8, 13, 14)) { "EAN inválido: deve ter 8, 13 ou 14 dígitos" }
+            require(it.length in listOf(8, 13, 14)) {
+                "invalid EAN size: should have 8, 13 or 14 digits"
+            }
+
+            require(it.all { char -> char.isDigit() }) {
+                "invalid EAN: should have only numbers"
+            }
         }
 
-        require(product.netWeight > 0) { "O conteúdo do produto deve ser maior que zero" }
+        require(runCatching { Uuid.parse(product.id) }.isSuccess) {
+            "Invalid UUID"
+        }
+
+        require(isValidTimestamp(product.updatedAt)) { "Invalid epoch time millis" }
+
+        require(product.netWeight > 0) { "Product netweight should be more than zero" }
     }
 }
 

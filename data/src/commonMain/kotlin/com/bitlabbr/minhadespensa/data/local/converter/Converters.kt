@@ -26,7 +26,6 @@ package com.bitlabbr.minhadespensa.data.local.converter
 import androidx.room.TypeConverter
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import kotlinx.datetime.Instant
-
 class Converters {
 
     @TypeConverter

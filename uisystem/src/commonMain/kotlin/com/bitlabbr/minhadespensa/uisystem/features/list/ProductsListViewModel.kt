@@ -43,7 +43,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -90,11 +89,11 @@ class ProductsListViewModel(
                     name = state.name,
                     brand = state.brand.ifBlank { null },
                     measureUnit = state.unit,
-                    netWeight = state.netWeight.toLongOrNull() ?: 0L,
+                    netWeight = state.netWeight.toDouble(),
                     updatedAt = now,
                     manuallyAdded = true
                 )
-                catalogRepository.saveProduct(catalogProduct, null)
+                catalogRepository.insertProduct(catalogProduct, null)
 
                 val pantryItem = PantryItem(
                     id = Uuid.random().toString(),

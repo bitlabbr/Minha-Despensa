@@ -29,7 +29,10 @@ import kotlinx.coroutines.flow.Flow
 interface CatalogRepository {
     fun getProductByEan(ean: String): Flow<CatalogProduct?>
     fun getProductById(id: String): Flow<CatalogProduct?>
-    fun searchProducts(query: String): Flow<List<CatalogProduct?>>
-    suspend fun saveProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun deleteProduct(id: String)
+    fun getAllActives(): Flow<List<CatalogProduct>>
+    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct?>>
+    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
+    suspend fun updateProduct(product: CatalogProduct, imageBytes: ByteArray?)
+    suspend fun deleteProductById(id: String)
+    fun exists(id: String): Flow<Boolean>
 }

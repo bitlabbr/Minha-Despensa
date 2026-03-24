@@ -24,5 +24,23 @@
 package com.bitlabbr.minhadespensa.core.domain.util
 
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.milliseconds
 
 fun getCurrentTime(): Long = Clock.System.now().toEpochMilliseconds()
+
+fun isValidTimestamp(timestamp: Long): Boolean {
+    if (timestamp <= 0) return false
+
+    val instant = try {
+        Instant.fromEpochMilliseconds(timestamp)
+    } catch (e: Exception) {
+        return false
+    }
+
+    val now = Clock.System.now()
+    val minValid = Instant.parse("2000-01-01T00:00:00Z")
+    val maxFuture = now.plus(100.milliseconds)
+
+    return instant in minValid..maxFuture
+}

@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -30,7 +31,8 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "catalog_products",
     indices = [Index(value = ["ean"], unique = true)])
 data class CatalogProductEntity(
-    @PrimaryKey val id: String,
+    @PrimaryKey
+    val id: String,
     val ean: String?,
     val name: String,
     val brand: String?,

@@ -27,16 +27,23 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CatalogProductDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOrUpdate(product: CatalogProductEntity)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(product: CatalogProductEntity): Long
 
-    @Query("SELECT * FROM catalog_products WHERE id = :id AND isDeleted = 0")
+    @Update
+    suspend fun update(product: CatalogProductEntity): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM catalog_products WHERE id = :id)")
+    fun exists(id: String): Flow<Boolean>
+
+    @Query("SELECT * FROM catalog_products WHERE id = :id")
     fun findById(id: String): Flow<CatalogProductEntity?>
 
     @Query("SELECT * FROM catalog_products WHERE ean = :ean AND isDeleted = 0")
@@ -58,4 +65,7 @@ interface CatalogProductDao {
         WHERE id = :id
     """)
     suspend fun markAsDeleted(id: String, updatedAt: Long)
+
+    @Query("DELETE FROM catalog_products WHERE id = :id")
+    suspend fun deleteProductById(id: String)
 }

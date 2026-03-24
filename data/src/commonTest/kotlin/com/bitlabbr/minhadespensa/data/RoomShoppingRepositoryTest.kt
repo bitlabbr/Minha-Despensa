@@ -75,7 +75,7 @@ class RoomShoppingRepositoryTest: BaseTest() {
         val now = getCurrentTime()
         val productEan = "7891234567890"
 
-        db.catalogDao().insertOrUpdate(
+        db.catalogDao().insert(
             CatalogProduct(
                 id = productId,
                 name = "Leite integral",
