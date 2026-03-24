@@ -25,66 +25,96 @@ package com.bitlabbr.minhadespensa.data.util
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
+import android.os.Build
 import com.bitlabbr.minhadespensa.core.domain.util.ImageProcessor
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 
 actual class ImageProcessorImpl : ImageProcessor {
     actual override suspend fun processForThumbnail(input: ByteArray): ByteArray {
-        // 1. Decodifica apenas as bordas para descobrir o tamanho original sem carregar na RAM
-        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeByteArray(input, 0, input.size, options)
+        val decodedBitmap = decodeByteArray(input)
+            ?: throw IllegalArgumentException("Failure trying to decode image.")
 
-        // 2. Calcula o downsampling inicial (economiza memória)
-        options.inSampleSize = calculateInSampleSize(options, 300, 300)
-        options.inJustDecodeBounds = false
+        val orientedBitmap = fixExifOrientation(input, decodedBitmap)
+        val croppedBitmap = centerCrop(orientedBitmap)
 
-        // 3. Decodifica a imagem real (com o tamanho já reduzido pelo inSampleSize)
-        val sampledBitmap = BitmapFactory.decodeByteArray(input, 0, input.size, options)
-            ?: throw IllegalArgumentException("Falha ao decodificar a imagem. Formato incompatível ou corrompido.")
-
-        // 4. Lógica de Center Crop (Igual ao iOS)
-        val width = sampledBitmap.width
-        val height = sampledBitmap.height
-        val minEdge = minOf(width, height) // Identifica o menor lado para ser a base do quadrado
-
-        // Calcula o ponto inicial para o corte ser no centro
-        val startX = (width - minEdge) / 2
-        val startY = (height - minEdge) / 2
-
-        // Cria o bitmap quadrado a partir do centro
-        val croppedBitmap = Bitmap.createBitmap(
-            sampledBitmap,
-            startX,
-            startY,
-            minEdge,
-            minEdge
-        )
-
-        // 5. Redimensiona o quadrado centralizado para os 300x300 finais
-        // O parâmetro 'filter = true' ativa a filtragem bilinear (mais nitidez)
         val finalBitmap = Bitmap.createScaledBitmap(croppedBitmap, 300, 300, true)
 
-        // 6. Comprime para JPEG com 80% de qualidade
         val outputStream = ByteArrayOutputStream()
         finalBitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
 
-        // Limpeza de memória manual para Bitmaps intermediários
-        if (sampledBitmap != croppedBitmap) sampledBitmap.recycle()
-        // O finalBitmap será reciclado pelo GC após o retorno
+        if (orientedBitmap != decodedBitmap) decodedBitmap.recycle()
+        if (croppedBitmap != orientedBitmap) orientedBitmap.recycle()
+        if (finalBitmap != croppedBitmap) croppedBitmap.recycle()
 
         return outputStream.toByteArray()
     }
-    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-        val (height: Int, width: Int) = options.outHeight to options.outWidth
-        var inSampleSize = 1
 
-        if (height > reqHeight || width > reqWidth) {
-            val halfHeight = height / 2
-            val halfWidth = width / 2
-            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-                inSampleSize *= 2
+    private fun decodeByteArray(input: ByteArray): Bitmap? {
+        val bitmap = BitmapFactory.decodeByteArray(input, 0, input.size)
+        if (bitmap != null) return bitmap
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            return try {
+                val source = android.graphics.ImageDecoder.createSource(
+                    java.nio.ByteBuffer.wrap(input)
+                )
+                android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                    decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                }
+            } catch (e: Exception) {
+                null
             }
         }
-        return inSampleSize
+
+        return null
+    }
+
+    private fun fixExifOrientation(input: ByteArray, bitmap: Bitmap): Bitmap {
+        return try {
+            val exif = ExifInterface(ByteArrayInputStream(input))
+            val orientation = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+
+            val matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(90f)
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(180f)
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(270f)
+                ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> matrix.preScale(-1f, 1f)
+                ExifInterface.ORIENTATION_FLIP_VERTICAL -> matrix.preScale(1f, -1f)
+                ExifInterface.ORIENTATION_TRANSPOSE -> {
+                    matrix.preScale(-1f, 1f)
+                    matrix.postRotate(270f)
+                }
+
+                ExifInterface.ORIENTATION_TRANSVERSE -> {
+                    matrix.preScale(-1f, 1f)
+                    matrix.postRotate(90f)
+                }
+
+                else -> return bitmap
+            }
+
+            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+        } catch (e: Exception) {
+            bitmap
+        }
+    }
+
+    private fun centerCrop(bitmap: Bitmap): Bitmap {
+        val width = bitmap.width
+        val height = bitmap.height
+
+        if (width == height) return bitmap
+
+        val minEdge = minOf(width, height)
+        val startX = (width - minEdge) / 2
+        val startY = (height - minEdge) / 2
+
+        return Bitmap.createBitmap(bitmap, startX, startY, minEdge, minEdge)
     }
 }
