@@ -23,17 +23,23 @@
 
 package com.bitlabbr.minhadespensa.core.domain.repository
 
-import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import kotlinx.coroutines.flow.Flow
 
-interface CatalogRepository {
-    fun getProductByEan(ean: String): Flow<CatalogProduct?>
-    fun getProductById(id: String): Flow<CatalogProduct?>
-    fun getAllActives(): Flow<List<CatalogProduct>>
-    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct?>>
-    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun forceUpdateForProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun deleteProductById(id: String)
-    fun exists(id: String): Flow<Boolean>
+interface ShoppingListRepository {
+    fun getAllActiveShoppingLists(): Flow<List<ShoppingList>>
+    fun getShoppingListById(listId: String): Flow<ShoppingList?>
+    suspend fun insertShoppingList(shoppingList: ShoppingList)
+    suspend fun forceUpdateForShoppingList(shoppingList: ShoppingList)
+    suspend fun markShoppingListAsDeleted(listID: String, updatedAt: Long)
+    suspend fun deleteShoppingListById(listID: String)
+    suspend fun updateShoppingListIfNewer(list: ShoppingList)
+
+    suspend fun insertShoppingItem(item: ShoppingItem)
+    suspend fun forceUpdateForShoppingItem(item: ShoppingItem)
+    suspend fun toggleItemCheck(id: String, isChecked: Boolean)
+    suspend fun markAsDeleted(id: String)
+    suspend fun finalizePurchase(listId: String)
+    suspend fun updateShoppingItemIfNewer(item: ShoppingItem)
 }

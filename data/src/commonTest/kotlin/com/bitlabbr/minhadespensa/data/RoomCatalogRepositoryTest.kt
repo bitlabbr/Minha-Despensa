@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.data
 
+import androidx.room.Transactor
+import androidx.room.useWriterConnection
 import app.cash.turbine.test
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
@@ -33,6 +35,7 @@ import com.bitlabbr.minhadespensa.data.local.BaseTest
 import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
+import com.bitlabbr.minhadespensa.data.repository.toEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -475,7 +478,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
             netWeight = 0.75,
             updatedAt = getCurrentTime()
         )
-        catalogRepository.updateProduct(updatedProduct, null)
+        catalogRepository.updateForProductIfNewer(updatedProduct, null)
 
         catalogRepository.getProductById(productId).test {
             val result = awaitItem()
@@ -505,7 +508,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(product, imageBytes)
 
         val updatedProduct = product.copy(name = "Leite Desnatado")
-        catalogRepository.updateProduct(updatedProduct, null)
+        catalogRepository.updateForProductIfNewer(updatedProduct, null)
 
         val mediaExists = db.productMediaDao().getByProductId(productId)
         assertTrue(mediaExists != null, "Media should still exist")
@@ -528,7 +531,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(product, null)
 
         val deletedProduct = product.copy(isDeleted = true, updatedAt = getCurrentTime() + 1)
-        catalogRepository.updateProduct(deletedProduct, null)
+        catalogRepository.updateForProductIfNewer(deletedProduct, null)
 
         val result = catalogRepository.getProductById(productId).first()
         assertNotNull(result)
@@ -566,7 +569,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(otherItem2, null)
 
         val deletedProduct = product.copy(isDeleted = true, updatedAt = getCurrentTime() + 1)
-        catalogRepository.updateProduct(deletedProduct, null)
+        catalogRepository.updateForProductIfNewer(deletedProduct, null)
 
         val result = catalogRepository.getAllActives().first()
         assertNotNull(result)
@@ -586,7 +589,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
         val imageB = byteArrayOf(2, 2, 2)
         val updatedProduct = product.copy(name = "Produto com Nova Foto", updatedAt = getCurrentTime())
-        catalogRepository.updateProduct(updatedProduct, imageB)
+        catalogRepository.updateForProductIfNewer(updatedProduct, imageB)
 
         val finalMedia = db.productMediaDao().getByProductId(product.id)
         assertNotNull(finalMedia)
@@ -714,6 +717,61 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
         val resultMedia = db.productMediaDao().getByProductId(productId)
         assertNull(resultMedia, "Media should be removed by CASCADE")
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `should IGNORE catalog product UPDATE if INCOME timestamp is OLDER`() = runTest {
+        val productId = Uuid.random().toString()
+        val olderRemoteTime = getCurrentTime()
+        val localTime = getCurrentTime() + 20
+        val localProduct = createDummyProduct(id = productId, name = "Versão Recente", brand = "Marca A")
+            .copy(updatedAt = localTime)
+
+        catalogRepository.insertProduct(localProduct, null)
+        val remoteProduct = localProduct.copy(name = "Versão Antiga", updatedAt = olderRemoteTime)
+
+        catalogRepository.updateForProductIfNewer(remoteProduct, null)
+
+        val result = catalogRepository.getProductById(productId).first()
+        assertEquals("Versão Recente", result?.name, "Should not accept older records overwrite (Last Write Wins)")
+        assertEquals(localTime, result?.updatedAt)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `should NOT resurrect a logically deleted product with an older sync update`() = runTest {
+        val productId = Uuid.random().toString()
+        val product = createDummyProduct(id = productId, isDeleted = false)
+        catalogRepository.insertProduct(product, null)
+
+        val deleteTime = getCurrentTime()
+        catalogRepository.updateForProductIfNewer(product.copy(isDeleted = true, updatedAt = deleteTime), null)
+
+        val oldSyncTime = deleteTime - 1000
+        val resurrectedProduct = product.copy(isDeleted = false, updatedAt = oldSyncTime)
+
+        catalogRepository.updateForProductIfNewer(resurrectedProduct, null)
+
+        val result = catalogRepository.getProductById(productId).first()
+        assertEquals(result?.isDeleted, true, "An old synchronization record should not 'delete' a product.")
+    }
+
+    @Test
+    fun `should ROLLBACK product insertion if media storage fails`() = runTest {
+        val product = createDummyProduct(name = "Transaction Test")
+        try {
+            db.useWriterConnection { conn ->
+                conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                    db.catalogDao().insert(product.toEntity())
+                    throw RuntimeException("Simulated Media Failure")
+                }
+            }
+        } catch (e: Exception) {
+
+        }
+        val result = catalogRepository.getProductById(product.id).first()
+        assertNull(result, "Product should not exist if media transaction failed")
     }
 
     private fun assertProduct(value: CatalogProduct?, ref: CatalogProduct) {

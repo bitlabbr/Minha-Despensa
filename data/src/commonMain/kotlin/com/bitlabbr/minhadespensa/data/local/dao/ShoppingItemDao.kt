@@ -39,8 +39,29 @@ interface ShoppingItemDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertShoppingItem(item: ShoppingItemEntity)
 
+    @Query("SELECT * FROM shopping_items WHERE id = :itemId")
+    fun findById(itemId: String): Flow<ShoppingItemEntity?>
+
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun updateItem(item: ShoppingItemEntity)
+    suspend fun forceUpdateItem(item: ShoppingItemEntity)
+
+    @Query(
+        """
+    UPDATE shopping_items 
+    SET productId = :productId, quantity = :quantity, priceAtTime = :priceAtTime, 
+        isChecked = :isChecked, updatedAt = :updatedAt, isDeleted = :isDeleted
+    WHERE id = :id AND (updatedAt < :updatedAt OR (updatedAt = :updatedAt AND isDeleted = 1))
+"""
+    )
+    suspend fun updateItemIfNewer(
+        id: String,
+        productId: String,
+        quantity: Double,
+        priceAtTime: Long?,
+        isChecked: Boolean,
+        updatedAt: Long,
+        isDeleted: Boolean
+    ): Int
 
     @Query("UPDATE shopping_items SET isChecked = :checked, updatedAt = :now WHERE id = :id")
     suspend fun updateCheckStatus(id: String, checked: Boolean, now: Long)

@@ -30,12 +30,22 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "shopping_items",
-    indices = [Index(value = ["productId"])],
+    indices = [
+        Index(value = ["productId"]),
+        Index(value = ["listId"])
+    ],
+
     foreignKeys = [
         ForeignKey(
             entity = CatalogProductEntity::class,
             parentColumns = ["id"],
             childColumns = ["productId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = ShoppingListEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["listId"],
             onDelete = ForeignKey.CASCADE
         )
     ]
@@ -43,6 +53,7 @@ import androidx.room.PrimaryKey
 data class ShoppingItemEntity(
     @PrimaryKey val id: String,
     val productId: String,
+    val listId: String,
     val quantity: Double,
     val priceAtTime: Long?,
     val isChecked: Boolean,

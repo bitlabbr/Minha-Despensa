@@ -26,17 +26,15 @@ package com.bitlabbr.minhadespensa.core.domain.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ShoppingItem(
+data class ShoppingList(
     val id: String,
-    val productId: String,
-    val quantity: Double,
-    val listID: String,
-    val priceAtTime: Long? = null,
-    val isChecked: Boolean = false,
+    val name: String,
+    val budgetInCents: Long?,
+    val items: List<ShoppingItem>,
     val updatedAt: Long,
-    val isDeleted: Boolean = false
-) {
+    val isDeleted: Boolean
+){
     override fun toString(): String {
-        return "ShoppingItem(id='$id', productId='$productId', quantity=$quantity, priceAtTime=$priceAtTime, isChecked=$isChecked, updatedAt=$updatedAt, isDeleted=$isDeleted)"
+        return "ShoppingList(id='$id', name='$name', budgetInCents=$budgetInCents, items=$items, updatedAt=$updatedAt, isDeleted=$isDeleted)"
     }
 }

@@ -28,13 +28,12 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
-import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingRepository
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
-import com.bitlabbr.minhadespensa.data.repository.RoomShoppingRepository
+import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -53,7 +52,7 @@ val dataModule = module {
     single { get<AppDatabase>().catalogDao() }
     single { get<AppDatabase>().pantryDao() }
     single { get<AppDatabase>().priceDao() }
-    single { get<AppDatabase>().shoppingItemDao() }
+    single { get<AppDatabase>().shoppingListDao() }
 
     single<CatalogRepository> {
         RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
@@ -67,8 +66,7 @@ val dataModule = module {
         RoomPriceRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
     }
 
-    single<ShoppingRepository> {
-        RoomShoppingRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+    single<RoomShoppingListRepository> {
+        RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
     }
-
 }

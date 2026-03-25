@@ -21,18 +21,16 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.repository
+package com.bitlabbr.minhadespensa.data.local.entity
 
-import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
-import kotlinx.coroutines.flow.Flow
+import androidx.room.Embedded
+import androidx.room.Relation
 
-interface ShoppingRepository {
-    fun getActiveShoppingList(): Flow<List<ShoppingItem>>
-    suspend fun insertShoppingItem(item: ShoppingItem)
-    suspend fun updateItem(item: ShoppingItem)
-    fun getCheckedShoppingList(): Flow<List<ShoppingItem>>
-    suspend fun toggleCheck(id: String, isChecked: Boolean)
-    suspend fun deleteItem(id: String)
-    suspend fun clearSession()
-    suspend fun finalizePurchase()
-}
+data class ShoppingListWithItems(
+    @Embedded val list: ShoppingListEntity,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "listId"
+    )
+    val items: List<ShoppingItemEntity>
+)

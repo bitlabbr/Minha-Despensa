@@ -95,11 +95,11 @@ class RoomCatalogRepository(
         }
     }
 
-    override suspend fun updateProduct(
+    override suspend fun forceUpdateForProduct(
         product: CatalogProduct,
         imageBytes: ByteArray?
     ) {
-        logger.d(TAG, "updateProduct: ${product.name} (hasImage: ${imageBytes != null})")
+        logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null})")
         if (imageBytes != null) {
             val imageSizeKb = imageBytes.size / 1024
             require(imageSizeKb <= 100) {
@@ -109,13 +109,52 @@ class RoomCatalogRepository(
         validateProduct(product)
         db.useWriterConnection { conn ->
             conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                productDao.update(product.toEntity())
+                productDao.forceUpdateForProduct(product.toEntity())
                 if (imageBytes != null) {
                     mediaDao.insertOrUpdate(
                         ProductMediaEntity(
                             productId = product.id,
                             blob = imageBytes,
                             updatedAt = getCurrentTime()
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun updateForProductIfNewer(
+        product: CatalogProduct,
+        imageBytes: ByteArray?
+    ) {
+        logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null})")
+        if (imageBytes != null) {
+            val imageSizeKb = imageBytes.size / 1024
+            require(imageSizeKb <= 100) {
+                "File is too large (size: ${imageSizeKb}KB)"
+            }
+        }
+        validateProduct(product)
+        db.useWriterConnection { conn ->
+            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                val rowsAffected = productDao.updateProductIfNewer(
+                    id = product.id,
+                    name = product.name,
+                    ean = product.ean,
+                    brand = product.brand,
+                    measureUnit = product.measureUnit,
+                    thumbnailUrl = product.thumbnailUrl,
+                    netWeight = product.netWeight,
+                    updatedAt = product.updatedAt,
+                    isDeleted = product.isDeleted,
+                    manuallyAdded = product.manuallyAdded
+                )
+                if (rowsAffected > 0 && imageBytes != null) {
+                    mediaDao.insertOrUpdate(
+                        ProductMediaEntity(
+                            productId = product.id,
+                            blob = imageBytes,
+                            updatedAt = product.updatedAt
                         )
                     )
                 }

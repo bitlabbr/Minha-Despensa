@@ -21,22 +21,18 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.model
+package com.bitlabbr.minhadespensa.data.local.entity
 
-import kotlinx.serialization.Serializable
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 
-@Serializable
-data class ShoppingItem(
+@Entity(tableName = "shopping_lists")
+data class ShoppingListEntity(
+    @PrimaryKey
     val id: String,
-    val productId: String,
-    val quantity: Double,
-    val listID: String,
-    val priceAtTime: Long? = null,
-    val isChecked: Boolean = false,
     val updatedAt: Long,
-    val isDeleted: Boolean = false
-) {
-    override fun toString(): String {
-        return "ShoppingItem(id='$id', productId='$productId', quantity=$quantity, priceAtTime=$priceAtTime, isChecked=$isChecked, updatedAt=$updatedAt, isDeleted=$isDeleted)"
-    }
-}
+    val name: String,
+    val budgetInCents: Long?,
+    val isDeleted: Boolean
+)

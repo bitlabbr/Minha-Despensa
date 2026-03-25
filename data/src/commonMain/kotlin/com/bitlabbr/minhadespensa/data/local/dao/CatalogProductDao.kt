@@ -28,6 +28,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -38,7 +39,27 @@ interface CatalogProductDao {
     suspend fun insert(product: CatalogProductEntity): Long
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun update(product: CatalogProductEntity): Int
+    suspend fun forceUpdateForProduct(product: CatalogProductEntity): Int
+
+    @Query(
+        """
+    UPDATE catalog_products 
+    SET name = :name, ean = :ean, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, updatedAt = :updatedAt, isDeleted = :isDeleted
+    WHERE id = :id AND updatedAt < :updatedAt
+"""
+    )
+    suspend fun updateProductIfNewer(
+        id: String,
+        name: String,
+        ean: String?,
+        brand: String?,
+        measureUnit: MeasureUnit,
+        thumbnailUrl: String?,
+        netWeight: Double,
+        updatedAt: Long,
+        isDeleted: Boolean,
+        manuallyAdded: Boolean,
+    ): Int
 
     @Query("SELECT EXISTS(SELECT 1 FROM catalog_products WHERE id = :id)")
     fun exists(id: String): Flow<Boolean>
@@ -49,21 +70,25 @@ interface CatalogProductDao {
     @Query("SELECT * FROM catalog_products WHERE ean = :ean AND isDeleted = 0")
     fun findByEan(ean: String): Flow<CatalogProductEntity?>
 
-    @Query("""
+    @Query(
+        """
         SELECT * FROM catalog_products 
         WHERE (name LIKE '%' || :query || '%' OR brand LIKE '%' || :query || '%') 
         AND isDeleted = 0
-    """)
+    """
+    )
     fun searchByNameOrBrand(query: String): Flow<List<CatalogProductEntity>>
 
     @Query("SELECT * FROM catalog_products WHERE isDeleted = 0 ORDER BY name ASC")
     fun getAllActive(): Flow<List<CatalogProductEntity>>
 
-    @Query("""
+    @Query(
+        """
         UPDATE catalog_products 
         SET isDeleted = 1, updatedAt = :updatedAt 
         WHERE id = :id
-    """)
+    """
+    )
     suspend fun markAsDeleted(id: String, updatedAt: Long)
 
     @Query("DELETE FROM catalog_products WHERE id = :id")
