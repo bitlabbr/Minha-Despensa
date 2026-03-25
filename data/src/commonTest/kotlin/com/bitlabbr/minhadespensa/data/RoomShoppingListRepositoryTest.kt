@@ -83,7 +83,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         assertEquals(product.id, pantryItems[0].productId)
         assertEquals(5.0, pantryItems[0].quantity)
 
-        val prices = db.priceDao().getHistoryByProduct(product.id).first()
+        val prices = db.priceDao().getPriceHistoryByProductId(product.id).first()
         assertEquals(1, prices.size)
         assertEquals(1000L, prices[0].priceInCents)
 
@@ -181,7 +181,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         val pantryItems = db.pantryDao().getAllActive().first()
         assertTrue(pantryItems.isEmpty(), "Pantry should be empty because no items were checked")
 
-        val prices = db.priceDao().getHistoryByProduct(product.id).first()
+        val prices = db.priceDao().getPriceHistoryByProductId(product.id).first()
         assertTrue(prices.isEmpty(), "Price history should not be created for unchecked items")
     }
 

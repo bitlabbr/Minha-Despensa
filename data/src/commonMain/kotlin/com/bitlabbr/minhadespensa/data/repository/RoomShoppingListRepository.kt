@@ -167,7 +167,7 @@ class RoomShoppingListRepository(
                 )
 
                 item.priceAtTime?.let { price ->
-                    db.priceDao().insertOrUpdate(
+                    db.priceDao().insertPriceEntry(
                         PriceEntry(
                             id = Uuid.random().toString(),
                             productId = item.productId,

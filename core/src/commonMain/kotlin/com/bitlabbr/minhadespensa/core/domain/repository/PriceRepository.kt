@@ -27,8 +27,11 @@ import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import kotlinx.coroutines.flow.Flow
 
 interface PriceRepository {
-    fun getPriceHistory(productId: String): Flow<List<PriceEntry?>>
-    fun getLatestPrice(productId: String): Flow<PriceEntry?>
-    suspend fun addPriceEntry(entry: PriceEntry)
-    suspend fun deletePriceEntry(id: String)
+    fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntry>>
+    fun getLatestPriceForProductID(productId: String): Flow<PriceEntry?>
+    suspend fun insertPriceEntry(priceEntry: PriceEntry)
+    suspend fun forceUpdatePriceEntry(priceEntry: PriceEntry)
+    suspend fun updatePriceEntryIfNewer(priceEntry: PriceEntry)
+    suspend fun markPriceEntryAsDeletedById(priceEntryId: String)
+    suspend fun deletePriceEntryById(priceEntryId: String)
 }

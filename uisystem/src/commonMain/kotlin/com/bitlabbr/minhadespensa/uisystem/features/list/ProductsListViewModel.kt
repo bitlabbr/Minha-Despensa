@@ -107,7 +107,7 @@ class ProductsListViewModel(
                 state.price?.let { priceStr ->
                     val priceCents = ((priceStr.toDoubleOrNull() ?: (0.0 * 100))).toLong()
                     if (priceCents > 0) {
-                        priceRepository.addPriceEntry(
+                        priceRepository.insertPriceEntry(
                             PriceEntry(
                                 id = Uuid.random().toString(),
                                 productId = productId,

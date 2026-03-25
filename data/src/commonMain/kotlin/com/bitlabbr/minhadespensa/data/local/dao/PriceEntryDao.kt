@@ -23,27 +23,43 @@
 
 package com.bitlabbr.minhadespensa.data.local.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PriceEntryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOrUpdate(entry: PriceEntryEntity)
+    suspend fun insertPriceEntry(entry: PriceEntryEntity): Long
 
     @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC")
-    fun getHistoryByProduct(productId: String): Flow<List<PriceEntryEntity>>
+    fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntryEntity>>
 
     @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC LIMIT 1")
-    fun getLatestPrice(productId: String): Flow<PriceEntryEntity?>
-
-    @Query("SELECT * FROM price_entries WHERE updatedAt >= :startDate AND isDeleted = 0")
-    fun getPricesForPeriod(startDate: Long): Flow<List<PriceEntryEntity>>
+    fun getLatestPriceForProductID(productId: String): Flow<PriceEntryEntity?>
 
     @Query("UPDATE price_entries SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id")
-    suspend fun markAsDeleted(id: String, updatedAt: Long)
+    suspend fun markPriceEntryAsDeletedById(id: String, updatedAt: Long)
+
+    @Query("DELETE FROM price_entries WHERE id = :id")
+    suspend fun deletePriceEntryById(id: String)
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun forceUpdatePriceEntry(priceEntry: PriceEntryEntity): Int
+
+    @Query(
+        """
+    UPDATE price_entries 
+    SET productId = :productId, priceInCents = :priceInCents, storeName = :storeName, updatedAt = :updatedAt, isDeleted = :isDeleted
+    WHERE id = :id AND updatedAt < :updatedAt
+"""
+    )
+    suspend fun updatePriceEntryIfNewer(
+        id: String,
+        productId: String,
+        priceInCents: Long,
+        storeName: String?,
+        updatedAt: Long,
+        isDeleted: Boolean
+    ): Int
 }

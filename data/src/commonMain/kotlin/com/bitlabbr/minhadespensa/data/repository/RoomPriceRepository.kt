@@ -27,39 +27,94 @@ import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
+import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
+import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Clock
+import kotlin.uuid.ExperimentalUuidApi
+import kotlin.uuid.Uuid
 
 class RoomPriceRepository(
-    private val dao: PriceEntryDao,
+    private val db: AppDatabase,
     private val logger: AppLogger
 ) : PriceRepository {
     private val TAG = "RoomPriceRepository"
 
-    override fun getPriceHistory(productId: String): Flow<List<PriceEntry>> {
-        logger.d(TAG, "getPriceHistory: productId: $productId")
-        return dao.getHistoryByProduct(productId).map { entities -> entities.map { it.toDomain() } }
+    val dao = db.priceDao()
+
+    override fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntry>> {
+        logger.d(TAG, "getPriceHistoryByProductId: productId: $productId")
+        return dao.getPriceHistoryByProductId(productId).map { entities -> entities.map { it.toDomain() } }
     }
 
-    override fun getLatestPrice(productId: String): Flow<PriceEntry?> {
-        logger.d(TAG, "getLatestPrice: productId: $productId")
-        return  dao.getLatestPrice(productId).map { it?.toDomain() }
+    override fun getLatestPriceForProductID(productId: String): Flow<PriceEntry?> {
+        logger.d(TAG, "getLatestPriceForProductID: productId: $productId")
+        return dao.getLatestPriceForProductID(productId).map { it?.toDomain() }
     }
 
-    override suspend fun addPriceEntry(entry: PriceEntry) {
-        logger.d(TAG, "addPriceEntry: entry: $entry")
-        dao.insertOrUpdate(entry.toEntity())
+    override suspend fun insertPriceEntry(priceEntry: PriceEntry) {
+        logger.d(TAG, "insertPriceEntry: priceEntry: $priceEntry")
+        validatePriceEntry(priceEntry)
+        dao.insertPriceEntry(priceEntry.toEntity())
     }
 
-    override suspend fun deletePriceEntry(id: String) {
-        logger.d(TAG, "deletePriceEntry: id: $id")
-        dao.markAsDeleted(id, getCurrentTime())
+    override suspend fun forceUpdatePriceEntry(priceEntry: PriceEntry) {
+        logger.d(TAG, "forceUpdatePriceEntry: priceEntry: $priceEntry")
+        validatePriceEntry(priceEntry)
+        dao.forceUpdatePriceEntry(priceEntry.toEntity())
+    }
+
+    override suspend fun updatePriceEntryIfNewer(priceEntry: PriceEntry) {
+        logger.d(TAG, "updatePriceEntryIfNewer: priceEntry: $priceEntry")
+        validatePriceEntry(priceEntry)
+
+        val rowsAffected = dao.updatePriceEntryIfNewer(
+            id = priceEntry.id,
+            productId = priceEntry.productId,
+            priceInCents = priceEntry.priceInCents,
+            storeName = priceEntry.storeName,
+            updatedAt = priceEntry.updatedAt,
+            isDeleted = priceEntry.isDeleted
+        )
+        if (rowsAffected == 0) {
+            logger.d(TAG, "Update for price entry ${priceEntry.id} ignored: local data is newer or identical.")
+        } else {
+            logger.d(TAG, "Price entry ${priceEntry.id} successfully updated using LWW strategy.")
+        }
+    }
+
+    override suspend fun markPriceEntryAsDeletedById(priceEntryId: String) {
+        logger.d(TAG, "markPriceEntryAsDeletedById: priceEntryId: $priceEntryId")
+        dao.markPriceEntryAsDeletedById(priceEntryId, getCurrentTime())
+    }
+
+    override suspend fun deletePriceEntryById(priceEntryId: String) {
+        logger.d(TAG, "deletePriceEntryById: priceEntryId: $priceEntryId")
+        dao.deletePriceEntryById(priceEntryId)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    private fun validatePriceEntry(priceEntry: PriceEntry) {
+        require(runCatching { Uuid.parse(priceEntry.id) }.isSuccess) {
+            "Invalid UUID"
+        }
+        require(runCatching { Uuid.parse(priceEntry.productId) }.isSuccess) {
+            "Invalid UUID"
+        }
+        require(isValidTimestamp(priceEntry.updatedAt)) { "Invalid epoch time millis" }
+        require(priceEntry.priceInCents > 0) { "Product price In Cents should be more than zero" }
+        priceEntry.storeName?.let {
+            require(it.length <= 50) { "The store name should have at least 50 characters" }
+        }
+        priceEntry.storeName?.let {
+            require(it.isNotBlank()) { "The store name should not be empty" }
+        }
     }
 
 }
+
 fun PriceEntryEntity.toDomain() = PriceEntry(
     id = this.id,
     productId = this.productId,
