@@ -27,6 +27,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -35,8 +36,11 @@ interface ShoppingItemDao {
     @Query("SELECT * FROM shopping_items WHERE isDeleted = 0")
     fun getActiveItems(): Flow<List<ShoppingItemEntity>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertOrUpdate(item: ShoppingItemEntity)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertShoppingItem(item: ShoppingItemEntity)
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun updateItem(item: ShoppingItemEntity)
 
     @Query("UPDATE shopping_items SET isChecked = :checked, updatedAt = :now WHERE id = :id")
     suspend fun updateCheckStatus(id: String, checked: Boolean, now: Long)
@@ -48,5 +52,5 @@ interface ShoppingItemDao {
     suspend fun markAsDeleted(id: String, updatedAt: Long)
 
     @Query("SELECT * FROM shopping_items WHERE isChecked = 1 AND isDeleted = 0")
-    suspend fun getCheckedItemsSync(): List<ShoppingItemEntity>
+    fun getCheckedItemsSync(): Flow<List<ShoppingItemEntity>>
 }

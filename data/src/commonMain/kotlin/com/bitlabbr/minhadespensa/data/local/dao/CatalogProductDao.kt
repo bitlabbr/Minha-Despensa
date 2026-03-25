@@ -37,7 +37,7 @@ interface CatalogProductDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(product: CatalogProductEntity): Long
 
-    @Update
+    @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun update(product: CatalogProductEntity): Int
 
     @Query("SELECT EXISTS(SELECT 1 FROM catalog_products WHERE id = :id)")

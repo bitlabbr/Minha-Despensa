@@ -32,97 +32,106 @@ import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
-import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 class RoomShoppingRepository(
-    private val db: AppDatabase,
+    db: AppDatabase,
     private val logger: AppLogger
 ) : ShoppingRepository {
 
-    private val shoppingDao = db.shoppingItemDao()
+    private val shoppingItemDao = db.shoppingItemDao()
     private val pantryDao = db.pantryDao()
     private val priceDao = db.priceDao()
     private val TAG = "RoomShoppingRepository"
 
-
     override fun getActiveShoppingList(): Flow<List<ShoppingItem>> {
         logger.d(TAG, "getActiveShoppingList")
-        return shoppingDao.getActiveItems().map { list ->
+        return shoppingItemDao.getActiveItems().map { list ->
             list.map { it.toDomain() }
         }
     }
 
-    override suspend fun saveItem(item: ShoppingItem) {
-        logger.d(TAG, "saveItem: item: $item")
-        shoppingDao.insertOrUpdate(item.toEntity())
+    override suspend fun insertShoppingItem(item: ShoppingItem) {
+        logger.d(TAG, "insertShoppingItem: item: $item")
+        shoppingItemDao.insertShoppingItem(item.toEntity())
+    }
+
+    override suspend fun updateItem(item: ShoppingItem) {
+        logger.d(TAG, "updateItem: item: $item")
+        shoppingItemDao.updateItem(item.toEntity())
+    }
+
+    override fun getCheckedShoppingList(): Flow<List<ShoppingItem>> {
+        logger.d(TAG, "getCheckedShoppingList")
+        return shoppingItemDao.getCheckedItemsSync().map { items ->
+            items.map { it.toDomain() }
+        }
     }
 
     override suspend fun toggleCheck(id: String, isChecked: Boolean) {
         logger.d(TAG, "toggleCheck: id: $id isChecked: $isChecked")
-        shoppingDao.updateCheckStatus(id, isChecked, getCurrentTime())
+        shoppingItemDao.updateCheckStatus(id, isChecked, getCurrentTime())
     }
 
     override suspend fun deleteItem(id: String) {
         logger.d(TAG, "deleteItem: id: $id")
-        shoppingDao.markAsDeleted(id, getCurrentTime())
+        shoppingItemDao.markAsDeleted(id, getCurrentTime())
     }
 
     override suspend fun clearSession() {
         logger.d(TAG, "clearSession")
-        shoppingDao.deleteAllLogical(getCurrentTime())
+        shoppingItemDao.deleteAllLogical(getCurrentTime())
     }
 
     override suspend fun finalizePurchase() {
         logger.d(TAG, "finalizePurchase")
-        db.useWriterConnection { connection ->
-            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                try {
-                    val now = getCurrentTime()
-                    val checkedItems = shoppingDao.getCheckedItemsSync()
-
-                    checkedItems.forEach { item ->
-                        db.pantryDao().insertOrUpdate(
-                            PantryItem(
-                                id = Uuid.random().toString(),
-                                productId = item.productId,
-                                quantity = item.quantity,
-                                updatedAt = now,
-                                isDeleted = false,
-                                expirationDate = now, // TODO need to change this
-                                batchNumber = null // TODO need to change this
-                            ).toEntity()
-                        )
-
-                        item.priceAtTime?.let { price ->
-                            db.priceDao().insertOrUpdate(
-                                PriceEntry(
-                                    id = Uuid.random().toString(),
-                                    productId = item.productId,
-                                    priceInCents = price,
-                                    updatedAt = now,
-                                    isDeleted = false,
-                                    storeName = "nome da loja" // TODO need to change this
-                                ).toEntity()
-                            )
-                        }
-                    }
-
-                    db.shoppingItemDao().deleteAllLogical(now)
-                    logger.d(TAG, "Checkout atômico concluído via SQLite Connection.")
-                } catch (e: Exception) {
-                    logger.e(TAG, "Erro no checkout: ${e.message}")
-                    throw e
-                }
-            }
-        }
+//        db.useWriterConnection { connection ->
+//            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+//                try {
+//                    val now = getCurrentTime()
+//                    val checkedItems = shoppingItemDao.getCheckedItemsSync()
+//
+//
+//                    checkedItems.forEach { item ->
+//                        db.pantryDao().insertOrUpdate(
+//                            PantryItem(
+//                                id = Uuid.random().toString(),
+//                                productId = item.productId,
+//                                quantity = item.quantity,
+//                                updatedAt = now,
+//                                isDeleted = false,
+//                                expirationDate = now, // TODO need to change this
+//                                batchNumber = null // TODO need to change this
+//                            ).toEntity()
+//                        )
+//
+//                        item.priceAtTime?.let { price ->
+//                            db.priceDao().insertOrUpdate(
+//                                PriceEntry(
+//                                    id = Uuid.random().toString(),
+//                                    productId = item.productId,
+//                                    priceInCents = price,
+//                                    updatedAt = now,
+//                                    isDeleted = false,
+//                                    storeName = "nome da loja" // TODO need to change this
+//                                ).toEntity()
+//                            )
+//                        }
+//                    }
+//
+//                    db.shoppingItemDao().deleteAllLogical(now)
+//                    logger.d(TAG, "Checkout atômico concluído via SQLite Connection.")
+//                } catch (e: Exception) {
+//                    logger.e(TAG, "Erro no checkout: ${e.message}")
+//                    throw e
+//                }
+//            }
+//        }
     }
 
 }
