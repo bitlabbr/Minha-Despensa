@@ -27,12 +27,12 @@ jobs:
 
       # 4. Verificar se o Build
       # O comando 'assembleDebug' foca no Android, mas compila o commonMain junto.
-      - name: Build with Gradle
-        run: ./gradlew assembleDebug
+      - name: Build Android App
+        run: ./gradlew :composeApp:assembleDebug
 
       # 5. Rodar os Testes Unitários
-      - name: Run Unit Tests
-        run: ./gradlew testDebugUnitTest
+      - name: Run Android Unit Tests
+        run: ./gradlew :composeApp:testDebugUnitTest --info
       
       - name: Publish Test Report
         if: always()
