@@ -49,49 +49,75 @@ class RoomCatalogRepository(
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
         logger.d(TAG, "searchProducts: ean: $ean")
-        return productDao.findByEan(ean).map { it?.toDomain() }
+        try {
+            return productDao.findByEan(ean).map { it?.toDomain() }
+        } catch (e: Exception) {
+            logger.e(TAG, "getProductByEan: Failed. Reason: ${e.message}", e)
+            throw e
+        }
     }
 
     override fun getProductById(id: String): Flow<CatalogProduct?> {
-        logger.d(TAG, "searchProducts: id: $id")
-        return productDao.findById(id).map { it?.toDomain() }
+        logger.d(TAG, "getProductById: id: $id")
+        try {
+            return productDao.findById(id).map { it?.toDomain() }
+        } catch (e: Exception) {
+            logger.e(TAG, "getProductById: Failed. Reason: ${e.message}", e)
+            throw e
+        }
     }
 
     override fun getAllActives(): Flow<List<CatalogProduct>> {
         logger.d(TAG, "getAllActives")
-        return productDao.getAllActive().map { it.map { it.toDomain() } }
+        try {
+            return productDao.getAllActive().map { it.map { it.toDomain() } }
+        } catch (e: Exception) {
+            logger.e(TAG, "getAllActives: Failed. Reason: ${e.message}", e)
+            throw e
+        }
     }
 
     override fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>> {
         logger.d(TAG, "searchProductsByNameOrBrand: query: $query")
-        require(query.isNotBlank() && query.length < 50) { "the term should have between 1 and 50 characters" }
-        return productDao.searchByNameOrBrand(query).map { entities ->
-            entities.map { it.toDomain() }
+        try {
+            require(query.isNotBlank() && query.length < 50) { "the term should have between 1 and 50 characters" }
+            return productDao.searchByNameOrBrand(query).map { entities ->
+                entities.map { it.toDomain() }
+            }
+        } catch (e: Exception) {
+            logger.e(TAG, "searchProductsByNameOrBrand: Failed. Reason: ${e.message}", e)
+            throw e
         }
     }
 
     override suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?) {
         logger.d(TAG, "insertProduct: ${product.name} (hasImage: ${imageBytes != null})")
-        if (imageBytes != null) {
-            val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= 100) {
-                "File is too large (size: ${imageSizeKb}KB)"
-            }
-        }
-        validateProduct(product)
-        db.useWriterConnection { conn ->
-            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                productDao.insert(product.toEntity())
-                if (imageBytes != null) {
-                    mediaDao.insertOrUpdate(
-                        ProductMediaEntity(
-                            productId = product.id,
-                            blob = imageBytes,
-                            updatedAt = getCurrentTime()
-                        )
-                    )
+        try {
+            if (imageBytes != null) {
+                val imageSizeKb = imageBytes.size / 1024
+                require(imageSizeKb <= 100) {
+                    "File is too large (size: ${imageSizeKb}KB)"
                 }
             }
+            validateProduct(product)
+            db.useWriterConnection { conn ->
+                conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                    productDao.insert(product.toEntity())
+                    if (imageBytes != null) {
+                        mediaDao.insertOrUpdate(
+                            ProductMediaEntity(
+                                productId = product.id,
+                                blob = imageBytes,
+                                updatedAt = getCurrentTime()
+                            )
+                        )
+                    }
+                }
+            }
+            logger.d(TAG, "insertProduct: Successfully persisted ${product.name}")
+        } catch (e: Exception) {
+            logger.e(TAG, "insertProduct: Failed to insert ${product.name}. Reason: ${e.message}", e)
+            throw e
         }
     }
 
@@ -99,27 +125,32 @@ class RoomCatalogRepository(
         product: CatalogProduct,
         imageBytes: ByteArray?
     ) {
-        logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null})")
-        if (imageBytes != null) {
-            val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= 100) {
-                "File is too large (size: ${imageSizeKb}KB)"
+        logger.d(TAG, "forceUpdateForProduct: Start for ${product.name} (ID: ${product.id})")
+        try {
+            validateProduct(product)
+            if (imageBytes != null) {
+                val imageSizeKb = imageBytes.size / 1024
+                logger.d(TAG, "forceUpdateForProduct: Validating image size (${imageSizeKb}KB)")
+                require(imageSizeKb <= 100) { "File is too large: ${imageSizeKb}KB" }
             }
-        }
-        validateProduct(product)
-        db.useWriterConnection { conn ->
-            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                productDao.forceUpdateForProduct(product.toEntity())
-                if (imageBytes != null) {
-                    mediaDao.insertOrUpdate(
-                        ProductMediaEntity(
-                            productId = product.id,
-                            blob = imageBytes,
-                            updatedAt = getCurrentTime()
+            db.useWriterConnection { conn ->
+                conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                    productDao.forceUpdateForProduct(product.toEntity())
+                    if (imageBytes != null) {
+                        mediaDao.insertOrUpdate(
+                            ProductMediaEntity(
+                                productId = product.id,
+                                blob = imageBytes,
+                                updatedAt = getCurrentTime()
+                            )
                         )
-                    )
+                    }
                 }
             }
+            logger.d(TAG, "forceUpdateForProduct: Successfully updated ${product.name}")
+        } catch (e: Exception) {
+            logger.e(TAG, "forceUpdateForProduct: Failed to update ${product.name}. Reason: ${e.message}", e)
+            throw e
         }
     }
 
@@ -128,35 +159,52 @@ class RoomCatalogRepository(
         imageBytes: ByteArray?
     ) {
         logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null})")
-        if (imageBytes != null) {
-            val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= 100) {
-                "File is too large (size: ${imageSizeKb}KB)"
+        try {
+            if (imageBytes != null) {
+                val imageSizeKb = imageBytes.size / 1024
+                require(imageSizeKb <= 100) {
+                    "Image file is too large (size: ${imageSizeKb}KB)"
+                }
             }
+            validateProduct(product)
+        } catch (e: Exception) {
+            logger.e(TAG, "Product validation failed: Reason: ${e.message}", e)
+            throw e
         }
-        validateProduct(product)
         db.useWriterConnection { conn ->
             conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val rowsAffected = productDao.updateProductIfNewer(
-                    id = product.id,
-                    name = product.name,
-                    ean = product.ean,
-                    brand = product.brand,
-                    measureUnit = product.measureUnit,
-                    thumbnailUrl = product.thumbnailUrl,
-                    netWeight = product.netWeight,
-                    updatedAt = product.updatedAt,
-                    isDeleted = product.isDeleted,
-                    manuallyAdded = product.manuallyAdded
-                )
-                if (rowsAffected > 0 && imageBytes != null) {
-                    mediaDao.insertOrUpdate(
-                        ProductMediaEntity(
-                            productId = product.id,
-                            blob = imageBytes,
-                            updatedAt = product.updatedAt
-                        )
+                try {
+                    val rowsAffected = productDao.updateProductIfNewer(
+                        id = product.id,
+                        name = product.name,
+                        ean = product.ean,
+                        brand = product.brand,
+                        measureUnit = product.measureUnit,
+                        thumbnailUrl = product.thumbnailUrl,
+                        netWeight = product.netWeight,
+                        updatedAt = product.updatedAt,
+                        isDeleted = product.isDeleted,
+                        manuallyAdded = product.manuallyAdded
                     )
+
+                    if (rowsAffected > 0) {
+                        logger.d(TAG, "Product was successfully updated ")
+                        if (imageBytes != null) {
+                            val media = ProductMediaEntity(
+                                productId = product.id,
+                                blob = imageBytes,
+                                updatedAt = product.updatedAt
+                            )
+                            mediaDao.insertOrUpdate(media)
+                        } else {
+                            logger.d(TAG, "There was no media to insert or update")
+                        }
+                    } else {
+                        logger.d(TAG, "Product was NOT updated because it was not newer")
+                    }
+                } catch (e: Exception) {
+                    logger.e(TAG, "updateForProductIfNewer: Failed. Reason: ${e.message}", e)
+                    throw e
                 }
             }
         }
@@ -164,12 +212,22 @@ class RoomCatalogRepository(
 
     override suspend fun deleteProductById(id: String) {
         logger.d(TAG, "deleteProduct id:  $id")
-        productDao.deleteProductById(id)
+        try {
+            productDao.deleteProductById(id)
+        } catch (e: Exception) {
+            logger.e(TAG, "deleteProduct: Failed. Reason: ${e.message}", e)
+            throw e
+        }
     }
 
     override fun exists(id: String): Flow<Boolean> {
         logger.d(TAG, "exists id:  $id")
-        return productDao.exists(id)
+        try {
+            return productDao.exists(id)
+        } catch (e: Exception) {
+            logger.e(TAG, "exists: Failed. Reason: ${e.message}", e)
+            throw e
+        }
     }
 
     @OptIn(ExperimentalUuidApi::class)

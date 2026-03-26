@@ -27,6 +27,7 @@ import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.list.catalog.CatalogFormViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -44,4 +45,6 @@ val uiModule = module {
             logger = get(named(DiQualifiers.UI_LOGGER))
         )
     }
+
+    viewModel { CatalogFormViewModel(get(), get(named(DiQualifiers.UI_LOGGER))) }
 }

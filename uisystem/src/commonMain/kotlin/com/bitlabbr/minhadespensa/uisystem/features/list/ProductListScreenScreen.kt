@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
+import com.bitlabbr.minhadespensa.uisystem.features.list.catalog.CatalogFormScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -150,22 +151,23 @@ fun ProductListScreen() {
                 }
             }
             if (showBottomSheet) {
-                AddProductSheet(
-                    state = formState,
-                    sheetState = sheetState,
-                    onNameChange = viewModel::onNameChange,
-                    onQuantityChange = viewModel::onQuantityChange,
-                    onSaveClick = {
-                        viewModel.saveProduct()
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) showBottomSheet = false
-                        }
-                    },
-                    onDismiss = {
-                        showBottomSheet = false
-                        viewModel.resetForm()
-                    }
-                )
+                CatalogFormScreen {  }
+//                AddProductSheet(
+//                    state = formState,
+//                    sheetState = sheetState,
+//                    onNameChange = viewModel::onNameChange,
+//                    onQuantityChange = viewModel::onQuantityChange,
+//                    onSaveClick = {
+//                        viewModel.saveProduct()
+//                        scope.launch { sheetState.hide() }.invokeOnCompletion {
+//                            if (!sheetState.isVisible) showBottomSheet = false
+//                        }
+//                    },
+//                    onDismiss = {
+//                        showBottomSheet = false
+//                        viewModel.resetForm()
+//                    }
+//                )
             }
         }
     }

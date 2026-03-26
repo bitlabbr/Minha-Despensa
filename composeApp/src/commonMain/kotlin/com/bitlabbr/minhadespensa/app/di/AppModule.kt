@@ -33,6 +33,7 @@ import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.uisystem.di.uiModule
 import org.koin.core.qualifier.named
 import com.bitlabbr.minhadespensa.data.di.dataModule
+import com.bitlabbr.minhadespensa.data.di.domainModule
 
 
 val appModule = module {
@@ -52,7 +53,8 @@ val appModule = module {
 val sharedModules = listOf(
     appModule,
     uiModule,
-    dataModule
+    dataModule,
+    domainModule
 )
 
 fun initKoin(appDeclaration: KoinAppDeclaration = {}) = startKoin {

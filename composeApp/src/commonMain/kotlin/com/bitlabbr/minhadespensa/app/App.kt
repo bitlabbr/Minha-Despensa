@@ -23,16 +23,14 @@
 
 package com.bitlabbr.minhadespensa.app
 
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -47,7 +45,6 @@ import com.bitlabbr.minhadespensa.uisystem.components.SettingsRoute
 import com.bitlabbr.minhadespensa.uisystem.features.list.ProductListScreen
 import com.bitlabbr.minhadespensa.uisystem.features.list.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import androidx.compose.foundation.layout.consumeWindowInsets
 
 private val bottomNavItems = listOf(
     BottomNavItem("Despensa", Icons.Default.Home, ProductListRoute),
