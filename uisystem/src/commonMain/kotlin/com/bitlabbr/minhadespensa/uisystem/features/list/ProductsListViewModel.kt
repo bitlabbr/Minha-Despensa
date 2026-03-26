@@ -57,7 +57,7 @@ class ProductsListViewModel(
     private val _formState = MutableStateFlow(ProductFormState())
     val formState = _formState.asStateFlow()
 
-    val productUiState: StateFlow<ProductsUiState> = pantryRepository.getAllActiveInventory()
+    val productUiState: StateFlow<ProductsUiState> = pantryRepository.getAllActivePantryItems()
         .map<List<PantryItem>, ProductsUiState> { pantryItems ->
             ProductsUiState.Success(
                 items = emptyList(),
@@ -102,9 +102,9 @@ class ProductsListViewModel(
                     expirationDate = state.expirationDate,
                     updatedAt = now
                 )
-                pantryRepository.saveItem(pantryItem)
+                pantryRepository.insertPantryItem(pantryItem)
 
-                state.price?.let { priceStr ->
+                state.price.let { priceStr ->
                     val priceCents = ((priceStr.toDoubleOrNull() ?: (0.0 * 100))).toLong()
                     if (priceCents > 0) {
                         priceRepository.insertPriceEntry(
@@ -129,7 +129,7 @@ class ProductsListViewModel(
 
     fun removeProduct(pantryId: String) {
         viewModelScope.launch {
-            pantryRepository.deleteItem(pantryId, getCurrentTime())
+            pantryRepository.markPantryItemAsDeleted(pantryId, getCurrentTime())
         }
     }
 

@@ -154,7 +154,7 @@ class RoomShoppingListRepository(
             val checkedItems = listWithItems?.items?.filter { it.isChecked && !it.isDeleted }
 
             checkedItems?.forEach { item ->
-                db.pantryDao().insertOrUpdate(
+                db.pantryDao().insertPantryItem(
                     PantryItem(
                         id = Uuid.random().toString(),
                         productId = item.productId,

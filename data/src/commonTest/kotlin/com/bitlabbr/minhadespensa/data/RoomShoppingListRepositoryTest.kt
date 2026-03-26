@@ -78,7 +78,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         val startTime = getCurrentTime()
         shoppingListRepository.finalizePurchase(listId)
 
-        val pantryItems = db.pantryDao().getAllActive().first()
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
         assertEquals(1, pantryItems.size)
         assertEquals(product.id, pantryItems[0].productId)
         assertEquals(5.0, pantryItems[0].quantity)
@@ -178,7 +178,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
         shoppingListRepository.finalizePurchase(listId)
 
-        val pantryItems = db.pantryDao().getAllActive().first()
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
         assertTrue(pantryItems.isEmpty(), "Pantry should be empty because no items were checked")
 
         val prices = db.priceDao().getPriceHistoryByProductId(product.id).first()
@@ -249,7 +249,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
         shoppingListRepository.finalizePurchase(listIdA)
 
-        val pantryItems = db.pantryDao().getAllActive().first()
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
         assertEquals(1, pantryItems.size)
         assertEquals(1.0, pantryItems[0].quantity, "Only items from List A should be moved to pantry")
 
@@ -272,7 +272,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
         shoppingListRepository.finalizePurchase(listId)
 
-        val pantryItems = db.pantryDao().getAllActive().first()
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
         assertEquals(2.0, pantryItems[0].quantity)
 
         val updatedList = shoppingListRepository.getShoppingListById(listId).first()
