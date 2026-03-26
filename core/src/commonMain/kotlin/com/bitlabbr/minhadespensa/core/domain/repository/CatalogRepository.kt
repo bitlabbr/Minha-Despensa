@@ -30,7 +30,7 @@ interface CatalogRepository {
     fun getProductByEan(ean: String): Flow<CatalogProduct?>
     fun getProductById(id: String): Flow<CatalogProduct?>
     fun getAllActives(): Flow<List<CatalogProduct>>
-    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct?>>
+    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>
     suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
     suspend fun forceUpdateForProduct(product: CatalogProduct, imageBytes: ByteArray?)
     suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)

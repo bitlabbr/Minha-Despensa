@@ -44,6 +44,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -79,10 +81,10 @@ class RoomPantryRepositoryTest : BaseTest() {
         pantryRepository.insertPantryItem(pantryItem)
 
         pantryRepository.getPantryItemsByID(pantryItem.id).test {
-            val list = awaitItem()
-            assertEquals(1, list.size)
-            assertEquals(5.0, list[0].quantity)
-            assertEquals(product.id, list[0].productId)
+            val item = awaitItem()
+            assertNotNull(item)
+            assertEquals(5.0, item.quantity)
+            assertEquals(product.id, item.productId)
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -102,7 +104,8 @@ class RoomPantryRepositoryTest : BaseTest() {
         pantryRepository.updatePantryItemIfNewer(olderSyncItem)
 
         val result = pantryRepository.getPantryItemsByID(localItem.id).first()
-        assertEquals(10.0, result[0].quantity, "Should ignore old records")
+        assertNotNull(result)
+        assertEquals(10.0, result.quantity, "Should ignore old records")
     }
 
     @Test
@@ -147,7 +150,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         pantryRepository.deletePantryItemById(item.id)
 
         pantryRepository.getPantryItemsByID(item.id).test {
-            assertTrue(awaitItem().isEmpty())
+            assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -162,7 +165,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         catalogRepository.deleteProductById(product.id)
 
         pantryRepository.getPantryItemsByID(item.id).test {
-            assertTrue(awaitItem().isEmpty(), "The item should be deleted")
+            assertNull(awaitItem(), "The item should be deleted")
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -179,7 +182,8 @@ class RoomPantryRepositoryTest : BaseTest() {
         pantryRepository.updatePantryItemIfNewer(newerSyncItem)
 
         val result = pantryRepository.getPantryItemsByID(localItem.id).first()
-        assertEquals(5.0, result[0].quantity, "The db should accept the newest value")
+        assertNotNull(result)
+        assertEquals(5.0, result.quantity, "The db should accept the newest value")
     }
 
     @Test
@@ -197,8 +201,9 @@ class RoomPantryRepositoryTest : BaseTest() {
         pantryRepository.insertPantryItem(item)
         val saved = pantryRepository.getPantryItemsByID(item.id).first()
 
-        assertEquals(expiry, saved[0].expirationDate)
-        assertEquals(batch, saved[0].batchNumber)
+        assertNotNull(saved)
+        assertEquals(expiry, saved.expirationDate)
+        assertEquals(batch, saved.batchNumber)
     }
 
     @OptIn(ExperimentalUuidApi::class)

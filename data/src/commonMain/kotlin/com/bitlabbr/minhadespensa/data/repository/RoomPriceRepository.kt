@@ -106,7 +106,7 @@ class RoomPriceRepository(
         require(isValidTimestamp(priceEntry.updatedAt)) { "Invalid epoch time millis" }
         require(priceEntry.priceInCents > 0) { "Product price In Cents should be more than zero" }
         priceEntry.storeName?.let {
-            require(it.length <= 50) { "The store name should have at least 50 characters" }
+            require(it.length <= 50) { "The store name should have at most 50 characters" }
         }
         priceEntry.storeName?.let {
             require(it.isNotBlank()) { "The store name should not be empty" }

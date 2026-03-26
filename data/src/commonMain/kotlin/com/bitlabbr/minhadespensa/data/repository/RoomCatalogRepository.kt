@@ -175,10 +175,10 @@ class RoomCatalogRepository(
     @OptIn(ExperimentalUuidApi::class)
     private fun validateProduct(product: CatalogProduct) {
         require(product.name.isNotBlank()) { "The name of the product shouldn`t be empty" }
-        require(product.name.length <= 100) { "The name of the product should have at least 100 characters" }
+        require(product.name.length <= 100) { "The name of the product should have at most 100 characters" }
 
         product.brand?.let {
-            require(it.length <= 50) { "The brand should have at least 50 characters" }
+            require(it.length <= 50) { "The brand should have at most 50 characters" }
         }
 
         product.ean?.let {

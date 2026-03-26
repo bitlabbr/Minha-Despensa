@@ -49,6 +49,7 @@ actual class ImageProcessorImpl : ImageProcessor {
         if (croppedBitmap != orientedBitmap) orientedBitmap.recycle()
         if (finalBitmap != croppedBitmap) croppedBitmap.recycle()
 
+        finalBitmap.recycle()
         return outputStream.toByteArray()
     }
 

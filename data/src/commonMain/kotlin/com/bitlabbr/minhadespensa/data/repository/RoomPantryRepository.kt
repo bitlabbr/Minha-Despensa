@@ -28,7 +28,6 @@ import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.dao.PantryRepositoryDao
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -87,9 +86,9 @@ class RoomPantryRepository(
         dao.deletePantryItemById(id)
     }
 
-    override fun getPantryItemsByID(pantryItemId: String): Flow<List<PantryItem>> {
+    override fun getPantryItemsByID(pantryItemId: String): Flow<PantryItem?> {
         logger.d(TAG, "getPantryItemsByID: pantryItemId: $pantryItemId")
-        return dao.getPantryItemsByID(pantryItemId).map { entities -> entities.map { it.toDomain() } }
+        return dao.getPantryItemByID(pantryItemId).map { it?.toDomain() }
     }
 
     override fun getPantryItemsByProductID(productId: String): Flow<List<PantryItem>> {

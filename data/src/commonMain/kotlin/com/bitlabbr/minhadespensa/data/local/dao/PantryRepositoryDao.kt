@@ -71,5 +71,5 @@ interface PantryRepositoryDao {
     suspend fun deletePantryItemById(id: String): Int
 
     @Query("SELECT * FROM pantry_items WHERE id = :pantryItemId")
-    fun getPantryItemsByID(pantryItemId: String): Flow<List<PantryItemEntity>>
+    fun getPantryItemByID(pantryItemId: String): Flow<PantryItemEntity?>
 }

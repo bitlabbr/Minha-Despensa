@@ -174,7 +174,7 @@ class RoomShoppingListRepository(
                             priceInCents = price,
                             updatedAt = now,
                             isDeleted = false,
-                            storeName = "Compra: ${listWithItems?.list?.name}"
+                            storeName = "Compra: ${listWithItems.list.name}"
                         ).toEntity()
                     )
                 }

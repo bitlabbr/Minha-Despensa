@@ -27,7 +27,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import kotlinx.coroutines.flow.Flow
 
 interface PantryRepository {
-    fun getPantryItemsByID(pantryItemId: String): Flow<List<PantryItem>>
+    fun getPantryItemsByID(pantryItemId: String): Flow<PantryItem?>
     fun getPantryItemsByProductID(productId: String): Flow<List<PantryItem>>
     fun getAllActivePantryItems(): Flow<List<PantryItem>>
     suspend fun insertPantryItem(item: PantryItem)
