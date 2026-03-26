@@ -23,17 +23,25 @@
 package com.bitlabbr.minhadespensa.uisystem.features.list
 
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.core.domain.model.Product
 
 data class ProductFormState(
     val name: String = "",
+    val brand: String = "",
     val quantity: String = "",
     val unit: MeasureUnit = MeasureUnit.UNITY,
+    val netWeight: String = "",
+    val expirationDate: Long? = null,
+    val price: String = "",
     val isSaving: Boolean = false
 )
 
 sealed interface ProductsUiState {
     data object Loading : ProductsUiState
-    data class Success(val products: List<Product>, val estimatedTotal: Double) : ProductsUiState
+
+    data class Success(
+        val items: List<PantryItemUiModel>,
+        val totalQuantity: Double
+    ) : ProductsUiState
+
     data class Error(val message: String) : ProductsUiState
 }

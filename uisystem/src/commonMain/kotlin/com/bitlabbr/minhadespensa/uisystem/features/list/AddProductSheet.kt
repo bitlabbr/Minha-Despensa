@@ -65,7 +65,6 @@ fun AddProductSheet(
     sheetState: SheetState,
     onNameChange: (String) -> Unit,
     onQuantityChange: (String) -> Unit,
-    onUnitChange: (MeasureUnit) -> Unit,
     onSaveClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -111,13 +110,6 @@ fun AddProductSheet(
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
-
-                // Unit Dropdown (Simple version)
-                UnitSelector(
-                    selectedUnit = state.unit,
-                    onUnitSelected = onUnitChange,
-                    modifier = Modifier.weight(1f).align(Alignment.CenterVertically)
-                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))

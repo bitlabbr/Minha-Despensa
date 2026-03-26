@@ -47,7 +47,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @Composable
 fun ProductListScreen() {
     val viewModel = koinViewModel<ProductsListViewModel>()
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.productUiState.collectAsState()
     val formState by viewModel.formState.collectAsState()
 
     val sheetState = rememberModalBottomSheetState()
@@ -94,14 +94,14 @@ fun ProductListScreen() {
                 }
 
                 is ProductsUiState.Success -> {
-                    if (state.products.isEmpty()) {
+                    if (state.items.isEmpty()) {
                         Text("No products. Tap + to add.", modifier = Modifier.align(Alignment.Center))
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = paddingValues
                         ) {
-                            items(state.products) { product ->
+                            items(state.items) { product ->
                                 val appDimens = MinhaDespensaTheme.dimens
                                 GlassCard(
                                     modifier = Modifier
@@ -127,7 +127,7 @@ fun ProductListScreen() {
                                             },
                                             supportingContent = {
                                                 CustomText(
-                                                    text = "${product.amount} ${product.measureUnit}",
+                                                    text = "${product.netWeight} ${product.measureUnit}",
                                                     color = MinhaDespensaTheme.color.onTertiary,
                                                     fontStyle = MinhaDespensaTheme.typography.bodyLarge
                                                 )
@@ -155,7 +155,6 @@ fun ProductListScreen() {
                     sheetState = sheetState,
                     onNameChange = viewModel::onNameChange,
                     onQuantityChange = viewModel::onQuantityChange,
-                    onUnitChange = viewModel::onUnitChange,
                     onSaveClick = {
                         viewModel.saveProduct()
                         scope.launch { sheetState.hide() }.invokeOnCompletion {

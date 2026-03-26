@@ -28,14 +28,42 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
-import com.bitlabbr.minhadespensa.data.local.dao.ProductDao
-import com.bitlabbr.minhadespensa.data.local.entity.ProductEntity
+import com.bitlabbr.minhadespensa.data.local.converter.Converters
+import com.bitlabbr.minhadespensa.data.local.dao.CatalogProductDao
+import com.bitlabbr.minhadespensa.data.local.dao.PantryRepositoryDao
+import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
+import com.bitlabbr.minhadespensa.data.local.dao.ProductMediaDao
+import com.bitlabbr.minhadespensa.data.local.dao.ShoppingItemDao
+import com.bitlabbr.minhadespensa.data.local.dao.ShoppingListDao
+import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
+import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
 
-@Database(entities = [ProductEntity::class], version = 1)
+@Database(
+    entities = [
+        CatalogProductEntity::class,
+        PantryItemEntity::class,
+        PriceEntryEntity::class,
+        ShoppingItemEntity::class,
+        ProductMediaEntity::class,
+        ShoppingListEntity::class
+    ],
+    version = 3
+)
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase: RoomDatabase() {
-    abstract fun productDao(): ProductDao
+    abstract fun catalogDao(): CatalogProductDao
+    abstract fun pantryDao(): PantryRepositoryDao
+    abstract fun priceDao(): PriceEntryDao
+    abstract fun shoppingItemDao(): ShoppingItemDao
+    abstract fun productMediaDao(): ProductMediaDao
+    abstract fun shoppingListDao(): ShoppingListDao
 }
 
-expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>
+expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
+    override fun initialize(): AppDatabase
+}

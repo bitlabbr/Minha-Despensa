@@ -25,16 +25,19 @@ package com.bitlabbr.minhadespensa.data.di
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
-import com.bitlabbr.minhadespensa.core.domain.repository.ProductRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
+import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.repository.RoomProductRepository
-import com.bitlabbr.minhadespensa.uisystem.di.DiQualifiers
+import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
+import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
+import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
+import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import org.koin.core.module.dsl.singleOf
 import org.koin.core.qualifier.named
-import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val dataModule = module {
@@ -46,11 +49,24 @@ val dataModule = module {
             .build()
     }
 
-    single { get<AppDatabase>().productDao() }
-    single<ProductRepository> {
-        RoomProductRepository(
-            dao = get(),
-            logger = get(named(DiQualifiers.DATA_LOGGER))
-        )
+    single { get<AppDatabase>().catalogDao() }
+    single { get<AppDatabase>().pantryDao() }
+    single { get<AppDatabase>().priceDao() }
+    single { get<AppDatabase>().shoppingListDao() }
+
+    single<CatalogRepository> {
+        RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+    }
+
+    single<PantryRepository> {
+        RoomPantryRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+    }
+
+    single<PriceRepository> {
+        RoomPriceRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+    }
+
+    single<RoomShoppingListRepository> {
+        RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
     }
 }
