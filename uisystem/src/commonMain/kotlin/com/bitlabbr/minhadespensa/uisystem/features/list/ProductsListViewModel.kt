@@ -57,11 +57,11 @@ class ProductsListViewModel(
     private val _formState = MutableStateFlow(ProductFormState())
     val formState = _formState.asStateFlow()
 
-    val productUiState: StateFlow<ProductsUiState> = pantryRepository.getAllActivePantryItems()
-        .map<List<PantryItem>, ProductsUiState> { pantryItems ->
+    val productUiState: StateFlow<ProductsUiState> = catalogRepository.getAllActives()
+        .map<List<CatalogProduct>, ProductsUiState> { products ->
             ProductsUiState.Success(
-                items = emptyList(),
-                totalQuantity = pantryItems.sumOf { it.quantity }
+                items = products,
+                totalQuantity = products.size.toDouble()
             )
         }
         .catch { e ->

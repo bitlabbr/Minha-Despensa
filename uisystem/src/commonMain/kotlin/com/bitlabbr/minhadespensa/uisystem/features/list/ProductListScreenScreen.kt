@@ -40,7 +40,6 @@ import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
 import com.bitlabbr.minhadespensa.uisystem.features.list.catalog.CatalogFormScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -48,7 +47,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @Composable
 fun ProductListScreen() {
     val viewModel = koinViewModel<ProductsListViewModel>()
-    val uiState by viewModel.productUiState.collectAsState()
+    val productUiState by viewModel.productUiState.collectAsState()
     val formState by viewModel.formState.collectAsState()
 
     val sheetState = rememberModalBottomSheetState()
@@ -85,7 +84,7 @@ fun ProductListScreen() {
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
-            when (val state = uiState) {
+            when (val state = productUiState) {
                 is ProductsUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
@@ -151,7 +150,7 @@ fun ProductListScreen() {
                 }
             }
             if (showBottomSheet) {
-                CatalogFormScreen {  }
+                CatalogFormScreen {showBottomSheet = false}
 //                AddProductSheet(
 //                    state = formState,
 //                    sheetState = sheetState,
