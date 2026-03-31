@@ -26,7 +26,8 @@ package com.bitlabbr.minhadespensa.uisystem.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -37,35 +38,37 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 @Composable
 fun GlassCard(
     modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(16.dp),
-    borderWidth: Dp = 1.dp,
+    shape: Shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner),
+    borderWidth: Dp = 2.dp,
     content: @Composable BoxScope.() -> Unit
 ) {
 
     val isDark = isSystemInDarkTheme()
-    val tintColor = if (isDark) Color.White else Color.Black
-    val primaryAlpha = if (isDark) 0.2f else 0.08f
-    val secondaryAlpha = if (isDark) 0.05f else 0.02f
-    val borderAlpha = if (isDark) 0.4f else 0.15f
+    val tintColor = if (isDark) Color.Black else Color.White
+    val primaryAlpha = if (isDark) 0.9f else 0.7f
+    val secondaryAlpha = if (isDark) 0.5f else 0.3f
+    val borderColor = if (isDark) Color.Black else Color.White
 
     val glassBrush = Brush.linearGradient(
         colors = listOf(
             tintColor.copy(alpha = primaryAlpha),
             tintColor.copy(alpha = secondaryAlpha)
         ),
-        start = Offset(0f, 0f),
+        start = Offset(0f, .45f),
         end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
 
     val borderBrush = Brush.linearGradient(
         colors = listOf(
-            tintColor.copy(alpha = borderAlpha),
+            borderColor,
             Color.Transparent,
-            tintColor.copy(alpha = secondaryAlpha)
+            borderColor,
+            Color.Transparent
         )
     )
 

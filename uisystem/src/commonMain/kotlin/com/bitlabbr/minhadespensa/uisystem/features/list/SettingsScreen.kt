@@ -41,6 +41,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @Composable
 fun SettingsScreen() {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             CustomTopBar(
                 backgroundColor = Color.Transparent,

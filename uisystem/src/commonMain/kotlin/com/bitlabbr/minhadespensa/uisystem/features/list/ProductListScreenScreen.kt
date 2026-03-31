@@ -79,7 +79,7 @@ fun ProductListScreen() {
                 )
             }
         },
-        containerColor = MinhaDespensaTheme.color.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier.fillMaxSize()

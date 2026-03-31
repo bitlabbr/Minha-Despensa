@@ -30,11 +30,12 @@ import androidx.compose.ui.unit.dp
 data class AppDimens(
     val paddingSmall: Dp,
     val paddingMedium: Dp,
-    val paddingLarge: Dp
+    val paddingLarge: Dp,
+    val cardCorner: Dp
 )
 
-val compactDimens = AppDimens(paddingSmall = 8.dp, paddingMedium = 16.dp, paddingLarge = 24.dp)
-val expandedDimens = AppDimens(paddingSmall = 12.dp, paddingMedium = 24.dp, paddingLarge = 36.dp)
+val compactDimens = AppDimens(paddingSmall = 8.dp, paddingMedium = 16.dp, paddingLarge = 24.dp, cardCorner = 28.dp)
+val expandedDimens = AppDimens(paddingSmall = 12.dp, paddingMedium = 24.dp, paddingLarge = 36.dp, cardCorner = 24.dp)
 
 val LocalAppDimens = staticCompositionLocalOf { compactDimens }
 
@@ -42,6 +43,7 @@ fun AppDimens.withScale(scaleFactor: Float): AppDimens {
     return AppDimens(
         paddingSmall = this.paddingSmall * scaleFactor,
         paddingMedium = this.paddingMedium * scaleFactor,
-        paddingLarge = this.paddingLarge * scaleFactor
+        paddingLarge = this.paddingLarge * scaleFactor,
+        cardCorner = this.cardCorner * scaleFactor
     )
 }
