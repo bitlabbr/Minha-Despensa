@@ -328,3 +328,140 @@ fun ExpiringItemTile(
         }
     }
 }
+
+@Composable
+fun ConsumptionTrendItemTile(
+    productName: String,
+    productCategory: String,
+    productMeasureUnity: String,
+    consumptionAmount: String,
+    iconPainter: Painter? = null,
+    containerColor: Color = MinhaDespensaTheme.color.primaryContainer,
+    contentColor: Color = MinhaDespensaTheme.color.onPrimaryContainer,
+    modifier: Modifier = Modifier
+        .fillMaxWidth()
+        .wrapContentHeight()
+        .padding(vertical = MinhaDespensaTheme.dimens.paddingSmall)
+) {
+
+    val shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner)
+    val isDark = isSystemInDarkTheme()
+    val primaryAlpha = if (isDark) 0.9f else 1f
+    val secondaryAlpha = if (isDark) 0.5f else 0.3f
+
+    val glassBrush = Brush.linearGradient(
+        colors = listOf(
+            containerColor.copy(alpha = primaryAlpha),
+            containerColor.copy(alpha = secondaryAlpha)
+        ),
+        start = Offset(0f, .45f),
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+    )
+
+    val borderBrush = Brush.linearGradient(
+        colors = listOf(
+            containerColor,
+            Color.Transparent,
+            containerColor,
+            Color.Transparent,
+        )
+    )
+
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(glassBrush)
+            .border(
+                width = 2.dp,
+                brush = borderBrush,
+                shape = shape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    start = MinhaDespensaTheme.dimens.paddingMedium,
+                    end = MinhaDespensaTheme.dimens.paddingMedium
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            // ICON
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center
+            ) {
+                if (iconPainter != null) {
+                    Image(
+                        painter = iconPainter,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(80.dp)
+                            .padding(
+                                top = MinhaDespensaTheme.dimens.paddingSmall,
+                                bottom = MinhaDespensaTheme.dimens.paddingSmall,
+                            )
+                            .clip(RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner * 0.4f))
+                    )
+                }
+            }
+
+            // CONTENT
+            Column(
+                modifier = Modifier.padding(end = MinhaDespensaTheme.dimens.paddingSmall).weight(2f),
+                horizontalAlignment = Alignment.Start,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = MinhaDespensaTheme.dimens.paddingSmall),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CustomText(
+                        text = productName,
+                        fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                        color = contentColor,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = MinhaDespensaTheme.dimens.paddingSmall * 0.75f),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CustomText(
+                        text = productCategory,
+                        fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                        color = contentColor,
+                        fontWeight = FontWeight.Light
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                CustomText(
+                    text = consumptionAmount,
+                    fontStyle = MinhaDespensaTheme.typography.bodyLarge,
+                    color = contentColor,
+                    fontWeight = FontWeight.Bold
+                )
+                CustomText(
+                    text = productMeasureUnity,
+                    fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                    color = contentColor,
+                    fontWeight = FontWeight.Light
+                )
+            }
+        }
+    }
+}

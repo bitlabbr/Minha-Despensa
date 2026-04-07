@@ -23,44 +23,74 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Icon
-import androidx.compose.runtime.Composable
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.*
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.defaultButtonColor
+import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
+import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
 
 @Composable
 fun ConsumptionTrendCard(data: HomeWidget.ConsumptionTrend) {
-    val appDimens = MinhaDespensaTheme.dimens
+    val colors = MinhaDespensaTheme.color
+    var isExpanded by remember { mutableStateOf(false) }
+    val maxInitialItems = 4
+    val content = data.items
+    val hasMoreItems = content.size > maxInitialItems
+    val visibleItems = if (isExpanded || !hasMoreItems) content else content.take(maxInitialItems)
+
     SecondaryContainerGlassCard(
+        modifier = Modifier
+            .animateContentSize()
+            .padding(
+                horizontal = MinhaDespensaTheme.dimens.paddingSmall,
+                vertical = MinhaDespensaTheme.dimens.paddingSmall
+            ),
         content = listOf {
             SecondaryContainerHeader(
                 text = "ITENS MAIS CONSUMIDOS NO MÊS"
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+
+            visibleItems.forEach { item ->
+                ConsumptionTrendItemTile(
+                    productName = item.productName,
+                    productCategory = item.productCategory,
+                    containerColor = expiringItemContainerColor,
+                    contentColor = expiringItemContentColor,
+                    iconPainter = getIconPainterFromString(item.iconPainterURI),
+                    productMeasureUnity = item.productMeasureUnity,
+                    consumptionAmount = item.consumptionAmount,
+                )
+            }
+
+            if (hasMoreItems) {
                 Box(
-                    modifier = Modifier.size(60.dp)
-                        .background(MinhaDespensaTheme.color.secondary.copy(0.2f), CircleShape),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp, bottom = 2.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null, tint = MinhaDespensaTheme.color.secondary)
-                }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    CustomText(text = data.frequencyLabel, fontStyle = MinhaDespensaTheme.typography.bodySmall)
-                    CustomText(text = data.frequencyLabel, fontStyle = MinhaDespensaTheme.typography.bodySmall)
+                    Button(
+                        onClick = { isExpanded = !isExpanded },
+                        colors = ButtonDefaults.buttonColors(containerColor = defaultButtonColor)
+                    ) {
+                        CustomText(
+                            text = if (isExpanded) "Ver Menos" else "Ver histórico completo",
+                            color = colors.onSecondaryContainer,
+                            fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                            alignment = TextAlign.Center
+                        )
+                    }
                 }
             }
         }

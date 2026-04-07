@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
+import com.bitlabbr.minhadespensa.core.domain.model.ConsumptionTrendItemCard
 import com.bitlabbr.minhadespensa.core.domain.model.ExpiringItemCard
 import com.bitlabbr.minhadespensa.core.domain.model.IconKeys
 
@@ -102,8 +103,50 @@ object HomeMockData {
             )
         ),
         HomeWidget.ConsumptionTrend(
-            productName = "Café Pilão",
-            frequencyLabel = "Comprado a cada 12 dias"
+            items = listOf(
+                ConsumptionTrendItemCard(
+                    productName = "Café",
+                    productCategory = "Bebidas",
+                    iconPainterURI = IconKeys.BEVERAGE_COFFEE,
+                    productMeasureUnity = "Pacotes",
+                    consumptionAmount = "8",
+                ),
+                ConsumptionTrendItemCard(
+                    productName = "Arroz Parboilizado",
+                    productCategory = "Grãos",
+                    iconPainterURI = IconKeys.GRAINS_RICE,
+                    productMeasureUnity = "Quilos",
+                    consumptionAmount = "4",
+                ),
+                ConsumptionTrendItemCard(
+                    productName = "Feijão Mulatinho",
+                    productCategory = "Grãos",
+                    iconPainterURI = IconKeys.GRAINS_BEAN_BROWN,
+                    productMeasureUnity = "Quilos",
+                    consumptionAmount = "2",
+                ),
+                ConsumptionTrendItemCard(
+                    productName = "Coca-Cola",
+                    productCategory = "Bebidas",
+                    iconPainterURI = IconKeys.BEVERAGE_SODA_COLA,
+                    productMeasureUnity = "Litros",
+                    consumptionAmount = "2,5",
+                ),
+                ConsumptionTrendItemCard(
+                    productName = "Vinho Tinto",
+                    productCategory = "Bebidas",
+                    iconPainterURI = IconKeys.BEVERAGE_WINE,
+                    productMeasureUnity = "Unidade",
+                    consumptionAmount = "1",
+                ),
+                ConsumptionTrendItemCard(
+                    productName = "Papel Toalha",
+                    productCategory = "Produtos de Limpeza",
+                    iconPainterURI = IconKeys.CLEANING_PAPER_TOWEL,
+                    productMeasureUnity = "Pacote",
+                    consumptionAmount = "0",
+                ),
+            )
         ),
         HomeWidget.QuickTip(
             title = "Dica de Economia",

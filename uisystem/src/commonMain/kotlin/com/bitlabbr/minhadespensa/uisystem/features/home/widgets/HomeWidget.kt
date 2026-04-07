@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
+import com.bitlabbr.minhadespensa.core.domain.model.ConsumptionTrendItemCard
 import com.bitlabbr.minhadespensa.core.domain.model.ExpiringItemCard
 
 sealed class HomeWidget {
@@ -37,8 +38,7 @@ sealed class HomeWidget {
     ) : HomeWidget()
 
     data class ConsumptionTrend(
-        val productName: String,
-        val frequencyLabel: String
+        val items: List<ConsumptionTrendItemCard>
     ) : HomeWidget()
 
     data class SmartList(
