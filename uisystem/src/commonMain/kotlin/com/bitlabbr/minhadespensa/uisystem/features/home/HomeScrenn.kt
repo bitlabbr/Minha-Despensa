@@ -29,25 +29,32 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
-import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.*
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 @Composable
 fun HomeScreen(
-    bottomPadding: androidx.compose.ui.unit.Dp = 0.dp
+    bottomPadding: Dp = 0.dp
 ) {
+    val widgets = HomeMockData.widgets
+    val appColors = MinhaDespensaTheme.color
+    val appTypography = MinhaDespensaTheme.typography
+
     Scaffold(
         topBar = {
             CustomTopBar(
                 backgroundColor = Color.Transparent,
                 centerContent = {
                     CustomText(
-                        text = "Home",
-                        fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                        color = MinhaDespensaTheme.color.onBackground
+                        text = "",
+                        fontStyle = appTypography.displayMedium,
+                        color = appColors.onBackground
                     )
                 }
             )
@@ -55,9 +62,8 @@ fun HomeScreen(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = Color.Transparent
     ) { paddingValues ->
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
@@ -65,23 +71,35 @@ fun HomeScreen(
                     bottom = bottomPadding + 16.dp
                 )
             ) {
-                items(10) { product ->
-                    val appDimens = MinhaDespensaTheme.dimens
-                    GlassCard(
+                item {
+                    PrimaryContainerGlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(
-                                start = appDimens.paddingSmall,
-                                end = appDimens.paddingSmall,
-                                top = appDimens.paddingSmall / 2,
-                                bottom = appDimens.paddingSmall / 2
-                            )
+                            .wrapContentHeight()
+                            .padding(horizontal = MinhaDespensaTheme.dimens.paddingSmall, vertical = 8.dp)
                     ) {
-                        Spacer(modifier = Modifier.heightIn(200.dp))
-                        CustomText(
-                            text = "Isso eh um teste"
-                        )
-                        Spacer(modifier = Modifier.heightIn(200.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = MinhaDespensaTheme.dimens.paddingLarge,
+                                    bottom = MinhaDespensaTheme.dimens.paddingLarge
+                                )
+                        ) {
+                            PrimaryContainerHeader{}
+                            widgets.forEach { widget ->
+                                Column() {
+                                    when (widget) {
+                                        is HomeWidget.FinancialSummary -> FinancialCard(widget)
+                                        is HomeWidget.ExpiringSoon -> ExpiringSoonCard(widget)
+                                        is HomeWidget.ConsumptionTrend -> ConsumptionTrendCard(widget)
+                                        is HomeWidget.SmartList -> SmartListCard(widget)
+                                        is HomeWidget.QuickInsert -> QuickInsertCard()
+                                        else -> {}
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

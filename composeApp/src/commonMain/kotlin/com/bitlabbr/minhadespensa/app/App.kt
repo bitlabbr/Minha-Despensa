@@ -71,7 +71,7 @@ fun App() {
                             .fillMaxWidth()
                             .navigationBarsPadding()
                     ) {
-                        GlassCard(
+                        PrimaryContainerGlassCard(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(horizontal = appDimens.paddingSmall, vertical = appDimens.paddingSmall),

@@ -41,23 +41,23 @@ val onBackgroundLightAppColor = Color(0xFF636465)
 val surfaceLightAppColor = Color(0xF3E8E7E7)
 val onSurfaceLightAppColor = Color(0xFF42586B)
 
-val primaryContainerLightAppColor = Color(0x59C0C0C2)
-val onPrimaryContainerLightAppColor = Color(0xFF63747E)
+val primaryContainerLightAppColor = Color(0xFFD0CECD)
+val onPrimaryContainerLightAppColor = Color(0xFF4B555F)
 
-val secondaryContainerLightAppColor = Color(0x12000000)
-val onSecondaryContainerLightAppColor = Color(0xFF636D7E)
+val secondaryContainerLightAppColor = Color(0xFFC9C5C0)
+val onSecondaryContainerLightAppColor = Color(0xC3000000)
 
-// Dark Colors
+// Dark Colorsela
 val primaryDarkAppColor = Color(0xFF3E608A)
 val onPrimaryDarkAppColor = Color(0xFFC5C7CB)
 
 val secondaryDarkAppColor = Color(0xFFFF5722)
 val onSecondaryDarkAppColor = Color(0xFFDCD4D2)
 
-val primaryContainerDarkAppColor = Color(0x2DB0B1B2)
+val primaryContainerDarkAppColor = Color(0xFF262626)
 val onPrimaryContainerDarkAppColor = Color(0xFFD3DEEC)
 
-val secondaryContainerDarkAppColor = Color(0x0FFFFFFF)
+val secondaryContainerDarkAppColor = Color(0xFF0C0C0C)
 val onSecondaryContainerDarkAppColor = Color(0xD3D3D6EC)
 
 val tertiaryDarkAppColor = Color(0x9CF5DE52)
@@ -68,3 +68,13 @@ val onBackgroundDarkAppColor = Color(0xFFCBD0D5)
 
 val surfaceDarkAppColor = Color(0xE91F1F1F)
 val onSurfaceDarkAppColor = Color(0xFFD7DCEA)
+
+
+// COLORS
+val financialGaugePrimaryColor  = Color(0xE176F9C7)
+val financialGaugeSecondaryColor  = Color(0xEDFF7C64)
+
+val expiringItemContainerColor = Color(0xFFAAAAAA)
+val expiringItemContentColor = Color(0xED252526)
+
+val defaultButtonColor = Color(0xFFB8B7B7)

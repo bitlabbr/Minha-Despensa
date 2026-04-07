@@ -54,6 +54,7 @@ kotlin {
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.kotlinx.coroutines.core)
             api(libs.kotlinx.serialization.json)
+            implementation(compose.materialIconsExtended)
         }
 
         commonTest.dependencies {

@@ -37,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
-import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -103,7 +103,7 @@ fun ProductListScreen() {
                         ) {
                             items(state.items) { product ->
                                 val appDimens = MinhaDespensaTheme.dimens
-                                GlassCard(
+                                PrimaryContainerGlassCard(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(

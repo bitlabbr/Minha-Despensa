@@ -1,0 +1,122 @@
+/*
+ *   Copyright (c) 2026 Willian Santos
+ *
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+ *
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
+ *
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
+ *
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+ */
+
+package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
+
+import com.bitlabbr.minhadespensa.core.domain.model.ExpiringItemCard
+import com.bitlabbr.minhadespensa.core.domain.model.IconKeys
+
+object HomeMockData {
+    val widgets = listOf(
+        HomeWidget.FinancialSummary(
+            totalSpent = "R$ 452,30",
+            period = "Março 2026",
+            trend = "15% menos que fevereiro"
+        ),
+        HomeWidget.ExpiringSoon(
+            items = listOf(
+                ExpiringItemCard(
+                    expirationLabel = "Hoje",
+                    productName = "Suco de Laranja",
+                    productCategory = "Frutas e verduras",
+                    anchoredTargetLabel = "04/03",
+                    anchoredGaugeProgress = 1.0f,
+                    iconPainterURI = IconKeys.BEVERAGE_JUICE
+                ),
+                ExpiringItemCard(
+                    expirationLabel = "Este mês",
+                    productName = "Arroz parboilizado",
+                    productCategory = "Grãos",
+                    anchoredTargetLabel = "03/03",
+                    anchoredGaugeProgress = 0.5f,
+                    iconPainterURI = IconKeys.GRAINS_RICE
+                ),
+                ExpiringItemCard(
+                    expirationLabel = "Esta semana",
+                    productName = "Cerveja Pilsen",
+                    anchoredTargetLabel = "04/03",
+                    productCategory = "Bebidas",
+                    anchoredGaugeProgress = 0.9f,
+                    iconPainterURI = IconKeys.BEVERAGE_BEER
+                ),
+                ExpiringItemCard(
+                    expirationLabel = "Hoje",
+                    productName = "Suco de Laranja",
+                    productCategory = "Frutas e verduras",
+                    anchoredTargetLabel = "04/03",
+                    anchoredGaugeProgress = 1.0f,
+                    iconPainterURI = IconKeys.BEVERAGE_JUICE
+                ),
+                ExpiringItemCard(
+                    expirationLabel = "Amanhã",
+                    productName = "Coxa de frango",
+                    anchoredTargetLabel = "04/03",
+                    productCategory = "Proteína animal",
+                    anchoredGaugeProgress = 0.95f,
+                    iconPainterURI = IconKeys.PROTEIN_CHICKEN_LEG
+                ),
+                ExpiringItemCard(
+                    expirationLabel = "15 dias",
+                    productName = "Queijo Parmesão",
+                    anchoredTargetLabel = "04/03",
+                    productCategory = "Laticíneos",
+                    anchoredGaugeProgress = 0.7f,
+                    iconPainterURI = IconKeys.MILK_EGGS_PARMESAN
+                ),
+                ExpiringItemCard(
+                    expirationLabel = "Semana passada",
+                    productName = "Café",
+                    anchoredTargetLabel = "04/03",
+                    productCategory = "Bebidas",
+                    anchoredGaugeProgress = 1.3f,
+                    iconPainterURI = IconKeys.BEVERAGE_COFFEE
+                ),
+                ExpiringItemCard(
+                    expirationLabel = "teste",
+                    productName = "teste icone ausente",
+                    anchoredTargetLabel = "04/03",
+                    productCategory = "teste",
+                    anchoredGaugeProgress = 1.3f,
+                    iconPainterURI = null
+                ),
+            )
+        ),
+        HomeWidget.ConsumptionTrend(
+            productName = "Café Pilão",
+            frequencyLabel = "Comprado a cada 12 dias"
+        ),
+        HomeWidget.QuickTip(
+            title = "Dica de Economia",
+            description = "O feijão está 20% mais barato no Mercado X hoje!"
+        ),
+        HomeWidget.SmartList(
+            title = "Cria Lista Inteligente",
+            description = ""
+        ),
+        HomeWidget.QuickInsert(
+            title = "Adicionar Produto",
+            description = ""
+        )
+
+    )
+}
