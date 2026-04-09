@@ -61,8 +61,8 @@ fun SecondaryContainerGlassCard(
 ) {
     val isDark = isSystemInDarkTheme()
     val tintColor = if (isDark) containerColorDark else containerColorLight
-    val primaryAlpha = if (isDark) 0.3f else 0.4f
-    val secondaryAlpha = if (isDark) 0.05f else 0.1f
+    val primaryAlpha = if (isDark) 0.6f else 0.9f
+    val secondaryAlpha = if (isDark) 0.4f else 0.7f
 
     val borderColor = if (isDark) Color.White.copy(alpha = 0.3f) else Color.White
 

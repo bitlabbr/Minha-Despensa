@@ -189,8 +189,8 @@ fun ExpiringItemTile(
 
     val shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner)
     val isDark = isSystemInDarkTheme()
-    val primaryAlpha = if (isDark) 0.9f else 1f
-    val secondaryAlpha = if (isDark) 0.5f else 0.3f
+    val primaryAlpha = if (isDark) 0.6f else 0.8f
+    val secondaryAlpha = if (isDark) 0.3f else 0.6f
 
     val glassBrush = Brush.linearGradient(
         colors = listOf(
@@ -346,8 +346,8 @@ fun ConsumptionTrendItemTile(
 
     val shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner)
     val isDark = isSystemInDarkTheme()
-    val primaryAlpha = if (isDark) 0.9f else 1f
-    val secondaryAlpha = if (isDark) 0.5f else 0.3f
+    val primaryAlpha = if (isDark) 0.6f else 0.8f
+    val secondaryAlpha = if (isDark) 0.3f else 0.6f
 
     val glassBrush = Brush.linearGradient(
         colors = listOf(

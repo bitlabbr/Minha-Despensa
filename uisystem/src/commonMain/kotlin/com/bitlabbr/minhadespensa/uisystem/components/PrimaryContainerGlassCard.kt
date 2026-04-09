@@ -59,8 +59,8 @@ fun PrimaryContainerGlassCard(
 
     val isDark = isSystemInDarkTheme()
     val tintColor = if (isDark) primaryContainerDarkAppColor else primaryContainerLightAppColor
-    val primaryAlpha = if (isDark) 0.9f else 0.9f
-    val secondaryAlpha = if (isDark) 0.5f else 0.8f
+    val primaryAlpha =  0.7f
+    val secondaryAlpha = 0.3f
     val borderColor = if (isDark) primaryContainerDarkAppColor else Color.White
 
     val glassBrush = Brush.linearGradient(
