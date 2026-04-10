@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
+import androidx.compose.runtime.Immutable
 import com.bitlabbr.minhadespensa.core.domain.model.ConsumptionTrendItemCard
 import com.bitlabbr.minhadespensa.core.domain.model.ExpiringItemCard
 
@@ -33,10 +34,12 @@ sealed class HomeWidget {
         val trend: String
     ) : HomeWidget()
 
+    @Immutable
     data class ExpiringSoon(
         val items: List<ExpiringItemCard>
     ) : HomeWidget()
 
+    @Immutable
     data class ConsumptionTrend(
         val items: List<ConsumptionTrendItemCard>
     ) : HomeWidget()

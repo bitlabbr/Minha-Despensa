@@ -51,6 +51,8 @@ fun ExpiringSoonCard(
     val content = data.items
     val hasMoreItems = content.size > maxInitialItems
     val visibleItems = if (isExpanded || !hasMoreItems) content else content.take(maxInitialItems)
+    
+    val toggleExpanded = remember { { isExpanded = !isExpanded } }
 
     SecondaryContainerGlassCard(
         modifier = Modifier
@@ -83,7 +85,7 @@ fun ExpiringSoonCard(
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
-                        onClick = { isExpanded = !isExpanded },
+                        onClick = toggleExpanded,
                         colors = ButtonDefaults.buttonColors(containerColor = defaultButtonColor)
                     ) {
                         CustomText(

@@ -48,6 +48,8 @@ fun ConsumptionTrendCard(data: HomeWidget.ConsumptionTrend) {
     val content = data.items
     val hasMoreItems = content.size > maxInitialItems
     val visibleItems = if (isExpanded || !hasMoreItems) content else content.take(maxInitialItems)
+    
+    val toggleExpanded = remember { { isExpanded = !isExpanded } }
 
     SecondaryContainerGlassCard(
         modifier = Modifier
@@ -81,7 +83,7 @@ fun ConsumptionTrendCard(data: HomeWidget.ConsumptionTrend) {
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
-                        onClick = { isExpanded = !isExpanded },
+                        onClick = toggleExpanded,
                         colors = ButtonDefaults.buttonColors(containerColor = defaultButtonColor)
                     ) {
                         CustomText(

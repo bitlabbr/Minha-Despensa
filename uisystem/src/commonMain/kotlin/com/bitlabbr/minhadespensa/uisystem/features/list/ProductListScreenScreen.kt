@@ -53,6 +53,12 @@ fun ProductListScreen() {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
+    
+    val onAddClick = remember { { showBottomSheet = true } }
+    val onDismissSheet = remember { { 
+        showBottomSheet = false
+        viewModel.resetForm()
+    } }
 
     Scaffold(
         topBar = {
@@ -69,7 +75,7 @@ fun ProductListScreen() {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showBottomSheet = true },
+                onClick = onAddClick,
                 containerColor = MinhaDespensaTheme.color.onSecondary,
             ) {
                 Icon(
@@ -101,7 +107,7 @@ fun ProductListScreen() {
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = paddingValues
                         ) {
-                            items(state.items) { product ->
+                            items(items = state.items, key = { it.id }) { product ->
                                 val appDimens = MinhaDespensaTheme.dimens
                                 PrimaryContainerGlassCard(
                                     modifier = Modifier
@@ -161,10 +167,7 @@ fun ProductListScreen() {
                             if (!sheetState.isVisible) showBottomSheet = false
                         }
                     },
-                    onDismiss = {
-                        showBottomSheet = false
-                        viewModel.resetForm()
-                    }
+                    onDismiss = onDismissSheet
                 )
             }
         }
