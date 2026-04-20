@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
-import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import org.koin.core.annotation.KoinExperimentalAPI
 
@@ -41,6 +41,7 @@ import org.koin.core.annotation.KoinExperimentalAPI
 @Composable
 fun SettingsScreen() {
     Scaffold(
+        containerColor = Color.Transparent,
         topBar = {
             CustomTopBar(
                 backgroundColor = Color.Transparent,
@@ -77,7 +78,7 @@ fun SettingsScreen() {
 @Composable
 private fun MenuItem() {
     val appDimens = MinhaDespensaTheme.dimens
-    GlassCard(
+    PrimaryContainerGlassCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(

@@ -33,3 +33,6 @@ data object SettingsRoute
 
 @Serializable
 data class ProductDetailsRoute(val productId: String)
+
+@Serializable
+data object HomeScreenRoute

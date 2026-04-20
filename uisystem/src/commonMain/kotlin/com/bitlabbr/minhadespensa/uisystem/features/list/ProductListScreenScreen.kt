@@ -37,7 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
-import com.bitlabbr.minhadespensa.uisystem.components.GlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
@@ -53,6 +53,12 @@ fun ProductListScreen() {
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
+    
+    val onAddClick = remember { { showBottomSheet = true } }
+    val onDismissSheet = remember { { 
+        showBottomSheet = false
+        viewModel.resetForm()
+    } }
 
     Scaffold(
         topBar = {
@@ -69,7 +75,7 @@ fun ProductListScreen() {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showBottomSheet = true },
+                onClick = onAddClick,
                 containerColor = MinhaDespensaTheme.color.onSecondary,
             ) {
                 Icon(
@@ -79,7 +85,7 @@ fun ProductListScreen() {
                 )
             }
         },
-        containerColor = MinhaDespensaTheme.color.background
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier.fillMaxSize()
@@ -101,9 +107,9 @@ fun ProductListScreen() {
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = paddingValues
                         ) {
-                            items(state.items) { product ->
+                            items(items = state.items, key = { it.id }) { product ->
                                 val appDimens = MinhaDespensaTheme.dimens
-                                GlassCard(
+                                PrimaryContainerGlassCard(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(
@@ -161,10 +167,7 @@ fun ProductListScreen() {
                             if (!sheetState.isVisible) showBottomSheet = false
                         }
                     },
-                    onDismiss = {
-                        showBottomSheet = false
-                        viewModel.resetForm()
-                    }
+                    onDismiss = onDismissSheet
                 )
             }
         }

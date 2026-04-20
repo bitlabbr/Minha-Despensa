@@ -22,6 +22,7 @@
  */
 package com.bitlabbr.minhadespensa.uisystem.features.list
 
+import androidx.compose.runtime.Immutable
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 
 data class ProductFormState(
@@ -38,6 +39,7 @@ data class ProductFormState(
 sealed interface ProductsUiState {
     data object Loading : ProductsUiState
 
+    @Immutable
     data class Success(
         val items: List<PantryItemUiModel>,
         val totalQuantity: Double

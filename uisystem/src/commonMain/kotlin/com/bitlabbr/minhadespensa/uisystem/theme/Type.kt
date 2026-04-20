@@ -31,68 +31,82 @@ import androidx.compose.ui.unit.sp
 
 
 data class AppTypography(
-    val displayLarge: TextStyle,
-    val displayMedium: TextStyle,
-    val bodyLarge: TextStyle,
-    val bodySmall: TextStyle,
-    val button: TextStyle
+    val displayLarge: TextStyle,  // Títulos de telas (ex: "Minha Despensa")
+    val displayMedium: TextStyle, // Títulos de seções ou categorias
+    val bodyLarge: TextStyle,    // Nomes de produtos na lista
+    val bodySmall: TextStyle,    // Metadados (EAN, Marca, Validade)
+    val button: TextStyle,       // Ações em botões primários e secundários
+    val priceLabel: TextStyle    // Estilo específico para valores monetários
 )
 
 val compactTypography = AppTypography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 26.sp,
+        letterSpacing = (-0.5).sp
     ),
     displayMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Medium,
-        fontSize = 20.sp
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 18.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Normal,
-        fontSize = 16.sp,
-        lineHeight = 24.sp
+        fontWeight = FontWeight.Medium,
+        fontSize = 18.sp,
+        lineHeight = 22.sp
     ),
     bodySmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Light,
-        fontSize = 12.sp
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        letterSpacing = 0.4.sp
     ),
     button = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
-        fontSize = 14.sp
+        fontSize = 14.sp,
+        letterSpacing = 1.sp
+    ),
+    priceLabel = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 16.sp
     )
 )
 
 val expandedTypography = AppTypography(
     displayLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 36.sp
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 34.sp
     ),
     displayMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Medium,
+        fontWeight = FontWeight.SemiBold,
         fontSize = 24.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 18.sp,
-        lineHeight = 28.sp
+        lineHeight = 26.sp
     ),
     bodySmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Light,
+        fontWeight = FontWeight.Normal,
         fontSize = 14.sp
     ),
     button = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
         fontSize = 16.sp
+    ),
+    priceLabel = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp
     )
 )
 
@@ -104,6 +118,7 @@ fun AppTypography.withScale(scaleFactor: Float): AppTypography {
         displayMedium = this.displayMedium.copy(fontSize = this.displayMedium.fontSize * scaleFactor),
         bodyLarge = this.bodyLarge.copy(fontSize = this.bodyLarge.fontSize * scaleFactor),
         bodySmall = this.bodySmall.copy(fontSize = this.bodySmall.fontSize * scaleFactor),
-        button = this.button.copy(fontSize = this.button.fontSize * scaleFactor)
+        button = this.button.copy(fontSize = this.button.fontSize * scaleFactor),
+        priceLabel = this.priceLabel.copy(fontSize = this.priceLabel.fontSize * scaleFactor)
     )
 }
