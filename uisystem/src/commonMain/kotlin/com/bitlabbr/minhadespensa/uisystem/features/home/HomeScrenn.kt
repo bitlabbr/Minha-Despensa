@@ -93,8 +93,6 @@ fun HomeScreen(
                                         is HomeWidget.FinancialSummary -> FinancialCard(widget)
                                         is HomeWidget.ExpiringSoon -> ExpiringSoonCard(widget)
                                         is HomeWidget.ConsumptionTrend -> ConsumptionTrendCard(widget)
-                                        is HomeWidget.SmartList -> SmartListCard(widget)
-                                        is HomeWidget.QuickInsert -> QuickInsertCard()
                                         else -> {}
                                     }
                                 }

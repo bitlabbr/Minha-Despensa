@@ -44,18 +44,4 @@ sealed class HomeWidget {
         val items: List<ConsumptionTrendItemCard>
     ) : HomeWidget()
 
-    data class SmartList(
-        val title: String,
-        val description: String
-    ) : HomeWidget()
-
-    data class QuickTip(
-        val title: String,
-        val description: String
-    ) : HomeWidget()
-
-    data class QuickInsert(
-        val title: String,
-        val description: String
-    ) : HomeWidget()
 }

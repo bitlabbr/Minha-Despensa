@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.app
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -48,8 +49,8 @@ import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 private val bottomNavItems = listOf(
-    BottomNavItem("Início", Icons.Default.Settings, HomeScreenRoute),
-    BottomNavItem("Despensa", Icons.Default.Home, ProductListRoute),
+    BottomNavItem("Início", Icons.Default.Home, HomeScreenRoute),
+    BottomNavItem("Despensa", Icons.AutoMirrored.Rounded.List, ProductListRoute),
     BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute)
 )
 

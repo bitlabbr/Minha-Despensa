@@ -145,21 +145,8 @@ object HomeMockData {
                     iconPainterURI = IconKeys.CLEANING_PAPER_TOWEL,
                     productMeasureUnity = "Pacote",
                     consumptionAmount = "0",
-                ),
+                )
             )
-        ),
-        HomeWidget.QuickTip(
-            title = "Dica de Economia",
-            description = "O feijão está 20% mais barato no Mercado X hoje!"
-        ),
-        HomeWidget.SmartList(
-            title = "Cria Lista Inteligente",
-            description = ""
-        ),
-        HomeWidget.QuickInsert(
-            title = "Adicionar Produto",
-            description = ""
         )
-
     )
 }
