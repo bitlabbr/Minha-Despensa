@@ -48,7 +48,7 @@ fun ConsumptionTrendCard(data: HomeWidget.ConsumptionTrend) {
     val content = data.items
     val hasMoreItems = content.size > maxInitialItems
     val visibleItems = if (isExpanded || !hasMoreItems) content else content.take(maxInitialItems)
-    
+
     val toggleExpanded = remember { { isExpanded = !isExpanded } }
 
     SecondaryContainerGlassCard(
@@ -58,7 +58,7 @@ fun ConsumptionTrendCard(data: HomeWidget.ConsumptionTrend) {
                 horizontal = MinhaDespensaTheme.dimens.paddingSmall,
                 vertical = MinhaDespensaTheme.dimens.paddingSmall
             ),
-        content = listOf {
+        content = {
             SecondaryContainerHeader(
                 text = "ITENS MAIS CONSUMIDOS NO MÊS"
             )

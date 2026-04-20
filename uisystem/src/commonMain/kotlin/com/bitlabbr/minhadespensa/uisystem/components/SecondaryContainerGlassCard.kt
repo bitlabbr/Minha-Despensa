@@ -28,6 +28,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -57,7 +58,7 @@ fun SecondaryContainerGlassCard(
     borderWidth: Dp = 1.dp,
     containerColorDark: Color = secondaryContainerDarkAppColor,
     containerColorLight: Color = secondaryContainerLightAppColor,
-    content: List<@Composable () -> Unit>
+    content: @Composable ColumnScope.() -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val tintColor = if (isDark) containerColorDark else containerColorLight
@@ -102,11 +103,8 @@ fun SecondaryContainerGlassCard(
         Column(
             modifier = Modifier
                 .padding(MinhaDespensaTheme.dimens.paddingSmall)
-                .align(Alignment.Center)
-        ) {
-            content.forEach { content ->
-                content()
-            }
-        }
+                .align(Alignment.Center),
+            content = content
+        )
     }
 }

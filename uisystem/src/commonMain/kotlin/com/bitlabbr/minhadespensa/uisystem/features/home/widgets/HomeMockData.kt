@@ -30,9 +30,10 @@ import com.bitlabbr.minhadespensa.core.domain.model.IconKeys
 object HomeMockData {
     val widgets = listOf(
         HomeWidget.FinancialSummary(
-            totalSpent = "R$ 452,30",
-            period = "Março 2026",
-            trend = "15% menos que fevereiro"
+            consumptionProgress = 0.85f,
+            consumptionTargetChartLabel = "R$1000,00",
+            currentConsumption = "R$850,00",
+            budget = "R$1000,00",
         ),
         HomeWidget.ExpiringSoon(
             items = listOf(

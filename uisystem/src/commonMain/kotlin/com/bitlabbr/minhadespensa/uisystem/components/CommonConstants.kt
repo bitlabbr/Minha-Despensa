@@ -24,9 +24,7 @@
 package com.bitlabbr.minhadespensa.uisystem.components
 
 class CommonConstants {
-
-    object Ui {
-        val ALIGNMENT_TOP = 1
-        val ALIGNMENT_CENTER = 2
+    enum class ColumnAlignment{
+        ALIGNMENT_TOP, ALIGNMENT_CENTER
     }
 }

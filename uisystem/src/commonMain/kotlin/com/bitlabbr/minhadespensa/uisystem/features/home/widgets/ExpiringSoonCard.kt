@@ -51,7 +51,7 @@ fun ExpiringSoonCard(
     val content = data.items
     val hasMoreItems = content.size > maxInitialItems
     val visibleItems = if (isExpanded || !hasMoreItems) content else content.take(maxInitialItems)
-    
+
     val toggleExpanded = remember { { isExpanded = !isExpanded } }
 
     SecondaryContainerGlassCard(
@@ -61,7 +61,7 @@ fun ExpiringSoonCard(
                 horizontal = MinhaDespensaTheme.dimens.paddingSmall,
                 vertical = MinhaDespensaTheme.dimens.paddingSmall
             ),
-        content = listOf {
+        content = {
             SecondaryContainerHeader(
                 text = "ITENS PRÓXIMOS À VALIDADE"
             )

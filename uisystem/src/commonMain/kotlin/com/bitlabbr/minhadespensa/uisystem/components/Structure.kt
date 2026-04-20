@@ -23,18 +23,8 @@
 
 package com.bitlabbr.minhadespensa.uisystem.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -104,7 +94,7 @@ fun PrimaryContainerHeader(
 
 @Composable
 fun SecondaryContainerHeader(
-   text: String
+    text: String
 ) {
     Row(
         modifier = Modifier
@@ -144,11 +134,11 @@ fun SimpleColumn(
 
 @Composable
 fun CustomColumn(
-    alignmentStrategy: Int = CommonConstants.Ui.ALIGNMENT_TOP,
+    alignmentStrategy: CommonConstants.ColumnAlignment = CommonConstants.ColumnAlignment.ALIGNMENT_TOP,
     layouts: List<@Composable () -> Unit>,
     modifier: Modifier = Modifier
 ) {
-    if (alignmentStrategy == CommonConstants.Ui.ALIGNMENT_TOP) {
+    if (alignmentStrategy == CommonConstants.ColumnAlignment.ALIGNMENT_TOP) {
         Column(
             modifier = modifier,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -157,7 +147,7 @@ fun CustomColumn(
                 layout()
             }
         }
-    } else if (alignmentStrategy == CommonConstants.Ui.ALIGNMENT_CENTER) {
+    } else if (alignmentStrategy == CommonConstants.ColumnAlignment.ALIGNMENT_CENTER) {
         Column(
             modifier = modifier,
             horizontalAlignment = Alignment.CenterHorizontally,

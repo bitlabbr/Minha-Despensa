@@ -88,12 +88,11 @@ fun HomeScreen(
                         ) {
                             PrimaryContainerHeader{}
                             widgets.forEach { widget ->
-                                Column() {
+                                Column {
                                     when (widget) {
                                         is HomeWidget.FinancialSummary -> FinancialCard(widget)
                                         is HomeWidget.ExpiringSoon -> ExpiringSoonCard(widget)
                                         is HomeWidget.ConsumptionTrend -> ConsumptionTrendCard(widget)
-                                        else -> {}
                                     }
                                 }
                             }

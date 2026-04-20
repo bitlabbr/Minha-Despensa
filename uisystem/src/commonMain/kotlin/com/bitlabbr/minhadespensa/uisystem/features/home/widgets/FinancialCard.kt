@@ -36,22 +36,33 @@ import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugePrimaryColor
 import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugeSecondaryColor
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.financial_card_budget
+import minhadespensa.uisystem.generated.resources.financial_card_current_consumption_label
+import minhadespensa.uisystem.generated.resources.financial_card_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun FinancialCard(data: HomeWidget.FinancialSummary) {
     val colors = MinhaDespensaTheme.color
     val appDimens = MinhaDespensaTheme.dimens
+
+    val consumptionProgress = data.consumptionProgress
+    val currentConsumption = data.currentConsumption
+    val targetChartLabel = data.consumptionTargetChartLabel
+    val budget = data.budget
+
     SecondaryContainerGlassCard(
-        content = listOf {
+        content = {
             SecondaryContainerHeader(
-                text = "VALOR GASTO NO MêS"
+                text = stringResource(Res.string.financial_card_title)
             )
             InverseAnchoredGauge(
                 colorPrimary = financialGaugePrimaryColor,
                 colorSecondary = financialGaugeSecondaryColor,
-                progress = 0.85f,
+                progress = consumptionProgress,
                 gaugeHeight = 35.dp,
-                targetLabel = "R$1000,00"
+                targetLabel = targetChartLabel
             )
             Row(
                 modifier = Modifier
@@ -64,13 +75,13 @@ fun FinancialCard(data: HomeWidget.FinancialSummary) {
             ) {
                 Column {
                     CustomText(
-                        text = "Gasto Atual:",
+                        text = stringResource(Res.string.financial_card_current_consumption_label),
                         fontStyle = MinhaDespensaTheme.typography.displayMedium,
                         color = colors.onSecondaryContainer,
                         fontWeight = FontWeight.Light
                     )
                     CustomText(
-                        text = "R$850,00",
+                        text = currentConsumption,
                         fontStyle = MinhaDespensaTheme.typography.priceLabel,
                         color = colors.onSecondaryContainer,
                         fontWeight = FontWeight.Bold
@@ -79,13 +90,13 @@ fun FinancialCard(data: HomeWidget.FinancialSummary) {
 
                 Column {
                     CustomText(
-                        text = "Orçamento:",
+                        text = stringResource(Res.string.financial_card_budget),
                         fontStyle = MinhaDespensaTheme.typography.displayMedium,
                         color = colors.onSecondaryContainer,
                         fontWeight = FontWeight.Light
                     )
                     CustomText(
-                        text = "R$1000,00",
+                        text = budget,
                         fontStyle = MinhaDespensaTheme.typography.priceLabel,
                         color = colors.onSecondaryContainer,
                         fontWeight = FontWeight.Bold

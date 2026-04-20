@@ -29,9 +29,10 @@ import com.bitlabbr.minhadespensa.core.domain.model.ExpiringItemCard
 
 sealed class HomeWidget {
     data class FinancialSummary(
-        val totalSpent: String,
-        val period: String,
-        val trend: String
+        val consumptionProgress: Float,
+        val consumptionTargetChartLabel: String,
+        val currentConsumption: String,
+        val budget: String,
     ) : HomeWidget()
 
     @Immutable
