@@ -43,8 +43,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bitlabbr.minhadespensa.uisystem.components.*
 import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductListScreen
 import com.bitlabbr.minhadespensa.uisystem.features.list.SettingsScreen
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
@@ -124,7 +124,7 @@ fun App() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     composable<ProductListRoute> {
-                        ProductListScreen()
+                        PantryScreen()
                     }
 
                     composable<SettingsRoute> {

@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.home
+package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -35,14 +35,17 @@ import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerHeader
-import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.*
+import com.bitlabbr.minhadespensa.uisystem.components.ProductSearchBar
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.CategoryCard
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryMockData
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryWidget
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 @Composable
-fun HomeScreen(
+fun PantryScreen(
     bottomPadding: Dp = 0.dp
 ) {
-    val widgets = HomeMockData.widgets
+    val widgets = PantryMockData.widgets
     val appColors = MinhaDespensaTheme.color
     val appTypography = MinhaDespensaTheme.typography
 
@@ -87,15 +90,14 @@ fun HomeScreen(
                                 )
                         ) {
                             PrimaryContainerHeader(
-                                textTop = "Visão",
-                                textBottom = "Geral"
-                            ){}
-                            widgets.forEach { homeWidget ->
+                                textTop = "Minha",
+                                textBottom = "Despensa"
+                            ) {}
+                            widgets.forEach { pantryWidget ->
                                 Column {
-                                    when (homeWidget) {
-                                        is HomeWidget.FinancialSummary -> FinancialCard(homeWidget)
-                                        is HomeWidget.ExpiringSoon -> ExpiringSoonCard(homeWidget)
-                                        is HomeWidget.ConsumptionTrend -> ConsumptionTrendCard(homeWidget)
+                                    when (pantryWidget) {
+                                        is PantryWidget.SearchBar -> ProductSearchBar()
+                                        is PantryWidget.CategoriesSummary -> CategoryCard(pantryWidget)
                                     }
                                 }
                             }

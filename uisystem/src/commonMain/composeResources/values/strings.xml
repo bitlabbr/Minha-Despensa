@@ -25,4 +25,5 @@
     <string name="financial_card_title">VALOR GASTO NO MÊS</string>
     <string name="financial_card_current_consumption_label">Gasto Atual:</string>
     <string name="financial_card_budget">Orçamento:</string>
+    <string name="inventory_card_title">INVENTÁRIO COMPLETO</string>
 </resources>
