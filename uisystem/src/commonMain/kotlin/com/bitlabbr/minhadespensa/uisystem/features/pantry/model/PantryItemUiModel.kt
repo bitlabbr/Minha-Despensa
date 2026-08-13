@@ -21,9 +21,10 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.list
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
 
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 
 data class PantryItemUiModel(
     val id: String,

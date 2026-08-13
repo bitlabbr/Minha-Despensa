@@ -20,31 +20,25 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.list
 
-import androidx.compose.runtime.Immutable
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+package com.bitlabbr.minhadespensa.uisystem.features.pantry
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
+import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlin.collections.emptyMap
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
-data class ProductFormState(
-    val name: String = "",
-    val brand: String = "",
-    val quantity: String = "",
-    val unit: MeasureUnit = MeasureUnit.UNITY,
-    val netWeight: String = "",
-    val expirationDate: Long? = null,
-    val price: String = "",
-    val isSaving: Boolean = false
-)
 
-sealed interface ProductsUiState {
-    data object Loading : ProductsUiState
+class PantryViewModel(
+    val pantryRepository: PantryRepository,
+    private val logger: AppLogger
+) : ViewModel() {
 
-    @Immutable
-    data class Success(
-        val items: List<PantryItemUiModel>,
-        val totalQuantity: Double
-    ) : ProductsUiState
-
-    data class Error(val message: String) : ProductsUiState
 }

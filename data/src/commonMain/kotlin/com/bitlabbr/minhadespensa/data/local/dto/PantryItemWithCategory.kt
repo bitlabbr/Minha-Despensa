@@ -20,31 +20,14 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.list
 
-import androidx.compose.runtime.Immutable
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+package com.bitlabbr.minhadespensa.data.local.dto
 
-data class ProductFormState(
-    val name: String = "",
-    val brand: String = "",
-    val quantity: String = "",
-    val unit: MeasureUnit = MeasureUnit.UNITY,
-    val netWeight: String = "",
-    val expirationDate: Long? = null,
-    val price: String = "",
-    val isSaving: Boolean = false
+import androidx.room.Embedded
+import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+
+data class PantryItemWithCategory(
+    @Embedded val pantryItem: PantryItemEntity,
+    val category: String,
+    val name: String
 )
-
-sealed interface ProductsUiState {
-    data object Loading : ProductsUiState
-
-    @Immutable
-    data class Success(
-        val items: List<PantryItemUiModel>,
-        val totalQuantity: Double
-    ) : ProductsUiState
-
-    data class Error(val message: String) : ProductsUiState
-}

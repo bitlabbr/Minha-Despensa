@@ -44,7 +44,7 @@ interface CatalogProductDao {
     @Query(
         """
     UPDATE catalog_products 
-    SET name = :name, ean = :ean, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, updatedAt = :updatedAt, isDeleted = :isDeleted
+    SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, updatedAt = :updatedAt, isDeleted = :isDeleted
     WHERE id = :id AND updatedAt < :updatedAt
 """
     )
@@ -53,6 +53,7 @@ interface CatalogProductDao {
         name: String,
         ean: String?,
         brand: String?,
+        category: String,
         measureUnit: MeasureUnit,
         thumbnailUrl: String?,
         netWeight: Double,

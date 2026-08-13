@@ -30,6 +30,7 @@ data class CatalogProduct(
     val id: String,
     val ean: String? = null,
     val name: String,
+    val category: String = "Outros",
     val brand: String? = null,
     val measureUnit: MeasureUnit,
     val netWeight: Double,
@@ -44,6 +45,7 @@ data class CatalogProduct(
                 "id='$id', " +
                 "ean=$ean, " +
                 "name='$name', " +
+                "category='$category', " +
                 "brand=$brand, " +
                 "measureUnit=$measureUnit, " +
                 "thumbnailUrl=$thumbnailUrl," +
