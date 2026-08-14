@@ -19,7 +19,7 @@ The module has the following key dependencies:
 The module is structured around the MVVM (Model-View-ViewModel) architecture.
 
 - **Views/Composables:** The UI components are built using Jetpack Compose.
-- **ViewModels:** The `ProductsListViewModel` is responsible for preparing and managing the data for the `ProductListScreen`.
+- **ViewModels:** The `ProductsListViewModel` is responsible for preparing and managing the data for the `PantryScreen`.
 - **Models:** The `PantryItemUiModel` represents the data displayed on the UI.
 
 ## 4. Source Files
@@ -50,7 +50,7 @@ This package contains the different features of the UI:
 - **`list`**:
     - `ProductListScreen.kt`: Screen that displays a list of products.
     - `ProductsListViewModel.kt`: The ViewModel for the product list screen.
-    - `AddProductSheet.kt`: A bottom sheet for adding new products.
+    - `RegisterProductSheet.kt`: A bottom sheet for adding new products.
     - `SettingsScreen.kt`: The settings screen.
     - `PantryItemUiModel.kt`: The UI model for a pantry item.
     - `UiState.kt`: Defines the state for the list feature.
@@ -77,7 +77,7 @@ The module exposes the following public APIs:
 
 - **Composables:**
     - `HomeScreen`
-    - `ProductListScreen`
+    - `PantryScreen`
     - `SettingsScreen`
 - **ViewModels:**
     - `ProductsListViewModel`

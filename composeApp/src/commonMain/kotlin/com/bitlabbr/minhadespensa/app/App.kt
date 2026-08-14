@@ -43,14 +43,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bitlabbr.minhadespensa.uisystem.components.*
 import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductListScreen
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.features.list.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 private val bottomNavItems = listOf(
     BottomNavItem("Início", Icons.Default.Home, HomeScreenRoute),
-    BottomNavItem("Despensa", Icons.AutoMirrored.Rounded.List, ProductListRoute),
+    BottomNavItem("Despensa", Icons.AutoMirrored.Rounded.List, PantryScreenRoute),
     BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute)
 )
 
@@ -123,8 +123,8 @@ fun App() {
                     startDestination = HomeScreenRoute,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    composable<ProductListRoute> {
-                        ProductListScreen()
+                    composable<PantryScreenRoute> {
+                        PantryScreen(bottomPadding = innerPadding.calculateBottomPadding())
                     }
 
                     composable<SettingsRoute> {

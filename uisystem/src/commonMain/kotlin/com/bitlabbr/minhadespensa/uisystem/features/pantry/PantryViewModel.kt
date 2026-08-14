@@ -28,8 +28,11 @@ import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.uisystem.features.list.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
@@ -43,6 +46,9 @@ class PantryViewModel(
 
     private val _uiState = MutableStateFlow(PantryUiState(isLoading = true))
     val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
+
+    private val _productFormState = MutableStateFlow(ProductFormState())
+    val productFormState: StateFlow<ProductFormState> = _productFormState.asStateFlow()
 
     init {
         logger.d(TAG, "init")
@@ -83,6 +89,42 @@ class PantryViewModel(
                     }
                 }
         }
+    }
+
+    fun onProductFormChange(newState: ProductFormState) {
+        _productFormState.update { newState }
+    }
+
+    fun saveProduct(): Job {
+        return viewModelScope.launch {
+            _productFormState.update { it.copy(isSaving = true) }
+            val formState = _productFormState.value
+
+            logger.d(TAG, "Attempting to save product with state: $formState")
+
+            // Here you would typically convert the form state to a domain model
+            // and persist it using the repository.
+            // For example:
+            // val newProduct = Product(name = formState.name, ...)
+            // pantryRepository.insertProduct(newProduct)
+
+            // Simulating a save operation
+            delay(1500)
+
+            logger.d(TAG, "Product saved successfully.")
+
+            // Resetting form state after saving. This also sets isSaving back to false.
+            _productFormState.update { ProductFormState() }
+        }
+    }
+
+    /**
+     * Resets the product form to its initial state.
+     * Typically used when the user cancels the creation process.
+     */
+    fun resetProductForm() {
+        _productFormState.value = ProductFormState()
+        logger.d(TAG, "Product form state has been reset.")
     }
 
     companion object {

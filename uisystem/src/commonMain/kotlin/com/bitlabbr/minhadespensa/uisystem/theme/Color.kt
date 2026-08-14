@@ -44,7 +44,7 @@ val onSurfaceLightAppColor = Color(0xFF42586B)
 val primaryContainerLightAppColor = Color(0xFFD0CECD)
 val onPrimaryContainerLightAppColor = Color(0xFF4B555F)
 
-val secondaryContainerLightAppColor = Color(0xFFC9C5C0)
+val secondaryContainerLightAppColor = Color(0xFFC9C6C0)
 val onSecondaryContainerLightAppColor = Color(0xC3000000)
 
 // Dark Colorsela
@@ -54,7 +54,7 @@ val onPrimaryDarkAppColor = Color(0xFFC5C7CB)
 val secondaryDarkAppColor = Color(0xFFFF5722)
 val onSecondaryDarkAppColor = Color(0xFFDCD4D2)
 
-val primaryContainerDarkAppColor = Color(0xFF262626)
+val primaryContainerDarkAppColor = Color(0xFFD9D7D2)
 val onPrimaryContainerDarkAppColor = Color(0xFFD3DEEC)
 
 val secondaryContainerDarkAppColor = Color(0xFF0C0C0C)
