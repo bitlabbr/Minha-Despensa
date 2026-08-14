@@ -81,4 +81,21 @@ interface PantryRepositoryDao {
         WHERE p.isDeleted = 0 AND c.isDeleted = 0
     """)
     fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategoryDaoResult>>
+
+    @Query("""
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.id = :pantryItemId AND p.isDeleted = 0 AND c.isDeleted = 0
+    """)
+    fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategoryDaoResult?>
+
+    @Query("""
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.isDeleted = 0 AND c.isDeleted = 0 AND p.expirationDate IS NOT NULL AND p.expirationDate <= :expirationThreshold
+        ORDER BY p.expirationDate ASC
+    """)
+    fun getExpiringPantryItemsDao(expirationThreshold: Int): Flow<List<PantryItemWithCategoryDaoResult>>
 }

@@ -56,6 +56,18 @@ class RoomPantryRepository(
         }
     }
 
+    override fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategory?> {
+        logger.d(TAG, "getPantryItemWithCategoryByID: pantryItemId: $pantryItemId")
+        return dao.getPantryItemWithCategoryByID(pantryItemId).map { it?.toDomain() }
+    }
+
+    override fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>> {
+        logger.d(TAG, "getExpiringPantryItems: thresholdDays: $thresholdDays")
+        return dao.getExpiringPantryItemsDao(thresholdDays).map { pantryItemsWithCategoryDaoResult ->
+            pantryItemsWithCategoryDaoResult.map { it.toDomain() }
+        }
+    }
+
     override suspend fun insertPantryItem(item: PantryItem) {
         logger.d(TAG, "insertPantryItem item: $item")
         validatePantryItem(item)

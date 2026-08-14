@@ -32,6 +32,8 @@ interface PantryRepository {
     fun getPantryItemsByProductID(productId: String): Flow<List<PantryItem>>
     fun getAllActivePantryItems(): Flow<List<PantryItem>>
     fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategory>>
+    fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategory?>
+    fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>>
     suspend fun insertPantryItem(item: PantryItem)
     suspend fun forceUpdatePantryItem(item: PantryItem)
     suspend fun updatePantryItemIfNewer(item: PantryItem)

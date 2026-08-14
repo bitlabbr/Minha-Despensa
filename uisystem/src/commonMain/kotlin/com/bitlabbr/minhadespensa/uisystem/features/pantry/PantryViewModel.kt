@@ -25,20 +25,83 @@ package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlin.collections.emptyMap
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 
 class PantryViewModel(
-    val pantryRepository: PantryRepository,
+    private val pantryRepository: PantryRepository,
     private val logger: AppLogger
 ) : ViewModel() {
 
+    private val TAG = "PantryViewModel"
+
+    private val _uiState = MutableStateFlow(PantryUiState(isLoading = true))
+    val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
+
+    init {
+        logger.d(TAG, "init")
+        viewModelScope.launch {
+            combine(
+                pantryRepository.getAllActivePantryItemsWithCategory(),
+                pantryRepository.getExpiringPantryItems(EXPIRATION_THRESHOLD_DAYS)
+            ) { allItems, expiringItems ->
+                _uiState.update { currentState ->
+                    currentState.copy(
+                        allActivePantryItems = allItems.map { it.toPantryItemUiModel() },
+                        expiringPantryItems = expiringItems.map { it.toPantryItemUiModel() },
+                        isLoading = false,
+                        error = null
+                    )
+                }
+            }.stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = null
+            )
+        }
+    }
+
+    fun getPantryItemDetails(pantryItemId: String) {
+        logger.d(TAG, "getPantryItemDetails: $pantryItemId")
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, selectedPantryItem = null, error = null) }
+            pantryRepository.getPantryItemWithCategoryByID(pantryItemId)
+                .map { it?.toPantryItemUiModel() }
+                .collect { item ->
+                    _uiState.update { currentState ->
+                        currentState.copy(
+                            selectedPantryItem = item,
+                            isLoading = false,
+                            error = if (item == null) "Pantry item not found" else null
+                        )
+                    }
+                }
+        }
+    }
+
+    companion object {
+        private const val EXPIRATION_THRESHOLD_DAYS = 7
+    }
+}
+
+fun PantryItemWithCategory.toPantryItemUiModel(): PantryItemUiModel {
+    val now = Clock.System.now().toEpochMilliseconds()
+    val isExpired = this.pantryItem.expirationDate?.let { it < now } ?: false
+
+    return PantryItemUiModel(
+        id = this.pantryItem.id,
+        name = this.name,
+        brand = null,
+        quantity = this.pantryItem.quantity,
+        measureUnit = this.pantryItem.productId.let { /* TODO: Get MeasureUnit from product details */ com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit.UNITY },
+        netWeight = 0,
+        expirationDate = this.pantryItem.expirationDate,
+        isExpired = isExpired
+    )
 }
