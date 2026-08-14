@@ -24,12 +24,16 @@
 package com.bitlabbr.minhadespensa.core.domain.repository
 
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import kotlinx.coroutines.flow.Flow
 
 interface PantryRepository {
     fun getPantryItemsByID(pantryItemId: String): Flow<PantryItem?>
     fun getPantryItemsByProductID(productId: String): Flow<List<PantryItem>>
     fun getAllActivePantryItems(): Flow<List<PantryItem>>
+    fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategory>>
+    fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategory?>
+    fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>>
     suspend fun insertPantryItem(item: PantryItem)
     suspend fun forceUpdatePantryItem(item: PantryItem)
     suspend fun updatePantryItemIfNewer(item: PantryItem)

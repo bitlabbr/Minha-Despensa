@@ -24,12 +24,19 @@ package com.bitlabbr.minhadespensa.uisystem.features.list
 
 import androidx.compose.runtime.Immutable
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 
 data class ProductFormState(
     val name: String = "",
     val brand: String = "",
     val quantity: String = "",
+    val category: String = "",
+    val ean: String = "",
+    val notes: String = "",
+    val reminderDaysBefore: String = "",
+    val expirationReminderEnabled: Boolean = false,
     val unit: MeasureUnit = MeasureUnit.UNITY,
+    val averageShelfLifeDays: String = "",
     val netWeight: String = "",
     val expirationDate: Long? = null,
     val price: String = "",

@@ -24,6 +24,7 @@
 package com.bitlabbr.minhadespensa.data.local.dao
 
 import androidx.room.*
+import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -72,4 +73,29 @@ interface PantryRepositoryDao {
 
     @Query("SELECT * FROM pantry_items WHERE id = :pantryItemId")
     fun getPantryItemByID(pantryItemId: String): Flow<PantryItemEntity?>
+
+    @Query("""
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.isDeleted = 0 AND c.isDeleted = 0
+    """)
+    fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategoryDaoResult>>
+
+    @Query("""
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.id = :pantryItemId AND p.isDeleted = 0 AND c.isDeleted = 0
+    """)
+    fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategoryDaoResult?>
+
+    @Query("""
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.isDeleted = 0 AND c.isDeleted = 0 AND p.expirationDate IS NOT NULL AND p.expirationDate <= :expirationThreshold
+        ORDER BY p.expirationDate ASC
+    """)
+    fun getExpiringPantryItemsDao(expirationThreshold: Int): Flow<List<PantryItemWithCategoryDaoResult>>
 }

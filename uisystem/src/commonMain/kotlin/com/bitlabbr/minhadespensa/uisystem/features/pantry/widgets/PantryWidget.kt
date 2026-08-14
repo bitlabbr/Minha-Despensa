@@ -21,18 +21,9 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets
 
-import kotlinx.serialization.Serializable
 
-@Serializable
-data object PantryScreenRoute
+sealed class PantryWidget {
 
-@Serializable
-data object SettingsRoute
-
-@Serializable
-data class ProductDetailsRoute(val productId: String)
-
-@Serializable
-data object HomeScreenRoute
+}

@@ -21,18 +21,14 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
-import kotlinx.serialization.Serializable
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 
-@Serializable
-data object PantryScreenRoute
-
-@Serializable
-data object SettingsRoute
-
-@Serializable
-data class ProductDetailsRoute(val productId: String)
-
-@Serializable
-data object HomeScreenRoute
+data class PantryUiState(
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val allActivePantryItems: List<PantryItemUiModel> = emptyList(),
+    val expiringPantryItems: List<PantryItemUiModel> = emptyList(),
+    val selectedPantryItem: PantryItemUiModel? = null
+)

@@ -140,6 +140,7 @@ class RoomCatalogRepository(
                 val rowsAffected = productDao.updateProductIfNewer(
                     id = product.id,
                     name = product.name,
+                    category = product.category,
                     ean = product.ean,
                     brand = product.brand,
                     measureUnit = product.measureUnit,
@@ -198,6 +199,9 @@ class RoomCatalogRepository(
         require(isValidTimestamp(product.updatedAt)) { "Invalid epoch time millis" }
 
         require(product.netWeight > 0) { "Product netweight should be more than zero" }
+
+        require(product.category.isNotBlank()) { "The category shouldn't be empty" }
+        require(product.category.length <= 20) { "The category should have at most 20 characters" }
     }
 }
 
@@ -205,6 +209,7 @@ fun CatalogProductEntity.toDomain() = CatalogProduct(
     id = this.id,
     ean = this.ean,
     name = this.name,
+    category = this.category,
     brand = this.brand,
     measureUnit = MeasureUnit.valueOf(this.measureUnit),
     netWeight = this.netWeight,
@@ -218,6 +223,7 @@ fun CatalogProduct.toEntity() = CatalogProductEntity(
     id = this.id,
     ean = this.ean,
     name = this.name,
+    category = this.category,
     brand = this.brand,
     measureUnit = this.measureUnit.name,
     netWeight = this.netWeight,

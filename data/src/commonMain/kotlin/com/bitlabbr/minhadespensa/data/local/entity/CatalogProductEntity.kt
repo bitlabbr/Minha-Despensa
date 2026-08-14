@@ -35,6 +35,7 @@ data class CatalogProductEntity(
     val id: String,
     val ean: String?,
     val name: String,
+    val category: String,
     val brand: String?,
     val measureUnit: String,
     val netWeight: Double,

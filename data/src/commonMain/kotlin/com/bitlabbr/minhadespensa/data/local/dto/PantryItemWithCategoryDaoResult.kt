@@ -21,18 +21,13 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.data.local.dto
 
-import kotlinx.serialization.Serializable
+import androidx.room.Embedded
+import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 
-@Serializable
-data object PantryScreenRoute
-
-@Serializable
-data object SettingsRoute
-
-@Serializable
-data class ProductDetailsRoute(val productId: String)
-
-@Serializable
-data object HomeScreenRoute
+data class PantryItemWithCategoryDaoResult(
+    @Embedded val pantryItem: PantryItemEntity,
+    val category: String,
+    val name: String
+)

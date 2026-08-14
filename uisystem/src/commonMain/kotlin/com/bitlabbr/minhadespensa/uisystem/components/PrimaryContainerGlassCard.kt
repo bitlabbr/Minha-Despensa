@@ -74,13 +74,12 @@ fun PrimaryContainerGlassCard(
 
     val borderBrush = Brush.linearGradient(
         colors = listOf(
-            borderColor,
-            Color.Transparent,
-            borderColor,
-            Color.Transparent,
-            borderColor,
-            Color.Transparent
-        )
+            borderColor.copy(alpha = 0.8f),
+            borderColor.copy(alpha = 0.2f),
+            borderColor.copy(alpha = 0.8f),
+        ),
+        start = Offset.Zero,
+        end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
     )
 
     Box(

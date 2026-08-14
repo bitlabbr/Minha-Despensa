@@ -21,18 +21,28 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets
 
-import kotlinx.serialization.Serializable
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.ProductWidget
 
-@Serializable
-data object PantryScreenRoute
 
-@Serializable
-data object SettingsRoute
+object PantryMockData {
+    val widgets = listOf(
+        ProductWidget.CreateProduct(
+            ""
+        )
+    )
 
-@Serializable
-data class ProductDetailsRoute(val productId: String)
-
-@Serializable
-data object HomeScreenRoute
+    val categories = listOf(
+        "Grãos",
+        "Laticínios",
+        "Carnes",
+        "Bebidas",
+        "Hortifruti",
+        "Enlatados",
+        "Congelados",
+        "Doces",
+        "Outros"
+    )
+}

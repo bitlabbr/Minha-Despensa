@@ -23,36 +23,8 @@
 
 package com.bitlabbr.minhadespensa.core.domain.model
 
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class CatalogProduct(
-    val id: String,
-    val ean: String? = null,
-    val name: String,
-    val category: String = "Outros",
-    val brand: String? = null,
-    val measureUnit: MeasureUnit,
-    val netWeight: Double,
-    val thumbnailUrl: String? = null,
-    val updatedAt: Long,
-    val isDeleted: Boolean = false,
-    val manuallyAdded: Boolean = true
-) {
-
-    override fun toString(): String {
-        return "CatalogProduct(" +
-                "id='$id', " +
-                "ean=$ean, " +
-                "name='$name', " +
-                "category='$category', " +
-                "brand=$brand, " +
-                "measureUnit=$measureUnit, " +
-                "thumbnailUrl=$thumbnailUrl," +
-                " updatedAt=$updatedAt, " +
-                "isDeleted=$isDeleted, " +
-                "manuallyAdded=$manuallyAdded" +
-                ")"
-    }
-
-}
+data class PantryItemWithCategory(
+    val pantryItem: PantryItem,
+    val category: String,
+    val name: String
+)
