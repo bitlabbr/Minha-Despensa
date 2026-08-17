@@ -38,7 +38,7 @@ interface PriceEntryDao {
     @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC LIMIT 1")
     fun getLatestPriceForProductID(productId: String): Flow<PriceEntryEntity?>
 
-    @Query("UPDATE price_entries SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id")
+    @Query("UPDATE price_entries SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id AND updatedAt <= :updatedAt")
     suspend fun markPriceEntryAsDeletedById(id: String, updatedAt: Long)
 
     @Query("DELETE FROM price_entries WHERE id = :id")
@@ -51,7 +51,10 @@ interface PriceEntryDao {
         """
     UPDATE price_entries 
     SET productId = :productId, priceInCents = :priceInCents, storeName = :storeName, updatedAt = :updatedAt, isDeleted = :isDeleted
-    WHERE id = :id AND updatedAt < :updatedAt
+    WHERE id = :id AND (
+        updatedAt < :updatedAt
+        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+    )
 """
     )
     suspend fun updatePriceEntryIfNewer(

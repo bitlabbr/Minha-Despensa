@@ -50,7 +50,10 @@ interface ShoppingItemDao {
     UPDATE shopping_items 
     SET productId = :productId, quantity = :quantity, priceAtTime = :priceAtTime, 
         isChecked = :isChecked, updatedAt = :updatedAt, isDeleted = :isDeleted
-    WHERE id = :id AND (updatedAt < :updatedAt OR (updatedAt = :updatedAt AND isDeleted = 1))
+    WHERE id = :id AND (
+        updatedAt < :updatedAt
+        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+    )
 """
     )
     suspend fun updateItemIfNewer(
@@ -66,10 +69,10 @@ interface ShoppingItemDao {
     @Query("UPDATE shopping_items SET isChecked = :checked, updatedAt = :now WHERE id = :id")
     suspend fun updateCheckStatus(id: String, checked: Boolean, now: Long)
 
-    @Query("UPDATE shopping_items SET isDeleted = 1, updatedAt = :now")
+    @Query("UPDATE shopping_items SET isDeleted = 1, updatedAt = :now WHERE updatedAt <= :now")
     suspend fun deleteAllLogical(now: Long)
 
-    @Query("UPDATE shopping_items SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id")
+    @Query("UPDATE shopping_items SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id AND updatedAt <= :updatedAt")
     suspend fun markAsDeleted(id: String, updatedAt: Long)
 
     @Query("SELECT * FROM shopping_items WHERE isChecked = 1 AND isDeleted = 0")

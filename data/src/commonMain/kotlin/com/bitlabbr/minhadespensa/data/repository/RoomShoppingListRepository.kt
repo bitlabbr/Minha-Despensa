@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
+import androidx.room.Transactor
 import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
@@ -67,10 +68,12 @@ class RoomShoppingListRepository(
     override suspend fun insertShoppingList(shoppingList: ShoppingList) {
         logger.d(TAG, "insertShoppingList: shoppingList: ${shoppingList.name}")
         validateShoppingList(shoppingList)
-        db.useWriterConnection {
-            listDao.insertShoppingList(shoppingList.toEntity())
-            val itemEntities = shoppingList.items.map { it.toEntity() }
-            listDao.insertItems(itemEntities)
+        db.useWriterConnection { connection ->
+            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                listDao.insertShoppingList(shoppingList.toEntity())
+                val itemEntities = shoppingList.items.map { it.toEntity() }
+                listDao.insertItems(itemEntities)
+            }
         }
     }
 
@@ -148,44 +151,47 @@ class RoomShoppingListRepository(
 
     override suspend fun finalizePurchase(listId: String) {
         logger.d(TAG, "finalizePurchase listId: $listId")
-        db.useWriterConnection {
-            val now = getCurrentTime()
-            val listWithItems = listDao.getShoppingListById(listId).first()
-            val checkedItems = listWithItems?.items?.filter { it.isChecked && !it.isDeleted }
+        db.useWriterConnection { connection ->
+            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                val now = getCurrentTime()
+                val listWithItems = listDao.getShoppingListById(listId).first()
+                    ?: return@withTransaction
+                val checkedItems = listWithItems.items.filter { it.isChecked && !it.isDeleted }
 
-            checkedItems?.forEach { item ->
-                db.pantryDao().insertPantryItem(
-                    PantryItem(
-                        id = Uuid.random().toString(),
-                        productId = item.productId,
-                        quantity = item.quantity,
-                        updatedAt = now,
-                        isDeleted = false,
-                        expirationDate = null,
-                        batchNumber = null
-                    ).toEntity()
-                )
-
-                item.priceAtTime?.let { price ->
-                    db.priceDao().insertPriceEntry(
-                        PriceEntry(
+                checkedItems.forEach { item ->
+                    db.pantryDao().insertPantryItem(
+                        PantryItem(
                             id = Uuid.random().toString(),
                             productId = item.productId,
-                            priceInCents = price,
+                            quantity = item.quantity,
                             updatedAt = now,
                             isDeleted = false,
-                            storeName = "Compra: ${listWithItems.list.name}"
+                            expirationDate = null,
+                            batchNumber = null
                         ).toEntity()
                     )
+
+                    item.priceAtTime?.let { price ->
+                        db.priceDao().insertPriceEntry(
+                            PriceEntry(
+                                id = Uuid.random().toString(),
+                                productId = item.productId,
+                                priceInCents = price,
+                                updatedAt = now,
+                                isDeleted = false,
+                                storeName = "Compra: ${listWithItems.list.name}"
+                            ).toEntity()
+                        )
+                    }
                 }
-            }
 
-            checkedItems?.forEach { item ->
-                itemDao.updateCheckStatus(item.id, false, now)
-            }
+                checkedItems.forEach { item ->
+                    itemDao.updateCheckStatus(item.id, false, now)
+                }
 
-            listDao.updateTimestamp(listId, now)
-            logger.d(TAG, "Checkout done. [${checkedItems?.size}] items added to pantry")
+                listDao.updateTimestamp(listId, now)
+                logger.d(TAG, "Checkout done. [${checkedItems.size}] items added to pantry")
+            }
         }
     }
 
@@ -265,3 +271,4 @@ fun ShoppingList.toEntity() = ShoppingListEntity(
     updatedAt = this.updatedAt,
     isDeleted = this.isDeleted
 )
+

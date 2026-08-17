@@ -52,7 +52,10 @@ interface ShoppingListDao {
         """
     UPDATE shopping_lists 
     SET name = :name, budgetInCents = :budgetInCents, updatedAt = :updatedAt, isDeleted = :isDeleted
-    WHERE id = :id AND updatedAt < :updatedAt
+    WHERE id = :id AND (
+        updatedAt < :updatedAt
+        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+    )
 """
     )
     suspend fun updateShoppingListIfNewer(
@@ -67,7 +70,7 @@ interface ShoppingListDao {
         """
         UPDATE shopping_lists 
         SET isDeleted = 1, updatedAt = :updatedAt 
-        WHERE id = :listID
+        WHERE id = :listID AND updatedAt <= :updatedAt
     """
     )
     suspend fun markShoppingListAsDeleted(listID: String, updatedAt: Long)
