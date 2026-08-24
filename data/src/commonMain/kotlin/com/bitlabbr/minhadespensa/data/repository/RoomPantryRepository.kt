@@ -27,6 +27,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
@@ -63,7 +64,15 @@ class RoomPantryRepository(
 
     override fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>> {
         logger.d(TAG, "getExpiringPantryItems: thresholdDays: $thresholdDays")
-        return dao.getExpiringPantryItemsDao(thresholdDays).map { pantryItemsWithCategoryDaoResult ->
+        require(thresholdDays >= 0) { "Expiration threshold cannot be negative" }
+
+        val now = getCurrentTime()
+        val expirationThreshold = now + thresholdDays.toLong() * MILLIS_PER_DAY
+
+        return dao.getExpiringPantryItemsDao(
+            now = now,
+            expirationThreshold = expirationThreshold
+        ).map { pantryItemsWithCategoryDaoResult ->
             pantryItemsWithCategoryDaoResult.map { it.toDomain() }
         }
     }
@@ -123,6 +132,10 @@ class RoomPantryRepository(
         require(runCatching { Uuid.parse(item.productId) }.isSuccess) { "Invalid Product UUID" }
         require(item.quantity >= 0) { "Pantry quantity cannot be negative" }
         require(isValidTimestamp(item.updatedAt)) { "Invalid updatedAt timestamp" }
+    }
+
+    private companion object {
+        const val MILLIS_PER_DAY = 86_400_000L
     }
 }
 

@@ -45,7 +45,10 @@ interface CatalogProductDao {
         """
     UPDATE catalog_products 
     SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, updatedAt = :updatedAt, isDeleted = :isDeleted
-    WHERE id = :id AND updatedAt < :updatedAt
+    WHERE id = :id AND (
+        updatedAt < :updatedAt
+        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+    )
 """
     )
     suspend fun updateProductIfNewer(
@@ -87,7 +90,7 @@ interface CatalogProductDao {
         """
         UPDATE catalog_products 
         SET isDeleted = 1, updatedAt = :updatedAt 
-        WHERE id = :id
+        WHERE id = :id AND updatedAt <= :updatedAt
     """
     )
     suspend fun markAsDeleted(id: String, updatedAt: Long)

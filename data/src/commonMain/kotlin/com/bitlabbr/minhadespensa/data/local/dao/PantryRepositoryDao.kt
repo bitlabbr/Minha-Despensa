@@ -43,7 +43,7 @@ interface PantryRepositoryDao {
         """
         UPDATE pantry_items 
         SET isDeleted = 1, updatedAt = :updatedAt 
-        WHERE id = :id
+        WHERE id = :id AND updatedAt <= :updatedAt
     """
     )
     suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long)
@@ -55,7 +55,10 @@ interface PantryRepositoryDao {
         """
     UPDATE pantry_items 
     SET productId = :productId, quantity = :quantity, updatedAt = :updatedAt, isDeleted = :isDeleted, expirationDate = :expirationDate, batchNumber = :batchNumber
-    WHERE id = :id AND updatedAt < :updatedAt
+    WHERE id = :id AND (
+        updatedAt < :updatedAt
+        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+    )
 """
     )
     suspend fun updatePantryItemIfNewer(
@@ -94,8 +97,12 @@ interface PantryRepositoryDao {
         SELECT p.*, c.category, c.name 
         FROM pantry_items p 
         INNER JOIN catalog_products c ON p.productId = c.id 
-        WHERE p.isDeleted = 0 AND c.isDeleted = 0 AND p.expirationDate IS NOT NULL AND p.expirationDate <= :expirationThreshold
+        WHERE p.isDeleted = 0
+          AND c.isDeleted = 0
+          AND p.expirationDate IS NOT NULL
+          AND p.expirationDate >= :now
+          AND p.expirationDate <= :expirationThreshold
         ORDER BY p.expirationDate ASC
     """)
-    fun getExpiringPantryItemsDao(expirationThreshold: Int): Flow<List<PantryItemWithCategoryDaoResult>>
-}
+    fun getExpiringPantryItemsDao(now: Long, expirationThreshold: Long): Flow<List<PantryItemWithCategoryDaoResult>>
+    }
