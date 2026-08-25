@@ -154,8 +154,17 @@ class RoomShoppingListRepository(
         db.useWriterConnection { connection ->
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
                 val now = getCurrentTime()
-                val listWithItems = listDao.getShoppingListById(listId).first()
-                    ?: return@withTransaction
+
+                // checks if list exists
+                val listWithItems = checkNotNull(listDao.getShoppingListById(listId).first()) {
+                    "Shopping list not found with ID: $listId"
+                }
+
+                // checks if parent list is not soft deleted
+                require(!listWithItems.list.isDeleted) {
+                    "Cannot finalize purchase for a deleted shopping list: $listId"
+                }
+
                 val checkedItems = listWithItems.items.filter { it.isChecked && !it.isDeleted }
 
                 checkedItems.forEach { item ->
