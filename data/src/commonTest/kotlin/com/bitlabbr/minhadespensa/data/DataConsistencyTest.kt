@@ -44,7 +44,7 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
-class P0CriticalDataConsistencyTest : BaseTest() {
+class DataConsistencyTest : BaseTest() {
 
     private lateinit var db: AppDatabase
     private lateinit var catalogRepository: RoomCatalogRepository
