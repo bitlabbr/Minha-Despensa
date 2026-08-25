@@ -64,7 +64,7 @@ class RoomCatalogRepository(
 
     override fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>> {
         logger.d(TAG, "searchProductsByNameOrBrand: query: $query")
-        require(query.isNotBlank() && query.length < 50) { "the term should have between 1 and 50 characters" }
+        require(query.isNotBlank() && query.length <= 50) { "the term should have between 1 and 50 characters" }
         return productDao.searchByNameOrBrand(query).map { entities ->
             entities.map { it.toDomain() }
         }

@@ -43,7 +43,6 @@ import kotlin.test.*
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RoomCatalogRepositoryTest : BaseTest() {
     private lateinit var catalogRepository: RoomCatalogRepository
     private lateinit var db: AppDatabase
@@ -146,7 +145,6 @@ class RoomCatalogRepositoryTest : BaseTest() {
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     @Test
     fun `should NOT SAVE product without a valid uuid as ID`() = runTest {
         val now = getCurrentTime()
@@ -774,6 +772,207 @@ class RoomCatalogRepositoryTest : BaseTest() {
         assertNull(result, "Product should not exist if media transaction failed")
     }
 
+    // -------------------------------------------------------------------------
+    // 1. VALIDAÇÃO DE EAN (8, 13 e 14 DÍGITOS E TAMANHOS INVÁLIDOS)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should save product with valid EAN-8 EAN-13 and EAN-14`() = runTest {
+        val validEans = listOf(
+            "12345670",            // 8 dígitos
+            "7891234567890",       // 13 dígitos
+            "17891234567897"       // 14 dígitos
+        )
+
+        validEans.forEach { validEan ->
+            val product = createDummyProduct(ean = validEan)
+            catalogRepository.insertProduct(product, null)
+
+            val saved = catalogRepository.getProductById(product.id).first()
+            assertNotNull(saved)
+            assertEquals(validEan, saved.ean)
+        }
+    }
+
+    @Test
+    fun `should fail validation when EAN length is invalid`() = runTest {
+        val invalidEans = listOf(
+            "1234567",             // 7 dígitos (< 8)
+            "123456789",           // 9 dígitos (entre 8 e 13)
+            "123456789012",        // 12 dígitos
+            "123456789012345"      // 15 dígitos (> 14)
+        )
+
+        invalidEans.forEach { invalidEan ->
+            val product = createDummyProduct(ean = invalidEan)
+            assertFails {
+                catalogRepository.insertProduct(product, null)
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. VALIDAÇÃO DE CATEGORIA (VAZIA E LIMITE > 20 CARACTERES)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should fail validation when category is blank or empty`() = runTest {
+        val blankCategories = listOf("", "   ")
+        blankCategories.forEach { blankCategory ->
+            val product = createDummyProduct(category = blankCategory)
+            assertFails {
+                catalogRepository.insertProduct(product, null)
+            }
+        }
+    }
+
+    @Test
+    fun `should fail validation when category exceeds 20 characters`() = runTest {
+        val categoryExceedingLimit = "A".repeat(21)
+        val product = createDummyProduct(category = categoryExceedingLimit)
+        assertFails {
+            catalogRepository.insertProduct(product, null)
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. LIMITES EXATOS DE NOME (100) E MARCA (50)
+    // -------------------------------------------------------------------------
+    @Test
+    fun `should save product with name having exactly 100 characters`() = runTest {
+        val exact100Name = "A".repeat(100)
+        val product = createDummyProduct(name = exact100Name)
+
+        catalogRepository.insertProduct(product, null)
+
+        val result = catalogRepository.getProductById(product.id).first()
+        assertNotNull(result)
+        assertEquals(exact100Name, result.name)
+        assertEquals(100, result.name.length)
+    }
+
+    @Test
+    fun `should save product with brand having exactly 50 characters`() = runTest {
+        val exact50Brand = "B".repeat(50)
+        val product = createDummyProduct(brand = exact50Brand)
+
+        catalogRepository.insertProduct(product, null)
+
+        val result = catalogRepository.getProductById(product.id).first()
+        assertNotNull(result)
+        assertEquals(exact50Brand, result.brand)
+        assertEquals(50, result.brand?.length)
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. LIMITES DE TAMANHO DE IMAGEM (100 KB E > 100 KB)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should save image when size is exactly 100 KB`() = runTest {
+        val product = createDummyProduct()
+        val exact100KbImage = ByteArray(100 * 1024) { 1 }
+
+        catalogRepository.insertProduct(product, exact100KbImage)
+
+        val media = db.productMediaDao().getByProductId(product.id)
+        assertNotNull(media)
+        assertEquals(100 * 1024, media.blob.size)
+    }
+
+    @Test
+    fun `should reject image when size is strictly greater than 100 KB`() = runTest {
+        val product = createDummyProduct()
+        val over100KbImage = ByteArray(101 * 1024) { 1 } // 101 KB
+
+        assertFails {
+            catalogRepository.insertProduct(product, over100KbImage)
+        }
+
+        val media = db.productMediaDao().getByProductId(product.id)
+        assertNull(media, "Media should not be persisted when size exceeds limit")
+    }
+
+    // -------------------------------------------------------------------------
+    // 5. BUSCA COM QUERIES DE 49 E 50 CARACTERES
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should find product when searching with queries of 49 and 50 characters`() = runTest {
+        val name50Chars = "X".repeat(50)
+        val product = createDummyProduct(name = name50Chars)
+        catalogRepository.insertProduct(product, null)
+
+        val query49 = name50Chars.take(49)
+        val query50 = name50Chars
+
+        // Limite de 49 caracteres
+        catalogRepository.searchProductsByNameOrBrand(query49).test {
+            val result = awaitItem()
+            assertEquals(1, result.size)
+            assertEquals(product.id, result[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        // Limite exato de 50 caracteres
+        catalogRepository.searchProductsByNameOrBrand(query50).test {
+            val result = awaitItem()
+            assertEquals(1, result.size)
+            assertEquals(product.id, result[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 6. LWW REJEITADO NÃO DEVE SUBSTITUIR OU ATUALIZAR A IMAGEM
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should NOT overwrite existing media when incoming LWW update is rejected`() = runTest {
+        val localTime = getCurrentTime()
+        val olderRemoteTime = localTime - 5_000
+
+        val initialProduct = createDummyProduct(
+            name = "Produto Original",
+            updatedAt = localTime
+        )
+        val originalImage = byteArrayOf(1, 2, 3, 4)
+        catalogRepository.insertProduct(initialProduct, originalImage)
+
+        val outdatedRemoteProduct = initialProduct.copy(
+            name = "Produto Desatualizado",
+            updatedAt = olderRemoteTime
+        )
+        val newRejectedImage = byteArrayOf(9, 9, 9, 9)
+
+        // Executa update defasado (LWW deve ignorar metadados e imagem)
+        catalogRepository.updateForProductIfNewer(outdatedRemoteProduct, newRejectedImage)
+
+        val savedProduct = catalogRepository.getProductById(initialProduct.id).first()
+        assertEquals("Produto Original", savedProduct?.name, "O produto deve manter os metadados locais mais novos")
+        assertEquals(localTime, savedProduct?.updatedAt)
+
+        val mediaInDb = db.productMediaDao().getByProductId(initialProduct.id)
+        assertNotNull(mediaInDb)
+        assertTrue(
+            originalImage.contentEquals(mediaInDb.blob),
+            "A imagem original deve ser mantida; a nova imagem não pode ser aplicada se o LWW rejeitou o produto"
+        )
+        assertFalse(
+            newRejectedImage.contentEquals(mediaInDb.blob),
+            "A nova imagem não deve ter sido gravada no banco"
+        )
+    }
+
+    @Test
+    fun `should fail validation when search query exceeds 50 characters`() = runTest {
+        val query51Chars = "X".repeat(51)
+
+        assertFailsWith<IllegalArgumentException> {
+            catalogRepository.searchProductsByNameOrBrand(query51Chars)
+        }
+    }
+
     private fun assertProduct(value: CatalogProduct?, ref: CatalogProduct) {
         assertTrue { value != null }
         val netWeight = value?.netWeight?: 0.0
@@ -793,7 +992,10 @@ class RoomCatalogRepositoryTest : BaseTest() {
     private fun createDummyProduct(
         id: String = Uuid.random().toString(),
         name: String = "Produto Teste",
+        ean: String? = null,
+        updatedAt: Long = getCurrentTime(),
         isDeleted: Boolean = false,
+        category: String = "Outros",
         brand: String = ""
     ) = CatalogProduct(
         id = id,
@@ -801,10 +1003,11 @@ class RoomCatalogRepositoryTest : BaseTest() {
         brand = brand,
         measureUnit = MeasureUnit.KILOGRAM,
         netWeight = 1.0,
-        updatedAt = getCurrentTime(),
+        category = category,
+        updatedAt = updatedAt,
         isDeleted = isDeleted,
         manuallyAdded = true,
-        ean = null,
+        ean = ean,
         thumbnailUrl = null
     )
 }

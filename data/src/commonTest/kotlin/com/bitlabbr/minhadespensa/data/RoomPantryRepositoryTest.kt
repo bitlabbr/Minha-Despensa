@@ -234,11 +234,170 @@ class RoomPantryRepositoryTest : BaseTest() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // 1. JOINS E PROJEÇÃO COM CATEGORIAS
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getAllActivePantryItemsWithCategory should return items combined with catalog category and name`() = runTest {
+        val product = createDummyProduct(name = "Arroz Integral", category = "Grãos")
+        catalogRepository.insertProduct(product, null)
+
+        val item = createDummyPantryItem(productId = product.id, quantity = 3.0)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            val list = awaitItem()
+            assertEquals(1, list.size)
+            assertEquals("Arroz Integral", list[0].name)
+            assertEquals("Grãos", list[0].category)
+            assertEquals(3.0, list[0].pantryItem.quantity)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `getPantryItemWithCategoryByID should return full joined details for valid item`() = runTest {
+        val product = createDummyProduct(name = "Feijão Preto", category = "Grãos")
+        catalogRepository.insertProduct(product, null)
+
+        val item = createDummyPantryItem(productId = product.id, quantity = 2.0)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.getPantryItemWithCategoryByID(item.id).test {
+            val result = awaitItem()
+            assertNotNull(result)
+            assertEquals(item.id, result.pantryItem.id)
+            assertEquals("Feijão Preto", result.name)
+            assertEquals("Grãos", result.category)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `should filter out pantry items if associated catalog product is soft-deleted`() = runTest {
+        val product = createDummyProduct(name = "Leite", category = "Laticínios")
+        catalogRepository.insertProduct(product, null)
+
+        val item = createDummyPantryItem(productId = product.id, quantity = 1.0)
+        pantryRepository.insertPantryItem(item)
+
+        // Soft-delete no produto do catálogo
+        catalogRepository.updateForProductIfNewer(
+            product.copy(isDeleted = true, updatedAt = getCurrentTime() + 100),
+            null
+        )
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            val activeList = awaitItem()
+            assertTrue(activeList.isEmpty(), "Item da despensa cujo produto pai foi soft-deleted não deve aparecer no JOIN")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. QUANTIDADE ZERO E VALIDAÇÕES DE ESTOQUE
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should allow pantry item with zero quantity for tracking out of stock`() = runTest {
+        val product = createDummyProduct()
+        catalogRepository.insertProduct(product, null)
+
+        val zeroQuantityItem = createDummyPantryItem(productId = product.id, quantity = 0.0)
+        pantryRepository.insertPantryItem(zeroQuantityItem)
+
+        val result = pantryRepository.getPantryItemsByID(zeroQuantityItem.id).first()
+        assertNotNull(result)
+        assertEquals(0.0, result.quantity)
+    }
+
+    // -------------------------------------------------------------------------
+    // 3. LWW: EMPATE DE TIMESTAMPS E FORCE UPDATE
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should ignore update when incoming timestamp is EQUAL to current timestamp`() = runTest {
+        val product = createDummyProduct()
+        catalogRepository.insertProduct(product, null)
+
+        val timestamp = getCurrentTime()
+        val localItem = createDummyPantryItem(productId = product.id, quantity = 5.0, updatedAt = timestamp)
+        pantryRepository.insertPantryItem(localItem)
+
+        val sameTimestampUpdate = localItem.copy(quantity = 10.0, updatedAt = timestamp)
+        pantryRepository.updatePantryItemIfNewer(sameTimestampUpdate)
+
+        val result = pantryRepository.getPantryItemsByID(localItem.id).first()
+        assertNotNull(result)
+        assertEquals(5.0, result.quantity, "Atualizações com timestamp igual não devem sobrescrever estado local")
+    }
+
+    @Test
+    fun `forceUpdatePantryItem should overwrite record unconditionally even with older timestamp`() = runTest {
+        val product = createDummyProduct()
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val newerLocalTimestamp = now - 1_000
+        val olderForcedTimestamp = now - 10_000
+
+        val initialItem = createDummyPantryItem(productId = product.id, quantity = 5.0, updatedAt = newerLocalTimestamp)
+        pantryRepository.insertPantryItem(initialItem)
+
+        val forcedItem = initialItem.copy(quantity = 1.0, updatedAt = olderForcedTimestamp)
+        pantryRepository.forceUpdatePantryItem(forcedItem)
+
+        val result = pantryRepository.getPantryItemsByID(initialItem.id).first()
+        assertNotNull(result)
+        assertEquals(1.0, result.quantity)
+        assertEquals(olderForcedTimestamp, result.updatedAt)
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. ITENS VENCIDOS VS PRÓXIMOS DE VENCER
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `getExpiringPantryItems should strictly separate already expired items from expiring soon`() = runTest {
+        val now = getCurrentTime()
+        val dayMillis = 86_400_000L
+
+        val prodExpired = createDummyProduct(name = "Vencido")
+        val prodExpiring = createDummyProduct(name = "Vencendo")
+        val prodFarFuture = createDummyProduct(name = "Validade Longa")
+
+        listOf(prodExpired, prodExpiring, prodFarFuture).forEach {
+            catalogRepository.insertProduct(it, null)
+        }
+
+        // Vencido há 1 dia (não deve entrar em 'próximos de vencer')
+        pantryRepository.insertPantryItem(
+            createDummyPantryItem(productId = prodExpired.id, expirationDate = now - dayMillis)
+        )
+        // Vencendo em 3 dias (deve entrar no threshold de 7 dias)
+        pantryRepository.insertPantryItem(
+            createDummyPantryItem(productId = prodExpiring.id, expirationDate = now + (3 * dayMillis))
+        )
+        // Vence em 15 dias (fora do threshold)
+        pantryRepository.insertPantryItem(
+            createDummyPantryItem(productId = prodFarFuture.id, expirationDate = now + (15 * dayMillis))
+        )
+
+        pantryRepository.getExpiringPantryItems(thresholdDays = 7).test {
+            val result = awaitItem()
+            assertEquals(1, result.size)
+            assertEquals(prodExpiring.id, result[0].pantryItem.productId)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @OptIn(ExperimentalUuidApi::class)
     private fun createDummyPantryItem(
         id: String = Uuid.random().toString(),
         productId: String = Uuid.random().toString(),
         quantity: Double = 1.0,
+        expirationDate: Long? = null,
         updatedAt: Long = getCurrentTime()
     ) = PantryItem(
         id = id,
@@ -246,7 +405,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         quantity = quantity,
         updatedAt = updatedAt,
         isDeleted = false,
-        expirationDate = null,
+        expirationDate = expirationDate,
         batchNumber = null
     )
 
@@ -256,11 +415,13 @@ class RoomPantryRepositoryTest : BaseTest() {
         name: String = "Produto Teste",
         isDeleted: Boolean = false,
         brand: String = "",
+        category: String = "Outros",
         updatedAt: Long = getCurrentTime()
     ) = CatalogProduct(
         id = id,
         name = name,
         brand = brand,
+        category = category,
         measureUnit = MeasureUnit.KILOGRAM,
         netWeight = 1.0,
         updatedAt = updatedAt,
