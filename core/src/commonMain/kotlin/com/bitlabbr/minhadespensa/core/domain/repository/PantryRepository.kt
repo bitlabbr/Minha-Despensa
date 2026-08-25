@@ -24,6 +24,7 @@
 package com.bitlabbr.minhadespensa.core.domain.repository
 
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import kotlinx.coroutines.flow.Flow
 
@@ -39,4 +40,6 @@ interface PantryRepository {
     suspend fun updatePantryItemIfNewer(item: PantryItem)
     suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long)
     suspend fun deletePantryItemById(id: String)
+    suspend fun consumePantryItem(pantryItemId: String, quantityToConsume: Double)
+    suspend fun consumeBatch(consumptions: List<PantryItemConsumption>)
 }
