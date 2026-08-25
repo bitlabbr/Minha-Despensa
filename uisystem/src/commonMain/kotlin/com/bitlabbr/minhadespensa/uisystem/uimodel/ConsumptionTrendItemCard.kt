@@ -21,13 +21,12 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.model
+package com.bitlabbr.minhadespensa.uisystem.uimodel
 
-data class ExpiringItemCard(
-    val expirationLabel: String,
+data class ConsumptionTrendItemCard(
     val productName: String,
     val productCategory: String,
-    val anchoredTargetLabel: String,
-    val anchoredGaugeProgress: Float,
+    val productMeasureUnity: String,
+    val consumptionAmount: String,
     val iconPainterURI: String?
 )
