@@ -27,6 +27,7 @@ import app.cash.turbine.test
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
@@ -44,13 +45,13 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RoomPantryRepositoryTest : BaseTest() {
     private lateinit var pantryRepository: RoomPantryRepository
     private lateinit var catalogRepository: RoomCatalogRepository
@@ -390,6 +391,154 @@ class RoomPantryRepositoryTest : BaseTest() {
             assertEquals(prodExpiring.id, result[0].pantryItem.productId)
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    // -------------------------------------------------------------------------
+    // FLUXOS DE CONSUMO (SINGLE ITEM & BATCH/RECEITAS)
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `consumePantryItem should partially deduct stock and update timestamp`() = runTest {
+        val product = createDummyProduct(name = "Arroz")
+        catalogRepository.insertProduct(product, null)
+
+        val initialTime = getCurrentTime() - 5_000
+        val item = createDummyPantryItem(productId = product.id, quantity = 5.0, updatedAt = initialTime)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = 1.5)
+
+        val updated = pantryRepository.getPantryItemsByID(item.id).first()
+        assertNotNull(updated)
+        assertEquals(3.5, updated.quantity, 0.001)
+        assertTrue(updated.updatedAt > initialTime, "updatedAt must be updated after consumption")
+    }
+
+    @Test
+    fun `consumePantryItem should reach zero quantity when full amount is consumed`() = runTest {
+        val product = createDummyProduct(name = "Leite")
+        catalogRepository.insertProduct(product, null)
+
+        val item = createDummyPantryItem(productId = product.id, quantity = 2.0)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = 2.0)
+
+        val updated = pantryRepository.getPantryItemsByID(item.id).first()
+        assertNotNull(updated)
+        assertEquals(0.0, updated.quantity, "the pantry should be zeroed immediately")
+        assertFalse(updated.isDeleted, "The item must remain active with a quantity of zero to receive a replenishment notification.")
+    }
+
+    @Test
+    fun `consumePantryItem should fail when attempting to consume more than available stock`() = runTest {
+        val product = createDummyProduct(name = "Açúcar")
+        catalogRepository.insertProduct(product, null)
+
+        val item = createDummyPantryItem(productId = product.id, quantity = 1.0)
+        pantryRepository.insertPantryItem(item)
+
+        assertFailsWith<IllegalArgumentException> {
+            pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = 1.5)
+        }
+
+        val intact = pantryRepository.getPantryItemsByID(item.id).first()
+        assertNotNull(intact)
+        assertEquals(1.0, intact.quantity, "The balance cannot be changed if validation fails.")
+    }
+
+    @Test
+    fun `consumePantryItem should reject zero or negative consumption amounts`() = runTest {
+        val product = createDummyProduct()
+        catalogRepository.insertProduct(product, null)
+
+        val item = createDummyPantryItem(productId = product.id, quantity = 3.0)
+        pantryRepository.insertPantryItem(item)
+
+        assertFailsWith<IllegalArgumentException> {
+            pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = 0.0)
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = -1.0)
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `consumePantryItem should fail when target item is non-existent or soft-deleted`() = runTest {
+        // Item inexistente
+        val nonExistentId = Uuid.random().toString()
+        assertFailsWith<IllegalStateException> {
+            pantryRepository.consumePantryItem(nonExistentId, 1.0)
+        }
+
+        // Item com soft-delete
+        val product = createDummyProduct()
+        catalogRepository.insertProduct(product, null)
+
+        val deletedItem = createDummyPantryItem(productId = product.id, quantity = 2.0)
+        pantryRepository.insertPantryItem(deletedItem)
+        pantryRepository.markPantryItemAsDeleted(deletedItem.id, getCurrentTime())
+
+        assertFailsWith<IllegalArgumentException> {
+            pantryRepository.consumePantryItem(deletedItem.id, 1.0)
+        }
+    }
+
+    @Test
+    fun `consumeBatch should deduct multiple recipe ingredients atomically`() = runTest {
+        val prodRice = createDummyProduct(name = "Arroz")
+        val prodOil = createDummyProduct(name = "Óleo")
+        val prodEgg = createDummyProduct(name = "Ovo")
+
+        listOf(prodRice, prodOil, prodEgg).forEach { catalogRepository.insertProduct(it, null) }
+
+        val itemRice = createDummyPantryItem(productId = prodRice.id, quantity = 5.0)
+        val itemOil = createDummyPantryItem(productId = prodOil.id, quantity = 2.0)
+        val itemEgg = createDummyPantryItem(productId = prodEgg.id, quantity = 12.0)
+
+        listOf(itemRice, itemOil, itemEgg).forEach { pantryRepository.insertPantryItem(it) }
+
+        val recipeConsumptions = listOf(
+            PantryItemConsumption(pantryItemId = itemRice.id, quantityToConsume = 1.0),
+            PantryItemConsumption(pantryItemId = itemOil.id, quantityToConsume = 0.5),
+            PantryItemConsumption(pantryItemId = itemEgg.id, quantityToConsume = 3.0)
+        )
+
+        pantryRepository.consumeBatch(recipeConsumptions)
+
+        assertEquals(4.0, pantryRepository.getPantryItemsByID(itemRice.id).first()?.quantity)
+        assertEquals(1.5, pantryRepository.getPantryItemsByID(itemOil.id).first()?.quantity)
+        assertEquals(9.0, pantryRepository.getPantryItemsByID(itemEgg.id).first()?.quantity)
+    }
+
+    @Test
+    fun `consumeBatch should rollback entire recipe consumption if one ingredient has insufficient stock`() = runTest {
+        val prodRice = createDummyProduct(name = "Arroz")
+        val prodOil = createDummyProduct(name = "Óleo")
+
+        catalogRepository.insertProduct(prodRice, null)
+        catalogRepository.insertProduct(prodOil, null)
+
+        val itemRice = createDummyPantryItem(productId = prodRice.id, quantity = 5.0)
+        val itemOil = createDummyPantryItem(productId = prodOil.id, quantity = 0.2) // Saldo insuficiente
+
+        pantryRepository.insertPantryItem(itemRice)
+        pantryRepository.insertPantryItem(itemOil)
+
+        val recipeConsumptions = listOf(
+            PantryItemConsumption(pantryItemId = itemRice.id, quantityToConsume = 1.0),
+            PantryItemConsumption(pantryItemId = itemOil.id, quantityToConsume = 1.0) // Falhará aqui
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            pantryRepository.consumeBatch(recipeConsumptions)
+        }
+
+        // Rollback verificado: o arroz não pode ter sido descontado
+        assertEquals(5.0, pantryRepository.getPantryItemsByID(itemRice.id).first()?.quantity, "The rice must undergo rollback.")
+        assertEquals(0.2, pantryRepository.getPantryItemsByID(itemOil.id).first()?.quantity, "The oil should remain unchanged.")
     }
 
     @OptIn(ExperimentalUuidApi::class)
