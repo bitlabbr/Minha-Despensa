@@ -25,12 +25,7 @@ package com.bitlabbr.minhadespensa.data
 
 import androidx.room.execSQL
 import androidx.room.useWriterConnection
-import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
-import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
-import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
-import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
+import com.bitlabbr.minhadespensa.core.domain.model.*
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
@@ -41,23 +36,14 @@ import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
+import kotlin.test.*
 import kotlin.test.DefaultAsserter.assertEquals
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
-@OptIn(ExperimentalCoroutinesApi::class, ExperimentalUuidApi::class)
+@OptIn(ExperimentalUuidApi::class)
 class P0CriticalDataConsistencyTest : BaseTest() {
 
     private lateinit var db: AppDatabase
@@ -129,10 +115,10 @@ class P0CriticalDataConsistencyTest : BaseTest() {
         }
     }
 
-    // -------------------------------------------------------------------------
-    // LWW TIE BREAKER: equal timestamp => tombstone wins
-    // -------------------------------------------------------------------------
-
+    // LWW TIE BREAKER:
+    // When timestamps are equal, a delete (tombstone) wins over
+    // a normal update. Once tombstoned, an equal-version update
+    // cannot resurrect or modify the entity.
     @Test
     fun `catalog equal timestamp should ignore normal update but accept tombstone and never resurrect`() = runTest {
         val timestamp = getCurrentTime()
@@ -149,14 +135,14 @@ class P0CriticalDataConsistencyTest : BaseTest() {
             product.copy(isDeleted = true, updatedAt = timestamp),
             null
         )
-        assertTrue(catalogRepository.getProductById(product.id).first()?.isDeleted == true)
+        assertEquals(true, catalogRepository.getProductById(product.id).first()?.isDeleted)
 
         catalogRepository.updateForProductIfNewer(
             product.copy(name = "Resurrected", isDeleted = false, updatedAt = timestamp),
             null
         )
         val final = catalogRepository.getProductById(product.id).first()
-        assertTrue(final?.isDeleted == true)
+        assertEquals(true, final?.isDeleted)
         assertEquals("Original", final?.name)
     }
 
@@ -177,13 +163,13 @@ class P0CriticalDataConsistencyTest : BaseTest() {
         pantryRepository.updatePantryItemIfNewer(
             item.copy(isDeleted = true, updatedAt = timestamp)
         )
-        assertTrue(pantryRepository.getPantryItemsByID(item.id).first()?.isDeleted == true)
+        assertEquals(true, pantryRepository.getPantryItemsByID(item.id).first()?.isDeleted)
 
         pantryRepository.updatePantryItemIfNewer(
             item.copy(quantity = 50.0, isDeleted = false, updatedAt = timestamp)
         )
         val final = pantryRepository.getPantryItemsByID(item.id).first()
-        assertTrue(final?.isDeleted == true)
+        assertEquals(true, final?.isDeleted)
         assertEquals(2.0, final?.quantity)
     }
 
@@ -213,68 +199,68 @@ class P0CriticalDataConsistencyTest : BaseTest() {
     }
 
     @Test
-    fun `shopping list equal timestamp should ignore normal update but accept tombstone and never resurrect`() = runTest {
-        val timestamp = getCurrentTime()
-        val list = createShoppingList(name = "Original", updatedAt = timestamp)
-        shoppingListRepository.insertShoppingList(list)
+    fun `shopping list equal timestamp should ignore normal update but accept tombstone and never resurrect`() =
+        runTest {
+            val timestamp = getCurrentTime()
+            val list = createShoppingList(name = "Original", updatedAt = timestamp)
+            shoppingListRepository.insertShoppingList(list)
 
-        shoppingListRepository.updateShoppingListIfNewer(
-            list.copy(name = "Same timestamp update", updatedAt = timestamp)
-        )
-        assertEquals("Original", shoppingListRepository.getShoppingListById(list.id).first()?.name)
+            shoppingListRepository.updateShoppingListIfNewer(
+                list.copy(name = "Same timestamp update", updatedAt = timestamp)
+            )
+            assertEquals("Original", shoppingListRepository.getShoppingListById(list.id).first()?.name)
 
-        shoppingListRepository.updateShoppingListIfNewer(
-            list.copy(isDeleted = true, updatedAt = timestamp)
-        )
-        assertTrue(shoppingListRepository.getShoppingListById(list.id).first()?.isDeleted == true)
+            shoppingListRepository.updateShoppingListIfNewer(
+                list.copy(isDeleted = true, updatedAt = timestamp)
+            )
+            assertEquals(true, shoppingListRepository.getShoppingListById(list.id).first()?.isDeleted)
 
-        shoppingListRepository.updateShoppingListIfNewer(
-            list.copy(name = "Resurrected", isDeleted = false, updatedAt = timestamp)
-        )
-        val final = shoppingListRepository.getShoppingListById(list.id).first()
-        assertTrue(final?.isDeleted == true)
-        assertEquals("Original", final?.name)
-    }
+            shoppingListRepository.updateShoppingListIfNewer(
+                list.copy(name = "Resurrected", isDeleted = false, updatedAt = timestamp)
+            )
+            val final = shoppingListRepository.getShoppingListById(list.id).first()
+            assertEquals(true, final?.isDeleted)
+            assertEquals("Original", final?.name)
+        }
 
     @Test
-    fun `shopping item equal timestamp should ignore normal update but accept tombstone and never resurrect`() = runTest {
-        val product = createProduct()
-        catalogRepository.insertProduct(product, null)
+    fun `shopping item equal timestamp should ignore normal update but accept tombstone and never resurrect`() =
+        runTest {
+            val product = createProduct()
+            catalogRepository.insertProduct(product, null)
 
-        val timestamp = getCurrentTime()
-        val listId = Uuid.random().toString()
-        val item = createShoppingItem(
-            productId = product.id,
-            listId = listId,
-            quantity = 2.0,
-            updatedAt = timestamp
-        )
-        shoppingListRepository.insertShoppingList(
-            createShoppingList(id = listId, items = listOf(item), updatedAt = timestamp)
-        )
+            val timestamp = getCurrentTime()
+            val listId = Uuid.random().toString()
+            val item = createShoppingItem(
+                productId = product.id,
+                listId = listId,
+                quantity = 2.0,
+                updatedAt = timestamp
+            )
+            shoppingListRepository.insertShoppingList(
+                createShoppingList(id = listId, items = listOf(item), updatedAt = timestamp)
+            )
 
-        shoppingListRepository.updateShoppingItemIfNewer(
-            item.copy(quantity = 99.0, updatedAt = timestamp)
-        )
-        assertEquals(
-            2.0,
-            shoppingListRepository.getShoppingListById(listId).first()?.items?.first()?.quantity
-        )
+            shoppingListRepository.updateShoppingItemIfNewer(
+                item.copy(quantity = 99.0, updatedAt = timestamp)
+            )
+            assertEquals(
+                2.0,
+                shoppingListRepository.getShoppingListById(listId).first()?.items?.first()?.quantity
+            )
 
-        shoppingListRepository.updateShoppingItemIfNewer(
-            item.copy(isDeleted = true, updatedAt = timestamp)
-        )
-        assertTrue(
-            shoppingListRepository.getShoppingListById(listId).first()?.items?.first()?.isDeleted == true
-        )
+            shoppingListRepository.updateShoppingItemIfNewer(
+                item.copy(isDeleted = true, updatedAt = timestamp)
+            )
+            assertEquals(true, shoppingListRepository.getShoppingListById(listId).first()?.items?.first()?.isDeleted)
 
-        shoppingListRepository.updateShoppingItemIfNewer(
-            item.copy(quantity = 50.0, isDeleted = false, updatedAt = timestamp)
-        )
-        val final = shoppingListRepository.getShoppingListById(listId).first()?.items?.first()
-        assertTrue(final?.isDeleted == true)
-        assertEquals(2.0, final?.quantity)
-    }
+            shoppingListRepository.updateShoppingItemIfNewer(
+                item.copy(quantity = 50.0, isDeleted = false, updatedAt = timestamp)
+            )
+            val final = shoppingListRepository.getShoppingListById(listId).first()?.items?.first()
+            assertEquals(true, final?.isDeleted)
+            assertEquals(2.0, final?.quantity)
+        }
 
     // -------------------------------------------------------------------------
     // DELETE TIMESTAMP MUST NOT MOVE BACKWARDS
@@ -366,7 +352,7 @@ class P0CriticalDataConsistencyTest : BaseTest() {
     }
 
     @Test
-    fun `should allow product substitution in shopping item durit trip`() = runTest {
+    fun `should allow product substitution in shopping item during trip`() = runTest {
         val productA = createDummyCatalogProduct(
             name = "Café A",
             ean = "1111111111111",
