@@ -353,6 +353,142 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // 1. VALIDAÇÃO DE ORÇAMENTO, NOMES, QUANTIDADE E PREÇOS
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `should reject shopping list with negative budget`() = runTest {
+        val invalidList = createDummyShoppingList(budgetInCents = -500)
+        assertFailsWith<IllegalArgumentException> {
+            shoppingListRepository.insertShoppingList(invalidList)
+        }
+    }
+
+    @Test
+    fun `should reject shopping list with empty name or exceeding 50 chars`() = runTest {
+        assertFailsWith<IllegalArgumentException> {
+            shoppingListRepository.insertShoppingList(createDummyShoppingList(name = ""))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            shoppingListRepository.insertShoppingList(createDummyShoppingList(name = "A".repeat(51)))
+        }
+    }
+
+    @Test
+    fun `should reject shopping item with zero or negative quantity`() = runTest {
+        val listId = Uuid.random().toString()
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        catalogRepository.insertProduct(product, null)
+        shoppingListRepository.insertShoppingList(createDummyShoppingList(id = listId))
+
+        assertFailsWith<IllegalArgumentException> {
+            shoppingListRepository.insertShoppingItem(
+                createDummyShoppingItem(productId = product.id, listId = listId, quantity = 0.0)
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            shoppingListRepository.insertShoppingItem(
+                createDummyShoppingItem(productId = product.id, listId = listId, quantity = -2.0)
+            )
+        }
+    }
+
+    @Test
+    fun `should reject shopping item with negative price`() = runTest {
+        val listId = Uuid.random().toString()
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        catalogRepository.insertProduct(product, null)
+        shoppingListRepository.insertShoppingList(createDummyShoppingList(id = listId))
+
+        assertFailsWith<IllegalArgumentException> {
+            shoppingListRepository.insertShoppingItem(
+                createDummyShoppingItem(productId = product.id, listId = listId, quantity = 1.0, priceAtTime = -100L)
+            )
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 2. CHECKOUT (FINALIZE PURCHASE): SOFT-DELETE, NULL PRICE E LISTAS INVÁLIDAS
+    // -------------------------------------------------------------------------
+
+    @Test
+    fun `finalizePurchase should NOT move soft-deleted items to pantry even if marked checked`() = runTest {
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        catalogRepository.insertProduct(product, null)
+
+        val listId = Uuid.random().toString()
+        val activeChecked = createDummyShoppingItem(productId = product.id, listId = listId, quantity = 2.0, isChecked = true)
+        val deletedChecked = createDummyShoppingItem(productId = product.id, listId = listId, quantity = 5.0, isChecked = true)
+
+        shoppingListRepository.insertShoppingList(
+            createDummyShoppingList(id = listId, items = listOf(activeChecked, deletedChecked))
+        )
+        shoppingListRepository.markAsDeleted(deletedChecked.id)
+
+        shoppingListRepository.finalizePurchase(listId)
+
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
+        assertEquals(1, pantryItems.size)
+        assertEquals(2.0, pantryItems[0].quantity, "Apenas itens ativos e marcados devem ir para a despensa")
+    }
+
+    @Test
+    fun `finalizePurchase should restock pantry without generating price history when priceAtTime is null`() = runTest {
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        catalogRepository.insertProduct(product, null)
+
+        val listId = Uuid.random().toString()
+        val itemWithoutPrice = createDummyShoppingItem(
+            productId = product.id,
+            listId = listId,
+            quantity = 4.0,
+            isChecked = true,
+            priceAtTime = null
+        )
+        shoppingListRepository.insertShoppingList(
+            createDummyShoppingList(id = listId, items = listOf(itemWithoutPrice))
+        )
+
+        shoppingListRepository.finalizePurchase(listId)
+
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
+        assertEquals(1, pantryItems.size)
+        assertEquals(4.0, pantryItems[0].quantity)
+
+        val prices = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertTrue(prices.isEmpty(), "Nenhum registro de preço deve ser criado se priceAtTime for null")
+    }
+
+    @Test
+    fun `finalizePurchase should fail when listId does not exist or is soft-deleted`() = runTest {
+        // Cenário 1: Lista inexistente
+        val nonExistentListId = Uuid.random().toString()
+        assertFailsWith<IllegalStateException> {
+            shoppingListRepository.finalizePurchase(nonExistentListId)
+        }
+
+        // Cenário 2: Lista com soft-delete
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        catalogRepository.insertProduct(product, null)
+
+        val softDeletedListId = Uuid.random().toString()
+        val item = createDummyShoppingItem(
+            productId = product.id,
+            listId = softDeletedListId,
+            quantity = 1.0,
+            isChecked = true
+        )
+        shoppingListRepository.insertShoppingList(
+            createDummyShoppingList(id = softDeletedListId, items = listOf(item))
+        )
+        shoppingListRepository.markShoppingListAsDeleted(softDeletedListId, getCurrentTime())
+
+        assertFailsWith<IllegalArgumentException> {
+            shoppingListRepository.finalizePurchase(softDeletedListId)
+        }
+    }
+
     private fun createDummyShoppingList(
         id: String = Uuid.random().toString(),
         name: String = "name",
