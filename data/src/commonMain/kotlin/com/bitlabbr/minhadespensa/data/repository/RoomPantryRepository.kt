@@ -23,7 +23,10 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
+import androidx.room.Transactor
+import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
@@ -33,6 +36,7 @@ import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -114,6 +118,66 @@ class RoomPantryRepository(
     override suspend fun deletePantryItemById(id: String) {
         logger.d(TAG, "deletePantryItemById: id: $id")
         dao.deletePantryItemById(id)
+    }
+
+    override suspend fun consumePantryItem(pantryItemId: String, quantityToConsume: Double) {
+        logger.d(TAG, "consumePantryItem id: $pantryItemId, quantity: $quantityToConsume")
+        require(quantityToConsume > 0) { "Consumption quantity must be strictly greater than zero" }
+
+        db.useWriterConnection { connection ->
+            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                val item = checkNotNull(dao.getPantryItemByID(pantryItemId).first()) {
+                    "Pantry item not found with ID: $pantryItemId"
+                }
+                require(!item.isDeleted) { "Cannot consume a deleted pantry item: $pantryItemId" }
+                require(item.quantity >= quantityToConsume) {
+                    "Insufficient stock: requested $quantityToConsume, but only ${item.quantity} available"
+                }
+
+                val newQuantity = item.quantity - quantityToConsume
+                val now = getCurrentTime()
+
+                val updatedItem = item.copy(
+                    quantity = newQuantity,
+                    updatedAt = now
+                )
+                dao.forceUpdatePantryItem(updatedItem)
+            }
+        }
+    }
+
+    override suspend fun consumeBatch(consumptions: List<PantryItemConsumption>) {
+        logger.d(TAG, "consumeBatch: ${consumptions.size} items")
+        require(consumptions.isNotEmpty()) { "Consumption list cannot be empty" }
+
+        db.useWriterConnection { connection ->
+            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                val now = getCurrentTime()
+
+                consumptions.forEach { consumption ->
+                    require(consumption.quantityToConsume > 0) {
+                        "Quantity to consume must be greater than zero for item ${consumption.pantryItemId}"
+                    }
+
+                    val item = checkNotNull(dao.getPantryItemByID(consumption.pantryItemId).first()) {
+                        "Pantry item not found with ID: ${consumption.pantryItemId}"
+                    }
+                    require(!item.isDeleted) {
+                        "Cannot consume a deleted pantry item: ${consumption.pantryItemId}"
+                    }
+                    require(item.quantity >= consumption.quantityToConsume) {
+                        "Insufficient stock for item ${consumption.pantryItemId}: " +
+                                "available ${item.quantity}, required ${consumption.quantityToConsume}"
+                    }
+
+                    val updatedItem = item.copy(
+                        quantity = item.quantity - consumption.quantityToConsume,
+                        updatedAt = now
+                    )
+                    dao.forceUpdatePantryItem(updatedItem)
+                }
+            }
+        }
     }
 
     override fun getPantryItemsByID(pantryItemId: String): Flow<PantryItem?> {
