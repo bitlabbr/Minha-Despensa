@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
@@ -139,9 +140,10 @@ fun PantryItemWithCategory.toPantryItemUiModel(): PantryItemUiModel {
     return PantryItemUiModel(
         id = this.pantryItem.id,
         name = this.name,
+        category = this.category,
         brand = null,
         quantity = this.pantryItem.quantity,
-        measureUnit = this.pantryItem.productId.let { /* TODO: Get MeasureUnit from product details */ com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit.UNITY },
+        measureUnit = MeasureUnit.UNITY,
         netWeight = 0,
         expirationDate = this.pantryItem.expirationDate,
         isExpired = isExpired

@@ -37,14 +37,20 @@ import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.*
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.Res
+import org.jetbrains.compose.resources.stringResource
+import minhadespensa.uisystem.generated.resources.vision
+import minhadespensa.uisystem.generated.resources.general
 
 @Composable
 fun HomeScreen(
     bottomPadding: Dp = 0.dp
 ) {
-    val widgets = HomeMockData.widgets
-    val appColors = MinhaDespensaTheme.color
+    val widgets: List<HomeWidget> = HomeMockData.widgets
+    val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
 
     Scaffold(
         topBar = {
@@ -76,23 +82,26 @@ fun HomeScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
-                            .padding(horizontal = MinhaDespensaTheme.dimens.paddingSmall, vertical = 8.dp)
+                            .padding(horizontal = dimens.paddingSmall, vertical = 8.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(
-                                    top = MinhaDespensaTheme.dimens.paddingLarge,
-                                    bottom = MinhaDespensaTheme.dimens.paddingLarge
+                                    top = dimens.paddingLarge,
+                                    bottom = dimens.paddingLarge
                                 )
                         ) {
-                            PrimaryContainerHeader{}
-                            widgets.forEach { widget ->
+                            PrimaryContainerHeader(
+                                textTop = stringResource(Res.string.vision),
+                                textBottom = stringResource(Res.string.general)
+                            ){}
+                            widgets.forEach { homeWidget ->
                                 Column {
-                                    when (widget) {
-                                        is HomeWidget.FinancialSummary -> FinancialCard(widget)
-                                        is HomeWidget.ExpiringSoon -> ExpiringSoonCard(widget)
-                                        is HomeWidget.ConsumptionTrend -> ConsumptionTrendCard(widget)
+                                    when (homeWidget) {
+                                        is HomeWidget.FinancialSummary -> FinancialWidget(homeWidget)
+                                        is HomeWidget.ExpiringSoon -> ExpiringSoonWidget(homeWidget)
+                                        is HomeWidget.ConsumptionTrend -> ConsumptionTrendWidget(homeWidget)
                                     }
                                 }
                             }

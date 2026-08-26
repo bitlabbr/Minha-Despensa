@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.RegisterProduct
+package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -44,23 +44,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.product.ProductViewModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugePrimaryColor
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import kotlinx.coroutines.launch
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterProductWidget(
-    viewModel: PantryViewModel
+    viewModel: ProductViewModel
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
-    val toggleExpanded = remember { { isExpanded = !isExpanded } }
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val formState by viewModel.productFormState.collectAsState()
     val scope = rememberCoroutineScope()
-    val colors = MinhaDespensaTheme.color
+    val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
 
@@ -97,7 +98,7 @@ fun RegisterProductWidget(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(dimens.cardCorner))
-                        .clickable(onClick = {showBottomSheet = true})
+                        .clickable(onClick = { showBottomSheet = true })
                         .padding(dimens.paddingMedium),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -117,7 +118,7 @@ fun RegisterProductWidget(
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Add,
-                            contentDescription = null,
+                            contentDescription = stringResource(Res.string.plus_icon_desc),
                             tint = colors.onSecondaryContainer.copy(alpha = .55f),
                             modifier = Modifier.size(30.dp),
                         )
@@ -127,14 +128,14 @@ fun RegisterProductWidget(
 
                     Column(modifier = Modifier.weight(1f)) {
                         CustomText(
-                            text = "Registrar novo produto",
+                            text = stringResource(Res.string.register_product_widget_title),
                             fontStyle = typography.bodyLarge,
                             color = colors.onSecondaryContainer.copy(alpha = .75f),
                             fontWeight = FontWeight.SemiBold,
                         )
                         Spacer(Modifier.height(4.dp))
                         CustomText(
-                            text = "Adicione um novo item à sua despensa",
+                            text = stringResource(Res.string.register_product_widget_desc),
                             fontStyle = typography.bodySmall,
                             color = colors.onSecondaryContainer.copy(alpha = .60f),
                             fontWeight = FontWeight.Light,
@@ -143,7 +144,7 @@ fun RegisterProductWidget(
 
                     Icon(
                         imageVector = Icons.Rounded.ChevronRight,
-                        contentDescription = "Registrar novo produto",
+                        contentDescription = stringResource(Res.string.chevron_right_icon_desc),
                         tint = colors.onSecondaryContainer.copy(alpha = .75f),
                     )
                 }
@@ -153,11 +154,11 @@ fun RegisterProductWidget(
             RegisterProductSheet(
                 state = formState,
                 sheetState = sheetState,
-                onBack = {onDismissSheet.invoke()},
-                onCancel = {onDismissSheet.invoke()},
+                onBack = { onDismissSheet.invoke() },
+                onCancel = { onDismissSheet.invoke() },
                 onStateChange = viewModel::onProductFormChange,
-                onSave = {onSaveSheet.invoke()},
-                onDismiss = {onDismissSheet.invoke()}
+                onSave = { onSaveSheet.invoke() },
+                onDismiss = { onDismissSheet.invoke() }
             )
         }
     }

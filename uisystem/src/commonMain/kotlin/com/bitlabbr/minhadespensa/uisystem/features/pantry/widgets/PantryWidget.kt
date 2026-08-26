@@ -23,7 +23,17 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets
 
+import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+
 
 sealed class PantryWidget {
+
+    data class PantrySearchBar(
+        val placeholder: String? = null
+    ) : PantryWidget()
+
+    data class PantryCategories(
+        val categorizedProductsMap: Map<String, List<CatalogProduct>>
+    ) : PantryWidget()
 
 }

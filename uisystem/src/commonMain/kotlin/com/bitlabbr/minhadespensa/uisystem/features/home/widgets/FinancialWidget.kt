@@ -43,7 +43,7 @@ import minhadespensa.uisystem.generated.resources.financial_card_title
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun FinancialCard(data: HomeWidget.FinancialSummary) {
+fun FinancialWidget(data: HomeWidget.FinancialSummary) {
     val colors = MinhaDespensaTheme.color
     val appDimens = MinhaDespensaTheme.dimens
 

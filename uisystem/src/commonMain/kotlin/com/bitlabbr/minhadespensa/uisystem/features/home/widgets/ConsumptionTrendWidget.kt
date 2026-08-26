@@ -41,7 +41,7 @@ import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
 
 @Composable
-fun ConsumptionTrendCard(data: HomeWidget.ConsumptionTrend) {
+fun ConsumptionTrendWidget(data: HomeWidget.ConsumptionTrend) {
     val colors = MinhaDespensaTheme.color
     var isExpanded by remember { mutableStateOf(false) }
     val maxInitialItems = 4

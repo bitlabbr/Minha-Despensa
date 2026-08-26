@@ -49,6 +49,8 @@ fun SimpleRow(
 
 @Composable
 fun PrimaryContainerHeader(
+    textTop: String,
+    textBottom: String? = null,
     onClick: () -> Unit,
 ) {
     Row(
@@ -67,13 +69,13 @@ fun PrimaryContainerHeader(
             modifier = Modifier.weight(1f)
         ) {
             CustomText(
-                text = "MINHA",
+                text = textTop,
                 color = MinhaDespensaTheme.color.onPrimaryContainer,
                 fontStyle = MinhaDespensaTheme.typography.displayLarge,
                 fontWeight = FontWeight.Light
             )
             CustomText(
-                text = "DESPENSA",
+                text = textBottom,
                 color = MinhaDespensaTheme.color.onPrimaryContainer,
                 fontStyle = MinhaDespensaTheme.typography.displayLarge
             )

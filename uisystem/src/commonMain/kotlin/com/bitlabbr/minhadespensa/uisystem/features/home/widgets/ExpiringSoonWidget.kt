@@ -41,7 +41,7 @@ import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
 
 @Composable
-fun ExpiringSoonCard(
+fun ExpiringSoonWidget(
     data: HomeWidget.ExpiringSoon
 ) {
     val colors = MinhaDespensaTheme.color
