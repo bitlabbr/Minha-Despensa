@@ -25,16 +25,20 @@ package com.bitlabbr.minhadespensa.uisystem.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.useContents
 import kotlinx.cinterop.usePinned
+import platform.AVFoundation.*
+import platform.CoreGraphics.CGRectMake
+import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.NSData
 import platform.UIKit.*
 import platform.darwin.NSObject
+import platform.darwin.dispatch_async
+import platform.darwin.dispatch_get_main_queue
 import platform.posix.memcpy
 
-@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 @Composable
 actual fun rememberImagePickerManager(
     onImagePicked: (ByteArray?) -> Unit
@@ -47,22 +51,20 @@ actual fun rememberImagePickerManager(
             ) {
                 val image = didFinishPickingMediaWithInfo[UIImagePickerControllerOriginalImage] as? UIImage
                 if (image != null) {
-                    val jpegData: NSData? = UIImageJPEGRepresentation(image, 0.6)
-                    if (jpegData != null) {
-                        val bytes = ByteArray(jpegData.length.toInt()).apply {
-                            usePinned { pinned ->
-                                memcpy(pinned.addressOf(0), jpegData.bytes, jpegData.length)
-                            }
-                        }
-                        onImagePicked(bytes)
-                    } else {
-                        onImagePicked(null)
-                    }
+                    val processedBytes = processUIImage(
+                        image = image,
+                        targetMaxDimension = 720.0,
+                        maxBytes = 100 * 1024
+                    )
+                    onImagePicked(processedBytes)
+                } else {
+                    onImagePicked(null)
                 }
                 picker.dismissViewControllerAnimated(true, null)
             }
 
             override fun imagePickerControllerDidCancel(picker: UIImagePickerController) {
+                onImagePicked(null)
                 picker.dismissViewControllerAnimated(true, null)
             }
         }
@@ -72,14 +74,36 @@ actual fun rememberImagePickerManager(
         object : ImagePickerManager {
             override fun launchCamera() {
                 val rootController = UIApplication.sharedApplication.keyWindow?.rootViewController
-                if (UIImagePickerController.isSourceTypeAvailable(UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera)) {
-                    val picker = UIImagePickerController().apply {
-                        sourceType = UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera
-                        this.delegate = delegate
-                    }
-                    rootController?.presentViewController(picker, animated = true, completion = null)
-                } else {
+
+                if (!UIImagePickerController.isSourceTypeAvailable(
+                        UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera
+                    )
+                ) {
                     launchGallery()
+                    return
+                }
+
+                val authStatus = AVCaptureDevice.authorizationStatusForMediaType(AVMediaTypeVideo)
+                when (authStatus) {
+                    AVAuthorizationStatusAuthorized -> {
+                        openCameraPicker(rootController, delegate)
+                    }
+
+                    AVAuthorizationStatusNotDetermined -> {
+                        AVCaptureDevice.requestAccessForMediaType(AVMediaTypeVideo) { granted ->
+                            if (granted) {
+                                dispatch_async(dispatch_get_main_queue()) {
+                                    openCameraPicker(rootController, delegate)
+                                }
+                            } else {
+                                onImagePicked(null)
+                            }
+                        }
+                    }
+
+                    else -> {
+                        onImagePicked(null)
+                    }
                 }
             }
 
@@ -87,10 +111,70 @@ actual fun rememberImagePickerManager(
                 val rootController = UIApplication.sharedApplication.keyWindow?.rootViewController
                 val picker = UIImagePickerController().apply {
                     sourceType = UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypePhotoLibrary
-                    this.delegate = delegate
+                    this.delegate = delegate as? UINavigationControllerDelegateProtocol
                 }
                 rootController?.presentViewController(picker, animated = true, completion = null)
             }
         }
+    }
+}
+
+private fun openCameraPicker(
+    rootController: UIViewController?,
+    delegate: UINavigationControllerDelegateProtocol
+) {
+    val picker = UIImagePickerController().apply {
+        sourceType = UIImagePickerControllerSourceType.UIImagePickerControllerSourceTypeCamera
+        this.delegate = delegate
+    }
+    rootController?.presentViewController(picker, animated = true, completion = null)
+}
+
+@OptIn(ExperimentalForeignApi::class)
+private fun processUIImage(
+    image: UIImage,
+    targetMaxDimension: Double,
+    maxBytes: Int
+): ByteArray? {
+    return try {
+        val originalWidth = image.size.useContents { width }
+        val originalHeight = image.size.useContents { height }
+        val currentMax = maxOf(originalWidth, originalHeight)
+
+        val scaledImage = if (currentMax > targetMaxDimension) {
+            val scale = targetMaxDimension / currentMax
+            val targetWidth = originalWidth * scale
+            val targetHeight = originalHeight * scale
+            val targetSize = CGSizeMake(targetWidth, targetHeight)
+
+            UIGraphicsBeginImageContextWithOptions(targetSize, false, 1.0)
+            image.drawInRect(CGRectMake(0.0, 0.0, targetWidth, targetHeight))
+            val newImage = UIGraphicsGetImageFromCurrentImageContext()
+            UIGraphicsEndImageContext()
+            newImage ?: image
+        } else {
+            image
+        }
+
+        var quality = 0.85
+        var jpegData: NSData? = UIImageJPEGRepresentation(scaledImage, quality)
+
+        while (jpegData != null && jpegData.length.toInt() > maxBytes && quality > 0.20) {
+            quality -= 0.15
+            jpegData = UIImageJPEGRepresentation(scaledImage, quality)
+        }
+
+        jpegData?.let { data ->
+            val length = data.length.toInt()
+            if (length > maxBytes) return null
+
+            ByteArray(length).apply {
+                usePinned { pinned ->
+                    memcpy(pinned.addressOf(0), data.bytes, data.length)
+                }
+            }
+        }
+    } catch (_: Exception) {
+        null
     }
 }
