@@ -53,7 +53,7 @@ This package contains the different features of the UI:
     - `RegisterProductSheet.kt`: A bottom sheet for adding new products.
     - `SettingsScreen.kt`: The settings screen.
     - `PantryItemUiModel.kt`: The UI model for a pantry item.
-    - `UiState.kt`: Defines the state for the list feature.
+    - `ProductFormState.kt`: Defines the state for the list feature.
 
 ### `theme`
 

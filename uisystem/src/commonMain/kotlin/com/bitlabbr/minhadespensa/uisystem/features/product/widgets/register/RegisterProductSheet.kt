@@ -20,18 +20,8 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.RegisterProduct
+package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register
 
-import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.AnimationSpec
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.FiniteAnimationSpec
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.SpringSpec
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -39,9 +29,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.CameraAlt
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material3.*
@@ -54,13 +42,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductFormState
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
+import com.bitlabbr.minhadespensa.uisystem.components.*
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryMockData
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.defaultButtonColor
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,363 +62,265 @@ fun RegisterProductSheet(
     onDismiss: () -> Unit
 ) {
     val typography = MinhaDespensaTheme.typography
-    val colors = MinhaDespensaTheme.color
+    val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
     var isExpanded by remember { mutableStateOf(false) }
-
     val toggleExpanded = remember { { isExpanded = !isExpanded } }
+    var showImageSourcePicker by remember { mutableStateOf(false) }
+    val imagePickerManager = rememberImagePickerManager { bytes ->
+        onStateChange(state.copy(imageBytes = bytes))
+    }
+    val selectedMeasureUnit = remember(state.measureUnit) {
+        MeasureUnit.entries.find { it.name == state.measureUnit }
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = colors.surface.copy(alpha = 0.95f),
         modifier = Modifier.padding(
-            horizontal = dimens.paddingSmall),
+            horizontal = dimens.paddingSmall
+        ),
     ) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(bottom = dimens.paddingLarge)
         ) {
             item {
-                ProductCreateHeader(onBack = onBack)
+                SheetHeader(onBack = onBack)
 
-                PrimaryContainerGlassCard(
+                Column(
                     modifier = Modifier
-                        .animateContentSize()
                         .fillMaxWidth()
-                        .padding(
-                            horizontal = dimens.paddingSmall,
-                            vertical = dimens.paddingSmall,
-                        ),
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(
-                                top = dimens.paddingMedium,
-                                bottom = dimens.paddingLarge,
-                            ),
+                    FormSection(
+                        title = stringResource(Res.string.register_product_form_image_title),
                     ) {
-                        FormSection(
-                            title = "FOTO DO PRODUTO",
-                        ) {
-                            ImagePickerCard(onClick = {})
-                        }
+                        ImagePickerCard(
+                            imageBytes = state.imageBytes,
+                            onClick = { showImageSourcePicker = true },
+                            onClearImage = { onStateChange(state.copy(imageBytes = null)) }
+                        )
+                    }
 
-                        FormSection(
-                            title = "INFORMAÇÕES BÁSICAS",
+                    FormSection(
+                        title = stringResource(Res.string.register_product_form_basic_info_section_title),
+                    ) {
+                        ProductTextField(
+                            value = state.name,
+                            onValueChange = { onStateChange(state.copy(name = it)) },
+                            label = stringResource(Res.string.register_product_form_basic_info_product_label),
+                            placeholder = stringResource(Res.string.register_product_form_basic_info_product_placeholder),
+                            isRequired = true,
+                            maxCharacters = CoreConstants.Product.NAME_MAX_LENGTH,
+                            errorMessage = state.nameError
+                        )
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                         ) {
+
                             ProductTextField(
-                                value = state.name,
-                                onValueChange = {
-                                    onStateChange(state.copy(name = it))
+                                modifier = Modifier.weight(1f),
+                                value = state.netWeight,
+                                onValueChange = { input ->
+                                    val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }.take(8)
+                                    onStateChange(state.copy(netWeight = filtered))
                                 },
-                                label = "Nome do produto",
-                                placeholder = "Ex.: Arroz Parboilizado",
+                                label = stringResource(Res.string.register_product_form_basic_info_netweight_label),
+                                placeholder = stringResource(Res.string.register_product_form_basic_info_netweight_placeholder),
+                                keyboardType = KeyboardType.Decimal,
+                                isRequired = true,
+                                errorMessage = state.netWeightError
                             )
 
-                            Spacer(Modifier.height(dimens.paddingSmall))
+                            ProductDropdownField(
+                                modifier = Modifier.weight(1f),
+                                label = stringResource(Res.string.register_product_form_basic_info_unit_label),
+                                selectedOption = selectedMeasureUnit,
+                                placeholder = stringResource(Res.string.register_product_form_basic_info_unit_placeholder),
+                                options = MeasureUnit.entries,
+                                optionLabel = { it.toLabel() },
+                                isRequired = true,
+                                onSelected = { unit ->
+                                    onStateChange(state.copy(measureUnit = unit.name))
+                                },
+                            )
+                        }
 
-                            Row(
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                        ) {
+                            ProductDropdownField(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
-                            ) {
-                                ProductDropdownField(
-                                    modifier = Modifier.weight(1f),
-                                    label = "Categoria",
-                                    value = state.category,
-                                    placeholder = "Selecione",
-                                    options = PantryMockData.categories,
-                                    onSelected = {
-                                        onStateChange(state.copy(category = it))
-                                    },
-                                )
+                                label = stringResource(Res.string.register_product_form_basic_info_product_category),
+                                selectedOption = state.category.takeIf { it.isNotBlank() },
+                                placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
+                                options = PantryMockData.categories,
+                                optionLabel = { it },
+                                isRequired = true,
+                                onSelected = { selectedCategory ->
+                                    onStateChange(state.copy(category = selectedCategory))
+                                },
+                            )
+                        }
+                    }
 
-                                ProductDropdownField(
-                                    modifier = Modifier.weight(1f),
-                                    label = "Unidade",
-                                    value = state.unit.name,
-                                    placeholder = "Selecione",
-                                    options = MeasureUnit.entries.map { it.name },
-                                    onSelected = {
-                                        onStateChange(state.copy(unit = MeasureUnit.valueOf(it)))
-                                    },
-                                )
-                            }
-
-                            Spacer(Modifier.height(dimens.paddingSmall))
+                    if (isExpanded) {
+                        FormSection(
+                            title = stringResource(Res.string.register_product_form_detail_info_section_title),
+                        ) {
 
                             ProductTextField(
                                 value = state.ean,
-                                onValueChange = {
-                                    onStateChange(state.copy(ean = it))
+                                onValueChange = { input ->
+                                    val numbersOnly = input.filter { it.isDigit() }.take(14)
+                                    onStateChange(state.copy(ean = numbersOnly))
                                 },
-                                label = "Código de barras",
-                                placeholder = "Opcional",
+                                label = stringResource(Res.string.register_product_form_detail_info_ean_label),
+                                placeholder = stringResource(Res.string.register_product_form_detail_info_ean_placeholder),
                                 keyboardType = KeyboardType.Number,
+                                maxCharacters = 14,
+                                errorMessage = state.eanError,
                                 trailingContent = {
-                                    IconButton(onClick = {}) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.QrCodeScanner,
-                                            contentDescription = "Escanear código de barras",
-                                            tint = MinhaDespensaTheme.color.onSecondaryContainer.copy(alpha = .72f),
+                                    if (state.isCheckingEan) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp).padding(2.dp),
+                                            strokeWidth = 2.dp,
+                                            color = colors.primary
                                         )
+                                    } else {
+                                        IconButton(onClick = {}) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.QrCodeScanner,
+                                                contentDescription = stringResource(Res.string.register_product_form_detail_info_ean_icon_description),
+                                                tint = if (state.eanError != null) colors.error else colors.onSecondaryContainer.copy(alpha = .72f),
+                                            )
+                                        }
                                     }
                                 },
                             )
+
+                            ProductTextField(
+                                value = state.brand,
+                                onValueChange = { onStateChange(state.copy(brand = it)) },
+                                label = stringResource(Res.string.register_product_form_detail_info_brand_label),
+                                placeholder = stringResource(Res.string.register_product_form_detail_info_brand_placeholder),
+                                maxCharacters = CoreConstants.Product.BRAND_MAX_LENGTH,
+                            )
+
+                            ProductTextField(
+                                value = state.notes,
+                                onValueChange = { onStateChange(state.copy(notes = it)) },
+                                label = stringResource(Res.string.register_product_form_detail_info_notes_label),
+                                placeholder = stringResource(Res.string.register_product_form_detail_info_notes_placeholder),
+                                minLines = 3,
+                                maxCharacters = CoreConstants.Product.NOTES_MAX_LENGTH,
+                            )
                         }
+                    }
 
-                        if (isExpanded) {
-                            FormSection(
-                                title = "DETALHES ADICIONAIS",
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
-                                ) {
-                                    ProductTextField(
-                                        modifier = Modifier.weight(1f),
-                                        value = state.price,
-                                        onValueChange = {
-                                            onStateChange(state.copy(price = it))
-                                        },
-                                        label = "Preço médio",
-                                        placeholder = "R$ 0,00",
-                                        keyboardType = KeyboardType.Decimal,
-                                    )
-
-                                    ProductTextField(
-                                        modifier = Modifier.weight(1f),
-                                        value = state.averageShelfLifeDays,
-                                        onValueChange = {
-                                            // Allow only digits for the days
-                                            onStateChange(state.copy(averageShelfLifeDays = it.filter { c -> c.isDigit() }))
-                                        },
-                                        label = "Validade média",
-                                        placeholder = "Dias",
-                                        keyboardType = KeyboardType.Number,
-                                    )
-                                }
-
-                                Spacer(Modifier.height(dimens.paddingSmall))
-
-                                ProductTextField(
-                                    value = state.notes,
-                                    onValueChange = {
-                                        onStateChange(state.copy(notes = it))
-                                    },
-                                    label = "Observações",
-                                    placeholder = "Marca preferida, local de compra...",
-                                    minLines = 3,
-                                )
-                            }
-
-                            FormSection(
-                                title = "CONFIGURAÇÕES",
-                            ) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = dimens.paddingSmall),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        CustomText(
-                                            text = "Lembrete de vencimento",
-                                            fontStyle = typography.bodySmall,
-                                            color = colors.onSecondaryContainer,
-                                            fontWeight = FontWeight.SemiBold,
-                                        )
-                                        CustomText(
-                                            text = "Receba um aviso antes da validade",
-                                            fontStyle = typography.bodySmall,
-                                            color = colors.onSecondaryContainer.copy(alpha = .65f),
-                                            fontWeight = FontWeight.Light,
-                                        )
-                                    }
-
-                                    Switch(
-                                        checked = state.expirationReminderEnabled,
-                                        onCheckedChange = {
-                                            onStateChange(
-                                                state.copy(expirationReminderEnabled = it)
-                                            )
-                                        },
-                                        colors = SwitchDefaults.colors(
-                                            checkedThumbColor = colors.onPrimary,
-                                            checkedTrackColor = colors.primary,
-                                            uncheckedThumbColor = colors.onPrimaryContainer.copy(alpha = .65f),
-                                            uncheckedTrackColor = colors.primaryContainer.copy(alpha = .55f),
-                                        ),
-                                    )
-                                }
-
-                                if (state.expirationReminderEnabled) {
-                                    Spacer(Modifier.height(dimens.paddingSmall))
-
-                                    ProductDropdownField(
-                                        label = "Avisar com antecedência",
-                                        value = "${state.reminderDaysBefore} dias",
-                                        placeholder = "Selecione",
-                                        options = listOf(
-                                            "1 dia",
-                                            "2 dias",
-                                            "3 dias",
-                                            "5 dias",
-                                            "7 dias",
-                                            "15 dias",
-                                        ),
-                                        onSelected = { selected ->
-                                            val days = selected.filter { it.isDigit() }.toIntOrNull() ?: 3
-                                            onStateChange(
-                                                state.copy(reminderDaysBefore = days.toString())
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 4.dp, bottom = 2.dp),
-                            contentAlignment = Alignment.Center
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp, bottom = 2.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Button(
+                            onClick = toggleExpanded,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = colors.onPrimaryContainer,
+                            )
                         ) {
-                            Button(
-                                onClick = toggleExpanded,
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = colors.onPrimaryContainer,
-                                )
-                            ) {
-                                CustomText(
-                                    text = if (isExpanded) "Ver Menos" else "Adicionar Mais informação",
-                                    color = colors.onPrimaryContainer,
-                                    fontStyle = MinhaDespensaTheme.typography.bodySmall,
-                                    alignment = TextAlign.Center
-                                )
-                            }
+                            CustomText(
+                                text = if (isExpanded) stringResource(Res.string.register_product_form_expand_button_see_less)
+                                else stringResource(Res.string.register_product_form_expand_button_see_more),
+                                color = colors.primary,
+                                fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                                alignment = TextAlign.Center
+                            )
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = dimens.paddingSmall),
+                        horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                    ) {
+                        OutlinedButton(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(54.dp),
+                            onClick = onCancel,
+                            shape = RoundedCornerShape(dimens.cardCorner),
+                            border = BorderStroke(
+                                1.dp,
+                                colors.onPrimaryContainer.copy(alpha = .45f),
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = colors.onPrimaryContainer,
+                            ),
+                        ) {
+                            CustomText(
+                                text = stringResource(Res.string.register_product_form_button_cancel),
+                                fontStyle = typography.bodySmall,
+                                color = colors.onPrimaryContainer,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
 
-                        Spacer(Modifier.height(dimens.paddingMedium))
-
-                        Row(
+                        Button(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = dimens.paddingSmall),
-                            horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                                .weight(1.55f)
+                                .height(54.dp),
+                            onClick = onSave,
+                            enabled = state.isFormValid,
+                            shape = RoundedCornerShape(dimens.cardCorner),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colors.primary,
+                                contentColor = colors.onPrimary,
+                                disabledContainerColor = colors.primary.copy(alpha = 0.4f),
+                                disabledContentColor = colors.onPrimary.copy(alpha = 0.6f)
+                            ),
                         ) {
-                            OutlinedButton(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(54.dp),
-                                onClick = onCancel,
-                                shape = RoundedCornerShape(dimens.cardCorner),
-                                border = BorderStroke(
-                                    1.dp,
-                                    colors.onPrimaryContainer.copy(alpha = .45f),
-                                ),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = colors.onPrimaryContainer,
-                                ),
-                            ) {
+                            if (state.isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(24.dp),
+                                    color = colors.onPrimary,
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
                                 CustomText(
-                                    text = "Cancelar",
+                                    text = stringResource(Res.string.register_product_form_button_save),
                                     fontStyle = typography.bodySmall,
-                                    color = colors.onPrimaryContainer,
+                                    color = colors.onPrimary,
                                     fontWeight = FontWeight.SemiBold,
                                 )
-                            }
-
-                            Button(
-                                modifier = Modifier
-                                    .weight(1.55f)
-                                    .height(54.dp),
-                                onClick = onSave,
-                                enabled = !state.isSaving &&
-                                        state.name.isNotBlank() &&
-                                        state.category.isNotBlank() &&
-                                        state.unit.name.isNotBlank(),
-                                shape = RoundedCornerShape(dimens.cardCorner),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = colors.primary,
-                                    contentColor = colors.onPrimary,
-                                    disabledContainerColor = colors.primary.copy(alpha = 0.5f),
-                                    disabledContentColor = colors.onPrimary.copy(alpha = 0.7f)
-                                ),
-                            ) {
-                                if (state.isSaving) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = colors.onPrimary,
-                                        strokeWidth = 2.dp
-                                    )
-                                } else {
-                                    CustomText(
-                                        text = "Salvar produto",
-                                        fontStyle = typography.bodySmall,
-                                        color = colors.onPrimary,
-                                        fontWeight = FontWeight.SemiBold,
-                                    )
-                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun UnitSelector(
-    selectedUnit: MeasureUnit,
-    onUnitSelected: (MeasureUnit) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    // Dropdown Box visual simulation
-    Box(modifier = modifier) {
-        OutlinedTextField(
-            value = selectedUnit.name,
-            onValueChange = {},
-            readOnly = true,
-            label = { Text("Unit") },
-            trailingIcon = { Icon(Icons.Default.ArrowDropDown, "Select Unit") },
-            modifier = Modifier.fillMaxWidth().clickable { expanded = true },
-            enabled = false // Disable input, but allow click via Box
-        )
-
-        // Transparent overlay to capture click
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clickable { expanded = true }
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            MeasureUnit.entries.forEach { unit ->
-                DropdownMenuItem(
-                    text = { Text(unit.name) },
-                    onClick = {
-                        onUnitSelected(unit)
-                        expanded = false
-                    }
-                )
-            }
+        if (showImageSourcePicker) {
+            ImageSourcePickerDialog(
+                onDismissRequest = { showImageSourcePicker = false },
+                onCameraSelect = { imagePickerManager.launchCamera() },
+                onGallerySelect = { imagePickerManager.launchGallery() }
+            )
         }
     }
 }
 
 @Composable
-private fun ProductCreateHeader(
+private fun SheetHeader(
     onBack: () -> Unit,
 ) {
-    val colors = MinhaDespensaTheme.color
+    val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
 
@@ -447,7 +337,7 @@ private fun ProductCreateHeader(
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.Rounded.ArrowBack,
-                contentDescription = "Voltar",
+                contentDescription = stringResource(Res.string.register_product_form_back_button_desc),
                 tint = colors.onPrimaryContainer.copy(alpha = .72f),
                 modifier = Modifier.size(30.dp),
             )
@@ -459,19 +349,19 @@ private fun ProductCreateHeader(
                 .padding(start = dimens.paddingSmall),
         ) {
             CustomText(
-                text = "REGISTRAR",
+                text = stringResource(Res.string.register_product_form_header_title_top),
                 color = colors.onPrimaryContainer,
                 fontStyle = typography.displayLarge,
                 fontWeight = FontWeight.Light,
             )
             CustomText(
-                text = "PRODUTO",
+                text = stringResource(Res.string.register_product_form_header_title_bottom),
                 color = colors.onPrimaryContainer,
                 fontStyle = typography.displayLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             CustomText(
-                text = "Cadastre um novo item para sua despensa",
+                text = stringResource(Res.string.register_product_form_header_title_desc),
                 color = colors.onPrimaryContainer.copy(alpha = .65f),
                 fontStyle = typography.bodySmall,
                 fontWeight = FontWeight.Light,
@@ -487,7 +377,7 @@ private fun FormSection(
     content: @Composable () -> Unit,
 ) {
     val dimens = MinhaDespensaTheme.dimens
-    val colors = MinhaDespensaTheme.color
+    val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
 
     SecondaryContainerGlassCard(
@@ -505,61 +395,15 @@ private fun FormSection(
                     horizontal = dimens.paddingSmall / 2,
                     vertical = dimens.paddingSmall,
                 ),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
-            Spacer(Modifier.height(dimens.paddingSmall))
             CustomText(
                 text = title,
                 color = colors.onSecondaryContainer.copy(alpha = .75f),
                 fontStyle = typography.bodySmall,
                 fontWeight = FontWeight.Bold,
             )
-
-            Spacer(Modifier.height(dimens.paddingMedium))
-
             content()
-        }
-    }
-}
-
-@Composable
-private fun ImagePickerCard(
-    onClick: () -> Unit,
-) {
-    val colors = MinhaDespensaTheme.color
-    val typography = MinhaDespensaTheme.typography
-    val dimens = MinhaDespensaTheme.dimens
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(128.dp)
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
-        ) {
-            Icon(
-                imageVector = Icons.Rounded.CameraAlt,
-                contentDescription = null,
-                tint = colors.onSecondaryContainer.copy(alpha = .72f),
-                modifier = Modifier.size(38.dp),
-            )
-
-            CustomText(
-                text = "Adicionar foto do produto",
-                color = colors.onSecondaryContainer,
-                fontStyle = typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
-            )
-
-            CustomText(
-                text = "Tire uma foto ou escolha da galeria",
-                color = colors.onSecondaryContainer.copy(alpha = .60f),
-                fontStyle = typography.bodySmall,
-                fontWeight = FontWeight.Light,
-            )
         }
     }
 }
@@ -571,28 +415,45 @@ private fun ProductTextField(
     label: String,
     placeholder: String,
     modifier: Modifier = Modifier.fillMaxWidth(),
+    isRequired: Boolean = false,
+    maxCharacters: Int? = null,
+    errorMessage: String? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     minLines: Int = 1,
     trailingContent: (@Composable (() -> Unit))? = null,
 ) {
-    val colors = MinhaDespensaTheme.color
+    val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
+
+    val hasSupportingText = errorMessage != null || (maxCharacters != null && value.isNotEmpty())
 
     OutlinedTextField(
         modifier = modifier,
         value = value,
-        onValueChange = onValueChange,
-        textStyle = typography.bodySmall.copy(
-            color = colors.onSecondaryContainer,
-        ),
+        onValueChange = { input ->
+            val sanitized = if (maxCharacters != null) input.take(maxCharacters) else input
+            onValueChange(sanitized)
+        },
+        isError = errorMessage != null,
+        textStyle = typography.bodySmall.copy(color = colors.onSecondaryContainer),
         label = {
-            CustomText(
-                text = label,
-                fontStyle = typography.bodySmall,
-                color = colors.onSecondaryContainer.copy(alpha = .70f),
-                fontWeight = FontWeight.Light,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                CustomText(
+                    text = label,
+                    fontStyle = typography.bodySmall,
+                    color = if (errorMessage != null) colors.error else colors.onSecondaryContainer.copy(alpha = .70f),
+                    fontWeight = FontWeight.Light,
+                )
+                if (isRequired) {
+                    CustomText(
+                        text = " *",
+                        fontStyle = typography.bodySmall,
+                        color = colors.secondary,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
         },
         placeholder = {
             CustomText(
@@ -602,6 +463,35 @@ private fun ProductTextField(
                 fontWeight = FontWeight.Light,
             )
         },
+
+        supportingText = if (hasSupportingText) {
+            {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    if (errorMessage != null) {
+                        CustomText(
+                            text = errorMessage,
+                            fontStyle = typography.bodySmall,
+                            color = colors.error,
+                            fontWeight = FontWeight.Normal
+                        )
+                    } else {
+                        Spacer(Modifier.weight(1f))
+                    }
+
+                    if (maxCharacters != null) {
+                        CustomText(
+                            text = "${value.length}/$maxCharacters",
+                            fontStyle = typography.bodySmall,
+                            color = colors.onSecondaryContainer.copy(alpha = 0.5f),
+                            fontWeight = FontWeight.Light
+                        )
+                    }
+                }
+            }
+        } else null,
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         minLines = minLines,
         trailingIcon = trailingContent,
@@ -614,36 +504,42 @@ private fun ProductTextField(
             cursorColor = colors.primary,
             focusedBorderColor = colors.primary.copy(alpha = .75f),
             unfocusedBorderColor = colors.onSecondaryContainer.copy(alpha = .24f),
+            errorBorderColor = colors.error,
+            errorLabelColor = colors.error,
+            errorSupportingTextColor = colors.error
         ),
     )
 }
 
 @Composable
-private fun ProductDropdownField(
+fun <T> ProductDropdownField(
     label: String,
-    value: String,
+    selectedOption: T?,
     placeholder: String,
-    options: List<String>,
-    onSelected: (String) -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    options: List<T>,
+    onSelected: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    optionLabel: (T) -> String = { it.toString() },
+    isRequired: Boolean = false,
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val colors = getAppColors()
+    val dimens = MinhaDespensaTheme.dimens
 
     Box(modifier = modifier) {
         ProductTextField(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { expanded = true },
-            value = value,
+            modifier = Modifier.fillMaxWidth(),
+            value = selectedOption?.let(optionLabel).orEmpty(),
             onValueChange = {},
             label = label,
             placeholder = placeholder,
+            isRequired = isRequired,
             trailingContent = {
                 IconButton(onClick = { expanded = true }) {
                     Icon(
                         imageVector = Icons.Rounded.ExpandMore,
                         contentDescription = "Abrir opções de $label",
-                        tint = MinhaDespensaTheme.color.onSecondaryContainer.copy(alpha = .72f),
+                        tint = colors.onSecondaryContainer.copy(alpha = .72f),
                     )
                 }
             },
@@ -658,22 +554,50 @@ private fun ProductDropdownField(
         DropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
+            shape = RoundedCornerShape(dimens.cardCorner * 0.6f),
+            containerColor = colors.surface.copy(alpha = 0.96f),
+            border = BorderStroke(1.dp, colors.onSecondaryContainer.copy(alpha = 0.15f)),
+            shadowElevation = 10.dp,
+            modifier = Modifier.padding(vertical = 4.dp).widthIn(min = 120.dp, max = 320.dp)
         ) {
             options.forEach { option ->
+                val labelText = optionLabel(option)
+                val isSelected = option == selectedOption
+
                 DropdownMenuItem(
                     text = {
-                        CustomText(
-                            text = option,
-                            fontStyle = MinhaDespensaTheme.typography.bodySmall,
-                            color = MinhaDespensaTheme.color.onBackground,
-                        )
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            CustomText(
+                                text = labelText,
+                                fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                                color = if (isSelected) colors.primary else colors.onSecondaryContainer,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                alignment = TextAlign.Start
+                            )
+                        }
                     },
                     onClick = {
                         expanded = false
                         onSelected(option)
                     },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = MenuDefaults.itemColors(
+                        textColor = colors.onSecondaryContainer
+                    )
                 )
             }
         }
     }
+}
+
+fun MeasureUnit.toLabel(): String = when (this) {
+    MeasureUnit.KILOGRAM -> "Quilograma (kg)"
+    MeasureUnit.GRAM -> "Grama (g)"
+    MeasureUnit.LITER -> "Litro (L)"
+    MeasureUnit.MILLILITER -> "Mililitro (ml)"
+    MeasureUnit.UNIT -> "Unidade (un)"
+    MeasureUnit.PACKAGE -> "Pacote"
 }

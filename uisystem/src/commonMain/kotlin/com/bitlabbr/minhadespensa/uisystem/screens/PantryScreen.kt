@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry
+package com.bitlabbr.minhadespensa.uisystem.screens
 
 
 import androidx.compose.foundation.layout.*
@@ -33,10 +33,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.*
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryItemsWidget
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryWidget
 import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register.RegisterProductWidget
-import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.searchbar.ProductSearchBarWidget
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.searchbar.PantryItemSearchBarWidget
+import com.bitlabbr.minhadespensa.uisystem.features.product.ProductViewModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
@@ -50,6 +51,7 @@ fun PantryScreen(
     bottomPadding: Dp = 0.dp
 ) {
     val pantryViewModel = koinViewModel<PantryViewModel>()
+    val productViewModel = koinViewModel<ProductViewModel>()
     val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
@@ -100,11 +102,11 @@ fun PantryScreen(
                                 textBottom = stringResource(Res.string.Pantry)
                             ) {}
 
-                            ProductSearchBarWidget(viewModel = pantryViewModel)
+                            PantryItemSearchBarWidget(viewModel = pantryViewModel)
 
                             PantryItemsWidget()
 
-                            RegisterProductWidget(viewModel = pantryViewModel)
+                            RegisterProductWidget(viewModel = productViewModel)
                         }
                     }
                 }

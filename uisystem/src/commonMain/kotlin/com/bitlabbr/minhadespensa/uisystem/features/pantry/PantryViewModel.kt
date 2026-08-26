@@ -29,11 +29,8 @@ import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 
@@ -45,107 +42,76 @@ class PantryViewModel(
 
     private val TAG = "PantryViewModel"
 
-    private val _uiState = MutableStateFlow(PantryUiState(isLoading = true))
-    val uiState: StateFlow<PantryUiState> = _uiState.asStateFlow()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _productFormState = MutableStateFlow(ProductFormState())
-    val productFormState: StateFlow<ProductFormState> = _productFormState.asStateFlow()
+    private val _pantryUiState = MutableStateFlow(PantryUiState(isLoading = true))
+    val pantryUiState: StateFlow<PantryUiState> = _pantryUiState.asStateFlow()
 
     init {
-        logger.d(TAG, "init")
         viewModelScope.launch {
             combine(
                 pantryRepository.getAllActivePantryItemsWithCategory(),
-                pantryRepository.getExpiringPantryItems(EXPIRATION_THRESHOLD_DAYS)
-            ) { allItems, expiringItems ->
-                _uiState.update { currentState ->
+                pantryRepository.getExpiringPantryItems(EXPIRATION_THRESHOLD_DAYS),
+                _searchQuery
+            ) { allItems, expiringItems, query ->
+                val allUiItems = allItems.map { it.toPantryItemUiModel() }
+                val filtered = if (query.isBlank()) {
+                    emptyList()
+                } else {
+                    allUiItems.filter { it.name.contains(query, ignoreCase = true) }
+                }
+                _pantryUiState.update { currentState ->
                     currentState.copy(
-                        allActivePantryItems = allItems.map { it.toPantryItemUiModel() },
+                        allActivePantryItems = allUiItems,
                         expiringPantryItems = expiringItems.map { it.toPantryItemUiModel() },
+                        searchResults = filtered,
                         isLoading = false,
                         error = null
                     )
                 }
-            }.stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = null
-            )
+            }.collect()
         }
+    }
+
+    fun onSearchQueryChanged(newQuery: String) {
+        _searchQuery.value = newQuery
+    }
+
+    fun onSearchResultSelected(item: PantryItemUiModel) {
+        _searchQuery.value = item.name
+        getPantryItemDetails(item.id)
     }
 
     fun getPantryItemDetails(pantryItemId: String) {
-        logger.d(TAG, "getPantryItemDetails: $pantryItemId")
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, selectedPantryItem = null, error = null) }
+            _pantryUiState.update { it.copy(isLoading = true, selectedPantryItem = null) }
             pantryRepository.getPantryItemWithCategoryByID(pantryItemId)
                 .map { it?.toPantryItemUiModel() }
                 .collect { item ->
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            selectedPantryItem = item,
-                            isLoading = false,
-                            error = if (item == null) "Pantry item not found" else null
-                        )
-                    }
+                    _pantryUiState.update { it.copy(selectedPantryItem = item, isLoading = false) }
                 }
         }
-    }
-
-    fun onProductFormChange(newState: ProductFormState) {
-        _productFormState.update { newState }
-    }
-
-    fun saveProduct(): Job {
-        return viewModelScope.launch {
-            _productFormState.update { it.copy(isSaving = true) }
-            val formState = _productFormState.value
-
-            logger.d(TAG, "Attempting to save product with state: $formState")
-
-            // Here you would typically convert the form state to a domain model
-            // and persist it using the repository.
-            // For example:
-            // val newProduct = Product(name = formState.name, ...)
-            // pantryRepository.insertProduct(newProduct)
-
-            // Simulating a save operation
-            delay(1500)
-
-            logger.d(TAG, "Product saved successfully.")
-
-            // Resetting form state after saving. This also sets isSaving back to false.
-            _productFormState.update { ProductFormState() }
-        }
-    }
-
-    /**
-     * Resets the product form to its initial state.
-     * Typically used when the user cancels the creation process.
-     */
-    fun resetProductForm() {
-        _productFormState.value = ProductFormState()
-        logger.d(TAG, "Product form state has been reset.")
     }
 
     companion object {
         private const val EXPIRATION_THRESHOLD_DAYS = 7
     }
-}
 
-fun PantryItemWithCategory.toPantryItemUiModel(): PantryItemUiModel {
-    val now = Clock.System.now().toEpochMilliseconds()
-    val isExpired = this.pantryItem.expirationDate?.let { it < now } ?: false
+    fun PantryItemWithCategory.toPantryItemUiModel(): PantryItemUiModel {
+        val now = Clock.System.now().toEpochMilliseconds()
+        val isExpired = this.pantryItem.expirationDate?.let { it < now } ?: false
 
-    return PantryItemUiModel(
-        id = this.pantryItem.id,
-        name = this.name,
-        category = this.category,
-        brand = null,
-        quantity = this.pantryItem.quantity,
-        measureUnit = MeasureUnit.UNITY,
-        netWeight = 0,
-        expirationDate = this.pantryItem.expirationDate,
-        isExpired = isExpired
-    )
+        return PantryItemUiModel(
+            id = this.pantryItem.id,
+            name = this.name,
+            category = this.category,
+            brand = null,
+            quantity = this.pantryItem.quantity,
+            measureUnit = MeasureUnit.UNIT,
+            netWeight = 0,
+            expirationDate = this.pantryItem.expirationDate,
+            isExpired = isExpired
+        )
+    }
 }

@@ -37,7 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerHeader
@@ -46,17 +45,15 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.defaultButtonColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
-@OptIn(ExperimentalUuidApi::class)
 @Composable
-fun PantryItemsWidget(data: PantryWidget.PantryCategories) {
-    val colors = MinhaDespensaTheme.color
+fun PantryItemsWidget() {
+    val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
 
     val maxInitialItems = 4
-    val categories: Map<String, List<CatalogProduct>> = data.categorizedProductsMap
+    val categories: Map<String, List<CatalogProduct>> = emptyMap()
     val hasMoreItems = categories.size > maxInitialItems
     var isExpanded by remember { mutableStateOf(false) }
     val toggleExpanded = remember { { isExpanded = !isExpanded } }

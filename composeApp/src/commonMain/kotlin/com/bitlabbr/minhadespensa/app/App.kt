@@ -42,11 +42,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bitlabbr.minhadespensa.uisystem.components.*
-import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.features.list.SettingsScreen
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
+import com.bitlabbr.minhadespensa.uisystem.screens.HomeScreen
+import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
+import com.bitlabbr.minhadespensa.uisystem.screens.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 private val bottomNavItems = listOf(
     BottomNavItem("Início", Icons.Default.Home, HomeScreenRoute),
@@ -89,7 +90,7 @@ fun App() {
                                         it.hasRoute(item.route::class)
                                     } == true
 
-                                    val appColors = MinhaDespensaTheme.color
+                                    val appColors = getAppColors()
                                     NavigationBarItem(
                                         icon = {
                                             Icon(

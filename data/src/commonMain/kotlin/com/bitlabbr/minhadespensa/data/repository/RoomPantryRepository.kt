@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.data.repository
 
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
@@ -223,7 +224,7 @@ fun PantryItem.toEntity(): PantryItemEntity {
         expirationDate = this.expirationDate,
         updatedAt = this.updatedAt,
         isDeleted = this.isDeleted,
-        batchNumber = this.batchNumber
+        batchNumber = this.batchNumber,
     )
 }
 

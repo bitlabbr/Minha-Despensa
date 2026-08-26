@@ -24,7 +24,6 @@
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
 
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 
 data class PantryItemUiModel(
     val id: String,
@@ -32,7 +31,7 @@ data class PantryItemUiModel(
     val category: String = "Outros",
     val brand: String? = null,
     val quantity: Double,
-    val measureUnit: MeasureUnit = MeasureUnit.UNITY,
+    val measureUnit: MeasureUnit = MeasureUnit.UNIT,
     val netWeight: Long = 0,
     val expirationDate: Long? = null,
     val isExpired: Boolean = false

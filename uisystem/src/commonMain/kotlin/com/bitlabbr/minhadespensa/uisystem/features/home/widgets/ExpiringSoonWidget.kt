@@ -39,12 +39,13 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.defaultButtonColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 @Composable
 fun ExpiringSoonWidget(
     data: HomeWidget.ExpiringSoon
 ) {
-    val colors = MinhaDespensaTheme.color
+    val colors = getAppColors()
     val appDimens = MinhaDespensaTheme.dimens
     var isExpanded by remember { mutableStateOf(false) }
     val maxInitialItems = 4

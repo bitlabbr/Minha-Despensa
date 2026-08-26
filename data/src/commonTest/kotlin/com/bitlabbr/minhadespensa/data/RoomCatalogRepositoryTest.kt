@@ -36,7 +36,6 @@ import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
 import com.bitlabbr.minhadespensa.data.repository.toEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
@@ -519,7 +518,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         val product = CatalogProduct(
             id = productId,
             name = "Produto para Deletar",
-            measureUnit = MeasureUnit.UNITY,
+            measureUnit = MeasureUnit.UNIT,
             netWeight = 1.0,
             updatedAt = getCurrentTime(),
             isDeleted = false,
@@ -543,7 +542,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         val product = CatalogProduct(
             id = productId,
             name = "Produto para Deletar",
-            measureUnit = MeasureUnit.UNITY,
+            measureUnit = MeasureUnit.UNIT,
             netWeight = 1.0,
             updatedAt = getCurrentTime(),
             isDeleted = false,

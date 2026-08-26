@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.searchbar
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.searchbar
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,7 +47,7 @@ import org.koin.compose.viewmodel.koinViewModel
 import minhadespensa.uisystem.generated.resources.product_searchbar_widget_placeholder
 
 @Composable
-fun ProductSearchBarWidget(
+fun PantryItemSearchBarWidget(
     modifier: Modifier = Modifier,
     viewModel: PantryViewModel = koinViewModel(),
     placeholder: String = stringResource(Res.string.product_searchbar_widget_placeholder)

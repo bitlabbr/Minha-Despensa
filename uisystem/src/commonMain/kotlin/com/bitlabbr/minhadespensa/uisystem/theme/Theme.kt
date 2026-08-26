@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.uisystem.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
@@ -137,4 +138,10 @@ object MinhaDespensaTheme {
     val typography: AppTypography
         @Composable
         get() = LocalAppTypography.current
+}
+
+
+@Composable
+fun getAppColors(): ColorScheme {
+    return MinhaDespensaTheme.color
 }

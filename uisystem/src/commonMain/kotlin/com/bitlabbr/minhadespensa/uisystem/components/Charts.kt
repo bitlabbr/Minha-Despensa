@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.sp
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugePrimaryColor
 import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugeSecondaryColor
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 
 @Composable
@@ -56,9 +57,9 @@ fun BudgetGauge(
     progress: Float,
     modifier: Modifier = Modifier.size(100.dp)
 ) {
-    val colorPrimary = MinhaDespensaTheme.color.primary
-    val colorWarning = MinhaDespensaTheme.color.onPrimary
-    val colorError = MinhaDespensaTheme.color.error
+    val colorPrimary = getAppColors().primary
+    val colorWarning = getAppColors().onPrimary
+    val colorError = getAppColors().error
 
     Canvas(modifier = modifier) {
         drawArc(
@@ -93,19 +94,19 @@ fun InverseAnchoredGauge(
     progress: Float,
     targetLabel: String,
     labelStyle: TextStyle = MinhaDespensaTheme.typography.bodySmall.copy(
-        color = MinhaDespensaTheme.color.onPrimaryContainer,
+        color = getAppColors().onPrimaryContainer,
         fontWeight = FontWeight.Light
     ),
-    colorPrimary: Color = MinhaDespensaTheme.color.primary,
-    colorSecondary: Color = MinhaDespensaTheme.color.secondary,
+    colorPrimary: Color = getAppColors().primary,
+    colorSecondary: Color = getAppColors().secondary,
     gaugeHeight: Dp = 30.dp,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
     val isDark = isSystemInDarkTheme()
     val textMeasurer = rememberTextMeasurer()
-    val traceColor = MinhaDespensaTheme.color.primary
-    val labelColor = MinhaDespensaTheme.color.onPrimaryContainer
-    val trailColor = if (isDark) MinhaDespensaTheme.color.onPrimaryContainer.copy(0.2f) else Color.Black.copy(0.2f)
+    val traceColor = getAppColors().primary
+    val labelColor = getAppColors().onPrimaryContainer
+    val trailColor = if (isDark) getAppColors().onPrimaryContainer.copy(0.2f) else Color.Black.copy(0.2f)
     val isOverbudget = progress > 1.0f
     Column(modifier = modifier) {
         Canvas(
@@ -179,8 +180,8 @@ fun ExpiringItemTile(
     anchoredTargetLabel: String = "01/01",
     anchoredGaugeProgress: Float = 0.8f,
     iconPainter: Painter? = null,
-    containerColor: Color = MinhaDespensaTheme.color.primaryContainer,
-    contentColor: Color = MinhaDespensaTheme.color.onPrimaryContainer,
+    containerColor: Color = getAppColors().primaryContainer,
+    contentColor: Color = getAppColors().onPrimaryContainer,
     modifier: Modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()
@@ -300,7 +301,7 @@ fun ExpiringItemTile(
                         gaugeHeight = 10.dp,
                         targetLabel = anchoredTargetLabel,
                         labelStyle = MinhaDespensaTheme.typography.bodySmall.copy(
-                            color = MinhaDespensaTheme.color.onPrimaryContainer,
+                            color = getAppColors().onPrimaryContainer,
                             fontWeight = FontWeight.Light,
                             fontSize = 8.sp
                         ),
@@ -336,8 +337,8 @@ fun ConsumptionTrendItemTile(
     productMeasureUnity: String,
     consumptionAmount: String,
     iconPainter: Painter? = null,
-    containerColor: Color = MinhaDespensaTheme.color.primaryContainer,
-    contentColor: Color = MinhaDespensaTheme.color.onPrimaryContainer,
+    containerColor: Color = getAppColors().primaryContainer,
+    contentColor: Color = getAppColors().onPrimaryContainer,
     modifier: Modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()

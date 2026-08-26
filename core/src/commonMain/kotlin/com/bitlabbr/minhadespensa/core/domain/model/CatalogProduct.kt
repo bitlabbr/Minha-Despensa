@@ -37,22 +37,22 @@ data class CatalogProduct(
     val thumbnailUrl: String? = null,
     val updatedAt: Long,
     val isDeleted: Boolean = false,
-    val manuallyAdded: Boolean = true
+    val manuallyAdded: Boolean = true,
+    val notes: String? = null,
 ) {
 
     override fun toString(): String {
-        return "CatalogProduct(" +
-                "id='$id', " +
+        return "CatalogProduct(id='$id', " +
                 "ean=$ean, " +
                 "name='$name', " +
                 "category='$category', " +
                 "brand=$brand, " +
                 "measureUnit=$measureUnit, " +
-                "thumbnailUrl=$thumbnailUrl," +
-                " updatedAt=$updatedAt, " +
+                "netWeight=$netWeight, " +
+                "thumbnailUrl=$thumbnailUrl, " +
+                "updatedAt=$updatedAt, " +
                 "isDeleted=$isDeleted, " +
-                "manuallyAdded=$manuallyAdded" +
-                ")"
+                "manuallyAdded=$manuallyAdded, " +
+                "notes=$notes)"
     }
-
 }

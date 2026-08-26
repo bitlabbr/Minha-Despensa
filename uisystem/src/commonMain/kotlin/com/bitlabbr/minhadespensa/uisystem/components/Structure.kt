@@ -34,6 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.Res
+import org.jetbrains.compose.resources.stringResource
+import minhadespensa.uisystem.generated.resources.open_options
 
 @Composable
 fun SimpleRow(
@@ -70,13 +74,13 @@ fun PrimaryContainerHeader(
         ) {
             CustomText(
                 text = textTop,
-                color = MinhaDespensaTheme.color.onPrimaryContainer,
+                color = getAppColors().onPrimaryContainer,
                 fontStyle = MinhaDespensaTheme.typography.displayLarge,
                 fontWeight = FontWeight.Light
             )
             CustomText(
                 text = textBottom,
-                color = MinhaDespensaTheme.color.onPrimaryContainer,
+                color = getAppColors().onPrimaryContainer,
                 fontStyle = MinhaDespensaTheme.typography.displayLarge
             )
         }
@@ -86,8 +90,8 @@ fun PrimaryContainerHeader(
         ) {
             Icon(
                 imageVector = Icons.Rounded.Menu,
-                contentDescription = "Abrir opções",
-                tint = MinhaDespensaTheme.color.onPrimaryContainer.copy(.6f),
+                contentDescription = stringResource(Res.string.open_options),
+                tint = getAppColors().onPrimaryContainer.copy(.6f),
                 modifier = Modifier.size(36.dp)
             )
         }
@@ -111,7 +115,7 @@ fun SecondaryContainerHeader(
     ) {
         CustomText(
             text = text,
-            color = MinhaDespensaTheme.color.onSecondaryContainer,
+            color = getAppColors().onSecondaryContainer,
             fontStyle = MinhaDespensaTheme.typography.displayMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -122,7 +126,7 @@ fun SecondaryContainerHeader(
 @Composable
 fun SimpleColumn(
     layouts: List<@Composable () -> Unit>,
-    modifier: Modifier = Modifier.padding(MinhaDespensaTheme.dimens.paddingMedium)
+    modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier,

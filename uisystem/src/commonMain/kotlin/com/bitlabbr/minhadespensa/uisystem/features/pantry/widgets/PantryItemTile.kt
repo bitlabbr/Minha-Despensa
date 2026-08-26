@@ -42,14 +42,15 @@ import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 @Composable
 fun PantryItemTile(
     productName: String,
     itemCount: String,
     iconPainter: Painter? = null,
-    containerColor: Color = MinhaDespensaTheme.color.primaryContainer,
-    contentColor: Color = MinhaDespensaTheme.color.onPrimaryContainer,
+    containerColor: Color = getAppColors().primaryContainer,
+    contentColor: Color = getAppColors().onPrimaryContainer,
     modifier: Modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()

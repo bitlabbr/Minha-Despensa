@@ -59,11 +59,8 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
-import minhadespensa.uisystem.generated.resources.image_picker_remove_picture
-import minhadespensa.uisystem.generated.resources.image_picker_picture_desc
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.decodeToImageBitmap
-import minhadespensa.uisystem.generated.resources.image_preview_desc
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -290,7 +287,6 @@ fun ImagePickerCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Spacer(modifier = Modifier.size(dimens.paddingMedium))
                 Image(
                     bitmap = imageBitmap,
                     contentDescription = stringResource(Res.string.image_picker_picture_desc),
@@ -326,7 +322,7 @@ fun ImagePickerCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
             ) {
-                Spacer(modifier = Modifier.height(dimens.paddingSmall))
+                Spacer(modifier = Modifier.height(dimens.paddingLarge))
                 Icon(
                     imageVector = Icons.Rounded.CameraAlt,
                     contentDescription = stringResource(Res.string.image_picker_icon_desc),
