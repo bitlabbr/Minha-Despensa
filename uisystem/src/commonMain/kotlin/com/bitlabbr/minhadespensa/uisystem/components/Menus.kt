@@ -28,33 +28,50 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.CameraAlt
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryWidget
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
+import minhadespensa.uisystem.generated.resources.image_picker_remove_picture
+import minhadespensa.uisystem.generated.resources.image_picker_picture_desc
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.decodeToImageBitmap
+import minhadespensa.uisystem.generated.resources.image_preview_desc
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomTopBar(
     modifier: Modifier = Modifier,
-    backgroundColor: Color = MinhaDespensaTheme.color.primaryContainer,
-    contentColor: Color = MinhaDespensaTheme.color.onPrimaryContainer,
+    backgroundColor: Color = getAppColors().primaryContainer,
+    contentColor: Color = getAppColors().onPrimaryContainer,
     leftContent: @Composable (() -> Unit)? = null,
     centerContent: @Composable () -> Unit,
     rightContent: @Composable (() -> Unit)? = null
@@ -95,7 +112,7 @@ fun CustomIconButton(
     contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier.size(50.dp),
-    backgroundColor: Color = MinhaDespensaTheme.color.onBackground,
+    backgroundColor: Color = getAppColors().onBackground,
     iconTint: Color = Color.White,
     shape: Shape = RectangleShape
 ) {
@@ -116,68 +133,6 @@ fun CustomIconButton(
 }
 
 @Composable
-fun ProductSearchBarWidget(
-    data: PantryWidget.PantrySearchBar
-) {
-    var query by rememberSaveable { mutableStateOf("") }
-    val dimens = MinhaDespensaTheme.dimens
-    val allItems = listOf(
-        "Arroz integral",
-        "Feijão carioca",
-        "Leite desnatado",
-        "Macarrão espaguete",
-        "Azeite de oliva",
-        "Açúcar refinado",
-        "Café moído",
-        "Farinha de trigo",
-    )
-
-    val searchResults = remember(query) {
-        if (query.isBlank()) allItems
-        else allItems.filter { it.contains(query, ignoreCase = true) }
-    }
-
-    Column(
-        modifier = Modifier.padding(horizontal = dimens.paddingSmall),
-    ) {
-        CustomizableSearchBar(
-            query = query,
-            onQueryChange = { query = it },
-            onSearch = { term -> /* ViewModel call */ },
-            searchResults = searchResults,
-            onResultClick = { item ->
-                query = item
-            },
-            placeholder = data.placeholder ?: "Digite para buscar" ,
-            supportingContent = { item ->
-                val info = mapOf(
-                    "Arroz integral" to "Estoque: 2 kg",
-                    "Feijão carioca" to "Estoque: 1 kg",
-                    "Leite desnatado" to "Vence em 3 dias",
-                    "Macarrão espaguete" to "Estoque: 500 g",
-                    "Azeite de oliva" to "Última compra: R$ 18,90",
-                    "Açúcar refinado" to "Estoque: 800 g",
-                    "Café moído" to "Estoque: 250 g",
-                    "Farinha de trigo" to "Estoque: 1 kg",
-                )
-                CustomText(
-                    text = info[item] ?: "Sem informação",
-                    fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                    color = MinhaDespensaTheme.color.onSecondaryContainer.copy(alpha = 0.7f)
-                )
-            },
-            leadingContent = {
-                Icon(
-                    imageVector = Icons.Default.Kitchen,
-                    contentDescription = null,
-                    tint = MinhaDespensaTheme.color.primary
-                )
-            }
-        )
-    }
-}
-
-@Composable
 fun CustomizableSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
@@ -189,9 +144,13 @@ fun CustomizableSearchBar(
     supportingContent: (@Composable (String) -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
 ) {
-    val appColors = MinhaDespensaTheme.color
+    val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
+    val appDimens = MinhaDespensaTheme.dimens
     val isDark = isSystemInDarkTheme()
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     Column(
         modifier = modifier.fillMaxWidth()
@@ -201,12 +160,22 @@ fun CustomizableSearchBar(
             onValueChange = onQueryChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner))
+                .clip(RoundedCornerShape(appDimens.cardCorner))
                 .border(
                     width = 2.dp,
                     color = Color.White.copy(alpha = if (isDark) 0.1f else 0.5f),
-                    shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner)
+                    shape = RoundedCornerShape(appDimens.cardCorner)
                 ),
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Search
+            ),
+            keyboardActions = KeyboardActions(
+                onSearch = {
+                    onSearch(query)
+                    keyboardController?.hide()
+                    focusManager.clearFocus()
+                }
+            ),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = Color.White.copy(alpha = 0.1f),
                 unfocusedContainerColor = Color.White.copy(alpha = 0.05f),
@@ -226,12 +195,20 @@ fun CustomizableSearchBar(
                 )
             },
             leadingIcon = {
-                Icon(Icons.Default.Search, contentDescription = "Buscar", tint = appColors.primary)
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = stringResource(Res.string.search),
+                    tint = appColors.primary
+                )
             },
             trailingIcon = {
                 if (query.isNotEmpty()) {
                     IconButton(onClick = { onQueryChange("") }) {
-                        Icon(Icons.Default.Close, contentDescription = "Limpar", tint = appColors.onSurface)
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = stringResource(Res.string.back),
+                            tint = appColors.onSurface
+                        )
                     }
                 }
             }
@@ -247,7 +224,7 @@ fun CustomizableSearchBar(
                 if (searchResults.isEmpty()) {
                     item {
                         CustomText(
-                            text = "Nenhum item encontrado",
+                            text = stringResource(Res.string.no_itens_found),
                             color = appColors.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.padding(16.dp)
                         )
@@ -265,11 +242,105 @@ fun CustomizableSearchBar(
                             modifier = Modifier
                                 .clickable {
                                     onResultClick(resultText)
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
                                 }
                                 .fillMaxWidth()
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalResourceApi::class)
+@Composable
+fun ImagePickerCard(
+    imageBytes: ByteArray? = null,
+    onClick: () -> Unit,
+    onClearImage: (() -> Unit)? = null
+) {
+    val colors = getAppColors()
+    val typography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
+
+    val imageBitmap = remember(imageBytes) {
+        imageBytes?.let { bytes ->
+            runCatching {
+                bytes.decodeToImageBitmap()
+            }.getOrNull()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .wrapContentHeight()
+            .border(
+                width = 1.dp,
+                color = Color.Gray.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(dimens.cardCorner / 2)
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (imageBitmap != null) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Spacer(modifier = Modifier.size(dimens.paddingMedium))
+                Image(
+                    bitmap = imageBitmap,
+                    contentDescription = stringResource(Res.string.image_picker_picture_desc),
+                    modifier = Modifier.size(180.dp)
+                        .clip(RoundedCornerShape(dimens.cardCorner)),
+                    contentScale = ContentScale.Crop
+                )
+                Spacer(modifier = Modifier.size(dimens.paddingSmall))
+                CustomText(
+                    text = stringResource(Res.string.image_preview_desc),
+                    color = colors.onSecondaryContainer.copy(alpha = .72f),
+                    fontStyle = typography.bodySmall,
+                    fontWeight = FontWeight.Light,
+                    alignment = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.size(dimens.paddingMedium))
+            }
+            if (onClearImage != null) {
+                IconButton(
+                    onClick = onClearImage,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(Res.string.image_picker_remove_picture),
+                        tint = Color.White
+                    )
+                }
+            }
+        } else {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+            ) {
+                Spacer(modifier = Modifier.height(dimens.paddingSmall))
+                Icon(
+                    imageVector = Icons.Rounded.CameraAlt,
+                    contentDescription = stringResource(Res.string.image_picker_icon_desc),
+                    tint = colors.onSecondaryContainer.copy(alpha = .72f),
+                    modifier = Modifier.size(38.dp),
+                )
+
+                CustomText(
+                    text = stringResource(Res.string.image_picker_desc),
+                    color = colors.onSecondaryContainer.copy(alpha = .72f),
+                    fontStyle = typography.bodySmall,
+                    fontWeight = FontWeight.Light,
+                )
+                Spacer(modifier = Modifier.height(dimens.paddingSmall))
             }
         }
     }
