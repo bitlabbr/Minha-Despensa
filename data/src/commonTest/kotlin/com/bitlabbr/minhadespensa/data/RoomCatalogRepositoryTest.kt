@@ -253,7 +253,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         val productId = Uuid.random().toString()
         val productRef = CatalogProduct(
             id = productId,
-            name = "Leite Integral".repeat(100),
+            name = "A".repeat(31),
             brand = "Betânia",
             measureUnit = MeasureUnit.LITER,
             netWeight = 1.0,
@@ -264,10 +264,8 @@ class RoomCatalogRepositoryTest : BaseTest() {
             thumbnailUrl = null
         )
 
-        assertFailsWith<IllegalStateException> {
-            runTest {
-                catalogRepository.insertProduct(productRef, null)
-            }
+        assertFailsWith<IllegalArgumentException> {
+            catalogRepository.insertProduct(productRef, null)
         }
     }
 
@@ -380,8 +378,10 @@ class RoomCatalogRepositoryTest : BaseTest() {
         assertNotNull(savedProduct)
         val savedMedia = db.productMediaDao().getByProductId(productId)
         assertNotNull(savedMedia)
-        assertTrue(fakeImageBlob.contentEquals(savedMedia.blob),
-            "Saved BLOB should be equals to sanding one")
+        assertTrue(
+            fakeImageBlob.contentEquals(savedMedia.blob),
+            "Saved BLOB should be equals to sanding one"
+        )
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -838,35 +838,34 @@ class RoomCatalogRepositoryTest : BaseTest() {
     // 3. LIMITES EXATOS DE NOME (100) E MARCA (50)
     // -------------------------------------------------------------------------
     @Test
-    fun `should save product with name having exactly 100 characters`() = runTest {
-        val exact100Name = "A".repeat(100)
-        val product = createDummyProduct(name = exact100Name)
+    fun `should save product with name having exactly 30 characters`() = runTest {
+        val exact30Name = "A".repeat(30)
+        val product = createDummyProduct(name = exact30Name)
 
         catalogRepository.insertProduct(product, null)
 
         val result = catalogRepository.getProductById(product.id).first()
         assertNotNull(result)
-        assertEquals(exact100Name, result.name)
-        assertEquals(100, result.name.length)
+        assertEquals(exact30Name, result.name)
+        assertEquals(30, result.name.length)
     }
 
     @Test
-    fun `should save product with brand having exactly 50 characters`() = runTest {
-        val exact50Brand = "B".repeat(50)
-        val product = createDummyProduct(brand = exact50Brand)
+    fun `should save product with brand having exactly 30 characters`() = runTest {
+        val exact30Brand = "B".repeat(30)
+        val product = createDummyProduct(brand = exact30Brand)
 
         catalogRepository.insertProduct(product, null)
 
         val result = catalogRepository.getProductById(product.id).first()
         assertNotNull(result)
-        assertEquals(exact50Brand, result.brand)
-        assertEquals(50, result.brand?.length)
+        assertEquals(exact30Brand, result.brand)
+        assertEquals(30, result.brand?.length)
     }
 
     // -------------------------------------------------------------------------
     // 4. LIMITES DE TAMANHO DE IMAGEM (100 KB E > 100 KB)
     // -------------------------------------------------------------------------
-
     @Test
     fun `should save image when size is exactly 100 KB`() = runTest {
         val product = createDummyProduct()
@@ -897,26 +896,24 @@ class RoomCatalogRepositoryTest : BaseTest() {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `should find product when searching with queries of 49 and 50 characters`() = runTest {
-        val name50Chars = "X".repeat(50)
-        val product = createDummyProduct(name = name50Chars)
+    fun `should find product when searching with queries of 29 and 30 characters`() = runTest {
+        val name30Chars = "A".repeat(30)
+        val product = createDummyProduct(name = name30Chars)
         catalogRepository.insertProduct(product, null)
 
-        val query49 = name50Chars.take(49)
-        val query50 = name50Chars
+        val query29 = name30Chars.take(29)
+        val query30 = name30Chars
 
-        // Limite de 49 caracteres
-        catalogRepository.searchProductsByNameOrBrand(query49).test {
+        catalogRepository.searchProductsByNameOrBrand(query29).test {
             val result = awaitItem()
-            assertEquals(1, result.size)
+            assertEquals(1, result.size, "Deve encontrar o produto com query de 29 caracteres")
             assertEquals(product.id, result[0].id)
             cancelAndIgnoreRemainingEvents()
         }
 
-        // Limite exato de 50 caracteres
-        catalogRepository.searchProductsByNameOrBrand(query50).test {
+        catalogRepository.searchProductsByNameOrBrand(query30).test {
             val result = awaitItem()
-            assertEquals(1, result.size)
+            assertEquals(1, result.size, "Deve encontrar o produto com query de 30 caracteres")
             assertEquals(product.id, result[0].id)
             cancelAndIgnoreRemainingEvents()
         }
@@ -974,7 +971,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
     private fun assertProduct(value: CatalogProduct?, ref: CatalogProduct) {
         assertTrue { value != null }
-        val netWeight = value?.netWeight?: 0.0
+        val netWeight = value?.netWeight ?: 0.0
         assertEquals(ref.id, value?.id)
         assertEquals(ref.name, value?.name)
         assertEquals(ref.brand, value?.brand)
