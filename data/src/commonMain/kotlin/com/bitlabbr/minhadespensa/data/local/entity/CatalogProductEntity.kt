@@ -23,7 +23,6 @@
 
 package com.bitlabbr.minhadespensa.data.local.entity
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -42,5 +41,6 @@ data class CatalogProductEntity(
     val thumbnailUrl: String?,
     val updatedAt: Long,
     val isDeleted: Boolean,
-    val manuallyAdded: Boolean
+    val manuallyAdded: Boolean,
+    val notes: String?
 )

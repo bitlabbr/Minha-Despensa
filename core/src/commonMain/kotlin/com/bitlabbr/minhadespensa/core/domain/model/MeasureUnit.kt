@@ -24,8 +24,10 @@
 package com.bitlabbr.minhadespensa.core.domain.model
 
 enum class MeasureUnit {
-    UNITY,
+    UNIT,
     KILOGRAM,
     LITER,
-    PACKAGE
+    PACKAGE,
+    GRAM,
+    MILLILITER,
 }

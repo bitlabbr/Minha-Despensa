@@ -30,5 +30,6 @@ data class PantryUiState(
     val error: String? = null,
     val allActivePantryItems: List<PantryItemUiModel> = emptyList(),
     val expiringPantryItems: List<PantryItemUiModel> = emptyList(),
-    val selectedPantryItem: PantryItemUiModel? = null
+    val selectedPantryItem: PantryItemUiModel? = null,
+    val searchResults: List<PantryItemUiModel> = emptyList(),
 )

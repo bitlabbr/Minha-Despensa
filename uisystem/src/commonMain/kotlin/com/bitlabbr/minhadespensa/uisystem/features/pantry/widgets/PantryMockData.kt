@@ -23,26 +23,6 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets
 
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.ProductWidget
-
-
 object PantryMockData {
-    val widgets = listOf(
-        ProductWidget.CreateProduct(
-            ""
-        )
-    )
-
-    val categories = listOf(
-        "Grãos",
-        "Laticínios",
-        "Carnes",
-        "Bebidas",
-        "Hortifruti",
-        "Enlatados",
-        "Congelados",
-        "Doces",
-        "Outros"
-    )
+    val categories = listOf("Todos", "Grãos", "Proteínas", "Bebidas", "Limpeza", "Lanches")
 }

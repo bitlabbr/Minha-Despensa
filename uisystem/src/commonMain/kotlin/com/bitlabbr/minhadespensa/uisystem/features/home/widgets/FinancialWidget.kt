@@ -36,6 +36,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugePrimaryColor
 import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugeSecondaryColor
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.financial_card_budget
 import minhadespensa.uisystem.generated.resources.financial_card_current_consumption_label
@@ -43,8 +44,8 @@ import minhadespensa.uisystem.generated.resources.financial_card_title
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun FinancialCard(data: HomeWidget.FinancialSummary) {
-    val colors = MinhaDespensaTheme.color
+fun FinancialWidget(data: HomeWidget.FinancialSummary) {
+    val colors = getAppColors()
     val appDimens = MinhaDespensaTheme.dimens
 
     val consumptionProgress = data.consumptionProgress

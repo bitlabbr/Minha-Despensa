@@ -21,9 +21,13 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets
+package com.bitlabbr.minhadespensa.uisystem.features.product
 
-
-sealed class PantryWidget {
-
-}
+data class ExpiringItemCard(
+    val expirationLabel: String,
+    val productName: String,
+    val productCategory: String,
+    val anchoredTargetLabel: String,
+    val anchoredGaugeProgress: Float,
+    val iconPainterURI: String?
+)

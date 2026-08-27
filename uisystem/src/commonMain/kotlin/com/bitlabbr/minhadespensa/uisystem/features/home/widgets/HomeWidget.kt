@@ -25,7 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
 import androidx.compose.runtime.Immutable
 import com.bitlabbr.minhadespensa.uisystem.uimodel.ConsumptionTrendItemCard
-import com.bitlabbr.minhadespensa.uisystem.uimodel.ExpiringItemCard
+import com.bitlabbr.minhadespensa.uisystem.features.product.ExpiringItemCard
 
 sealed class HomeWidget {
     data class FinancialSummary(

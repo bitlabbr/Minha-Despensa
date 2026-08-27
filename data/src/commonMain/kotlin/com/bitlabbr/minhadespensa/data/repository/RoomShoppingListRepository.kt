@@ -176,7 +176,8 @@ class RoomShoppingListRepository(
                             updatedAt = now,
                             isDeleted = false,
                             expirationDate = null,
-                            batchNumber = null
+                            batchNumber = null,
+
                         ).toEntity()
                     )
 

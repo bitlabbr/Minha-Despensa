@@ -32,13 +32,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 @Composable
 fun CustomText(
     text: String?,
     alignment: TextAlign = TextAlign.Left,
     fontWeight: FontWeight? = null,
-    color: Color = MinhaDespensaTheme.color.onPrimary,
+    color: Color = getAppColors().onPrimary,
     fontStyle: TextStyle = MinhaDespensaTheme.typography.displayMedium,
     modifier: Modifier = Modifier
         .wrapContentWidth()

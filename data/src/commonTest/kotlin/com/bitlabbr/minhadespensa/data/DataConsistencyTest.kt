@@ -585,7 +585,7 @@ class DataConsistencyTest : BaseTest() {
         name = name,
         brand = "P0",
         category = "Outros",
-        measureUnit = MeasureUnit.UNITY,
+        measureUnit = MeasureUnit.UNIT,
         netWeight = 1.0,
         updatedAt = updatedAt,
         isDeleted = isDeleted,
@@ -711,7 +711,7 @@ private fun createDummyCatalogProduct(
     updatedAt: Long = getCurrentTime(),
     brand: String? = null,
     isDeleted: Boolean = false,
-    measureUnit: MeasureUnit = MeasureUnit.UNITY,
+    measureUnit: MeasureUnit = MeasureUnit.UNIT,
     manuallyAdded: Boolean = true,
     netWeight: Double = 1.0,
     thumbnailUrl: String? = null

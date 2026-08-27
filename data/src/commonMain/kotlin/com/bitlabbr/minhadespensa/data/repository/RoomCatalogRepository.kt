@@ -29,6 +29,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
@@ -48,8 +49,12 @@ class RoomCatalogRepository(
     private val mediaDao = db.productMediaDao()
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
-        logger.d(TAG, "searchProducts: ean: $ean")
-        return productDao.findByEan(ean).map { it?.toDomain() }
+        return productDao.findByEan(ean)
+            .map { entity ->
+                val product = entity?.toDomain()
+                logger.d(TAG, "getProductByEan:$ean result=$product")
+                product
+            }
     }
 
     override fun getProductById(id: String): Flow<CatalogProduct?> {
@@ -74,7 +79,7 @@ class RoomCatalogRepository(
         logger.d(TAG, "insertProduct: ${product.name} (hasImage: ${imageBytes != null})")
         if (imageBytes != null) {
             val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= 100) {
+            require(imageSizeKb <= CoreConstants.Media.MAX_IMAGE_SIZE_KB) {
                 "File is too large (size: ${imageSizeKb}KB)"
             }
         }
@@ -102,7 +107,7 @@ class RoomCatalogRepository(
         logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null})")
         if (imageBytes != null) {
             val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= 100) {
+            require(imageSizeKb <= CoreConstants.Media.MAX_IMAGE_SIZE_KB) {
                 "File is too large (size: ${imageSizeKb}KB)"
             }
         }
@@ -130,7 +135,7 @@ class RoomCatalogRepository(
         logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null})")
         if (imageBytes != null) {
             val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= 100) {
+            require(imageSizeKb <= CoreConstants.Media.MAX_IMAGE_SIZE_KB) {
                 "File is too large (size: ${imageSizeKb}KB)"
             }
         }
@@ -176,15 +181,22 @@ class RoomCatalogRepository(
     @OptIn(ExperimentalUuidApi::class)
     private fun validateProduct(product: CatalogProduct) {
         require(product.name.isNotBlank()) { "The name of the product shouldn`t be empty" }
-        require(product.name.length <= 100) { "The name of the product should have at most 100 characters" }
+        require(product.name.length <= CoreConstants.Product.NAME_MAX_LENGTH)
+        { "The name of the product should have at most ${CoreConstants.Product.NAME_MAX_LENGTH} characters" }
 
         product.brand?.let {
-            require(it.length <= 50) { "The brand should have at most 50 characters" }
+            require(it.length <= CoreConstants.Product.BRAND_MAX_LENGTH)
+            { "The brand should have at most ${CoreConstants.Product.BRAND_MAX_LENGTH} characters" }
+        }
+
+        product.notes?.let {
+            require(it.length <= CoreConstants.Product.NOTES_MAX_LENGTH)
+            { "The notes should have at most ${CoreConstants.Product.NOTES_MAX_LENGTH} characters" }
         }
 
         product.ean?.let {
-            require(it.length in listOf(8, 13, 14)) {
-                "invalid EAN size: should have 8, 13 or 14 digits"
+            require(it.length in CoreConstants.Product.EAN_VALID_LENGTHS) {
+                "Invalid EAN length: ${it.length}. Expected one of ${CoreConstants.Product.EAN_VALID_LENGTHS}"
             }
 
             require(it.all { char -> char.isDigit() }) {
@@ -201,7 +213,8 @@ class RoomCatalogRepository(
         require(product.netWeight > 0) { "Product netweight should be more than zero" }
 
         require(product.category.isNotBlank()) { "The category shouldn't be empty" }
-        require(product.category.length <= 20) { "The category should have at most 20 characters" }
+        require(product.category.length <= CoreConstants.Product.CATEGORY_MAX_LENGTH)
+        { "The category should have at most ${CoreConstants.Product.CATEGORY_MAX_LENGTH} characters" }
     }
 }
 
@@ -216,7 +229,8 @@ fun CatalogProductEntity.toDomain() = CatalogProduct(
     thumbnailUrl = this.thumbnailUrl,
     updatedAt = this.updatedAt,
     isDeleted = this.isDeleted,
-    manuallyAdded = this.manuallyAdded
+    manuallyAdded = this.manuallyAdded,
+    notes = this.notes
 )
 
 fun CatalogProduct.toEntity() = CatalogProductEntity(
@@ -230,5 +244,6 @@ fun CatalogProduct.toEntity() = CatalogProductEntity(
     thumbnailUrl = this.thumbnailUrl,
     updatedAt = this.updatedAt,
     isDeleted = this.isDeleted,
-    manuallyAdded = this.manuallyAdded
+    manuallyAdded = this.manuallyAdded,
+    notes = this.notes
 )

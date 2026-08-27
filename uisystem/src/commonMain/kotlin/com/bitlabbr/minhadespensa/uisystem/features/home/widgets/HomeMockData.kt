@@ -24,7 +24,7 @@
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
 import com.bitlabbr.minhadespensa.uisystem.uimodel.ConsumptionTrendItemCard
-import com.bitlabbr.minhadespensa.uisystem.uimodel.ExpiringItemCard
+import com.bitlabbr.minhadespensa.uisystem.features.product.ExpiringItemCard
 import com.bitlabbr.minhadespensa.core.domain.model.IconKeys
 
 object HomeMockData {

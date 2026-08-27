@@ -39,10 +39,11 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.defaultButtonColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
 import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 @Composable
-fun ConsumptionTrendCard(data: HomeWidget.ConsumptionTrend) {
-    val colors = MinhaDespensaTheme.color
+fun ConsumptionTrendWidget(data: HomeWidget.ConsumptionTrend) {
+    val colors = getAppColors()
     var isExpanded by remember { mutableStateOf(false) }
     val maxInitialItems = 4
     val content = data.items

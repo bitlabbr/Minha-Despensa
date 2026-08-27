@@ -21,13 +21,31 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.uimodel
+package com.bitlabbr.minhadespensa.core.domain.util
 
-data class ExpiringItemCard(
-    val expirationLabel: String,
-    val productName: String,
-    val productCategory: String,
-    val anchoredTargetLabel: String,
-    val anchoredGaugeProgress: Float,
-    val iconPainterURI: String?
-)
+object CoreConstants {
+
+    object Product {
+        const val NAME_MAX_LENGTH = 30
+        const val BRAND_MAX_LENGTH = 30
+        const val CATEGORY_MAX_LENGTH = 20
+        const val NOTES_MAX_LENGTH = 255
+        const val EAN_MAX_LENGTH = 14
+        val EAN_VALID_LENGTHS = setOf(8, 13, 14)
+        const val DEFAULT_NET_WEIGHT = 1.0
+    }
+
+    object Media {
+        const val MAX_IMAGE_SIZE_KB = 100
+        const val MAX_IMAGE_SIZE_BYTES = 100 * 1024
+        const val TARGET_MAX_DIMENSION = 720
+    }
+
+    object ShoppingList {
+        const val NAME_MAX_LENGTH = 100
+    }
+
+    object Pantry {
+        const val EXPIRING_THRESHOLD_DAYS = 7
+    }
+}

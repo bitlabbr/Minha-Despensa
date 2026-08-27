@@ -169,7 +169,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     @Test
     fun `should do nothing and keep state when finalizing purchase with NO checked items`() = runTest {
-        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNITY)
+        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNIT)
         catalogRepository.insertProduct(product, null)
 
         val listId = Uuid.random().toString()
@@ -211,7 +211,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     @Test
     fun `should DELETE a shopping ITEM within a LIST`() = runTest {
-        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNITY)
+        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNIT)
         catalogRepository.insertProduct(product, null)
 
         val listId = Uuid.random().toString()
@@ -232,7 +232,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     @Test
     fun `should NOT affect items in other lists when finalizing a specific purchase`() = runTest {
-        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNITY)
+        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNIT)
         catalogRepository.insertProduct(product, null)
 
         val listIdA = Uuid.random().toString()
@@ -259,7 +259,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     @Test
     fun `should move ONLY checked items to pantry and leave others untouched in the list`() = runTest {
-        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNITY)
+        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNIT)
         catalogRepository.insertProduct(product, null)
 
         val listId = Uuid.random().toString()
@@ -315,7 +315,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     @Test
     fun `should maintain isDeleted state even if a sync update tries to reset it incorrectly`() = runTest {
-        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNITY)
+        val product = createDummyCatalogProduct(netWeight = 1.0, measureUnit = MeasureUnit.UNIT)
         catalogRepository.insertProduct(product, null)
 
         val listId = Uuid.random().toString()
@@ -378,7 +378,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
     @Test
     fun `should reject shopping item with zero or negative quantity`() = runTest {
         val listId = Uuid.random().toString()
-        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNIT, netWeight = 1.0)
         catalogRepository.insertProduct(product, null)
         shoppingListRepository.insertShoppingList(createDummyShoppingList(id = listId))
 
@@ -397,7 +397,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
     @Test
     fun `should reject shopping item with negative price`() = runTest {
         val listId = Uuid.random().toString()
-        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNIT, netWeight = 1.0)
         catalogRepository.insertProduct(product, null)
         shoppingListRepository.insertShoppingList(createDummyShoppingList(id = listId))
 
@@ -414,7 +414,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     @Test
     fun `finalizePurchase should NOT move soft-deleted items to pantry even if marked checked`() = runTest {
-        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNIT, netWeight = 1.0)
         catalogRepository.insertProduct(product, null)
 
         val listId = Uuid.random().toString()
@@ -435,7 +435,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     @Test
     fun `finalizePurchase should restock pantry without generating price history when priceAtTime is null`() = runTest {
-        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNIT, netWeight = 1.0)
         catalogRepository.insertProduct(product, null)
 
         val listId = Uuid.random().toString()
@@ -469,7 +469,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         }
 
         // Cenário 2: Lista com soft-delete
-        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNITY, netWeight = 1.0)
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNIT, netWeight = 1.0)
         catalogRepository.insertProduct(product, null)
 
         val softDeletedListId = Uuid.random().toString()

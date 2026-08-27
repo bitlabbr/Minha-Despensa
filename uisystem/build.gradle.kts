@@ -62,6 +62,14 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
         }
+
+        androidMain.dependencies {
+            implementation(libs.androidx.activity.compose)
+            implementation(libs.androidx.exifinterface)
+        }
+
+        iosMain.dependencies {
+        }
     }
 }
 

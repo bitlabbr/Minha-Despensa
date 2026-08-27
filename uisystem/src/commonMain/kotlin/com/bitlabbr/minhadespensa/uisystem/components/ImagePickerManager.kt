@@ -21,8 +21,16 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.product.widgets
+package com.bitlabbr.minhadespensa.uisystem.components
 
-object ProductMockData {
-    val widgets = listOf{}
+import androidx.compose.runtime.Composable
+
+interface ImagePickerManager {
+    fun launchCamera()
+    fun launchGallery()
 }
+
+@Composable
+expect fun rememberImagePickerManager(
+    onImagePicked: (ByteArray?) -> Unit
+): ImagePickerManager

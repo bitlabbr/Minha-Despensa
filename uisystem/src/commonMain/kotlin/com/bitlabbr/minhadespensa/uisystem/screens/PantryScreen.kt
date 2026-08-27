@@ -21,7 +21,8 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.home
+package com.bitlabbr.minhadespensa.uisystem.screens
+
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -31,20 +32,29 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
-import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerHeader
-import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.*
+import com.bitlabbr.minhadespensa.uisystem.components.*
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryItemsWidget
+import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register.RegisterProductWidget
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.searchbar.PantryItemSearchBarWidget
+import com.bitlabbr.minhadespensa.uisystem.features.product.ProductViewModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.Res
+import org.jetbrains.compose.resources.stringResource
+import minhadespensa.uisystem.generated.resources.maine
+import minhadespensa.uisystem.generated.resources.Pantry
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun HomeScreen(
+fun PantryScreen(
     bottomPadding: Dp = 0.dp
 ) {
-    val widgets = HomeMockData.widgets
-    val appColors = MinhaDespensaTheme.color
+    val pantryViewModel = koinViewModel<PantryViewModel>()
+    val productViewModel = koinViewModel<ProductViewModel>()
+    val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
 
     Scaffold(
         topBar = {
@@ -63,39 +73,40 @@ fun HomeScreen(
         containerColor = Color.Transparent
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
-
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = paddingValues.calculateTopPadding(),
                     bottom = bottomPadding + 16.dp
-                )
+                ),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
                     PrimaryContainerGlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
-                            .padding(horizontal = MinhaDespensaTheme.dimens.paddingSmall, vertical = 8.dp)
+                            .padding(horizontal = dimens.paddingSmall, vertical = 8.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(
-                                    top = MinhaDespensaTheme.dimens.paddingLarge,
-                                    bottom = MinhaDespensaTheme.dimens.paddingLarge
-                                )
+                                    top = dimens.paddingLarge,
+                                    bottom = dimens.paddingLarge
+                                ),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            PrimaryContainerHeader{}
-                            widgets.forEach { widget ->
-                                Column {
-                                    when (widget) {
-                                        is HomeWidget.FinancialSummary -> FinancialCard(widget)
-                                        is HomeWidget.ExpiringSoon -> ExpiringSoonCard(widget)
-                                        is HomeWidget.ConsumptionTrend -> ConsumptionTrendCard(widget)
-                                    }
-                                }
-                            }
+                            PrimaryContainerHeader(
+                                textTop = stringResource(Res.string.maine),
+                                textBottom = stringResource(Res.string.Pantry)
+                            ) {}
+
+                            PantryItemSearchBarWidget(viewModel = pantryViewModel)
+
+                            PantryItemsWidget()
+
+                            RegisterProductWidget(viewModel = productViewModel)
                         }
                     }
                 }

@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.list
+package com.bitlabbr.minhadespensa.uisystem.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +35,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import org.koin.core.annotation.KoinExperimentalAPI
 
 @OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
@@ -49,7 +50,7 @@ fun SettingsScreen() {
                     CustomText(
                         text = "Configurações",
                         fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                        color = MinhaDespensaTheme.color.onBackground
+                        color = getAppColors().onBackground
                     )
                 }
             )
@@ -91,7 +92,7 @@ private fun MenuItem() {
         Column {
             CustomText(
                 fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                color = MinhaDespensaTheme.color.onBackground,
+                color = getAppColors().onBackground,
                 alignment = TextAlign.Center,
                 text = "Configurações",
                 modifier = Modifier.padding(all = appDimens.paddingSmall),

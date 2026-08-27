@@ -21,13 +21,12 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry
-
+package com.bitlabbr.minhadespensa.uisystem.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -36,18 +35,22 @@ import com.bitlabbr.minhadespensa.uisystem.components.CustomText
 import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerHeader
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryMockData
-import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.ProductWidget
-import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.RegisterProduct.RegisterProductWidget
+import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.*
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import org.koin.compose.viewmodel.koinViewModel
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.Res
+import org.jetbrains.compose.resources.stringResource
+import minhadespensa.uisystem.generated.resources.vision
+import minhadespensa.uisystem.generated.resources.general
 
 @Composable
-fun PantryScreen(bottomPadding: Dp) {
-    val pantryViewModel = koinViewModel<PantryViewModel>()
-    val productsListViewModel = koinViewModel<ProductsListViewModel>()
-    val widgets = PantryMockData.widgets
+fun HomeScreen(
+    bottomPadding: Dp = 0.dp
+) {
+    val widgets: List<HomeWidget> = HomeMockData.widgets
+    val appColors = getAppColors()
+    val appTypography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
 
     Scaffold(
         topBar = {
@@ -56,17 +59,17 @@ fun PantryScreen(bottomPadding: Dp) {
                 centerContent = {
                     CustomText(
                         text = "",
-                        fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                        color = MinhaDespensaTheme.color.onBackground
+                        fontStyle = appTypography.displayMedium,
+                        color = appColors.onBackground
                     )
                 }
             )
         },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = Color.Transparent
     ) { paddingValues ->
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
@@ -79,20 +82,27 @@ fun PantryScreen(bottomPadding: Dp) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
-                            .padding(horizontal = MinhaDespensaTheme.dimens.paddingSmall, vertical = 8.dp)
+                            .padding(horizontal = dimens.paddingSmall, vertical = 8.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(
-                                    top = MinhaDespensaTheme.dimens.paddingLarge,
-                                    bottom = MinhaDespensaTheme.dimens.paddingLarge
+                                    top = dimens.paddingLarge,
+                                    bottom = dimens.paddingLarge
                                 )
                         ) {
-                            PrimaryContainerHeader {}
-                            widgets.forEach { widget ->
-                                when (widget) {
-                                    is ProductWidget -> RegisterProductWidget(viewModel = pantryViewModel)
+                            PrimaryContainerHeader(
+                                textTop = stringResource(Res.string.vision),
+                                textBottom = stringResource(Res.string.general)
+                            ){}
+                            widgets.forEach { homeWidget ->
+                                Column {
+                                    when (homeWidget) {
+                                        is HomeWidget.FinancialSummary -> FinancialWidget(homeWidget)
+                                        is HomeWidget.ExpiringSoon -> ExpiringSoonWidget(homeWidget)
+                                        is HomeWidget.ConsumptionTrend -> ConsumptionTrendWidget(homeWidget)
+                                    }
                                 }
                             }
                         }
