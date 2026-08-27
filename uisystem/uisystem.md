@@ -30,7 +30,7 @@ The source code is organized into the following packages:
 
 This package contains reusable UI components:
 
-- `Text.kt`: Custom text components.
+- `MinhaDespensaText.kt`: Custom text components.
 - `Menus.kt`: UI components for menus.
 - `Utils.kt`: Utility functions for UI.
 - `Charts.kt`: Components for displaying charts.

@@ -31,18 +31,20 @@ data class ProductFormState(
     val ean: String = "",
     val notes: String = "",
     val imageBytes: ByteArray? = null,
+    val availableCategories: List<String> = emptyList(),
     val isSaving: Boolean = false,
     val nameError: String? = null,
     val netWeightError: String? = null,
     val measureUnitError: String? = null,
     val eanError: String? = null,
-    val isCheckingEan: Boolean = false
+    val isCheckingEan: Boolean = false,
 ) {
     val isFormValid: Boolean
         get() = name.isNotBlank() &&
                 nameError == null &&
                 netWeight.isNotBlank() &&
                 netWeightError == null &&
+                category.isNotBlank() &&
                 measureUnit.isNotBlank() &&
                 eanError == null &&
                 !isCheckingEan &&
@@ -61,6 +63,7 @@ data class ProductFormState(
         if (notes != other.notes) return false
         if (netWeight != other.netWeight) return false
         if (measureUnit != other.measureUnit) return false
+        if (availableCategories != other.availableCategories) return false
         if (isSaving != other.isSaving) return false
         if (isCheckingEan != other.isCheckingEan) return false
         if (nameError != other.nameError) return false
@@ -84,12 +87,13 @@ data class ProductFormState(
         result = 31 * result + notes.hashCode()
         result = 31 * result + netWeight.hashCode()
         result = 31 * result + measureUnit.hashCode()
+        result = 31 * result + availableCategories.hashCode()
         result = 31 * result + isSaving.hashCode()
         result = 31 * result + isCheckingEan.hashCode()
-        result = 31 * result + nameError.hashCode()
-        result = 31 * result + netWeightError.hashCode()
-        result = 31 * result + measureUnitError.hashCode()
-        result = 31 * result + eanError.hashCode()
+        result = 31 * result + (nameError?.hashCode() ?: 0)
+        result = 31 * result + (netWeightError?.hashCode() ?: 0)
+        result = 31 * result + (measureUnitError?.hashCode() ?: 0)
+        result = 31 * result + (eanError?.hashCode() ?: 0)
         result = 31 * result + (imageBytes?.contentHashCode() ?: 0)
         return result
     }

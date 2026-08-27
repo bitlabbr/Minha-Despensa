@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.components.core.media
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember

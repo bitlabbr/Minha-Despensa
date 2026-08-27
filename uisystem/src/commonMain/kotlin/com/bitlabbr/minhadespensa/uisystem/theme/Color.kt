@@ -25,56 +25,83 @@ package com.bitlabbr.minhadespensa.uisystem.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light Colors
-val primaryLightAppColor = Color(0xFF25669B)
-val onPrimaryLightAppColor = Color(0xFAD8DADE)
+// -----------------------------------------------------------------------------
+// ACTION / BRAND
+// -----------------------------------------------------------------------------
+// These two colors are the endpoints of the Minha Despensa Action Gradient.
+//
+// primary  -> green
+// secondary -> warm orange
+//
+// -----------------------------------------------------------------------------
 
-val secondaryLightAppColor = Color(0xFFFF5722)
-val onSecondaryLightAppColor = Color(0xFFEAE3E1)
+val primaryLightAppColor = Color(0xFF76F9C7)
+val onPrimaryLightAppColor = Color(0xFF26332F)
 
-val tertiaryLightAppColor = Color(0x8AE8E295)
-val onTertiaryLightAppColor = Color(0xFF86A2E0)
+val secondaryLightAppColor = Color(0xFFFF7C64)
+val onSecondaryLightAppColor = Color(0xFF3A2420)
 
-val backgroundLightAppColor = Color(0xFFF3F1F1)
-val onBackgroundLightAppColor = Color(0xFF636465)
+val primaryDarkAppColor = Color(0xFF8AF3C8)
+val onPrimaryDarkAppColor = Color(0xFF1D2B27)
 
-val surfaceLightAppColor = Color(0xF3E8E7E7)
-val onSurfaceLightAppColor = Color(0xFF42586B)
+val secondaryDarkAppColor = Color(0xFFFF927D)
+val onSecondaryDarkAppColor = Color(0xFF38211D)
 
-val primaryContainerLightAppColor = Color(0xFFD0CECD)
-val onPrimaryContainerLightAppColor = Color(0xFF4B555F)
+// -----------------------------------------------------------------------------
+// TERTIARY
+// -----------------------------------------------------------------------------
+// Kept only for Material/Compose ColorScheme compatibility.
+// It is NOT part of the application's primary interaction language.
+// -----------------------------------------------------------------------------
 
-val secondaryContainerLightAppColor = Color(0xFFC9C6C0)
-val onSecondaryContainerLightAppColor = Color(0xC3000000)
+val tertiaryLightAppColor = Color(0xFFD8D6C9)
+val onTertiaryLightAppColor = Color(0xFF3E403B)
 
-// Dark Colorsela
-val primaryDarkAppColor = Color(0xFF3E608A)
-val onPrimaryDarkAppColor = Color(0xFFC5C7CB)
+val tertiaryDarkAppColor = Color(0xFF5C5A50)
+val onTertiaryDarkAppColor = Color(0xFFE9E7DB)
 
-val secondaryDarkAppColor = Color(0xFFFF5722)
-val onSecondaryDarkAppColor = Color(0xFFDCD4D2)
+// -----------------------------------------------------------------------------
+// BACKGROUND
+// -----------------------------------------------------------------------------
 
-val primaryContainerDarkAppColor = Color(0xFFD9D7D2)
-val onPrimaryContainerDarkAppColor = Color(0xFFD3DEEC)
+val backgroundLightAppColor = Color(0xFFFFFCF5)
+val onBackgroundLightAppColor = Color(0xFF343532)
 
-val secondaryContainerDarkAppColor = Color(0xFF0C0C0C)
-val onSecondaryContainerDarkAppColor = Color(0xD3D3D6EC)
+val backgroundDarkAppColor = Color(0xFF1B1B19)
+val onBackgroundDarkAppColor = Color(0xFFE5E4DD)
 
-val tertiaryDarkAppColor = Color(0x9CF5DE52)
-val onTertiaryDarkAppColor = Color(0xFF6F9CDC)
+// -----------------------------------------------------------------------------
+// SURFACE
+// -----------------------------------------------------------------------------
+// Used by elevated transient UI: BottomSheet, Dialog, Dropdown, Menu.
+// -----------------------------------------------------------------------------
 
-val backgroundDarkAppColor = Color(0xFF313136)
-val onBackgroundDarkAppColor = Color(0xFFCBD0D5)
+val surfaceLightAppColor = Color(0xF5FFFFFF)
+val onSurfaceLightAppColor = Color(0xFF30312F)
 
-val surfaceDarkAppColor = Color(0xE91F1F1F)
-val onSurfaceDarkAppColor = Color(0xFFD7DCEA)
+val surfaceDarkAppColor = Color(0xF51F1F1D)
+val onSurfaceDarkAppColor = Color(0xFFE8E7E0)
 
+// -----------------------------------------------------------------------------
+// PRIMARY GLASS
+// -----------------------------------------------------------------------------
+// Layer 1: the main glass container of a screen.
+// -----------------------------------------------------------------------------
 
-// COLORS
-val financialGaugePrimaryColor  = Color(0xE176F9C7)
-val financialGaugeSecondaryColor  = Color(0xEDFF7C64)
+val primaryContainerLightAppColor = Color(0xFFEDEBE5)
+val onPrimaryContainerLightAppColor = Color(0xFF4B504D)
 
-val expiringItemContainerColor = Color(0xFFAAAAAA)
-val expiringItemContentColor = Color(0xED252526)
+val primaryContainerDarkAppColor = Color(0xFF292927)
+val onPrimaryContainerDarkAppColor = Color(0xFFD9D8D1)
 
-val defaultButtonColor = Color(0xFFB8B7B7)
+// -----------------------------------------------------------------------------
+// SECONDARY GLASS
+// -----------------------------------------------------------------------------
+// Layer 2: child containers, widgets, form sections and product cards.
+// -----------------------------------------------------------------------------
+
+val secondaryContainerLightAppColor = Color(0xFFE6E4DE)
+val onSecondaryContainerLightAppColor = Color(0xFF2F302E)
+
+val secondaryContainerDarkAppColor = Color(0xFF363633)
+val onSecondaryContainerDarkAppColor = Color(0xFFE3E1D9)

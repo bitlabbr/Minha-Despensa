@@ -22,29 +22,31 @@
  */
 package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register
 
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
-import com.bitlabbr.minhadespensa.uisystem.components.*
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryMockData
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaExpandButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerSection
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImagePickerCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImageSourcePickerDialog
+import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
+import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductDropdownField
+import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.mapper.toLabel
+import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePickerManager
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.*
@@ -59,52 +61,52 @@ fun RegisterProductSheet(
     onCancel: () -> Unit = onBack,
     onSave: () -> Unit,
     onStateChange: (ProductFormState) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
-    val typography = MinhaDespensaTheme.typography
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
     var isExpanded by remember { mutableStateOf(false) }
-    val toggleExpanded = remember { { isExpanded = !isExpanded } }
     var showImageSourcePicker by remember { mutableStateOf(false) }
+
     val imagePickerManager = rememberImagePickerManager { bytes ->
         onStateChange(state.copy(imageBytes = bytes))
     }
+
     val selectedMeasureUnit = remember(state.measureUnit) {
         MeasureUnit.entries.find { it.name == state.measureUnit }
     }
 
-    ModalBottomSheet(
+    MinhaDespensaBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = colors.surface.copy(alpha = 0.95f),
-        modifier = Modifier.padding(
-            horizontal = dimens.paddingSmall
-        ),
     ) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = dimens.paddingLarge)
+            modifier = Modifier.fillMaxWidth(),
         ) {
             item {
-                SheetHeader(onBack = onBack)
+                PrimaryContainerHeader(
+                    textTop = stringResource(Res.string.register_product_form_header_title_top),
+                    textBottom = stringResource(Res.string.register_product_form_header_title_bottom),
+                    description = stringResource(Res.string.register_product_form_header_title_desc),
+                    actionIcon = Icons.Rounded.Close,
+                    actionContentDescription = stringResource(Res.string.register_product_form_back_button_desc),
+                    onActionClick = onBack,
+                )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    FormSection(
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // IMAGE SECTION
+                    SecondaryContainerSection(
                         title = stringResource(Res.string.register_product_form_image_title),
                     ) {
                         ImagePickerCard(
                             imageBytes = state.imageBytes,
                             onClick = { showImageSourcePicker = true },
-                            onClearImage = { onStateChange(state.copy(imageBytes = null)) }
+                            onClearImage = { onStateChange(state.copy(imageBytes = null)) },
                         )
                     }
 
-                    FormSection(
+                    // BASIC INFO SECTION
+                    SecondaryContainerSection(
                         title = stringResource(Res.string.register_product_form_basic_info_section_title),
                     ) {
                         ProductTextField(
@@ -114,14 +116,13 @@ fun RegisterProductSheet(
                             placeholder = stringResource(Res.string.register_product_form_basic_info_product_placeholder),
                             isRequired = true,
                             maxCharacters = CoreConstants.Product.NAME_MAX_LENGTH,
-                            errorMessage = state.nameError
+                            errorMessage = state.nameError,
                         )
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                         ) {
-
                             ProductTextField(
                                 modifier = Modifier.weight(1f),
                                 value = state.netWeight,
@@ -133,7 +134,8 @@ fun RegisterProductSheet(
                                 placeholder = stringResource(Res.string.register_product_form_basic_info_netweight_placeholder),
                                 keyboardType = KeyboardType.Decimal,
                                 isRequired = true,
-                                errorMessage = state.netWeightError
+                                maxCharacters = CoreConstants.Product.WEIGHT_MAX_LENGTH,
+                                errorMessage = state.netWeightError,
                             )
 
                             ProductDropdownField(
@@ -150,30 +152,25 @@ fun RegisterProductSheet(
                             )
                         }
 
-                        Row(
+                        ProductDropdownField(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
-                        ) {
-                            ProductDropdownField(
-                                modifier = Modifier.fillMaxWidth(),
-                                label = stringResource(Res.string.register_product_form_basic_info_product_category),
-                                selectedOption = state.category.takeIf { it.isNotBlank() },
-                                placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
-                                options = PantryMockData.categories,
-                                optionLabel = { it },
-                                isRequired = true,
-                                onSelected = { selectedCategory ->
-                                    onStateChange(state.copy(category = selectedCategory))
-                                },
-                            )
-                        }
+                            label = stringResource(Res.string.register_product_form_basic_info_product_category),
+                            selectedOption = state.category.takeIf { it.isNotBlank() },
+                            placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
+                            options = state.availableCategories,
+                            optionLabel = { it },
+                            isRequired = true,
+                            onSelected = { selectedCategory ->
+                                onStateChange(state.copy(category = selectedCategory))
+                            },
+                        )
                     }
 
+                    // EXTENDED SECTION
                     if (isExpanded) {
-                        FormSection(
+                        SecondaryContainerSection(
                             title = stringResource(Res.string.register_product_form_detail_info_section_title),
                         ) {
-
                             ProductTextField(
                                 value = state.ean,
                                 onValueChange = { input ->
@@ -188,16 +185,20 @@ fun RegisterProductSheet(
                                 trailingContent = {
                                     if (state.isCheckingEan) {
                                         CircularProgressIndicator(
-                                            modifier = Modifier.size(20.dp).padding(2.dp),
+                                            modifier = Modifier
+                                                .size(20.dp)
+                                                .padding(2.dp),
                                             strokeWidth = 2.dp,
-                                            color = colors.primary
+                                            color = colors.primary,
                                         )
                                     } else {
                                         IconButton(onClick = {}) {
                                             Icon(
                                                 imageVector = Icons.Rounded.QrCodeScanner,
                                                 contentDescription = stringResource(Res.string.register_product_form_detail_info_ean_icon_description),
-                                                tint = if (state.eanError != null) colors.error else colors.onSecondaryContainer.copy(alpha = .72f),
+                                                tint = if (state.eanError != null) colors.error else colors.onSecondaryContainer.copy(
+                                                    alpha = 0.72f
+                                                ),
                                             )
                                         }
                                     }
@@ -218,6 +219,7 @@ fun RegisterProductSheet(
                                 label = stringResource(Res.string.register_product_form_detail_info_notes_label),
                                 placeholder = stringResource(Res.string.register_product_form_detail_info_notes_placeholder),
                                 minLines = 3,
+                                singleLine = false,
                                 maxCharacters = CoreConstants.Product.NOTES_MAX_LENGTH,
                             )
                         }
@@ -226,378 +228,49 @@ fun RegisterProductSheet(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 4.dp, bottom = 2.dp),
-                        contentAlignment = Alignment.Center
+                            .padding(top = 8.dp, bottom = 4.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Button(
-                            onClick = toggleExpanded,
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = colors.onPrimaryContainer,
-                            )
-                        ) {
-                            CustomText(
-                                text = if (isExpanded) stringResource(Res.string.register_product_form_expand_button_see_less)
-                                else stringResource(Res.string.register_product_form_expand_button_see_more),
-                                color = colors.primary,
-                                fontStyle = MinhaDespensaTheme.typography.bodySmall,
-                                alignment = TextAlign.Center
-                            )
-                        }
+                        MinhaDespensaExpandButton(
+                            isExpanded = isExpanded,
+                            onClick = { isExpanded = !isExpanded },
+                            collapsedText = stringResource(Res.string.register_product_form_expand_button_see_more),
+                            expandedText = stringResource(Res.string.register_product_form_expand_button_see_less),
+                        )
                     }
+
                     Spacer(Modifier.height(dimens.paddingMedium))
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = dimens.paddingSmall),
                         horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                     ) {
-                        OutlinedButton(
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(54.dp),
+                        MinhaDespensaSecondaryButton(
+                            text = stringResource(Res.string.register_product_form_button_cancel),
+                            modifier = Modifier.weight(1f),
                             onClick = onCancel,
-                            shape = RoundedCornerShape(dimens.cardCorner),
-                            border = BorderStroke(
-                                1.dp,
-                                colors.onPrimaryContainer.copy(alpha = .45f),
-                            ),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = colors.onPrimaryContainer,
-                            ),
-                        ) {
-                            CustomText(
-                                text = stringResource(Res.string.register_product_form_button_cancel),
-                                fontStyle = typography.bodySmall,
-                                color = colors.onPrimaryContainer,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                        }
+                        )
 
-                        Button(
-                            modifier = Modifier
-                                .weight(1.75f)
-                                .height(54.dp),
-                            onClick = onSave,
+                        MinhaDespensaPrimaryButton(
+                            text = stringResource(Res.string.register_product_form_button_save),
+                            modifier = Modifier.weight(1.75f),
                             enabled = state.isFormValid,
-                            shape = RoundedCornerShape(dimens.cardCorner),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = colors.primary,
-                                contentColor = colors.onPrimary,
-                                disabledContainerColor = colors.primary.copy(alpha = 0.4f),
-                                disabledContentColor = colors.onPrimary.copy(alpha = 0.6f)
-                            ),
-                        ) {
-                            if (state.isSaving) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(24.dp),
-                                    color = colors.onPrimary,
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                CustomText(
-                                    text = stringResource(Res.string.register_product_form_button_save),
-                                    fontStyle = typography.bodySmall,
-                                    color = colors.onPrimary,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                            }
-                        }
+                            isLoading = state.isSaving,
+                            onClick = onSave,
+                        )
                     }
                 }
             }
         }
+
         if (showImageSourcePicker) {
             ImageSourcePickerDialog(
                 onDismissRequest = { showImageSourcePicker = false },
                 onCameraSelect = { imagePickerManager.launchCamera() },
-                onGallerySelect = { imagePickerManager.launchGallery() }
+                onGallerySelect = { imagePickerManager.launchGallery() },
             )
         }
     }
-}
-
-@Composable
-private fun SheetHeader(
-    onBack: () -> Unit,
-) {
-    val colors = getAppColors()
-    val typography = MinhaDespensaTheme.typography
-    val dimens = MinhaDespensaTheme.dimens
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = dimens.paddingSmall,
-                end = dimens.paddingMedium,
-                bottom = dimens.paddingLarge,
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.Rounded.ArrowBack,
-                contentDescription = stringResource(Res.string.register_product_form_back_button_desc),
-                tint = colors.onPrimaryContainer.copy(alpha = .72f),
-                modifier = Modifier.size(30.dp),
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = dimens.paddingSmall),
-        ) {
-            CustomText(
-                text = stringResource(Res.string.register_product_form_header_title_top),
-                color = colors.onPrimaryContainer,
-                fontStyle = typography.displayLarge,
-                fontWeight = FontWeight.Light,
-            )
-            CustomText(
-                text = stringResource(Res.string.register_product_form_header_title_bottom),
-                color = colors.onPrimaryContainer,
-                fontStyle = typography.displayLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-            CustomText(
-                text = stringResource(Res.string.register_product_form_header_title_desc),
-                color = colors.onPrimaryContainer.copy(alpha = .65f),
-                fontStyle = typography.bodySmall,
-                fontWeight = FontWeight.Light,
-            )
-        }
-    }
-}
-
-
-@Composable
-private fun FormSection(
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    val dimens = MinhaDespensaTheme.dimens
-    val colors = getAppColors()
-    val typography = MinhaDespensaTheme.typography
-
-    SecondaryContainerGlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = dimens.paddingSmall,
-                vertical = dimens.paddingSmall,
-            ),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    horizontal = dimens.paddingSmall / 2,
-                    vertical = dimens.paddingSmall,
-                ),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
-        ) {
-            CustomText(
-                text = title,
-                color = colors.onSecondaryContainer.copy(alpha = .75f),
-                fontStyle = typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-            )
-            content()
-        }
-    }
-}
-
-@Composable
-private fun ProductTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    label: String,
-    placeholder: String,
-    modifier: Modifier = Modifier.fillMaxWidth(),
-    isRequired: Boolean = false,
-    maxCharacters: Int? = null,
-    errorMessage: String? = null,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    minLines: Int = 1,
-    trailingContent: (@Composable (() -> Unit))? = null,
-) {
-    val colors = getAppColors()
-    val typography = MinhaDespensaTheme.typography
-    val dimens = MinhaDespensaTheme.dimens
-
-    val hasSupportingText = errorMessage != null || (maxCharacters != null && value.isNotEmpty())
-
-    OutlinedTextField(
-        modifier = modifier,
-        value = value,
-        onValueChange = { input ->
-            val sanitized = if (maxCharacters != null) input.take(maxCharacters) else input
-            onValueChange(sanitized)
-        },
-        isError = errorMessage != null,
-        textStyle = typography.bodySmall.copy(color = colors.onSecondaryContainer),
-        label = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CustomText(
-                    text = label,
-                    fontStyle = typography.bodySmall,
-                    color = if (errorMessage != null) colors.error else colors.onSecondaryContainer.copy(alpha = .70f),
-                    fontWeight = FontWeight.Light,
-                )
-                if (isRequired) {
-                    CustomText(
-                        text = " *",
-                        fontStyle = typography.bodySmall,
-                        color = colors.secondary,
-                        fontWeight = FontWeight.Bold,
-                    )
-                }
-            }
-        },
-        placeholder = {
-            CustomText(
-                text = placeholder,
-                fontStyle = typography.bodySmall,
-                color = colors.onSecondaryContainer.copy(alpha = .42f),
-                fontWeight = FontWeight.Light,
-            )
-        },
-
-        supportingText = if (hasSupportingText) {
-            {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    if (errorMessage != null) {
-                        CustomText(
-                            text = errorMessage,
-                            fontStyle = typography.bodySmall,
-                            color = colors.error,
-                            fontWeight = FontWeight.Normal
-                        )
-                    } else {
-                        Spacer(Modifier.weight(1f))
-                    }
-
-                    if (maxCharacters != null) {
-                        CustomText(
-                            text = "${value.length}/$maxCharacters",
-                            fontStyle = typography.bodySmall,
-                            color = colors.onSecondaryContainer.copy(alpha = 0.5f),
-                            fontWeight = FontWeight.Light
-                        )
-                    }
-                }
-            }
-        } else null,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        minLines = minLines,
-        trailingIcon = trailingContent,
-        shape = RoundedCornerShape(dimens.cardCorner * .55f),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = colors.onSecondaryContainer,
-            unfocusedTextColor = colors.onSecondaryContainer,
-            focusedContainerColor = Color.Transparent,
-            unfocusedContainerColor = Color.Transparent,
-            cursorColor = colors.primary,
-            focusedBorderColor = colors.primary.copy(alpha = .75f),
-            unfocusedBorderColor = colors.onSecondaryContainer.copy(alpha = .24f),
-            errorBorderColor = colors.error,
-            errorLabelColor = colors.error,
-            errorSupportingTextColor = colors.error
-        ),
-    )
-}
-
-@Composable
-fun <T> ProductDropdownField(
-    label: String,
-    selectedOption: T?,
-    placeholder: String,
-    options: List<T>,
-    onSelected: (T) -> Unit,
-    modifier: Modifier = Modifier,
-    optionLabel: (T) -> String = { it.toString() },
-    isRequired: Boolean = false,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val colors = getAppColors()
-    val dimens = MinhaDespensaTheme.dimens
-
-    Box(modifier = modifier) {
-        ProductTextField(
-            modifier = Modifier.fillMaxWidth(),
-            value = selectedOption?.let(optionLabel).orEmpty(),
-            onValueChange = {},
-            label = label,
-            placeholder = placeholder,
-            isRequired = isRequired,
-            trailingContent = {
-                IconButton(onClick = { expanded = true }) {
-                    Icon(
-                        imageVector = Icons.Rounded.ExpandMore,
-                        contentDescription = "Abrir opções de $label",
-                        tint = colors.onSecondaryContainer.copy(alpha = .72f),
-                    )
-                }
-            },
-        )
-
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                .clickable { expanded = true },
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            shape = RoundedCornerShape(dimens.cardCorner * 0.6f),
-            containerColor = colors.surface.copy(alpha = 0.96f),
-            border = BorderStroke(1.dp, colors.onSecondaryContainer.copy(alpha = 0.15f)),
-            shadowElevation = 10.dp,
-            modifier = Modifier.padding(vertical = 4.dp).widthIn(min = 120.dp, max = 320.dp)
-        ) {
-            options.forEach { option ->
-                val labelText = optionLabel(option)
-                val isSelected = option == selectedOption
-
-                DropdownMenuItem(
-                    text = {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            CustomText(
-                                text = labelText,
-                                fontStyle = MinhaDespensaTheme.typography.bodySmall,
-                                color = if (isSelected) colors.primary else colors.onSecondaryContainer,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                alignment = TextAlign.Start
-                            )
-                        }
-                    },
-                    onClick = {
-                        expanded = false
-                        onSelected(option)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = MenuDefaults.itemColors(
-                        textColor = colors.onSecondaryContainer
-                    )
-                )
-            }
-        }
-    }
-}
-
-fun MeasureUnit.toLabel(): String = when (this) {
-    MeasureUnit.KILOGRAM -> "Quilograma (kg)"
-    MeasureUnit.GRAM -> "Grama (g)"
-    MeasureUnit.LITER -> "Litro (L)"
-    MeasureUnit.MILLILITER -> "Mililitro (ml)"
-    MeasureUnit.UNIT -> "Unidade (un)"
-    MeasureUnit.PACKAGE -> "Pacote"
 }

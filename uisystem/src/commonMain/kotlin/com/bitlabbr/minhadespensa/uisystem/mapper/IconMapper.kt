@@ -21,13 +21,13 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.mapper
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.painter.Painter
 import com.bitlabbr.minhadespensa.core.domain.model.IconKeys
-import org.jetbrains.compose.resources.painterResource
 import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.painterResource
 
 @Composable
 fun getIconPainterFromString(iconName: String?): Painter? {

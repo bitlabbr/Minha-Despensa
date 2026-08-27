@@ -49,37 +49,53 @@ class ProductViewModel(
 ) : ViewModel() {
     private val TAG = "ProductViewModel"
     private var eanValidationJob: Job? = null
-
     private val _productFormState = MutableStateFlow(ProductFormState())
     val productFormState: StateFlow<ProductFormState> = _productFormState.asStateFlow()
 
+    init {
+        observeCategories()
+    }
+
+    private fun observeCategories() {
+        viewModelScope.launch {
+            catalogRepository.getCategories()
+                .catch { e -> logger.e(TAG, "Failure while loading categories: ${e.message}", e) }
+                .collect { categories ->
+                    _productFormState.update { it.copy(availableCategories = categories) }
+                }
+        }
+    }
+
     fun onProductFormChange(newState: ProductFormState) {
-        val current = _productFormState.value
-        val isEanChanged = newState.ean != current.ean
+        _productFormState.update { current ->
+            val isEanChanged = newState.ean != current.ean
+            val preservedEanError = if (isEanChanged) null else current.eanError
+            val preservedIsChecking = !isEanChanged && current.isCheckingEan
 
-        val preservedEanError = if (isEanChanged) null else current.eanError
-        val preservedIsChecking = !isEanChanged && current.isCheckingEan
+            val validatedState = newState.copy(
+                availableCategories = current.availableCategories,
+                nameError = when {
+                    newState.name.isBlank() && current.name.isNotEmpty() -> "Nome é obrigatório"
+                    newState.name.length > CoreConstants.Product.NAME_MAX_LENGTH ->
+                        "Máximo de ${CoreConstants.Product.NAME_MAX_LENGTH} caracteres"
 
-        val validatedState = newState.copy(
-            nameError = when {
-                newState.name.isBlank() && current.name.isNotEmpty() -> "Nome é obrigatório"
-                newState.name.length > CoreConstants.Product.NAME_MAX_LENGTH ->
-                    "Máximo de ${CoreConstants.Product.NAME_MAX_LENGTH} caracteres"
-                else -> null
-            },
-            netWeightError = when {
-                newState.netWeight.isNotBlank() &&
-                        newState.netWeight.replace(',', '.').toDoubleOrNull() == null -> "Valor numérico inválido"
-                else -> null
-            },
-            eanError = preservedEanError,
-            isCheckingEan = preservedIsChecking
-        )
+                    else -> null
+                },
+                netWeightError = when {
+                    newState.netWeight.isNotBlank() &&
+                            newState.netWeight.replace(',', '.').toDoubleOrNull() == null -> "Valor numérico inválido"
 
-        _productFormState.value = validatedState
+                    else -> null
+                },
+                eanError = preservedEanError,
+                isCheckingEan = preservedIsChecking
+            )
 
-        if (isEanChanged) {
-            validateEanDebounced(newState.ean.trim())
+            if (isEanChanged) {
+                validateEanDebounced(newState.ean.trim())
+            }
+
+            validatedState
         }
     }
 
@@ -104,13 +120,10 @@ class ProductViewModel(
         eanValidationJob = viewModelScope.launch {
             _productFormState.update { it.copy(isCheckingEan = true, eanError = null) }
             delay(350.milliseconds)
-            logger.d(TAG, "Checking EAN uniqueness for: $ean")
             val existingProduct = catalogRepository.getProductByEan(ean).firstOrNull()
-
             _productFormState.update { state ->
                 if (state.ean.trim() == ean) {
                     if (existingProduct != null && !existingProduct.isDeleted) {
-                        logger.d(TAG, "Duplicate EAN found: ${existingProduct.name}")
                         state.copy(
                             eanError = "Código já cadastrado: ${existingProduct.name}",
                             isCheckingEan = false
@@ -130,7 +143,7 @@ class ProductViewModel(
         return viewModelScope.launch {
             val form = _productFormState.value
             if (!form.isFormValid) {
-                logger.d(TAG, "Cannot save product. Form validation failed: eanError=${form.eanError}, nameError=${form.nameError}")
+                logger.d(TAG, "Formulário inválido para salvar.")
                 return@launch
             }
 
@@ -157,10 +170,11 @@ class ProductViewModel(
                     ean = form.ean.trim().takeIf { it.isNotBlank() }
                 )
                 catalogRepository.insertProduct(catalogProduct, form.imageBytes)
-                logger.d(TAG, "Product saved: $catalogProduct")
-                _productFormState.value = ProductFormState()
+                _productFormState.update { current ->
+                    ProductFormState(availableCategories = current.availableCategories)
+                }
             } catch (e: Exception) {
-                logger.e(TAG, "Error while saving a product: ${e.message}", e)
+                logger.e(TAG, "Erro ao salvar produto: ${e.message}", e)
                 _productFormState.update { it.copy(isSaving = false) }
             }
         }
@@ -168,6 +182,8 @@ class ProductViewModel(
 
     fun resetProductForm() {
         eanValidationJob?.cancel()
-        _productFormState.value = ProductFormState()
+        _productFormState.update { current ->
+            ProductFormState(availableCategories = current.availableCategories)
+        }
     }
 }

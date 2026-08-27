@@ -1,27 +1,36 @@
 <!--
   ~   Copyright (c) 2026 Willian Santos
-  ~
+  ~  
   ~   This work is licensed under the Creative Commons
   ~   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
-  ~
+  ~  
   ~   You are free to:
   ~     - Share  — copy and redistribute the material in any medium or format
   ~     - Adapt  — remix, transform, and build upon the material
-  ~
+  ~  
   ~   Under the following terms:
   ~     - Attribution    — You must give appropriate credit, provide a link to
   ~                        the license, and indicate if changes were made.
   ~     - NonCommercial  — You may not use the material for commercial purposes.
-  ~
+  ~  
   ~   Owner rights:
   ~     - Willian Santos retains all commercial rights.
   ~    - The copyright holder may use, sell, sublicense, or relicense this
   ~       work under different terms at any time.
-  ~
+  ~  
   ~   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
   -->
 
 <resources>
+
+    <!-- Unidades de Medida -->
+    <string name="measure_unit_kilogram">Quilograma (kg)</string>
+    <string name="measure_unit_gram">Grama (g)</string>
+    <string name="measure_unit_liter">Litro (L)</string>
+    <string name="measure_unit_milliliter">Mililitro (ml)</string>
+    <string name="measure_unit_unit">Unidade (un)</string>
+    <string name="measure_unit_package">Pacote (pct)</string>
+
     <string name="financial_card_title">VALOR GASTO NO MÊS</string>
     <string name="financial_card_current_consumption_label">Gasto Atual:</string>
     <string name="financial_card_budget">Orçamento:</string>
@@ -36,7 +45,7 @@
     <string name="Pantry">Despensa</string>
     <string name="product_searchbar_widget_placeholder">Buscar na despensa...</string>
     <string name="catetory_others">Outros</string>
-    <string name="register_product_widget_title">Registrar novo produto</string>
+    <string name="register_product_widget_title">Registrar Produto</string>
     <string name="register_product_widget_desc">Adicione um item ao catálogo de produtos</string>
     <string name="chevron_right_icon_desc">seta para direita</string>
     <string name="plus_icon_desc">Adicionar</string>
@@ -70,6 +79,8 @@
     <string name="register_product_form_back_button_desc">Voltar</string>
     <string name="register_product_form_header_title_top">REGISTRAR</string>
     <string name="register_product_form_header_title_bottom">PRODUTO</string>
-    <string name="register_product_form_header_title_desc">Cadastre um novo item para sua despensa</string>
+    <string name="register_product_form_header_title_desc">Adicione um produto ao catálogo</string>
+    <string name="settins_section_tile_top">Outras</string>
+    <string name="settins_section_tile_bottom">Opções</string>
 
 </resources>

@@ -41,10 +41,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.bitlabbr.minhadespensa.uisystem.components.*
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.navigation.BottomNavItem
+import com.bitlabbr.minhadespensa.uisystem.navigation.HomeScreenRoute
+import com.bitlabbr.minhadespensa.uisystem.navigation.PantryScreenRoute
+import com.bitlabbr.minhadespensa.uisystem.navigation.SettingsRoute
 import com.bitlabbr.minhadespensa.uisystem.screens.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.screens.PantryScreen
+import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
@@ -55,7 +59,6 @@ private val bottomNavItems = listOf(
     BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute)
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun App() {
     MinhaDespensaTheme {
@@ -78,10 +81,10 @@ fun App() {
                                 .fillMaxWidth()
                                 .padding(horizontal = appDimens.paddingSmall, vertical = appDimens.paddingSmall),
                             shape = RoundedCornerShape(appDimens.cardCorner),
-                            borderWidth = 1.dp
+                            borderWidth = 2.dp
                         ) {
                             NavigationBar(
-                                containerColor = Color.Transparent,
+                                containerColor = getAppColors().primaryContainer,
                                 tonalElevation = 0.dp,
                                 windowInsets = WindowInsets(0, 0, 0, 0)
                             ) {
@@ -96,12 +99,12 @@ fun App() {
                                             Icon(
                                                 imageVector = item.icon,
                                                 contentDescription = item.title,
-                                                tint = if (isSelected) appColors.primary else appColors.onSurfaceVariant
+                                                tint = if (isSelected) appColors.onSecondaryContainer.copy(alpha = .9f) else appColors.onSurface
                                             )
                                         },
                                         selected = isSelected,
                                         colors = NavigationBarItemDefaults.colors(
-                                            indicatorColor = appColors.primary.copy(alpha = 0.2f)
+                                            indicatorColor = appColors.primary.copy(alpha = 0.5f)
                                         ),
                                         onClick = {
                                             navController.navigate(item.route) {

@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.components.core.media
 
 import android.Manifest
 import android.content.Context
@@ -165,27 +165,6 @@ private fun processUriImage(
         }
 
         val finalBitmap = Bitmap.createBitmap(rawBitmap, 0, 0, rawBitmap.width, rawBitmap.height, matrix, true)
-
-        compressBitmapWithinLimit(finalBitmap, maxBytes)
-    } catch (e: Exception) {
-        null
-    }
-}
-
-private fun processBitmap(
-    bitmap: Bitmap,
-    targetMaxDimension: Int,
-    maxBytes: Int
-): ByteArray? {
-    return try {
-        val currentMax = maxOf(bitmap.width, bitmap.height)
-        val finalBitmap = if (currentMax > targetMaxDimension) {
-            val scale = targetMaxDimension.toFloat() / currentMax
-            val matrix = Matrix().apply { postScale(scale, scale) }
-            Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-        } else {
-            bitmap
-        }
 
         compressBitmapWithinLimit(finalBitmap, maxBytes)
     } catch (e: Exception) {

@@ -21,10 +21,35 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.theme
 
-class CommonConstants {
-    enum class ColumnAlignment{
-        ALIGNMENT_TOP, ALIGNMENT_CENTER
+/**
+ * Small semantic aliases for component code.
+ *
+ * Keeping these names here prevents components from importing raw palette
+ * values such as financialGaugePrimaryColor or defaultButtonColor.
+ */
+object AppColorTokens {
+
+    /**
+     * Official brand/action colors.
+     *
+     * Components that need the complete action treatment should normally use
+     * the Action Gradient instead of one color alone.
+     */
+    object Action {
+        val primary = primaryLightAppColor
+        val secondary = secondaryLightAppColor
+    }
+
+    /**
+     * Colors reserved for visualization.
+     *
+     * The values intentionally point to the same action endpoints so gauges
+     * and buttons belong to the same visual language.
+     */
+    object Visualization {
+        val start = primaryLightAppColor
+        val end = secondaryLightAppColor
     }
 }

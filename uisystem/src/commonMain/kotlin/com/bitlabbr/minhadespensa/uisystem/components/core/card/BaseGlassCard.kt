@@ -21,36 +21,38 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.components.core.card
 
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 @Composable
-fun CustomText(
-    text: String?,
-    alignment: TextAlign = TextAlign.Left,
-    fontWeight: FontWeight? = null,
-    color: Color = getAppColors().onPrimary,
-    fontStyle: TextStyle = MinhaDespensaTheme.typography.displayMedium,
-    modifier: Modifier = Modifier
-        .wrapContentWidth()
+fun BaseGlassCard(
+    backgroundBrush: Brush,
+    borderBrush: Brush,
+    shape: Shape,
+    modifier: Modifier = Modifier,
+    borderWidth: Dp = 1.dp,
+    content: @Composable BoxScope.() -> Unit,
 ) {
-    val customText = text ?: ""
-    Text(
-        textAlign = alignment,
-        text = customText,
-        color = color,
-        modifier = modifier,
-        style = fontStyle,
-        fontWeight = fontWeight
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(backgroundBrush)
+            .border(
+                width = borderWidth,
+                brush = borderBrush,
+                shape = shape,
+            ),
+        content = content,
     )
 }

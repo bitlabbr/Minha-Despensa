@@ -21,18 +21,16 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.components.core.media
 
-import kotlinx.serialization.Serializable
+import androidx.compose.runtime.Composable
 
-@Serializable
-data object PantryScreenRoute
+interface ImagePickerManager {
+    fun launchCamera()
+    fun launchGallery()
+}
 
-@Serializable
-data object SettingsRoute
-
-@Serializable
-data class ProductDetailsRoute(val productId: String)
-
-@Serializable
-data object HomeScreenRoute
+@Composable
+expect fun rememberImagePickerManager(
+    onImagePicked: (ByteArray?) -> Unit
+): ImagePickerManager

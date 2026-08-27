@@ -35,16 +35,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.CustomizableSearchBar
+import com.bitlabbr.minhadespensa.uisystem.components.core.search.MinhaDespensaSearchBar
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.product_searchbar_widget_placeholder
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
-import minhadespensa.uisystem.generated.resources.product_searchbar_widget_placeholder
 
 @Composable
 fun PantryItemSearchBarWidget(
@@ -84,7 +84,7 @@ fun ProductSearchBarWidgetContent(
             .fillMaxWidth()
             .padding(horizontal = dimens.paddingSmall)
     ) {
-        CustomizableSearchBar(
+        MinhaDespensaSearchBar(
             query = query,
             onQueryChange = onQueryChange,
             onSearch = { submittedTerm ->
@@ -117,7 +117,7 @@ fun ProductSearchBarWidgetContent(
                     else -> "Estoque: ${item.quantity} ${item.measureUnit.name.lowercase()}"
                 }
 
-                CustomText(
+                MinhaDespensaText(
                     text = infoText,
                     fontStyle = MinhaDespensaTheme.typography.bodySmall,
                     color = if (item?.isExpired == true) {

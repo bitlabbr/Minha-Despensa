@@ -21,16 +21,12 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components
+package com.bitlabbr.minhadespensa.uisystem.navigation
 
-import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 
-interface ImagePickerManager {
-    fun launchCamera()
-    fun launchGallery()
-}
-
-@Composable
-expect fun rememberImagePickerManager(
-    onImagePicked: (ByteArray?) -> Unit
-): ImagePickerManager
+data class BottomNavItem<T : Any>(
+    val title: String,
+    val icon: ImageVector,
+    val route: T,
+)

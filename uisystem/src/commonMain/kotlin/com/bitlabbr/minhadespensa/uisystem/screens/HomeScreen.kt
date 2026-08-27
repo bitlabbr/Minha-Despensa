@@ -31,17 +31,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
-import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.*
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
-import org.jetbrains.compose.resources.stringResource
-import minhadespensa.uisystem.generated.resources.vision
 import minhadespensa.uisystem.generated.resources.general
+import minhadespensa.uisystem.generated.resources.vision
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun HomeScreen(
@@ -54,10 +54,10 @@ fun HomeScreen(
 
     Scaffold(
         topBar = {
-            CustomTopBar(
+            MinhaDespensaTopBar(
                 backgroundColor = Color.Transparent,
                 centerContent = {
-                    CustomText(
+                    MinhaDespensaText(
                         text = "",
                         fontStyle = appTypography.displayMedium,
                         color = appColors.onBackground
@@ -74,7 +74,7 @@ fun HomeScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = paddingValues.calculateTopPadding(),
-                    bottom = bottomPadding + 16.dp
+                    bottom = bottomPadding
                 )
             ) {
                 item {
@@ -95,7 +95,7 @@ fun HomeScreen(
                             PrimaryContainerHeader(
                                 textTop = stringResource(Res.string.vision),
                                 textBottom = stringResource(Res.string.general)
-                            ){}
+                            ) {}
                             widgets.forEach { homeWidget ->
                                 Column {
                                     when (homeWidget) {
