@@ -287,6 +287,7 @@ fun ImagePickerCard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                Spacer(modifier = Modifier.size(dimens.paddingMedium))
                 Image(
                     bitmap = imageBitmap,
                     contentDescription = stringResource(Res.string.image_picker_picture_desc),

@@ -59,26 +59,13 @@ fun ImageSourcePickerDialog(
         SecondaryContainerGlassCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(dimens.paddingMedium)
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(dimens.paddingLarge),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                CustomText(
-                    text = "Foto do Produto",
-                    fontStyle = typography.displayMedium,
-                    color = colors.onSecondaryContainer,
-                    fontWeight = FontWeight.Bold
-                )
 
-                CustomText(
-                    text = "Selecione como deseja adicionar a foto:",
-                    fontStyle = typography.bodySmall,
-                    color = colors.onSecondaryContainer.copy(alpha = 0.7f)
-                )
+                Header()
 
                 Spacer(modifier = Modifier.height(4.dp))
 
@@ -104,6 +91,27 @@ fun ImageSourcePickerDialog(
             }
         }
     }
+}
+
+@Composable
+private fun Header() {
+    val colors = getAppColors()
+    val typography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
+    CustomText(
+        modifier = Modifier.padding(start = dimens.paddingSmall, top = dimens.paddingLarge),
+        text = "Foto do Produto",
+        fontStyle = typography.displayMedium,
+        color = colors.onSecondaryContainer,
+        fontWeight = FontWeight.Bold
+    )
+
+    CustomText(
+        modifier = Modifier.padding(start = dimens.paddingSmall),
+        text = "Selecione como deseja adicionar a foto:",
+        fontStyle = typography.bodySmall,
+        color = colors.onSecondaryContainer.copy(alpha = 0.7f)
+    )
 }
 
 @Composable

@@ -244,7 +244,7 @@ fun RegisterProductSheet(
                             )
                         }
                     }
-
+                    Spacer(Modifier.height(dimens.paddingMedium))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -275,7 +275,7 @@ fun RegisterProductSheet(
 
                         Button(
                             modifier = Modifier
-                                .weight(1.55f)
+                                .weight(1.75f)
                                 .height(54.dp),
                             onClick = onSave,
                             enabled = state.isFormValid,
