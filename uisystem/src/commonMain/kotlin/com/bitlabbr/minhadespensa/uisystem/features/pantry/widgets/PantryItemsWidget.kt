@@ -34,17 +34,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerHeader
-import com.bitlabbr.minhadespensa.uisystem.components.getIconPainterFromString
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.SecondaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.mapper.getIconPainterFromString
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.defaultButtonColor
-import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
-import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 @Composable
@@ -73,8 +70,7 @@ fun PantryItemsWidget() {
         modifier = Modifier
             .animateContentSize()
             .padding(
-                horizontal = MinhaDespensaTheme.dimens.paddingSmall,
-                vertical = MinhaDespensaTheme.dimens.paddingSmall
+                horizontal = MinhaDespensaTheme.dimens.paddingSmall
             ),
         content = {
             SecondaryContainerHeader(
@@ -106,7 +102,7 @@ fun PantryItemsWidget() {
             Spacer(modifier = Modifier.height(dimens.paddingSmall))
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                //verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 groupedFilteredCategories.forEach { (categoryName, itemsInCategory) ->
@@ -119,24 +115,22 @@ fun PantryItemsWidget() {
                         visibleItems.forEach { item ->
                             PantryItemTile(
                                 productName = item.name,
-                                containerColor = expiringItemContainerColor,
-                                contentColor = expiringItemContentColor,
+                                containerColor = Color.Black,
+                                contentColor = Color.Black,
                                 iconPainter = getIconPainterFromString(item.thumbnailUrl),
                                 itemCount = "20",
                             )
                         }
                         if (hasMoreItems) {
                             Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 4.dp, bottom = 2.dp),
+                                modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Button(
                                     onClick = toggleExpanded,
-                                    colors = ButtonDefaults.buttonColors(containerColor = defaultButtonColor)
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
                                 ) {
-                                    CustomText(
+                                    MinhaDespensaText(
                                         text = if (isExpanded) "Ver Menos" else "Ver Tudo",
                                         color = colors.onSecondaryContainer,
                                         fontStyle = MinhaDespensaTheme.typography.bodySmall,

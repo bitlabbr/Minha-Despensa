@@ -24,36 +24,36 @@
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.*
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaExpandButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.SecondaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.domain.pantry.ExpiringItemTile
+import com.bitlabbr.minhadespensa.uisystem.mapper.getIconPainterFromString
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.defaultButtonColor
-import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContainerColor
-import com.bitlabbr.minhadespensa.uisystem.theme.expiringItemContentColor
-import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme.dimens
 
 @Composable
 fun ExpiringSoonWidget(
     data: HomeWidget.ExpiringSoon
 ) {
-    val colors = getAppColors()
-    val appDimens = MinhaDespensaTheme.dimens
     var isExpanded by remember { mutableStateOf(false) }
     val maxInitialItems = 4
     val content = data.items
     val hasMoreItems = content.size > maxInitialItems
     val visibleItems = if (isExpanded || !hasMoreItems) content else content.take(maxInitialItems)
 
-    val toggleExpanded = remember { { isExpanded = !isExpanded } }
 
     SecondaryContainerGlassCard(
         modifier = Modifier
@@ -66,38 +66,36 @@ fun ExpiringSoonWidget(
             SecondaryContainerHeader(
                 text = "ITENS PRÓXIMOS À VALIDADE"
             )
-            visibleItems.forEach { itemCard ->
-                ExpiringItemTile(
-                    expirationLabel = itemCard.expirationLabel,
-                    productName = itemCard.productName,
-                    productCategory = itemCard.productCategory,
-                    anchoredTargetLabel = itemCard.anchoredTargetLabel,
-                    anchoredGaugeProgress = itemCard.anchoredGaugeProgress,
-                    containerColor = expiringItemContainerColor,
-                    contentColor = expiringItemContentColor,
-                    iconPainter = getIconPainterFromString(itemCard.iconPainterURI)
-                )
-            }
-            if (hasMoreItems) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp, bottom = 2.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Button(
-                        onClick = toggleExpanded,
-                        colors = ButtonDefaults.buttonColors(containerColor = defaultButtonColor)
+            Column(
+                verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+            ) {
+                visibleItems.forEach { itemCard ->
+                    ExpiringItemTile(
+                        expirationLabel = itemCard.expirationLabel,
+                        productName = itemCard.productName,
+                        productCategory = itemCard.productCategory,
+                        anchoredTargetLabel = itemCard.anchoredTargetLabel,
+                        anchoredGaugeProgress = itemCard.anchoredGaugeProgress,
+                        iconPainter = getIconPainterFromString(itemCard.iconPainterURI)
+                    )
+                }
+                if (hasMoreItems) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp, bottom = 2.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        CustomText(
-                            text = if (isExpanded) "Ver Menos" else "Ver Tudo",
-                            color = colors.onSecondaryContainer,
-                            fontStyle = MinhaDespensaTheme.typography.bodySmall,
-                            alignment = TextAlign.Center
+                        MinhaDespensaExpandButton(
+                            isExpanded = isExpanded,
+                            collapsedText = "Mostrar mais (${content.size - maxInitialItems})",
+                            expandedText = "Mostrar menos",
+                            onClick = { isExpanded = !isExpanded }
                         )
                     }
                 }
             }
+            Spacer(modifier = Modifier.height(dimens.paddingSmall))
         }
     )
 }

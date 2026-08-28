@@ -33,6 +33,7 @@ object CoreConstants {
         const val EAN_MAX_LENGTH = 14
         val EAN_VALID_LENGTHS = setOf(8, 13, 14)
         const val DEFAULT_NET_WEIGHT = 1.0
+        const val WEIGHT_MAX_LENGTH = 8
     }
 
     object Media {

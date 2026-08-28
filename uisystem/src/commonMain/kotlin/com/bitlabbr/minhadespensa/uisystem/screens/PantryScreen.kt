@@ -32,18 +32,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.*
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryItemsWidget
-import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register.RegisterProductWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.searchbar.PantryItemSearchBarWidget
-import com.bitlabbr.minhadespensa.uisystem.features.product.ProductViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register.RegisterProductWidget
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
-import minhadespensa.uisystem.generated.resources.Res
-import org.jetbrains.compose.resources.stringResource
-import minhadespensa.uisystem.generated.resources.maine
 import minhadespensa.uisystem.generated.resources.Pantry
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.maine
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -51,17 +53,16 @@ fun PantryScreen(
     bottomPadding: Dp = 0.dp
 ) {
     val pantryViewModel = koinViewModel<PantryViewModel>()
-    val productViewModel = koinViewModel<ProductViewModel>()
     val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
 
     Scaffold(
         topBar = {
-            CustomTopBar(
+            MinhaDespensaTopBar(
                 backgroundColor = Color.Transparent,
                 centerContent = {
-                    CustomText(
+                    MinhaDespensaText(
                         text = "",
                         fontStyle = appTypography.displayMedium,
                         color = appColors.onBackground
@@ -77,16 +78,15 @@ fun PantryScreen(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = paddingValues.calculateTopPadding(),
-                    bottom = bottomPadding + 16.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    bottom = bottomPadding
+                )
             ) {
                 item {
                     PrimaryContainerGlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
-                            .padding(horizontal = dimens.paddingSmall, vertical = 8.dp)
+                            .padding(horizontal = dimens.paddingSmall, vertical = dimens.paddingSmall)
                     ) {
                         Column(
                             modifier = Modifier
@@ -95,7 +95,7 @@ fun PantryScreen(
                                     top = dimens.paddingLarge,
                                     bottom = dimens.paddingLarge
                                 ),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                            verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall)
                         ) {
                             PrimaryContainerHeader(
                                 textTop = stringResource(Res.string.maine),
@@ -106,7 +106,7 @@ fun PantryScreen(
 
                             PantryItemsWidget()
 
-                            RegisterProductWidget(viewModel = productViewModel)
+                            RegisterProductWidget()
                         }
                     }
                 }

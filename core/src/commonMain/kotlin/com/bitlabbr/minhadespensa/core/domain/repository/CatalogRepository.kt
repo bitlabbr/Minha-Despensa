@@ -36,4 +36,5 @@ interface CatalogRepository {
     suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
     suspend fun deleteProductById(id: String)
     fun exists(id: String): Flow<Boolean>
+    fun getCategories(): Flow<List<String>>
 }

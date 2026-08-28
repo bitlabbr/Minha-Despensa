@@ -23,80 +23,139 @@
 
 package com.bitlabbr.minhadespensa.uisystem.screens
 
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.CustomTopBar
-import com.bitlabbr.minhadespensa.uisystem.components.PrimaryContainerGlassCard
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.gauge.BudgetGauge
+import com.bitlabbr.minhadespensa.uisystem.components.core.gauge.InverseAnchoredGauge
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
-import org.koin.core.annotation.KoinExperimentalAPI
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.settins_section_tile_bottom
+import minhadespensa.uisystem.generated.resources.settins_section_tile_top
+import org.jetbrains.compose.resources.stringResource
 
-@OptIn(ExperimentalMaterial3Api::class, KoinExperimentalAPI::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    bottomPadding: Dp = 0.dp
+) {
+
+    val appDimens = MinhaDespensaTheme.dimens
+
     Scaffold(
-        containerColor = Color.Transparent,
         topBar = {
-            CustomTopBar(
+            MinhaDespensaTopBar(
                 backgroundColor = Color.Transparent,
                 centerContent = {
-                    CustomText(
-                        text = "Configurações",
+                    MinhaDespensaText(
+                        text = "",
                         fontStyle = MinhaDespensaTheme.typography.displayMedium,
                         color = getAppColors().onBackground
                     )
                 }
             )
-        }
+        },
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        containerColor = Color.Transparent
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-        ) {
-            Column(
+        Box(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                contentPadding = PaddingValues(
+                    top = paddingValues.calculateTopPadding(),
+                    bottom = bottomPadding
+                )
             ) {
-                MenuItem()
-                MenuItem()
-                MenuItem()
-                MenuItem()
-                MenuItem()
-                MenuItem()
-            }
-        }
-    }
-}
+                item {
+                    PrimaryContainerGlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .wrapContentHeight()
+                            .padding(horizontal = appDimens.paddingSmall, vertical = 8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(
+                                    top = appDimens.paddingLarge,
+                                    bottom = appDimens.paddingLarge
+                                )
+                        ) {
+                            PrimaryContainerHeader(
+                                textTop = stringResource(Res.string.settins_section_tile_top),
+                                textBottom = stringResource(Res.string.settins_section_tile_bottom)
+                            ) {}
+                            SecondaryContainerGlassCard(
+                                modifier = Modifier
+                                    .animateContentSize()
+                                    .padding(
+                                        horizontal = MinhaDespensaTheme.dimens.paddingSmall,
+                                        vertical = MinhaDespensaTheme.dimens.paddingSmall
+                                    ),
+                                content = {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                    ) {
+                                        Spacer(modifier = Modifier.size(appDimens.paddingSmall))
+                                        MinhaDespensaText(
+                                            fontStyle = MinhaDespensaTheme.typography.displayMedium,
+                                            color = getAppColors().onBackground,
+                                            alignment = TextAlign.Center,
+                                            text = "Em breve...",
+                                            modifier = Modifier.padding(all = appDimens.paddingSmall),
+                                        )
+                                        Spacer(modifier = Modifier.size(appDimens.paddingSmall))
+                                        MinhaDespensaText(
+                                            fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                                            color = getAppColors().onBackground.copy(alpha = 0.65f),
+                                            alignment = TextAlign.Center,
+                                            text = "Novas funcionalidades estarão aqui!",
+                                            fontWeight = FontWeight.Normal,
+                                            modifier = Modifier.padding(all = appDimens.paddingSmall),
+                                        )
+                                        Spacer(modifier = Modifier.size(appDimens.paddingSmall))
+                                        BudgetGauge(
+                                            modifier = Modifier.size(200.dp),
+                                            progress = 1f,
 
-@Composable
-private fun MenuItem() {
-    val appDimens = MinhaDespensaTheme.dimens
-    PrimaryContainerGlassCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                start = appDimens.paddingSmall,
-                end = appDimens.paddingSmall,
-                top = appDimens.paddingSmall / 2,
-                bottom = appDimens.paddingSmall / 2
-            )
-    ) {
-        Column {
-            CustomText(
-                fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                color = getAppColors().onBackground,
-                alignment = TextAlign.Center,
-                text = "Configurações",
-                modifier = Modifier.padding(all = appDimens.paddingSmall),
-            )
+                                            )
+                                        Spacer(modifier = Modifier.size(appDimens.paddingSmall))
+                                        InverseAnchoredGauge(
+                                            progress = 1.5f,
+                                            targetLabel = "100",
+                                            gaugeHeight = 35.dp,
+                                        )
+
+                                        InverseAnchoredGauge(
+                                            progress = .7f,
+                                            targetLabel = "100",
+                                            gaugeHeight = 35.dp,
+                                            colorPrimary = getAppColors().secondary,
+                                            colorSecondary = getAppColors().primary.copy(alpha = 0.65f),
+                                        )
+                                        Spacer(modifier = Modifier.size(450.dp))
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }

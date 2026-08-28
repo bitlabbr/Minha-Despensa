@@ -39,8 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
@@ -136,7 +135,7 @@ fun PantryItemTile(
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CustomText(
+                    MinhaDespensaText(
                         text = productName,
                         fontStyle = MinhaDespensaTheme.typography.bodySmall,
                         color = contentColor,
@@ -150,7 +149,7 @@ fun PantryItemTile(
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CustomText(
+                    MinhaDespensaText(
                         text = "",
                         fontStyle = MinhaDespensaTheme.typography.bodySmall,
                         color = contentColor,
@@ -162,13 +161,13 @@ fun PantryItemTile(
                 modifier = Modifier.weight(1f),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                CustomText(
+                MinhaDespensaText(
                     text = itemCount,
                     fontStyle = MinhaDespensaTheme.typography.bodyLarge,
                     color = contentColor,
                     fontWeight = FontWeight.Bold
                 )
-                CustomText(
+                MinhaDespensaText(
                     text = "Un",
                     fontStyle = MinhaDespensaTheme.typography.bodySmall,
                     color = contentColor,

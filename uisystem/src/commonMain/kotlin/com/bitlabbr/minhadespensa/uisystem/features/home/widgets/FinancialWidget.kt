@@ -27,15 +27,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.CustomText
-import com.bitlabbr.minhadespensa.uisystem.components.InverseAnchoredGauge
-import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.components.SecondaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.gauge.InverseAnchoredGauge
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.SecondaryContainerHeader
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugePrimaryColor
-import com.bitlabbr.minhadespensa.uisystem.theme.financialGaugeSecondaryColor
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.financial_card_budget
@@ -59,8 +58,6 @@ fun FinancialWidget(data: HomeWidget.FinancialSummary) {
                 text = stringResource(Res.string.financial_card_title)
             )
             InverseAnchoredGauge(
-                colorPrimary = financialGaugePrimaryColor,
-                colorSecondary = financialGaugeSecondaryColor,
                 progress = consumptionProgress,
                 gaugeHeight = 35.dp,
                 targetLabel = targetChartLabel
@@ -75,13 +72,13 @@ fun FinancialWidget(data: HomeWidget.FinancialSummary) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column {
-                    CustomText(
+                    MinhaDespensaText(
                         text = stringResource(Res.string.financial_card_current_consumption_label),
                         fontStyle = MinhaDespensaTheme.typography.displayMedium,
                         color = colors.onSecondaryContainer,
                         fontWeight = FontWeight.Light
                     )
-                    CustomText(
+                    MinhaDespensaText(
                         text = currentConsumption,
                         fontStyle = MinhaDespensaTheme.typography.priceLabel,
                         color = colors.onSecondaryContainer,
@@ -90,13 +87,13 @@ fun FinancialWidget(data: HomeWidget.FinancialSummary) {
                 }
 
                 Column {
-                    CustomText(
+                    MinhaDespensaText(
                         text = stringResource(Res.string.financial_card_budget),
                         fontStyle = MinhaDespensaTheme.typography.displayMedium,
                         color = colors.onSecondaryContainer,
                         fontWeight = FontWeight.Light
                     )
-                    CustomText(
+                    MinhaDespensaText(
                         text = budget,
                         fontStyle = MinhaDespensaTheme.typography.priceLabel,
                         color = colors.onSecondaryContainer,

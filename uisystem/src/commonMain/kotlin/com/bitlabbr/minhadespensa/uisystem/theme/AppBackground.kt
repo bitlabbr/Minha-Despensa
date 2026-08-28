@@ -31,8 +31,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.backgroud_light4
-import minhadespensa.uisystem.generated.resources.backgroud_light5
+import minhadespensa.uisystem.generated.resources.app_background_light
+import minhadespensa.uisystem.generated.resources.app_background_night
 import org.jetbrains.compose.resources.painterResource
 
 @Composable
@@ -41,9 +41,9 @@ fun AppBackground(
     content: @Composable () -> Unit
 ) {
     val backgroundImage = if (isDarkTheme) {
-        Res.drawable.backgroud_light5
+        Res.drawable.app_background_night
     } else {
-        Res.drawable.backgroud_light4
+        Res.drawable.app_background_light
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

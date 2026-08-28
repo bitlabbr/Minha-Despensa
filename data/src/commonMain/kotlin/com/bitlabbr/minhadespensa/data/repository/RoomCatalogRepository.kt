@@ -36,6 +36,7 @@ import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -47,6 +48,16 @@ class RoomCatalogRepository(
     private val TAG = "RoomCatalogRepository"
     private val productDao = db.catalogDao()
     private val mediaDao = db.productMediaDao()
+
+    private val defaultCategories = listOf(
+        "Grãos",
+        "Proteínas",
+        "Bebidas",
+        "Limpeza",
+        "Lanches",
+        "Hortifrúti",
+        "Outros",
+    )
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
         return productDao.findByEan(ean)
@@ -176,6 +187,12 @@ class RoomCatalogRepository(
     override fun exists(id: String): Flow<Boolean> {
         logger.d(TAG, "exists id:  $id")
         return productDao.exists(id)
+    }
+
+    override fun getCategories(): Flow<List<String>> {
+        // Por enquanto retorna a lista padrão via Flow.
+        // Futuro: productDao.getDistinctCategories().map { it.ifEmpty { defaultCategories } }
+        return flowOf(defaultCategories)
     }
 
     @OptIn(ExperimentalUuidApi::class)
