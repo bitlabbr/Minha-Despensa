@@ -66,6 +66,15 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.androidx.activity.compose)
             implementation(libs.androidx.exifinterface)
+
+            // CameraX
+            implementation(libs.androidx.camera.core)
+            implementation(libs.androidx.camera.camera2)
+            implementation(libs.androidx.camera.lifecycle)
+            implementation(libs.androidx.camera.view)
+
+            // Google ML Kit
+            implementation(libs.google.mlkit.barcode.scanning)
         }
 
         iosMain.dependencies {
