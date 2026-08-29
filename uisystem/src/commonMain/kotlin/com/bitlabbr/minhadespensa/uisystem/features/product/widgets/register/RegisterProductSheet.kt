@@ -22,8 +22,11 @@
  */
 package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.QrCodeScanner
@@ -31,6 +34,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
@@ -42,11 +46,13 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContain
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImagePickerCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImageSourcePickerDialog
+import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePickerManager
+import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
+import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerTriggerButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductDropdownField
 import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductTextField
 import com.bitlabbr.minhadespensa.uisystem.mapper.toLabel
-import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePickerManager
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.*
@@ -75,6 +81,8 @@ fun RegisterProductSheet(
     val selectedMeasureUnit = remember(state.measureUnit) {
         MeasureUnit.entries.find { it.name == state.measureUnit }
     }
+
+    var showBarcodeScanner by remember { mutableStateOf(false) }
 
     MinhaDespensaBottomSheet(
         onDismissRequest = onDismiss,
@@ -172,6 +180,7 @@ fun RegisterProductSheet(
                             title = stringResource(Res.string.register_product_form_detail_info_section_title),
                         ) {
                             ProductTextField(
+                                modifier = Modifier.fillMaxWidth(),
                                 value = state.ean,
                                 onValueChange = { input ->
                                     val numbersOnly = input.filter { it.isDigit() }.take(14)
@@ -192,17 +201,28 @@ fun RegisterProductSheet(
                                             color = colors.primary,
                                         )
                                     } else {
-                                        IconButton(onClick = {}) {
+                                        Box(
+                                            modifier = Modifier
+                                                .padding(end = dimens.paddingSmall)
+                                                .size(40.dp)
+                                                .clip(RoundedCornerShape(dimens.cardCorner * 0.35f))
+                                                .background(colors.primary.copy(alpha = 0.12f))
+                                                .clickable { showBarcodeScanner = true },
+                                            contentAlignment = Alignment.Center,
+                                        ) {
                                             Icon(
                                                 imageVector = Icons.Rounded.QrCodeScanner,
                                                 contentDescription = stringResource(Res.string.register_product_form_detail_info_ean_icon_description),
-                                                tint = if (state.eanError != null) colors.error else colors.onSecondaryContainer.copy(
-                                                    alpha = 0.72f
-                                                ),
+                                                tint = if (state.eanError != null) colors.error else colors.onSecondaryContainer.copy(alpha = 0.75f),
+                                                modifier = Modifier.size(30.dp)
                                             )
                                         }
                                     }
                                 },
+                            )
+                            BarcodeScannerTriggerButton(
+                                onClick = { showBarcodeScanner = true },
+                                modifier = Modifier.weight(0.7f)
                             )
 
                             ProductTextField(
@@ -223,6 +243,16 @@ fun RegisterProductSheet(
                                 maxCharacters = CoreConstants.Product.NOTES_MAX_LENGTH,
                             )
                         }
+                    }
+
+                    if (showBarcodeScanner) {
+                        BarcodeScannerModal(
+                            onBarcodeScanned = { scannedCode ->
+                                val numbersOnly = scannedCode.filter { it.isDigit() }.take(14)
+                                onStateChange(state.copy(ean = numbersOnly))
+                            },
+                            onDismissRequest = { showBarcodeScanner = false },
+                        )
                     }
 
                     Box(

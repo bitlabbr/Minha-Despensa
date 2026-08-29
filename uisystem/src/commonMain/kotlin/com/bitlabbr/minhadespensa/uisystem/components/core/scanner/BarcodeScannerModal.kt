@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import com.bitlabbr.minhadespensa.uisystem.components.core.feedback.rememberHapticFeedbackManager
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
@@ -56,6 +57,7 @@ fun BarcodeScannerModal(
 ) {
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
+    val hapticManager = rememberHapticFeedbackManager()
 
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
@@ -63,16 +65,15 @@ fun BarcodeScannerModal(
         modifier = Modifier.fillMaxSize(),
     ) {
         Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
-            // Câmera Nativa
             BarcodeScannerCameraView(
                 onBarcodeScanned = { barcode ->
+                    hapticManager.performSuccessFeedback()
                     onBarcodeScanned(barcode)
-                    onDismissRequest() // Fecha automaticamente após leitura
+                    onDismissRequest()
                 },
                 modifier = Modifier.fillMaxSize(),
             )
 
-            // Retículo / Mira do Scanner
             Box(
                 modifier = Modifier
                     .size(280.dp, 160.dp)
@@ -84,7 +85,6 @@ fun BarcodeScannerModal(
                     )
             )
 
-            // Botão Fechar
             IconButton(
                 onClick = onDismissRequest,
                 modifier = Modifier
