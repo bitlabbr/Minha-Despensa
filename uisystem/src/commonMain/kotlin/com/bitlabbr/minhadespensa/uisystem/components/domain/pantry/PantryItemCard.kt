@@ -21,27 +21,13 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
+package com.bitlabbr.minhadespensa.uisystem.components.domain.pantry
 
-data class PantryFilterSubState(
-    val availableCategories: List<String> = emptyList(),
-    val selectedCategory: String? = null,
-)
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 
-data class PantryListSubState(
-    val products: List<PantryItemUiModel> = emptyList(),
-    val isCatalogEmpty: Boolean = false,
-    val isLoading: Boolean = false,
-    val error: String? = null,
-)
+@Composable
+fun PantryItemCard(product: PantryItemUiModel, imageBytes: ByteArray?, onClick: () -> Unit, modifier: Modifier) {
 
-data class PantryUiState(
-    val filterState: PantryFilterSubState = PantryFilterSubState(),
-    val listState: PantryListSubState = PantryListSubState(),
-    val allActivePantryItems: List<PantryItemUiModel> = emptyList(),
-    val expiringPantryItems: List<PantryItemUiModel> = emptyList(),
-    val searchResults: List<PantryItemUiModel> = emptyList(),
-    val selectedPantryItem: PantryItemUiModel? = null,
-    val isLoading: Boolean = false,
-    val error: String? = null,
-)
+}

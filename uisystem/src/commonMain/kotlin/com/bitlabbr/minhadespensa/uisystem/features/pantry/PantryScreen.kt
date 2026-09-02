@@ -21,13 +21,15 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.screens
+package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -37,10 +39,11 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContain
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryItemsWidget
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.searchbar.PantryItemSearchBarWidget
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories.CatalogCategoriesWidget
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.RegisterProductWidget
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.categories.PantryCategoriesWidget
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.search.PantrySearchBarWidget
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Pantry
@@ -52,13 +55,12 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun PantryScreen(
     bottomPadding: Dp = 0.dp,
-    viewModel: CatalogViewModel = koinViewModel()
+    onItemClick: (PantryItemUiModel) -> Unit = {},
+    viewModel: PantryViewModel = koinViewModel()
 ) {
-    val pantryViewModel = koinViewModel<PantryViewModel>()
     val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
-
     Scaffold(
         topBar = {
             MinhaDespensaTopBar(
@@ -103,14 +105,16 @@ fun PantryScreen(
                                 textTop = stringResource(Res.string.maine),
                                 textBottom = stringResource(Res.string.Pantry)
                             ) {}
-
-                            //PantryItemSearchBarWidget(viewModel = pantryViewModel)
-
-//                            PantryItemsWidget()
-//
-//                            RegisterProductWidget()
-                            RegisterProductWidget(
+                            PantrySearchBarWidget(
                                 viewModel = viewModel,
+                                onItemSelected = { item ->
+                                    viewModel.onSearchResultSelected(item)
+                                    onItemClick(item)
+                                },
+                            )
+                            PantryCategoriesWidget(
+                                viewModel = viewModel,
+                                onProductClick = onItemClick,
                             )
                         }
                     }

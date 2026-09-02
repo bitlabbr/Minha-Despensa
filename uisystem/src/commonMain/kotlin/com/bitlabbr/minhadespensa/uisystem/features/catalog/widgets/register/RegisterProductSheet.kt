@@ -51,8 +51,8 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImageSourcePick
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePickerManager
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
-import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductDropdownField
-import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductDropdownField
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
 import com.bitlabbr.minhadespensa.uisystem.mapper.toLabel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors

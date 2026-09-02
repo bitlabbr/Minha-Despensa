@@ -41,8 +41,9 @@ val uiModule = module {
     viewModel {
         PantryViewModel(
             pantryRepository = get(),
-            logger = get(named(DiQualifiers.UI_LOGGER)),
-            notificationManager = get(),
+            catalogRepository = get(),
+            logger = get(named(DiQualifiers.APP_LOGGER)),
+            notificationManager = get()
         )
     }
 

@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -47,7 +46,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.GlobalNotifi
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
 import com.bitlabbr.minhadespensa.uisystem.navigation.*
 import com.bitlabbr.minhadespensa.uisystem.screens.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.screens.PantryScreen
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme

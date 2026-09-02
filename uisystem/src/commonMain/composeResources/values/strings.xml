@@ -101,5 +101,8 @@
     <string name="error_ean_already_exists">Código já cadastrado: %1$s</string>
     <string name="catalog_product_saved_success">Sucesso</string>
     <string name="snackbar_dismiss_text">Fechar notificação</string>
+    <string name="pantry_search_bar_no_info">Sem informação</string>
+    <string name="pantry_search_bar_expired_product_warn">Atenção: Produto Vencido</string>
+    <string name="pantry_search_bar_sock_quantity">Estoque</string>
 
 </resources>

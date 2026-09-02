@@ -20,38 +20,40 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.search
+
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.categories
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
-import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.catalog_searchbar_widget_placeholder
-import minhadespensa.uisystem.generated.resources.product_searchbar_widget_placeholder
-import org.jetbrains.compose.resources.stringResource
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.CategorizedContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun CatalogSearchBarWidget(
+fun PantryCategoriesWidget(
     modifier: Modifier = Modifier,
-    viewModel: CatalogViewModel = koinViewModel(),
-    placeholder: String = stringResource(Res.string.catalog_searchbar_widget_placeholder),
-    onProductSelected: (CatalogProductUiModel) -> Unit = {}
+    viewModel: PantryViewModel = koinViewModel(),
+    onProductClick: (PantryItemUiModel) -> Unit = viewModel::onSearchResultSelected,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    CatalogSearchBarContent(
+    CategorizedContainerGlassCard(
+        categories = uiState.filterState.availableCategories,
+        selectedCategory = uiState.filterState.selectedCategory,
+        onCategorySelected = viewModel::onCategorySelected,
+        isLoading = uiState.listState.isLoading,
+        isEmpty = uiState.listState.products.isEmpty(),
+        isRootEmpty = uiState.listState.isCatalogEmpty,
+        error = uiState.listState.error,
         modifier = modifier,
-        query = uiState.searchState.query,
-        onQueryChange = viewModel::onSearchQueryChanged,
-        searchResults = uiState.searchState.searchResults,
-        onResultClick = { item ->
-            viewModel.onProductSelected(item)
-            onProductSelected(item)
-        },
-        placeholder = placeholder
-    )
+    ) {
+        PantryProductGridContent(
+            products = uiState.listState.products,
+            onProductClick = onProductClick,
+            onGetProductImage = viewModel::getProductImage,
+        )
+    }
 }
