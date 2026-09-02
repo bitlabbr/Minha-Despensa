@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 @Composable
-fun SecondaryContainerGlassCard(
+fun ItemContainerGlassCard(
     modifier: Modifier = Modifier
         .wrapContentSize(),
     shape: Shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner * 0.75f),
@@ -46,15 +46,15 @@ fun SecondaryContainerGlassCard(
 ) {
     BaseGlassCard(
         modifier = modifier,
-        backgroundBrush = GlassCardDefaults.secondaryGlassBrush(),
-        borderBrush = GlassCardDefaults.secondaryBorderBrush(),
+        backgroundBrush = GlassCardDefaults.itemGlassBrush(),
+        borderBrush = GlassCardDefaults.itemBorderBrush(),
         shape = shape,
         borderWidth = borderWidth,
     ) {
         Column(
             modifier = Modifier
                 .padding(MinhaDespensaTheme.dimens.paddingSmall)
-                .align(Alignment.Center),
+                .align(Alignment.TopCenter),
             content = content,
         )
     }

@@ -34,5 +34,9 @@ data object PantryScreenRoute
 @Serializable
 data object SettingsRoute
 
+
+@Serializable
+data object ProductCatalogRoute
+
 @Serializable
 data class ProductDetailsRoute(val productId: String)

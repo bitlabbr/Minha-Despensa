@@ -20,23 +20,28 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register
+
+package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register
+
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.uisystem.model.UiText
 
 data class ProductFormState(
     val name: String = "",
     val brand: String = "",
     val category: String = "",
-    val measureUnit: String = "",
-    val netWeight: String = "",
+    val measureUnit: String = MeasureUnit.UNIT.name,
+    val netWeight: String = "1",
     val ean: String = "",
     val notes: String = "",
     val imageBytes: ByteArray? = null,
     val availableCategories: List<String> = emptyList(),
     val isSaving: Boolean = false,
-    val nameError: String? = null,
-    val netWeightError: String? = null,
-    val measureUnitError: String? = null,
-    val eanError: String? = null,
+    val nameError: UiText? = null,
+    val netWeightError: UiText? = null,
+    val measureUnitError: UiText? = null,
+    val categoryError: UiText? = null,
+    val eanError: UiText? = null,
     val isCheckingEan: Boolean = false,
 ) {
     val isFormValid: Boolean
@@ -44,8 +49,10 @@ data class ProductFormState(
                 nameError == null &&
                 netWeight.isNotBlank() &&
                 netWeightError == null &&
-                category.isNotBlank() &&
                 measureUnit.isNotBlank() &&
+                measureUnitError == null &&
+                category.isNotBlank() &&
+                categoryError == null &&
                 eanError == null &&
                 !isCheckingEan &&
                 !isSaving
@@ -69,6 +76,7 @@ data class ProductFormState(
         if (nameError != other.nameError) return false
         if (netWeightError != other.netWeightError) return false
         if (measureUnitError != other.measureUnitError) return false
+        if (categoryError != other.categoryError) return false
         if (eanError != other.eanError) return false
 
         if (imageBytes != null) {
@@ -93,6 +101,7 @@ data class ProductFormState(
         result = 31 * result + (nameError?.hashCode() ?: 0)
         result = 31 * result + (netWeightError?.hashCode() ?: 0)
         result = 31 * result + (measureUnitError?.hashCode() ?: 0)
+        result = 31 * result + (categoryError?.hashCode() ?: 0)
         result = 31 * result + (eanError?.hashCode() ?: 0)
         result = 31 * result + (imageBytes?.contentHashCode() ?: 0)
         return result

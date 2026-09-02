@@ -21,15 +21,32 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry
+package com.bitlabbr.minhadespensa.uisystem.model
 
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+import androidx.compose.runtime.Composable
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 
-data class PantryUiState(
-    val isLoading: Boolean = false,
-    val error: String? = null,
-    val allActivePantryItems: List<PantryItemUiModel> = emptyList(),
-    val expiringPantryItems: List<PantryItemUiModel> = emptyList(),
-    val selectedPantryItem: PantryItemUiModel? = null,
-    val searchResults: List<PantryItemUiModel> = emptyList(),
-)
+sealed interface UiText {
+    data class DynamicString(val value: String) : UiText
+    class Resource(
+        val resource: StringResource,
+        val args: List<Any> = emptyList(),
+    ) : UiText
+
+    @Composable
+    fun asString(): String {
+        return when (this) {
+            is DynamicString -> value
+            is Resource -> stringResource(resource, *args.toTypedArray())
+        }
+    }
+
+    suspend fun asStringAsync(): String {
+        return when (this) {
+            is DynamicString -> value
+            is Resource -> getString(resource, *args.toTypedArray())
+        }
+    }
+}

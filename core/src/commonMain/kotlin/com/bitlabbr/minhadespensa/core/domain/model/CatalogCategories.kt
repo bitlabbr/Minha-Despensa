@@ -21,21 +21,18 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.repository
+package com.bitlabbr.minhadespensa.core.domain.model
 
-import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import kotlinx.coroutines.flow.Flow
-
-interface CatalogRepository {
-    fun getProductByEan(ean: String): Flow<CatalogProduct?>
-    fun getProductById(id: String): Flow<CatalogProduct?>
-    fun getAllActives(): Flow<List<CatalogProduct>>
-    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>
-    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun forceUpdateForProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun deleteProductById(id: String)
-    fun exists(id: String): Flow<Boolean>
-    fun getCategories(): Flow<List<String>>
-    fun getProductImage(productId: String): Flow<ByteArray?>
+object CatalogCategories {
+    val DEFAULT_CATEGORIES = listOf(
+        "Cereais e Grãos",
+        "Carnes e Proteínas",
+        "Laticínios e Ovos",
+        "Hortifrúti",
+        "Bebidas",
+        "Produtos de Limpeza",
+        "Higiene Pessoal",
+        "Temperos e Condimentos",
+        "Outros"
+    )
 }

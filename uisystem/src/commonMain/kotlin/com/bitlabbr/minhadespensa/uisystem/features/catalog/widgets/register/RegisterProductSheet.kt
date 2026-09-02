@@ -20,7 +20,7 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register
+package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,8 +29,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.QrCodeScanner
-import androidx.compose.material3.*
+import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +50,6 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImagePickerCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImageSourcePickerDialog
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePickerManager
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
-import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerTriggerButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductDropdownField
 import com.bitlabbr.minhadespensa.uisystem.components.domain.product.ProductTextField
@@ -61,32 +62,32 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterProductSheet(
-    state: ProductFormState,
-    sheetState: SheetState,
-    onBack: () -> Unit,
-    onCancel: () -> Unit = onBack,
+    isOpen: Boolean,
+    formState: ProductFormState,
+    onFormChange: (ProductFormState) -> Unit,
     onSave: () -> Unit,
-    onStateChange: (ProductFormState) -> Unit,
     onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    if (!isOpen) return
+
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
     var isExpanded by remember { mutableStateOf(false) }
     var showImageSourcePicker by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
 
     val imagePickerManager = rememberImagePickerManager { bytes ->
-        onStateChange(state.copy(imageBytes = bytes))
+        onFormChange(formState.copy(imageBytes = bytes))
     }
 
-    val selectedMeasureUnit = remember(state.measureUnit) {
-        MeasureUnit.entries.find { it.name == state.measureUnit }
+    val selectedMeasureUnit = remember(formState.measureUnit) {
+        MeasureUnit.entries.find { it.name == formState.measureUnit }
     }
-
-    var showBarcodeScanner by remember { mutableStateOf(false) }
 
     MinhaDespensaBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
+        modifier = modifier,
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxWidth(),
@@ -97,34 +98,32 @@ fun RegisterProductSheet(
                     textBottom = stringResource(Res.string.register_product_form_header_title_bottom),
                     description = stringResource(Res.string.register_product_form_header_title_desc),
                     actionIcon = Icons.Rounded.Close,
-                    actionContentDescription = stringResource(Res.string.register_product_form_back_button_desc),
-                    onActionClick = onBack,
+                    actionContentDescription = stringResource(Res.string.register_product_form_header_close_button_desc),
+                    onActionClick = onDismiss,
                 )
 
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    // IMAGE SECTION
                     SecondaryContainerSection(
                         title = stringResource(Res.string.register_product_form_image_title),
                     ) {
                         ImagePickerCard(
-                            imageBytes = state.imageBytes,
+                            imageBytes = formState.imageBytes,
                             onClick = { showImageSourcePicker = true },
-                            onClearImage = { onStateChange(state.copy(imageBytes = null)) },
+                            onClearImage = { onFormChange(formState.copy(imageBytes = null)) },
                         )
                     }
 
-                    // BASIC INFO SECTION
                     SecondaryContainerSection(
                         title = stringResource(Res.string.register_product_form_basic_info_section_title),
                     ) {
                         ProductTextField(
-                            value = state.name,
-                            onValueChange = { onStateChange(state.copy(name = it)) },
+                            value = formState.name,
+                            onValueChange = { onFormChange(formState.copy(name = it, nameError = null)) },
                             label = stringResource(Res.string.register_product_form_basic_info_product_label),
                             placeholder = stringResource(Res.string.register_product_form_basic_info_product_placeholder),
                             isRequired = true,
                             maxCharacters = CoreConstants.Product.NAME_MAX_LENGTH,
-                            errorMessage = state.nameError,
+                            errorMessage = formState.nameError?.asString(),
                         )
 
                         Row(
@@ -133,17 +132,17 @@ fun RegisterProductSheet(
                         ) {
                             ProductTextField(
                                 modifier = Modifier.weight(1f),
-                                value = state.netWeight,
+                                value = formState.netWeight,
                                 onValueChange = { input ->
                                     val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }.take(8)
-                                    onStateChange(state.copy(netWeight = filtered))
+                                    onFormChange(formState.copy(netWeight = filtered, netWeightError = null))
                                 },
                                 label = stringResource(Res.string.register_product_form_basic_info_netweight_label),
                                 placeholder = stringResource(Res.string.register_product_form_basic_info_netweight_placeholder),
                                 keyboardType = KeyboardType.Decimal,
                                 isRequired = true,
                                 maxCharacters = CoreConstants.Product.WEIGHT_MAX_LENGTH,
-                                errorMessage = state.netWeightError,
+                                errorMessage = formState.netWeightError?.asString(),
                             )
 
                             ProductDropdownField(
@@ -154,8 +153,9 @@ fun RegisterProductSheet(
                                 options = MeasureUnit.entries,
                                 optionLabel = { it.toLabel() },
                                 isRequired = true,
+                                errorMessage = formState.measureUnitError?.asString(),
                                 onSelected = { unit ->
-                                    onStateChange(state.copy(measureUnit = unit.name))
+                                    onFormChange(formState.copy(measureUnit = unit.name, measureUnitError = null))
                                 },
                             )
                         }
@@ -163,79 +163,82 @@ fun RegisterProductSheet(
                         ProductDropdownField(
                             modifier = Modifier.fillMaxWidth(),
                             label = stringResource(Res.string.register_product_form_basic_info_product_category),
-                            selectedOption = state.category.takeIf { it.isNotBlank() },
+                            selectedOption = formState.category.takeIf { it.isNotBlank() },
                             placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
-                            options = state.availableCategories,
+                            options = formState.availableCategories.filter {
+                                !it.equals(
+                                    stringResource(Res.string.category_filter_all),
+                                    ignoreCase = true
+                                )
+                            },
                             optionLabel = { it },
                             isRequired = true,
+                            errorMessage = formState.categoryError?.asString(),
                             onSelected = { selectedCategory ->
-                                onStateChange(state.copy(category = selectedCategory))
+                                onFormChange(formState.copy(category = selectedCategory, categoryError = null))
                             },
                         )
                     }
 
-                    // EXTENDED SECTION
                     if (isExpanded) {
                         SecondaryContainerSection(
                             title = stringResource(Res.string.register_product_form_detail_info_section_title),
                         ) {
                             ProductTextField(
                                 modifier = Modifier.fillMaxWidth(),
-                                value = state.ean,
+                                value = formState.ean,
                                 onValueChange = { input ->
                                     val numbersOnly = input.filter { it.isDigit() }.take(14)
-                                    onStateChange(state.copy(ean = numbersOnly))
+                                    onFormChange(formState.copy(ean = numbersOnly, eanError = null))
                                 },
                                 label = stringResource(Res.string.register_product_form_detail_info_ean_label),
                                 placeholder = stringResource(Res.string.register_product_form_detail_info_ean_placeholder),
                                 keyboardType = KeyboardType.Number,
                                 maxCharacters = 14,
-                                errorMessage = state.eanError,
+                                errorMessage = formState.eanError?.asString(),
                                 trailingContent = {
-                                    if (state.isCheckingEan) {
+                                    if (formState.isCheckingEan) {
                                         CircularProgressIndicator(
                                             modifier = Modifier
                                                 .size(20.dp)
                                                 .padding(2.dp),
                                             strokeWidth = 2.dp,
-                                            color = colors.primary,
+                                            color = colors.onSecondaryContainer,
                                         )
                                     } else {
                                         Box(
                                             modifier = Modifier
-                                                .padding(end = dimens.paddingSmall)
-                                                .size(40.dp)
+                                                .padding(end = 4.dp)
+                                                .size(36.dp)
                                                 .clip(RoundedCornerShape(dimens.cardCorner * 0.35f))
                                                 .background(colors.primary.copy(alpha = 0.12f))
                                                 .clickable { showBarcodeScanner = true },
                                             contentAlignment = Alignment.Center,
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Rounded.QrCodeScanner,
+                                                imageVector = Icons.Rounded.DocumentScanner,
                                                 contentDescription = stringResource(Res.string.register_product_form_detail_info_ean_icon_description),
-                                                tint = if (state.eanError != null) colors.error else colors.onSecondaryContainer.copy(alpha = 0.75f),
-                                                modifier = Modifier.size(30.dp)
+                                                tint = if (formState.eanError != null) colors.error else colors.onSecondaryContainer.copy(
+                                                    alpha = 0.75f
+                                                ),
+                                                modifier = Modifier.size(20.dp),
                                             )
                                         }
                                     }
                                 },
                             )
-                            BarcodeScannerTriggerButton(
-                                onClick = { showBarcodeScanner = true },
-                                modifier = Modifier.weight(0.7f)
-                            )
 
                             ProductTextField(
-                                value = state.brand,
-                                onValueChange = { onStateChange(state.copy(brand = it)) },
+                                value = formState.brand,
+                                onValueChange = { onFormChange(formState.copy(brand = it)) },
                                 label = stringResource(Res.string.register_product_form_detail_info_brand_label),
                                 placeholder = stringResource(Res.string.register_product_form_detail_info_brand_placeholder),
                                 maxCharacters = CoreConstants.Product.BRAND_MAX_LENGTH,
                             )
 
                             ProductTextField(
-                                value = state.notes,
-                                onValueChange = { onStateChange(state.copy(notes = it)) },
+                                value = formState.notes,
+                                onValueChange = { onFormChange(formState.copy(notes = it)) },
                                 label = stringResource(Res.string.register_product_form_detail_info_notes_label),
                                 placeholder = stringResource(Res.string.register_product_form_detail_info_notes_placeholder),
                                 minLines = 3,
@@ -243,16 +246,6 @@ fun RegisterProductSheet(
                                 maxCharacters = CoreConstants.Product.NOTES_MAX_LENGTH,
                             )
                         }
-                    }
-
-                    if (showBarcodeScanner) {
-                        BarcodeScannerModal(
-                            onBarcodeScanned = { scannedCode ->
-                                val numbersOnly = scannedCode.filter { it.isDigit() }.take(14)
-                                onStateChange(state.copy(ean = numbersOnly))
-                            },
-                            onDismissRequest = { showBarcodeScanner = false },
-                        )
                     }
 
                     Box(
@@ -280,14 +273,16 @@ fun RegisterProductSheet(
                         MinhaDespensaSecondaryButton(
                             text = stringResource(Res.string.register_product_form_button_cancel),
                             modifier = Modifier.weight(1f),
-                            onClick = onCancel,
+                            onClick = onDismiss,
                         )
 
                         MinhaDespensaPrimaryButton(
-                            text = stringResource(Res.string.register_product_form_button_save),
+                            text = if (formState.isSaving) stringResource(Res.string.register_product_form_button_saving) else stringResource(
+                                Res.string.register_product_form_button_save
+                            ),
                             modifier = Modifier.weight(1.75f),
-                            enabled = state.isFormValid,
-                            isLoading = state.isSaving,
+                            enabled = formState.isFormValid,
+                            isLoading = formState.isSaving,
                             onClick = onSave,
                         )
                     }
@@ -300,6 +295,17 @@ fun RegisterProductSheet(
                 onDismissRequest = { showImageSourcePicker = false },
                 onCameraSelect = { imagePickerManager.launchCamera() },
                 onGallerySelect = { imagePickerManager.launchGallery() },
+            )
+        }
+
+        if (showBarcodeScanner) {
+            BarcodeScannerModal(
+                onBarcodeScanned = { scannedCode ->
+                    val numbersOnly = scannedCode.filter { it.isDigit() }.take(14)
+                    onFormChange(formState.copy(ean = numbersOnly, eanError = null))
+                    showBarcodeScanner = false
+                },
+                onDismissRequest = { showBarcodeScanner = false },
             )
         }
     }

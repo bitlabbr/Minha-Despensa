@@ -28,6 +28,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ProductMediaDao {
@@ -39,4 +40,7 @@ interface ProductMediaDao {
 
     @Query("DELETE FROM product_media WHERE productId = :productId")
     suspend fun deleteByProductId(productId: String)
+
+    @Query("SELECT * FROM product_media WHERE productId = :productId")
+    fun getByProductIdFlow(productId: String): Flow<ProductMediaEntity?>
 }

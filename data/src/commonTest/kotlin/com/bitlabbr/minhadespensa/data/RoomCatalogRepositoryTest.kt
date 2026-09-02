@@ -29,6 +29,7 @@ import app.cash.turbine.test
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
@@ -826,8 +827,8 @@ class RoomCatalogRepositoryTest : BaseTest() {
     }
 
     @Test
-    fun `should fail validation when category exceeds 20 characters`() = runTest {
-        val categoryExceedingLimit = "A".repeat(21)
+    fun `should fail validation when category exceeds BRAND_MAX_LENGTH characters`() = runTest {
+        val categoryExceedingLimit = "A".repeat(CoreConstants.Product.BRAND_MAX_LENGTH + 1)
         val product = createDummyProduct(category = categoryExceedingLimit)
         assertFails {
             catalogRepository.insertProduct(product, null)
