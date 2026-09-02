@@ -36,10 +36,11 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainer
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantryItemsWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.searchbar.PantryItemSearchBarWidget
-import com.bitlabbr.minhadespensa.uisystem.features.product.widgets.register.RegisterProductWidget
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.RegisterProductWidget
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Pantry
@@ -50,7 +51,8 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun PantryScreen(
-    bottomPadding: Dp = 0.dp
+    bottomPadding: Dp = 0.dp,
+    viewModel: CatalogViewModel = koinViewModel()
 ) {
     val pantryViewModel = koinViewModel<PantryViewModel>()
     val appColors = getAppColors()
@@ -102,11 +104,14 @@ fun PantryScreen(
                                 textBottom = stringResource(Res.string.Pantry)
                             ) {}
 
-                            PantryItemSearchBarWidget(viewModel = pantryViewModel)
+                            //PantryItemSearchBarWidget(viewModel = pantryViewModel)
 
-                            PantryItemsWidget()
-
-                            RegisterProductWidget()
+//                            PantryItemsWidget()
+//
+//                            RegisterProductWidget()
+                            RegisterProductWidget(
+                                viewModel = viewModel,
+                            )
                         }
                     }
                 }

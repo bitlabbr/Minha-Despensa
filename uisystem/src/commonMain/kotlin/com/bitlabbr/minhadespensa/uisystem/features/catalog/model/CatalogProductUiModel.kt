@@ -21,21 +21,31 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.repository
+package com.bitlabbr.minhadespensa.uisystem.features.catalog.model
 
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import kotlinx.coroutines.flow.Flow
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 
-interface CatalogRepository {
-    fun getProductByEan(ean: String): Flow<CatalogProduct?>
-    fun getProductById(id: String): Flow<CatalogProduct?>
-    fun getAllActives(): Flow<List<CatalogProduct>>
-    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>
-    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun forceUpdateForProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun deleteProductById(id: String)
-    fun exists(id: String): Flow<Boolean>
-    fun getCategories(): Flow<List<String>>
-    fun getProductImage(productId: String): Flow<ByteArray?>
+data class CatalogProductUiModel(
+    val id: String,
+    val name: String,
+    val category: String,
+    val brand: String?,
+    val measureUnit: MeasureUnit,
+    val netWeight: Double,
+    val ean: String?,
+    val formattedWeight: String,
+)
+
+fun CatalogProduct.toUiModel(): CatalogProductUiModel {
+    return CatalogProductUiModel(
+        id = this.id,
+        name = this.name,
+        category = this.category,
+        brand = this.brand,
+        measureUnit = this.measureUnit,
+        netWeight = this.netWeight,
+        ean = this.ean,
+        formattedWeight = "${this.netWeight} ${this.measureUnit.name.lowercase()}"
+    )
 }

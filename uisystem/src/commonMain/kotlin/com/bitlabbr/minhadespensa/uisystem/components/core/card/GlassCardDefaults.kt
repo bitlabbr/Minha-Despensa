@@ -114,4 +114,46 @@ object GlassCardDefaults {
             end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
         )
     }
+
+    @Composable
+    fun itemBorderBrush(
+        isDark: Boolean = isSystemInDarkTheme(),
+    ): Brush {
+        val colors = getAppColors()
+
+        val strokeColor = if (isDark) {
+            Color.White.copy(alpha = 0.85f)
+        } else {
+            colors.onSecondaryContainer.copy(alpha = 0.30f)
+        }
+        return Brush.linearGradient(
+            colors = listOf(
+                strokeColor,
+                Color.Transparent,
+                strokeColor.copy(alpha = 0.05f),
+            ),
+            start = Offset(0f, 0f),
+            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+        )
+    }
+
+    @Composable
+    fun itemGlassBrush(
+        isDark: Boolean = isSystemInDarkTheme(),
+        containerColor: Color = getAppColors().onSecondaryContainer.copy(alpha = 0.01f),
+    ): Brush {
+        val primaryAlpha = if (isDark) 0.30f else 0.05f
+        val secondaryAlpha = if (isDark) 0.10f else 0.15f
+
+        return Brush.linearGradient(
+            colors = listOf(
+                Color.Transparent,
+                containerColor.copy(alpha = primaryAlpha),
+                Color.Transparent,
+                containerColor.copy(alpha = secondaryAlpha),
+            ),
+            start = Offset(0f, 0f),
+            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+        )
+    }
 }

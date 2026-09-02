@@ -42,3 +42,12 @@ val MeasureUnit.labelRes: StringResource
 
 @Composable
 fun MeasureUnit.toLabel(): String = stringResource(this.labelRes)
+
+fun MeasureUnit.toAbbreviation(): String = when (this) {
+    MeasureUnit.KILOGRAM -> "kg"
+    MeasureUnit.GRAM -> "g"
+    MeasureUnit.LITER -> "L"
+    MeasureUnit.MILLILITER -> "ml"
+    MeasureUnit.UNIT -> "un"
+    MeasureUnit.PACKAGE -> "pct"
+}

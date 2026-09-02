@@ -29,6 +29,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,10 +43,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.navigation.BottomNavItem
-import com.bitlabbr.minhadespensa.uisystem.navigation.HomeScreenRoute
-import com.bitlabbr.minhadespensa.uisystem.navigation.PantryScreenRoute
-import com.bitlabbr.minhadespensa.uisystem.navigation.SettingsRoute
+import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.GlobalNotificationHost
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
+import com.bitlabbr.minhadespensa.uisystem.navigation.*
 import com.bitlabbr.minhadespensa.uisystem.screens.HomeScreen
 import com.bitlabbr.minhadespensa.uisystem.screens.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
@@ -56,7 +56,8 @@ import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 private val bottomNavItems = listOf(
     BottomNavItem("Início", Icons.Default.Home, HomeScreenRoute),
     BottomNavItem("Despensa", Icons.AutoMirrored.Rounded.List, PantryScreenRoute),
-    BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute)
+    //BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute),
+    BottomNavItem("Catálogo", Icons.Default.ShoppingCart, ProductCatalogRoute),
 )
 
 @Composable
@@ -138,8 +139,18 @@ fun App() {
                     composable<HomeScreenRoute> {
                         HomeScreen(bottomPadding = innerPadding.calculateBottomPadding())
                     }
+
+                    composable<ProductCatalogRoute> {
+                        CatalogScreen(
+                            bottomPadding = innerPadding.calculateBottomPadding(),
+                            onProductClick = { product ->
+                                // Ação ao selecionar um produto (ex: navegar para detalhes, edição ou selecionar para despensa)
+                            },
+                        )
+                    }
                 }
             }
+            GlobalNotificationHost()
         }
     }
 }

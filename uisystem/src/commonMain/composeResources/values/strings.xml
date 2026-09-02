@@ -67,20 +67,39 @@
     <string name="register_product_form_detail_info_brand_label">Marca</string>
     <string name="register_product_form_detail_info_brand_placeholder">Ex: Tio João</string>
     <string name="register_product_form_detail_info_notes_label">Observações</string>
-    <string name="register_product_form_detail_info_notes_placeholder">Marca preferida, local de compra...</string>
+    <string name="register_product_form_detail_info_notes_placeholder">Anotações sobre o produto...</string>
     <string name="register_product_form_expand_button_see_less">Ver Menos</string>
-    <string name="register_product_form_expand_button_see_more">Adicionar mais Informação</string>
+    <string name="register_product_form_expand_button_see_more">Adicionar mais Campos</string>
     <string name="register_product_form_detail_info_section_title">DETALHES ADICIONAIS</string>
     <string name="register_product_form_detail_info_ean_label">Código de barras</string>
     <string name="register_product_form_detail_info_ean_placeholder">ex: 7896336010066</string>
     <string name="register_product_form_detail_info_ean_icon_description">Escanear código de barras</string>
     <string name="register_product_form_button_cancel">Cancelar</string>
     <string name="register_product_form_button_save">Salvar Produto</string>
+    <string name="register_product_form_button_saving">Salvando...</string>
     <string name="register_product_form_back_button_desc">Voltar</string>
     <string name="register_product_form_header_title_top">REGISTRAR</string>
     <string name="register_product_form_header_title_bottom">PRODUTO</string>
     <string name="register_product_form_header_title_desc">Adicione um produto ao catálogo</string>
+    <string name="register_product_form_header_close_button_desc">Fechar formulário</string>
     <string name="settins_section_tile_top">Outras</string>
     <string name="settins_section_tile_bottom">Opções</string>
+    <string name="product_catalog_title_top">Catálogo de</string>
+    <string name="product_catalog_title_bottom">Produtos</string>
+    <string name="product_catalog_item_not_found">Nenhum produto cadastrado.</string>
+    <string name="product_catalog_item_cta_add_product">Adicione um produto clicando abaixo</string>
+    <string name="catalog_searchbar_widget_placeholder">Buscar no catálogo</string>
+    <string name="category_filter_all">Todas</string>
+    <string name="error_ocurred">Um erro ocorreu</string>
+    <string name="product_catalog_item_not_found_in_category_search">Nenhum produto para os filtros selecionados.</string>
+    <string name="error_product_image_load">Erro ao carregar imagem do produto</string>
+
+    <string name="error_name_required">Nome é obrigatório</string>
+    <string name="error_name_max_length">Máximo de %1$d caracteres</string>
+    <string name="error_invalid_number">Valor numérico inválido</string>
+    <string name="error_ean_invalid_length">EAN deve ter 8, 13 ou 14 dígitos</string>
+    <string name="error_ean_already_exists">Código já cadastrado: %1$s</string>
+    <string name="catalog_product_saved_success">Sucesso</string>
+    <string name="snackbar_dismiss_text">Fechar notificação</string>
 
 </resources>

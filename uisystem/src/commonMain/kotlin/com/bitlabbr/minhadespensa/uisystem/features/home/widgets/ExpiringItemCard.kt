@@ -21,21 +21,13 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.repository
+package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
-import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import kotlinx.coroutines.flow.Flow
-
-interface CatalogRepository {
-    fun getProductByEan(ean: String): Flow<CatalogProduct?>
-    fun getProductById(id: String): Flow<CatalogProduct?>
-    fun getAllActives(): Flow<List<CatalogProduct>>
-    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>
-    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun forceUpdateForProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun deleteProductById(id: String)
-    fun exists(id: String): Flow<Boolean>
-    fun getCategories(): Flow<List<String>>
-    fun getProductImage(productId: String): Flow<ByteArray?>
-}
+data class ExpiringItemCard(
+    val expirationLabel: String,
+    val productName: String,
+    val productCategory: String,
+    val anchoredTargetLabel: String,
+    val anchoredGaugeProgress: Float,
+    val iconPainterURI: String?
+)

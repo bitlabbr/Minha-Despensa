@@ -21,13 +21,18 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.product
+package com.bitlabbr.minhadespensa.uisystem.components.core.snackbar
 
-data class ExpiringItemCard(
-    val expirationLabel: String,
-    val productName: String,
-    val productCategory: String,
-    val anchoredTargetLabel: String,
-    val anchoredGaugeProgress: Float,
-    val iconPainterURI: String?
-)
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.WarningAmber
+import androidx.compose.ui.graphics.vector.ImageVector
+
+enum class MinhaDespensaSnackbarType(val defaultIcon: ImageVector) {
+    SUCCESS(Icons.Rounded.CheckCircle),
+    ERROR(Icons.Rounded.ErrorOutline),
+    WARNING(Icons.Rounded.WarningAmber),
+    INFO(Icons.Rounded.Info)
+}

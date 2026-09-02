@@ -28,14 +28,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -128,11 +121,11 @@ fun MinhaDespensaSecondaryButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     leadingIcon: ImageVector? = null,
+    textColor: Color = getAppColors().onSecondaryContainer
 ) {
     val shape = MinhaDespensaButtonDefaults.secondaryShape()
     val containerColor = MinhaDespensaButtonDefaults.secondaryContainerColor()
     val borderBrush = MinhaDespensaButtonDefaults.secondaryBorderBrush()
-    val textColor = getAppColors().onSurface
     val dimens = MinhaDespensaTheme.dimens
 
     val finalAlpha = if (enabled) 1f else 0.45f

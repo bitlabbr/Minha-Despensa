@@ -21,21 +21,26 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.repository
+package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories
 
-import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import kotlinx.coroutines.flow.Flow
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
+import org.koin.compose.viewmodel.koinViewModel
 
-interface CatalogRepository {
-    fun getProductByEan(ean: String): Flow<CatalogProduct?>
-    fun getProductById(id: String): Flow<CatalogProduct?>
-    fun getAllActives(): Flow<List<CatalogProduct>>
-    fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>
-    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun forceUpdateForProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun deleteProductById(id: String)
-    fun exists(id: String): Flow<Boolean>
-    fun getCategories(): Flow<List<String>>
-    fun getProductImage(productId: String): Flow<ByteArray?>
+@Composable
+fun CatalogCategoriesWidget(
+    modifier: Modifier = Modifier,
+    viewModel: CatalogViewModel = koinViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    CatalogCategoriesContent(
+        modifier = modifier,
+        categories = uiState.filterState.availableCategories,
+        selectedCategory = uiState.filterState.selectedCategory,
+        onCategorySelected = viewModel::onCategorySelected,
+    )
 }

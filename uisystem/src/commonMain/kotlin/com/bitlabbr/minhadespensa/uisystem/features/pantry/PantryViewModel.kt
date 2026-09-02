@@ -30,6 +30,8 @@ import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryUiState
+import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -37,7 +39,8 @@ import kotlinx.datetime.Clock
 
 class PantryViewModel(
     private val pantryRepository: PantryRepository,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    notificationManager: AppNotificationManager,
 ) : ViewModel() {
 
     private val TAG = "PantryViewModel"

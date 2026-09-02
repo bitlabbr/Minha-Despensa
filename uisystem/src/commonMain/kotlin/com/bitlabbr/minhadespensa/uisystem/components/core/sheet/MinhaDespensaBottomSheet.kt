@@ -23,22 +23,13 @@
 
 package com.bitlabbr.minhadespensa.uisystem.components.core.sheet
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.BottomSheetDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,7 +37,11 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 fun MinhaDespensaBottomSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    sheetState: SheetState = rememberModalBottomSheetState(),
+    sheetState: SheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true,
+        confirmValueChange = { targetValue ->
+            targetValue != SheetValue.Hidden
+        }),
     containerColor: Color = MinhaDespensaBottomSheetDefaults.containerColor(),
     shape: Shape = MinhaDespensaBottomSheetDefaults.shape(),
     dragHandle: @Composable (() -> Unit)? = {
@@ -66,6 +61,7 @@ fun MinhaDespensaBottomSheet(
         containerColor = containerColor,
         shape = shape,
         dragHandle = dragHandle,
+        sheetMaxWidth = Dp.Unspecified,
         modifier = modifier
             .padding(horizontal = dimens.paddingSmall)
             .imePadding(),

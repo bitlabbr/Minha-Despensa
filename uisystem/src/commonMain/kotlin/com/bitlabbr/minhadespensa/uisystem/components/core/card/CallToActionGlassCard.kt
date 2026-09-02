@@ -23,39 +23,39 @@
 
 package com.bitlabbr.minhadespensa.uisystem.components.core.card
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.actionHorizontalGradient
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 @Composable
-fun SecondaryContainerGlassCard(
+fun CallToActionGlassCard(
     modifier: Modifier = Modifier
-        .wrapContentSize(),
-    shape: Shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner * 0.75f),
-    borderWidth: Dp = 1.dp,
-    content: @Composable ColumnScope.() -> Unit,
+        .fillMaxWidth()
+        .padding(MinhaDespensaTheme.dimens.paddingSmall),
+    shape: Shape = RoundedCornerShape(MinhaDespensaTheme.dimens.cardCorner),
+    borderWidth: Dp = 2.dp,
+    backgroundBrush: Brush = actionHorizontalGradient(
+        primary = getAppColors().primary.copy(alpha = 0.5f),
+        secondary = getAppColors().secondary.copy(alpha = 0.5f),
+    ),
+    content: @Composable BoxScope.() -> Unit,
 ) {
     BaseGlassCard(
         modifier = modifier,
-        backgroundBrush = GlassCardDefaults.secondaryGlassBrush(),
-        borderBrush = GlassCardDefaults.secondaryBorderBrush(),
+        backgroundBrush = backgroundBrush,
+        borderBrush = GlassCardDefaults.primaryBorderBrush(),
         shape = shape,
         borderWidth = borderWidth,
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(MinhaDespensaTheme.dimens.paddingSmall)
-                .align(Alignment.Center),
-            content = content,
-        )
-    }
+        content = content,
+    )
 }

@@ -95,19 +95,15 @@ class RoomCatalogRepository(
             }
         }
         validateProduct(product)
-        db.useWriterConnection { conn ->
-            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                productDao.insert(product.toEntity())
-                if (imageBytes != null) {
-                    mediaDao.insertOrUpdate(
-                        ProductMediaEntity(
-                            productId = product.id,
-                            blob = imageBytes,
-                            updatedAt = getCurrentTime()
-                        )
-                    )
-                }
-            }
+        productDao.insert(product.toEntity())
+        if (imageBytes != null) {
+            mediaDao.insertOrUpdate(
+                ProductMediaEntity(
+                    productId = product.id,
+                    blob = imageBytes,
+                    updatedAt = getCurrentTime()
+                )
+            )
         }
     }
 
@@ -137,6 +133,10 @@ class RoomCatalogRepository(
                 }
             }
         }
+    }
+
+    override fun getProductImage(productId: String): Flow<ByteArray?> {
+        return mediaDao.getByProductIdFlow(productId).map { it?.blob }
     }
 
     override suspend fun updateForProductIfNewer(
