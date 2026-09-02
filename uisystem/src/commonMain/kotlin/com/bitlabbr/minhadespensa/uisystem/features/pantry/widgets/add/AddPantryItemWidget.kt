@@ -21,41 +21,44 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.categories
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.CategorizedContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun PantryCategoriesWidget(
+fun AddPantryItemWidget(
     modifier: Modifier = Modifier,
     viewModel: PantryViewModel = koinViewModel(),
-    onProductClick: (PantryItemUiModel) -> Unit = viewModel::onSearchResultSelected,
+    isCallToAction: Boolean = false,
+    onNavigateToCatalogRegister: (String) -> Unit = {},
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val isItemSheetOpen by viewModel.isItemSheetOpen.collectAsState()
+    val itemFormState by viewModel.itemFormState.collectAsState()
 
-    CategorizedContainerGlassCard(
-        categories = uiState.filterState.availableCategories,
-        selectedCategory = uiState.filterState.selectedCategory,
-        onCategorySelected = viewModel::onCategorySelected,
-        isLoading = uiState.listState.isLoading,
-        isEmpty = uiState.listState.products.isEmpty(),
-        isRootEmpty = uiState.listState.isCatalogEmpty,
-        error = uiState.listState.error,
-        emptyMessage = "Sua despensa está vazia.\nAdicione produtos no botão abaixo!",
-        notFoundMessage = "Nenhum item nesta categoria da despensa.",
-        modifier = modifier,
-    ) {
-        PantryProductGridContent(
-            products = uiState.listState.products,
-            onProductClick = onProductClick,
-            onGetProductImage = viewModel::getProductImage,
+    Box(modifier = modifier) {
+        AddPantryItemWidgetContent(
+            onClick = { viewModel.openAddPantryItemSheet(startWithScanner = false) },
+            isCallToAction = isCallToAction,
+        )
+
+        AddPantryItemSheet(
+            isOpen = isItemSheetOpen,
+            formState = itemFormState,
+            initialOpenScanner = viewModel.isStartWithScanner,
+            onFormChange = viewModel::onItemFormChange,
+            onSearchEan = viewModel::onEanScannedOrTyped,
+            onSave = viewModel::savePantryItem,
+            onDismiss = viewModel::closeAddPantryItemSheet,
+            onNavigateToCatalogRegister = { ean ->
+                viewModel.closeAddPantryItemSheet()
+                onNavigateToCatalogRegister(ean)
+            },
         )
     }
 }
