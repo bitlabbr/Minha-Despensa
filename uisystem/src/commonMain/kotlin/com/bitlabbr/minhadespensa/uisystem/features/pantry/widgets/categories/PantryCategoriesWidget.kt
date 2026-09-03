@@ -21,22 +21,22 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.categories
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.CategorizedContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun CatalogCategoriesWidget(
-    onProductClick: (CatalogProductUiModel) -> Unit,
+fun PantryCategoriesWidget(
     modifier: Modifier = Modifier,
-    viewModel: CatalogViewModel = koinViewModel(),
+    viewModel: PantryViewModel = koinViewModel(),
+    onProductClick: (PantryItemUiModel) -> Unit = viewModel::onSearchResultSelected,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -48,9 +48,11 @@ fun CatalogCategoriesWidget(
         isEmpty = uiState.listState.products.isEmpty(),
         isRootEmpty = uiState.listState.isCatalogEmpty,
         error = uiState.listState.error,
+        emptyMessage = "Sua despensa está vazia.\nAdicione produtos no botão abaixo!",
+        notFoundMessage = "Nenhum item nesta categoria da despensa.",
         modifier = modifier,
     ) {
-        CatalogProductGridContent(
+        PantryProductGridContent(
             products = uiState.listState.products,
             onProductClick = onProductClick,
             onGetProductImage = viewModel::getProductImage,

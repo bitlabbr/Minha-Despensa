@@ -21,50 +21,50 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories
+package com.bitlabbr.minhadespensa.uisystem.components.core.list
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.components.core.chip.MinhaDespensaFilterChip
+import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.category_filter_all
-import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun CatalogCategoriesContent(
-    categories: List<String>,
-    selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit,
+fun <T> MinhaDespensaHorizontalGrid(
+    items: List<T>,
+    key: (T) -> Any,
     modifier: Modifier = Modifier,
+    thresholdForDoubleRow: Int = 4,
+    itemContent: @Composable (T) -> Unit,
 ) {
     val dimens = MinhaDespensaTheme.dimens
-    val isAllSelected = selectedCategory == null
+    val isDoubleRow = items.size > thresholdForDoubleRow
+    val gridHeight = if (isDoubleRow) 420.dp else 220.dp
+    val rowCount = if (isDoubleRow) 2 else 1
 
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = dimens.paddingSmall),
+    LazyHorizontalGrid(
+        rows = GridCells.Fixed(rowCount),
+        modifier = modifier
+            .fillMaxWidth()
+            .height(gridHeight),
+        contentPadding = PaddingValues(
+            horizontal = dimens.paddingSmall,
+            vertical = dimens.paddingSmall,
+        ),
         horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+        verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
     ) {
-        item {
-            MinhaDespensaFilterChip(
-                selected = isAllSelected,
-                onClick = { onCategorySelected(null) },
-                label = stringResource(Res.string.category_filter_all),
-            )
-        }
-
-        items(categories) { category ->
-            MinhaDespensaFilterChip(
-                selected = category.equals(selectedCategory, ignoreCase = true),
-                onClick = { onCategorySelected(category) },
-                label = category,
-            )
+        items(
+            items = items,
+            key = key,
+        ) { item ->
+            itemContent(item)
         }
     }
 }

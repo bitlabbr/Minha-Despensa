@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.components.domain.product
+package com.bitlabbr.minhadespensa.uisystem.components.domain.catalog
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable

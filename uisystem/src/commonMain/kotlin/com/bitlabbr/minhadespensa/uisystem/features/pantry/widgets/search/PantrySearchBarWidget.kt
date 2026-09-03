@@ -20,38 +20,36 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.search
+
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.search
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.catalog_searchbar_widget_placeholder
 import minhadespensa.uisystem.generated.resources.product_searchbar_widget_placeholder
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
-fun CatalogSearchBarWidget(
+fun PantrySearchBarWidget(
     modifier: Modifier = Modifier,
-    viewModel: CatalogViewModel = koinViewModel(),
-    placeholder: String = stringResource(Res.string.catalog_searchbar_widget_placeholder),
-    onProductSelected: (CatalogProductUiModel) -> Unit = {}
+    viewModel: PantryViewModel = koinViewModel(),
+    placeholder: String = stringResource(Res.string.product_searchbar_widget_placeholder),
+    onItemSelected: (PantryItemUiModel) -> Unit = viewModel::onSearchResultSelected,
 ) {
+    val searchQuery by viewModel.searchQuery.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
 
-    CatalogSearchBarContent(
-        modifier = modifier,
-        query = uiState.searchState.query,
+    PantrySearchBarContent(
+        query = searchQuery,
         onQueryChange = viewModel::onSearchQueryChanged,
-        searchResults = uiState.searchState.searchResults,
-        onResultClick = { item ->
-            viewModel.onProductSelected(item)
-            onProductSelected(item)
-        },
-        placeholder = placeholder
+        searchResults = uiState.searchResults,
+        onResultClick = onItemSelected,
+        placeholder = placeholder,
+        modifier = modifier,
     )
 }

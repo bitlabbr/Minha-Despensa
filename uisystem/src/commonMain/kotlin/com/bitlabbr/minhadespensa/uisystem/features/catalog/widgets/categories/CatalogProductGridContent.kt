@@ -20,38 +20,41 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.search
 
+package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories
+
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
+import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.uisystem.components.core.list.MinhaDespensaHorizontalGrid
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.CatalogProductCard
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
-import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.catalog_searchbar_widget_placeholder
-import minhadespensa.uisystem.generated.resources.product_searchbar_widget_placeholder
-import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.coroutines.flow.Flow
 
 @Composable
-fun CatalogSearchBarWidget(
+fun CatalogProductGridContent(
+    products: List<CatalogProductUiModel>,
+    onProductClick: (CatalogProductUiModel) -> Unit,
+    onGetProductImage: (String) -> Flow<ByteArray?>,
     modifier: Modifier = Modifier,
-    viewModel: CatalogViewModel = koinViewModel(),
-    placeholder: String = stringResource(Res.string.catalog_searchbar_widget_placeholder),
-    onProductSelected: (CatalogProductUiModel) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    CatalogSearchBarContent(
+    MinhaDespensaHorizontalGrid(
+        items = products,
+        key = { it.id },
         modifier = modifier,
-        query = uiState.searchState.query,
-        onQueryChange = viewModel::onSearchQueryChanged,
-        searchResults = uiState.searchState.searchResults,
-        onResultClick = { item ->
-            viewModel.onProductSelected(item)
-            onProductSelected(item)
-        },
-        placeholder = placeholder
-    )
+    ) { product ->
+        val imageFlow = remember(product.id) { onGetProductImage(product.id) }
+        val imageBytes by imageFlow.collectAsState(initial = null)
+
+        CatalogProductCard(
+            product = product,
+            imageBytes = imageBytes,
+            onClick = { onProductClick(product) },
+            modifier = Modifier.width(160.dp),
+        )
+    }
 }
