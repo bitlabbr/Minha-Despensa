@@ -24,24 +24,19 @@
 package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
-import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.categories.PantryCategoriesWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.search.PantrySearchBarWidget
-import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Pantry
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.maine
@@ -54,73 +49,32 @@ fun PantryScreen(
     onItemClick: (PantryItemUiModel) -> Unit = {},
     viewModel: PantryViewModel = koinViewModel()
 ) {
-    val appColors = getAppColors()
-    val appTypography = MinhaDespensaTheme.typography
-    val dimens = MinhaDespensaTheme.dimens
 
-    Scaffold(
+    val snackbarHostState = remember { SnackbarHostState() }
+    MainScreenScaffold(
+        bottomPadding = bottomPadding,
         topBar = {
-            MinhaDespensaTopBar(
-                backgroundColor = Color.Transparent,
-                centerContent = {
-                    MinhaDespensaText(
-                        text = "",
-                        fontStyle = appTypography.displayMedium,
-                        color = appColors.onBackground
-                    )
-                }
-            )
+            MinhaDespensaTopBar()
         },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        containerColor = Color.Transparent
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = paddingValues.calculateTopPadding(),
-                    bottom = bottomPadding
-                )
-            ) {
-                item {
-                    PrimaryContainerGlassCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .padding(horizontal = dimens.paddingSmall, vertical = dimens.paddingSmall)
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    top = dimens.paddingLarge,
-                                    bottom = dimens.paddingLarge
-                                ),
-                            verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall)
-                        ) {
-                            PrimaryContainerHeader(
-                                textTop = stringResource(Res.string.maine),
-                                textBottom = stringResource(Res.string.Pantry)
-                            ) {}
-                            PantrySearchBarWidget(
-                                viewModel = viewModel,
-                                onItemSelected = { item ->
-                                    viewModel.onSearchResultSelected(item)
-                                    onItemClick(item)
-                                },
-                            )
-                            PantryCategoriesWidget(
-                                viewModel = viewModel,
-                                onProductClick = onItemClick,
-                            )
-                            AddPantryItemWidget(
-                                viewModel = viewModel,
-                                isCallToAction = true
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
+    ) {
+        PrimaryContainerHeader(
+            textTop = stringResource(Res.string.maine),
+            textBottom = stringResource(Res.string.Pantry)
+        ) {}
+        PantrySearchBarWidget(
+            onItemSelected = { item ->
+                viewModel.onSearchResultSelected(item)
+                onItemClick(item)
+            },
+        )
+        PantryCategoriesWidget(
+            onProductClick = onItemClick,
+        )
+        AddPantryItemWidget(
+            isCallToAction = true
+        )
     }
 }
