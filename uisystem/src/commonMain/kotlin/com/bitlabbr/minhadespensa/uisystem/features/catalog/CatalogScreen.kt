@@ -23,116 +23,54 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.catalog
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
-import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories.CatalogCategoriesWidget
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.RegisterProductWidget
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.search.CatalogSearchBarWidget
-import com.bitlabbr.minhadespensa.uisystem.theme.AppDimens
-import com.bitlabbr.minhadespensa.uisystem.theme.AppTypography
-import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
-import minhadespensa.uisystem.generated.resources.*
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.product_catalog_title_bottom
+import minhadespensa.uisystem.generated.resources.product_catalog_title_top
 import org.jetbrains.compose.resources.stringResource
-import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun CatalogScreen(
     onProductClick: (CatalogProductUiModel) -> Unit,
-    modifier: Modifier = Modifier,
-    bottomPadding: Dp = 0.dp,
-    viewModel: CatalogViewModel = koinViewModel(),
+    bottomPadding: Dp = 0.dp
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-    val colors = getAppColors()
-    val dimens = MinhaDespensaTheme.dimens
-    val typography = MinhaDespensaTheme.typography
-
-    Scaffold(
+    val snackbarHostState = remember { SnackbarHostState() }
+    MainScreenScaffold(
+        bottomPadding = bottomPadding,
         topBar = {
-            MinhaDespensaTopBar(
-                backgroundColor = Color.Transparent,
-                centerContent = {
-                    MinhaDespensaText(
-                        text = "",
-                        fontStyle = typography.displayMedium,
-                        color = colors.onBackground,
-                    )
-                },
-            )
+            MinhaDespensaTopBar()
         },
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Transparent),
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        containerColor = Color.Transparent,
-    ) { paddingValues ->
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        },
+    ) {
+        PrimaryContainerHeader(
+            textTop = stringResource(Res.string.product_catalog_title_top),
+            textBottom = stringResource(Res.string.product_catalog_title_bottom),
+        )
 
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = paddingValues.calculateTopPadding(),
-                    bottom = bottomPadding,
-                ),
-            ) {
-                item {
-                    PrimaryContainerGlassCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .padding(horizontal = dimens.paddingSmall, vertical = 8.dp),
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    top = dimens.paddingLarge,
-                                    bottom = dimens.paddingLarge,
-                                ),
-                            verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
-                        ) {
-                            PrimaryContainerHeader(
-                                textTop = stringResource(Res.string.product_catalog_title_top),
-                                textBottom = stringResource(Res.string.product_catalog_title_bottom),
-                            )
+        CatalogSearchBarWidget(
+            onProductSelected = onProductClick,
+        )
 
-                            CatalogSearchBarWidget(
-                                viewModel = viewModel,
-                                onProductSelected = onProductClick,
-                            )
+        CatalogCategoriesWidget(
+            onProductClick = onProductClick,
+        )
 
-                            CatalogCategoriesWidget(
-                                onProductClick = onProductClick,
-                            )
-
-                            RegisterProductWidget(
-                                viewModel = viewModel,
-                                isCallToAction = true
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        RegisterProductWidget(
+            isCallToAction = true
+        )
     }
 }
