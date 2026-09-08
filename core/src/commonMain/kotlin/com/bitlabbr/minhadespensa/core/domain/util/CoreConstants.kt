@@ -23,9 +23,12 @@
 
 package com.bitlabbr.minhadespensa.core.domain.util
 
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+
 object CoreConstants {
 
     object Product {
+        val DEFAULT_MEASURE_UNITY = MeasureUnit.UNIT
         const val DEFAULT_CATEGORY = "Outros"
         const val NAME_MAX_LENGTH = 30
         const val BRAND_MAX_LENGTH = 30

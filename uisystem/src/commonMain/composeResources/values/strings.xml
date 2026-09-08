@@ -108,5 +108,7 @@
     <string name="add_pantry_item_cta_subtitle">Clique aqui para inserir item à despensa</string>
     <string name="action_scan_barcode">Clique aqui para escanear</string>
     <string name="action_search_catalog">Clique para digitar</string>
+    <string name="register_bottom_sheet_name_is_required">Nome é obrigatório</string>
+    <string name="register_bottom_sheet_invalid_quantity">Peso/Qtd inválido</string>
 
 </resources>

@@ -25,9 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.catalog
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bitlabbr.minhadespensa.core.domain.model.CatalogCategories
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
@@ -71,7 +69,7 @@ class CatalogViewModel(
 
         val uiProducts = products.map { it.toUiModel() }
         val isCatalogEmpty = products.isEmpty()
-        val dynamicCategories = (CatalogCategories.DEFAULT_CATEGORIES + products.map { it.category.trim() })
+        val dynamicCategories = (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + products.map { it.category.trim() })
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
@@ -229,17 +227,16 @@ class CatalogViewModel(
         viewModelScope.launch {
             val currentForm = _formState.value
             if (!currentForm.isFormValid) {
-                logger.d(TAG, "Invalid form")
+                logger.d(TAG, "Trying to save invalid form... skipping")
                 return@launch
             }
 
             _formState.update { it.copy(isSaving = true) }
             try {
                 val netWeight = currentForm.netWeight.replace(',', '.').toDoubleOrNull() ?: 1.0
-                val unit = runCatching { MeasureUnit.valueOf(currentForm.measureUnit) }
-                    .getOrDefault(MeasureUnit.UNIT)
+                val unit = currentForm.measureUnit
+                val category = currentForm.category.ifBlank { CoreConstants.Product.DEFAULT_CATEGORY }
 
-                val category = currentForm.category.ifBlank { "Outros" }
                 val newProduct = CatalogProduct(
                     id = Uuid.random().toString(),
                     name = currentForm.name.trim(),
@@ -254,12 +251,12 @@ class CatalogViewModel(
                 )
 
                 catalogRepository.insertProduct(newProduct, currentForm.imageBytes)
-                _selectedCategory.value = null
+                _selectedCategory.value = currentForm.category
                 _searchQuery.value = ""
+
                 closeAddProductSheet()
-                notificationManager.showSuccess(UiText.Resource(Res.string.catalog_product_saved_success))
             } catch (e: Exception) {
-                logger.e(TAG, "Error while saving the product: ${e.message}", e)
+                logger.e(TAG, "Error while saving product: ${e.message}", e)
                 _formState.update { it.copy(isSaving = false) }
             }
         }

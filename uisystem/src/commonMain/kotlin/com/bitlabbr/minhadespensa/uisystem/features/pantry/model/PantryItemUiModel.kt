@@ -24,11 +24,12 @@
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
 
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 
 data class PantryItemUiModel(
     val id: String,
     val name: String,
-    val category: String = "Outros",
+    val category: String = CoreConstants.Product.DEFAULT_CATEGORY,
     val brand: String? = null,
     val quantity: Double,
     val measureUnit: MeasureUnit = MeasureUnit.UNIT,
