@@ -33,7 +33,7 @@ data class PantryItemUiModel(
     val brand: String? = null,
     val quantity: Double,
     val measureUnit: MeasureUnit = MeasureUnit.UNIT,
-    val netWeight: Long = 0,
+    val netWeight: Double = CoreConstants.Product.DEFAULT_NET_WEIGHT,
     val expirationDate: Long? = null,
     val isExpired: Boolean = false
 )

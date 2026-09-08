@@ -24,16 +24,18 @@
 package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
+import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.RegisterProductBottomSheet
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantrySubFlow
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemDetailsSheet
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.categories.PantryCategoriesWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.search.PantrySearchBarWidget
@@ -46,35 +48,58 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun PantryScreen(
     bottomPadding: Dp = 0.dp,
-    onItemClick: (PantryItemUiModel) -> Unit = {},
-    viewModel: PantryViewModel = koinViewModel()
+    viewModel: PantryViewModel = koinViewModel(),
 ) {
+    val uiState by viewModel.uiState.collectAsState()
 
-    val snackbarHostState = remember { SnackbarHostState() }
     MainScreenScaffold(
         bottomPadding = bottomPadding,
         topBar = {
             MinhaDespensaTopBar()
         },
-        snackbarHost = {
-            SnackbarHost(hostState = snackbarHostState)
-        },
     ) {
         PrimaryContainerHeader(
             textTop = stringResource(Res.string.maine),
-            textBottom = stringResource(Res.string.Pantry)
+            textBottom = stringResource(Res.string.Pantry),
         ) {}
-        PantrySearchBarWidget(
-            onItemSelected = { item ->
-                viewModel.onSearchResultSelected(item)
-                onItemClick(item)
-            },
-        )
-        PantryCategoriesWidget(
-            onProductClick = onItemClick,
-        )
-        AddPantryItemWidget(
-            isCallToAction = true
-        )
+
+        PantrySearchBarWidget(viewModel = viewModel)
+        PantryCategoriesWidget(viewModel = viewModel)
+        AddPantryItemWidget(viewModel = viewModel)
+    }
+
+    when (val subFlow = uiState.activeSubFlow) {
+        is PantrySubFlow.BarcodeScanner -> {
+            BarcodeScannerModal(
+                onBarcodeScanned = { ean ->
+                    viewModel.onBarcodeScanned(ean)
+                },
+                onDismissRequest = viewModel::onDismissSubFlow,
+            )
+        }
+
+        is PantrySubFlow.CreateCatalogProduct -> {
+            RegisterProductBottomSheet(
+                isOpen = true,
+                prefilledEan = subFlow.initialEan,
+                availableCategories = uiState.filterState.availableCategories,
+                onProductCreated = { createdProduct ->
+                    viewModel.onProductCreatedFromCatalog(createdProduct)
+                },
+                onDismiss = viewModel::onDismissSubFlow,
+            )
+        }
+
+        is PantrySubFlow.AddItemDetails -> {
+            AddPantryItemDetailsSheet(
+                product = subFlow.product,
+                onConfirm = { productId, qty, expirationDate, batch ->
+                    viewModel.onConfirmAddPantryItem(productId, qty, expirationDate, batch)
+                },
+                onDismiss = viewModel::onDismissSubFlow,
+            )
+        }
+
+        null -> Unit
     }
 }

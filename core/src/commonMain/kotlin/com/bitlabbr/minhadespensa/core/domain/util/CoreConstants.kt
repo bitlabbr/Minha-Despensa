@@ -34,7 +34,7 @@ object CoreConstants {
         const val BRAND_MAX_LENGTH = 30
         const val CATEGORY_MAX_LENGTH = 30
         const val NOTES_MAX_LENGTH = 255
-        val EAN_VALID_LENGTHS = setOf(8, 13, 14)
+        val EAN_VALID_LENGTHS = setOf(8, 12, 13, 14)
         const val DEFAULT_NET_WEIGHT = 1.0
         const val WEIGHT_MAX_LENGTH = 8
     }

@@ -110,5 +110,7 @@
     <string name="action_search_catalog">Clique para digitar</string>
     <string name="register_bottom_sheet_name_is_required">Nome é obrigatório</string>
     <string name="register_bottom_sheet_invalid_quantity">Peso/Qtd inválido</string>
+    <string name="pantry_categories_empty_message">Sua despensa está vazia/nAdicione produtos no botão abaixo!</string>
+    <string name="pantry_categories_not_found">Nenhum item nesta categoria da despensa.</string>
 
 </resources>

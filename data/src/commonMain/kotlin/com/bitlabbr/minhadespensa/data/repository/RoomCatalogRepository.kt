@@ -49,15 +49,7 @@ class RoomCatalogRepository(
     private val productDao = db.catalogDao()
     private val mediaDao = db.productMediaDao()
 
-    private val defaultCategories = listOf(
-        "Grãos",
-        "Proteínas",
-        "Bebidas",
-        "Limpeza",
-        "Lanches",
-        "Hortifrúti",
-        CoreConstants.Product.DEFAULT_CATEGORY,
-    )
+    private val defaultCategories = CoreConstants.CatalogCategories.DEFAULT_CATEGORIES
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
         return productDao.findByEan(ean)

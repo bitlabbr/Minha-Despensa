@@ -25,22 +25,22 @@ package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bitlabbr.minhadespensa.core.domain.domain.usecase.CheckEanStatusUseCase
-import com.bitlabbr.minhadespensa.core.domain.domain.usecase.EanStatus
-import com.bitlabbr.minhadespensa.core.domain.model.CatalogCategories
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
+import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
-import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.toUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryFilterSubState
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryListSubState
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryUiState
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.PantryItemFormState
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantrySubFlow
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import kotlinx.coroutines.CoroutineScope
@@ -51,13 +51,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class PantryViewModel(
     private val pantryRepository: PantryRepository,
     private val catalogRepository: CatalogRepository,
     private val checkEanStatusUseCase: CheckEanStatusUseCase,
+    private val addPantryItemUseCase: AddPantryItemUseCase,
     private val logger: AppLogger,
     private val notificationManager: AppNotificationManager,
 ) : ViewModel() {
@@ -68,35 +67,25 @@ class PantryViewModel(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     private val _selectedCategory = MutableStateFlow<String?>(null)
+    private val _activeSubFlow = MutableStateFlow<PantrySubFlow?>(null)
     private val pantryIdToProductIdMap = mutableMapOf<String, String>()
-
-    private val _itemFormState = MutableStateFlow(PantryItemFormState())
-    val itemFormState: StateFlow<PantryItemFormState> = _itemFormState.asStateFlow()
-
-    private val _isItemSheetOpen = MutableStateFlow(false)
-    val isItemSheetOpen: StateFlow<Boolean> = _isItemSheetOpen.asStateFlow()
-
-    private var startSheetWithScanner = false
-    val isStartWithScanner: Boolean get() = startSheetWithScanner
-
-    // Canal reativo para busca de EAN
-    private val _eanFlow = MutableStateFlow("")
 
     val uiState: StateFlow<PantryUiState> = combine(
         pantryRepository.getAllActivePantryItemsWithCategory(),
         pantryRepository.getExpiringPantryItems(EXPIRATION_THRESHOLD_DAYS),
         _searchQuery,
         _selectedCategory,
-    ) { allActiveWithCategory, expiringItems, searchQuery, selectedCategory ->
+        _activeSubFlow,
+    ) { allItems, expiringItems, query, selectedCategory, subFlow ->
 
-        allActiveWithCategory.forEach { item ->
+        allItems.forEach { item ->
             pantryIdToProductIdMap[item.pantryItem.id] = item.pantryItem.productId
         }
 
-        val allUiItems = allActiveWithCategory.map { it.toPantryItemUiModel() }
+        val allUiItems = allItems.map { it.toPantryItemUiModel() }
         val isPantryEmpty = allUiItems.isEmpty()
 
-        val dynamicCategories = (CatalogCategories.DEFAULT_CATEGORIES + allUiItems.map { it.category.trim() })
+        val dynamicCategories = (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allUiItems.map { it.category.trim() })
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
@@ -104,17 +93,16 @@ class PantryViewModel(
         val filteredProducts = allUiItems.filter { item ->
             val matchesCategory = selectedCategory == null ||
                     item.category.equals(selectedCategory, ignoreCase = true)
-
-            val matchesQuery = searchQuery.isBlank() ||
-                    item.name.contains(searchQuery, ignoreCase = true)
+            val matchesQuery = query.isBlank() ||
+                    item.name.contains(query, ignoreCase = true)
 
             matchesCategory && matchesQuery
         }
 
-        val searchResults = if (searchQuery.isBlank()) {
+        val searchResults = if (query.isBlank()) {
             emptyList()
         } else {
-            allUiItems.filter { it.name.contains(searchQuery, ignoreCase = true) }
+            allUiItems.filter { it.name.contains(query, ignoreCase = true) }
         }
 
         PantryUiState(
@@ -131,6 +119,7 @@ class PantryViewModel(
             allActivePantryItems = allUiItems,
             expiringPantryItems = expiringItems.map { it.toPantryItemUiModel() },
             searchResults = searchResults,
+            activeSubFlow = subFlow,
             isLoading = false,
             error = null,
         )
@@ -143,39 +132,6 @@ class PantryViewModel(
         ),
     )
 
-    init {
-        // Observador reativo de EAN com debounce centralizado
-        viewModelScope.observeEanChanges(
-            eanFlow = _eanFlow,
-            checkEanUseCase = checkEanStatusUseCase,
-            onChecking = {
-                _itemFormState.update { it.copy(isSearchingCatalog = true, productNotFound = false) }
-            },
-            onResult = { status ->
-                _itemFormState.update { state ->
-                    when (status) {
-                        is EanStatus.Found -> state.copy(
-                            selectedProduct = status.product.toUiModel(),
-                            productNotFound = false,
-                            isSearchingCatalog = false,
-                        )
-                        is EanStatus.NotFound -> state.copy(
-                            selectedProduct = null,
-                            productNotFound = true,
-                            isSearchingCatalog = false,
-                        )
-                        is EanStatus.InvalidFormat,
-                        is EanStatus.Empty -> state.copy(
-                            selectedProduct = null,
-                            productNotFound = false,
-                            isSearchingCatalog = false,
-                        )
-                    }
-                }
-            },
-        )
-    }
-
     fun onSearchQueryChanged(newQuery: String) {
         _searchQuery.value = newQuery
     }
@@ -186,82 +142,72 @@ class PantryViewModel(
 
     fun onSearchResultSelected(item: PantryItemUiModel) {
         _searchQuery.value = item.name
-        getPantryItemDetails(item.id)
     }
 
     fun getProductImage(id: String): Flow<ByteArray?> {
         val targetProductId = pantryIdToProductIdMap[id] ?: id
         return catalogRepository.getProductImage(targetProductId)
             .catch { error ->
-                logger.e(TAG, "Error while loading the product image $id: ${error.message}", error)
+                logger.e(TAG, "Error while loading image for id:$id: ${error.message}", error)
                 emit(null)
             }
     }
 
-    fun getPantryItemDetails(pantryItemId: String) {
+    // --- MÁQUINA DE ESTADOS DOS SUBFLUXOS ---
+
+    fun onStartScanFlow() {
+        _activeSubFlow.value = PantrySubFlow.BarcodeScanner
+    }
+
+    fun onStartManualRegisterFlow(ean: String? = null) {
+        _activeSubFlow.value = PantrySubFlow.CreateCatalogProduct(initialEan = ean)
+    }
+
+    fun onDismissSubFlow() {
+        _activeSubFlow.value = null
+    }
+
+    fun onBarcodeScanned(ean: String) {
         viewModelScope.launch {
-            pantryRepository.getPantryItemWithCategoryByID(pantryItemId)
-                .map { it?.toPantryItemUiModel() }
-                .collect { item ->
-                    // Tratamento do item selecionado
+            when (val status = checkEanStatusUseCase(ean)) {
+                is EanStatus.Found -> {
+                    // Produto existe: transiciona direto para configurar quantidade e validade
+                    _activeSubFlow.value = PantrySubFlow.AddItemDetails(status.product.toUiModel())
                 }
+                is EanStatus.NotFound, is EanStatus.InvalidFormat -> {
+                    // Produto não existe: abre o formulário de cadastro com o EAN lido
+                    _activeSubFlow.value = PantrySubFlow.CreateCatalogProduct(initialEan = ean)
+                }
+                EanStatus.Empty -> Unit
+            }
         }
     }
 
-    fun openAddPantryItemSheet(startWithScanner: Boolean = false) {
-        startSheetWithScanner = startWithScanner
-        _eanFlow.value = ""
-        _itemFormState.value = PantryItemFormState()
-        _isItemSheetOpen.value = true
+    fun onProductCreatedFromCatalog(product: CatalogProduct) {
+        // Produto recém-criado pelo cadastro: retoma o fluxo de despensa sem perder o foco
+        _activeSubFlow.value = PantrySubFlow.AddItemDetails(product.toUiModel())
     }
 
-    fun closeAddPantryItemSheet() {
-        _isItemSheetOpen.value = false
-        _eanFlow.value = ""
-        _itemFormState.value = PantryItemFormState()
-    }
-
-    fun onItemFormChange(updated: PantryItemFormState) {
-        _itemFormState.value = updated
-        if (updated.ean != _eanFlow.value) {
-            _eanFlow.value = updated.ean
-        }
-    }
-
-    fun onEanScannedOrTyped(ean: String) {
-        _itemFormState.update { it.copy(ean = ean) }
-        _eanFlow.value = ean
-    }
-
-    @OptIn(ExperimentalUuidApi::class)
-    fun savePantryItem() {
+    fun onConfirmAddPantryItem(
+        productId: String,
+        quantity: Double,
+        expirationDate: Long?,
+        batchNumber: String?,
+    ) {
         viewModelScope.launch {
-            val form = _itemFormState.value
-            val product = form.selectedProduct ?: return@launch
-            if (!form.isFormValid) return@launch
+            val result = addPantryItemUseCase(
+                productId = productId,
+                quantity = quantity,
+                expirationDate = expirationDate,
+                batchNumber = batchNumber,
+            )
 
-            _itemFormState.update { it.copy(isSaving = true) }
-            try {
-                val qty = form.quantity.replace(',', '.').toDoubleOrNull() ?: 1.0
-                val now = getCurrentTime()
-
-                val pantryItem = PantryItem(
-                    id = Uuid.random().toString(),
-                    productId = product.id,
-                    quantity = qty,
-                    expirationDate = form.expirationDate,
-                    batchNumber = form.batchNumber.trim().takeIf { it.isNotBlank() },
-                    updatedAt = now,
-                    isDeleted = false,
-                )
-
-                pantryRepository.insertPantryItem(pantryItem)
-                closeAddPantryItemSheet()
-
-                notificationManager.showSuccess(UiText.DynamicString("${product.name} adicionado à despensa!"))
-            } catch (e: Exception) {
-                logger.e(TAG, "Falha ao adicionar item na despensa: ${e.message}", e)
-                _itemFormState.update { it.copy(isSaving = false) }
+            result.onSuccess {
+                _activeSubFlow.value = null
+                notificationManager.showSuccess(UiText.DynamicString("Item adicionado à despensa com sucesso!"))
+            }.onFailure { error ->
+                logger.e(TAG, "Falha ao adicionar item: ${error.message}", error)
+                notificationManager.showError(UiText.DynamicString("Erro ao salvar na despensa: ${error.message}"))
             }
         }
     }
@@ -276,8 +222,8 @@ class PantryViewModel(
             category = this.category,
             brand = null,
             quantity = this.pantryItem.quantity,
-            measureUnit = MeasureUnit.UNIT,
-            netWeight = 0,
+            measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNITY,
+            netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
             expirationDate = this.pantryItem.expirationDate,
             isExpired = isExpired,
         )
@@ -287,20 +233,3 @@ class PantryViewModel(
         private const val EXPIRATION_THRESHOLD_DAYS = 7
     }
 }
-
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
-fun CoroutineScope.observeEanChanges(
-    eanFlow: Flow<String>,
-    checkEanUseCase: CheckEanStatusUseCase,
-    onChecking: () -> Unit,
-    onResult: (EanStatus) -> Unit,
-): Job = eanFlow
-    .map { it.trim() }
-    .distinctUntilChanged()
-    .onEach { if (it.isNotBlank()) onChecking() }
-    .debounce(350.milliseconds)
-    .flatMapLatest { ean ->
-        flow { emit(checkEanUseCase(ean)) }
-    }
-    .onEach { status -> onResult(status) }
-    .launchIn(this)

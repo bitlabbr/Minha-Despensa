@@ -23,8 +23,6 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
 
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.PantrySubFlow
-
 data class PantryFilterSubState(
     val availableCategories: List<String> = emptyList(),
     val selectedCategory: String? = null,

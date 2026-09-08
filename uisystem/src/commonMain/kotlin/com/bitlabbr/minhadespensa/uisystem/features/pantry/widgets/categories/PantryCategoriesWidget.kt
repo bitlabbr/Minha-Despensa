@@ -30,6 +30,10 @@ import androidx.compose.ui.Modifier
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.CategorizedContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.pantry_categories_empty_message
+import minhadespensa.uisystem.generated.resources.pantry_categories_not_found
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -48,8 +52,8 @@ fun PantryCategoriesWidget(
         isEmpty = uiState.listState.products.isEmpty(),
         isRootEmpty = uiState.listState.isCatalogEmpty,
         error = uiState.listState.error,
-        emptyMessage = "Sua despensa está vazia.\nAdicione produtos no botão abaixo!",
-        notFoundMessage = "Nenhum item nesta categoria da despensa.",
+        emptyMessage = stringResource(Res.string.pantry_categories_empty_message),
+        notFoundMessage = stringResource(Res.string.pantry_categories_not_found),
         modifier = modifier,
     ) {
         PantryProductGridContent(
