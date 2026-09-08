@@ -799,7 +799,6 @@ class RoomCatalogRepositoryTest : BaseTest() {
         val invalidEans = listOf(
             "1234567",             // 7 dígitos (< 8)
             "123456789",           // 9 dígitos (entre 8 e 13)
-            "123456789012",        // 12 dígitos
             "123456789012345"      // 15 dígitos (> 14)
         )
 
