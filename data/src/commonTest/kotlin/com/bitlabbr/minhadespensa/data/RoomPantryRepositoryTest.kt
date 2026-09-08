@@ -29,6 +29,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
@@ -36,19 +37,9 @@ import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
-import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
+import kotlin.test.*
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -427,7 +418,10 @@ class RoomPantryRepositoryTest : BaseTest() {
         val updated = pantryRepository.getPantryItemsByID(item.id).first()
         assertNotNull(updated)
         assertEquals(0.0, updated.quantity, "the pantry should be zeroed immediately")
-        assertFalse(updated.isDeleted, "The item must remain active with a quantity of zero to receive a replenishment notification.")
+        assertFalse(
+            updated.isDeleted,
+            "The item must remain active with a quantity of zero to receive a replenishment notification."
+        )
     }
 
     @Test
@@ -537,8 +531,16 @@ class RoomPantryRepositoryTest : BaseTest() {
         }
 
         // Rollback verificado: o arroz não pode ter sido descontado
-        assertEquals(5.0, pantryRepository.getPantryItemsByID(itemRice.id).first()?.quantity, "The rice must undergo rollback.")
-        assertEquals(0.2, pantryRepository.getPantryItemsByID(itemOil.id).first()?.quantity, "The oil should remain unchanged.")
+        assertEquals(
+            5.0,
+            pantryRepository.getPantryItemsByID(itemRice.id).first()?.quantity,
+            "The rice must undergo rollback."
+        )
+        assertEquals(
+            0.2,
+            pantryRepository.getPantryItemsByID(itemOil.id).first()?.quantity,
+            "The oil should remain unchanged."
+        )
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -564,7 +566,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         name: String = "Produto Teste",
         isDeleted: Boolean = false,
         brand: String = "",
-        category: String = "Outros",
+        category: String = CoreConstants.Product.DEFAULT_CATEGORY,
         updatedAt: Long = getCurrentTime()
     ) = CatalogProduct(
         id = id,

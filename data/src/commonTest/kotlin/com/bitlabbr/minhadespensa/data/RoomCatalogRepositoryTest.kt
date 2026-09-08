@@ -992,7 +992,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         ean: String? = null,
         updatedAt: Long = getCurrentTime(),
         isDeleted: Boolean = false,
-        category: String = "Outros",
+        category: String = CoreConstants.Product.DEFAULT_CATEGORY,
         brand: String = ""
     ) = CatalogProduct(
         id = id,

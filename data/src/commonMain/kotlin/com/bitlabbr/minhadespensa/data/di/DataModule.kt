@@ -28,6 +28,9 @@ import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
@@ -69,4 +72,8 @@ val dataModule = module {
     single<RoomShoppingListRepository> {
         RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
     }
+
+    factory { CheckEanStatusUseCase(catalogRepository = get()) }
+    factory { SaveCatalogProductUseCase(catalogRepository = get()) }
+    factory { AddPantryItemUseCase(pantryRepository = get()) }
 }

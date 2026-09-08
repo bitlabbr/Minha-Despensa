@@ -56,7 +56,7 @@ class RoomCatalogRepository(
         "Limpeza",
         "Lanches",
         "Hortifrúti",
-        "Outros",
+        CoreConstants.Product.DEFAULT_CATEGORY,
     )
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
