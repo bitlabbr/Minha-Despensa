@@ -23,42 +23,64 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add
 
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.CallToActionGlassCard
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.action_scan_barcode
+import minhadespensa.uisystem.generated.resources.action_search_catalog
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun AddPantryItemWidget(
     modifier: Modifier = Modifier,
     viewModel: PantryViewModel = koinViewModel(),
-    isCallToAction: Boolean = false,
-    onNavigateToCatalogRegister: (String) -> Unit = {},
 ) {
-    val isItemSheetOpen by viewModel.isItemSheetOpen.collectAsState()
-    val itemFormState by viewModel.itemFormState.collectAsState()
+    AddPantryItemContent(
+        onClickScan = viewModel::onStartScanFlow,
+        onClickManual = { viewModel.onStartManualRegisterFlow() },
+        modifier = modifier,
+    )
+}
 
-    Box(modifier = modifier) {
-        AddPantryItemWidgetContent(
-            onClick = { viewModel.openAddPantryItemSheet(startWithScanner = false) },
-            isCallToAction = isCallToAction,
-        )
+@Composable
+fun AddPantryItemContent(
+    onClickScan: () -> Unit,
+    onClickManual: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val dimens = MinhaDespensaTheme.dimens
 
-        AddPantryItemSheet(
-            isOpen = isItemSheetOpen,
-            formState = itemFormState,
-            initialOpenScanner = viewModel.isStartWithScanner,
-            onFormChange = viewModel::onItemFormChange,
-            onSearchEan = viewModel::onEanScannedOrTyped,
-            onSave = viewModel::savePantryItem,
-            onDismiss = viewModel::closeAddPantryItemSheet,
-            onNavigateToCatalogRegister = { ean ->
-                viewModel.closeAddPantryItemSheet()
-                onNavigateToCatalogRegister(ean)
-            },
-        )
+    CallToActionGlassCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = dimens.paddingSmall),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+        ) {
+
+            MinhaDespensaPrimaryButton(
+                text = stringResource(Res.string.action_scan_barcode),
+                modifier = Modifier.weight(1.4f),
+                onClick = onClickScan,
+            )
+
+            MinhaDespensaSecondaryButton(
+                text = stringResource(Res.string.action_search_catalog),
+                modifier = Modifier.weight(1f),
+                onClick = onClickManual,
+            )
+        }
     }
 }

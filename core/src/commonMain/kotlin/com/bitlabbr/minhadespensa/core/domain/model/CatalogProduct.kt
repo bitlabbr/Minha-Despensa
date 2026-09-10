@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.core.domain.model
 
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -30,10 +31,10 @@ data class CatalogProduct(
     val id: String,
     val ean: String? = null,
     val name: String,
-    val category: String = "Outros",
+    val category: String = CoreConstants.Product.DEFAULT_CATEGORY,
     val brand: String? = null,
-    val measureUnit: MeasureUnit,
-    val netWeight: Double,
+    val measureUnit: MeasureUnit = MeasureUnit.UNIT,
+    val netWeight: Double = CoreConstants.Product.DEFAULT_NET_WEIGHT,
     val thumbnailUrl: String? = null,
     val updatedAt: Long,
     val isDeleted: Boolean = false,

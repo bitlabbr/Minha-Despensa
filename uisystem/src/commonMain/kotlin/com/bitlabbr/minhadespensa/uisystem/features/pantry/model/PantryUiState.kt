@@ -23,8 +23,6 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
 
-import com.bitlabbr.minhadespensa.uisystem.model.UiText
-
 data class PantryFilterSubState(
     val availableCategories: List<String> = emptyList(),
     val selectedCategory: String? = null,
@@ -44,7 +42,7 @@ data class PantryUiState(
     val expiringPantryItems: List<PantryItemUiModel> = emptyList(),
     val searchResults: List<PantryItemUiModel> = emptyList(),
     val selectedPantryItem: PantryItemUiModel? = null,
+    val activeSubFlow: PantrySubFlow? = null,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val userMessage: UiText? = null,
 )

@@ -27,6 +27,7 @@ import androidx.room.execSQL
 import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.*
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
@@ -584,7 +585,7 @@ class DataConsistencyTest : BaseTest() {
         id = id,
         name = name,
         brand = "P0",
-        category = "Outros",
+        category = CoreConstants.Product.DEFAULT_CATEGORY,
         measureUnit = MeasureUnit.UNIT,
         netWeight = 1.0,
         updatedAt = updatedAt,
@@ -713,7 +714,7 @@ private fun createDummyCatalogProduct(
     isDeleted: Boolean = false,
     measureUnit: MeasureUnit = MeasureUnit.UNIT,
     manuallyAdded: Boolean = true,
-    netWeight: Double = 1.0,
+    netWeight: Double = CoreConstants.Product.DEFAULT_NET_WEIGHT,
     thumbnailUrl: String? = null
 ) = CatalogProduct(
     id = id,

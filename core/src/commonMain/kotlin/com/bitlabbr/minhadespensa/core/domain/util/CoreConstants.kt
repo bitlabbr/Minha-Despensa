@@ -23,30 +23,56 @@
 
 package com.bitlabbr.minhadespensa.core.domain.util
 
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+
 object CoreConstants {
 
     object Product {
+        val DEFAULT_MEASURE_UNITY = MeasureUnit.UNIT
+        const val DEFAULT_CATEGORY = "Outros"
         const val NAME_MAX_LENGTH = 30
         const val BRAND_MAX_LENGTH = 30
         const val CATEGORY_MAX_LENGTH = 30
         const val NOTES_MAX_LENGTH = 255
-        const val EAN_MAX_LENGTH = 14
-        val EAN_VALID_LENGTHS = setOf(8, 13, 14)
+        val EAN_VALID_LENGTHS = setOf(8, 12, 13, 14)
         const val DEFAULT_NET_WEIGHT = 1.0
         const val WEIGHT_MAX_LENGTH = 8
     }
 
     object Media {
         const val MAX_IMAGE_SIZE_KB = 100
-        const val MAX_IMAGE_SIZE_BYTES = 100 * 1024
-        const val TARGET_MAX_DIMENSION = 720
     }
 
     object ShoppingList {
-        const val NAME_MAX_LENGTH = 100
+        const val NAME_MAX_LENGTH = 30
     }
 
     object Pantry {
         const val EXPIRING_THRESHOLD_DAYS = 7
     }
+
+    object Validation {
+        const val ERROR_PRODUCT_CATEGORY_TOO_LONG = "A categoria ultrapassa o limite máximo de :"
+        const val ERROR_PRODUCT_ID_REQUIRED = "O ID do produto é obrigatório"
+        const val ERROR_PANTRY_QUANTITY_POSITIVE = "A quantidade adicionada deve ser maior que zero"
+        const val ERROR_PRODUCT_NAME_BLANK = "O nome do produto não pode ser vazio"
+        const val ERROR_PRODUCT_NAME_TOO_LONG = "O nome do produto excede o limite máximo de caracteres"
+        const val ERROR_PRODUCT_NET_WEIGHT_POSITIVE = "O peso ou quantidade líquida deve ser maior que zero"
+        const val ERROR_EAN_INVALID_FORMAT = "Código de barras inválido. Deve conter 8, 13 ou 14 dígitos numéricos"
+    }
+
+    object CatalogCategories {
+        val DEFAULT_CATEGORIES = listOf(
+            "Cereais e Grãos",
+            "Carnes e Proteínas",
+            "Laticínios e Ovos",
+            "Hortifrúti",
+            "Bebidas",
+            "Produtos de Limpeza",
+            "Higiene Pessoal",
+            "Temperos e Condimentos",
+            Product.DEFAULT_CATEGORY,
+        )
+    }
+
 }

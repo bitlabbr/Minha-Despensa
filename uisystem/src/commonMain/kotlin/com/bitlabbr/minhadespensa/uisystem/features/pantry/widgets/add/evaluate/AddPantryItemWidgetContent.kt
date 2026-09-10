@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add
+package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.evaluate
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background

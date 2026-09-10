@@ -23,7 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.di
 
-import com.bitlabbr.minhadespensa.core.domain.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
@@ -45,8 +45,9 @@ val uiModule = module {
             pantryRepository = get(),
             catalogRepository = get(),
             checkEanStatusUseCase = get(),
+            addPantryItemUseCase = get(),
             logger = get(named(DiQualifiers.APP_LOGGER)),
-            notificationManager = get()
+            notificationManager = get(),
         )
     }
 

@@ -82,7 +82,7 @@ fun RegisterProductSheet(
     }
 
     val selectedMeasureUnit = remember(formState.measureUnit) {
-        MeasureUnit.entries.find { it.name == formState.measureUnit }
+        MeasureUnit.entries.find { it.name == formState.measureUnit.name }
     }
 
     MinhaDespensaBottomSheet(
@@ -155,7 +155,7 @@ fun RegisterProductSheet(
                                 isRequired = true,
                                 errorMessage = formState.measureUnitError?.asString(),
                                 onSelected = { unit ->
-                                    onFormChange(formState.copy(measureUnit = unit.name, measureUnitError = null))
+                                    onFormChange(formState.copy(measureUnit = unit, measureUnitError = null))
                                 },
                             )
                         }
