@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ShoppingItemDao {
-    @Query("SELECT * FROM shopping_items WHERE isDeleted = 0")
+    @Query("SELECT * FROM shopping_items WHERE is_deleted = 0")
     fun getActiveItems(): Flow<List<ShoppingItemEntity>>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
@@ -48,17 +48,17 @@ interface ShoppingItemDao {
     @Query(
         """
     UPDATE shopping_items 
-    SET productId = :productId, quantity = :quantity, priceAtTime = :priceAtTime, 
-        isChecked = :isChecked, updatedAt = :updatedAt, isDeleted = :isDeleted
+    SET product_id = :productId, quantity = :quantity, price_at_time = :priceAtTime, 
+        is_checked = :isChecked, updated_at = :updatedAt, is_deleted = :isDeleted
     WHERE id = :id AND (
-        updatedAt < :updatedAt
-        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+        updated_at < :updatedAt
+        OR (updated_at = :updatedAt AND is_deleted = 0 AND :isDeleted = 1)
     )
 """
     )
     suspend fun updateItemIfNewer(
         id: String,
-        productId: String,
+        productId: String?,
         quantity: Double,
         priceAtTime: Long?,
         isChecked: Boolean,
@@ -66,15 +66,15 @@ interface ShoppingItemDao {
         isDeleted: Boolean
     ): Int
 
-    @Query("UPDATE shopping_items SET isChecked = :checked, updatedAt = :now WHERE id = :id")
+    @Query("UPDATE shopping_items SET is_checked = :checked, updated_at = :now WHERE id = :id")
     suspend fun updateCheckStatus(id: String, checked: Boolean, now: Long)
 
-    @Query("UPDATE shopping_items SET isDeleted = 1, updatedAt = :now WHERE updatedAt <= :now")
+    @Query("UPDATE shopping_items SET is_deleted = 1, updated_at = :now WHERE updated_at <= :now")
     suspend fun deleteAllLogical(now: Long)
 
-    @Query("UPDATE shopping_items SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id AND updatedAt <= :updatedAt")
+    @Query("UPDATE shopping_items SET is_deleted = 1, updated_at = :updatedAt WHERE id = :id AND updated_at <= :updatedAt")
     suspend fun markAsDeleted(id: String, updatedAt: Long)
 
-    @Query("SELECT * FROM shopping_items WHERE isChecked = 1 AND isDeleted = 0")
+    @Query("SELECT * FROM shopping_items WHERE is_checked = 1 AND is_deleted = 0")
     fun getCheckedItemsSync(): Flow<List<ShoppingItemEntity>>
 }

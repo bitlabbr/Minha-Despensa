@@ -32,7 +32,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ShoppingListDao {
     @Transaction
-    @Query("SELECT * FROM shopping_lists WHERE isDeleted = 0 ORDER BY updatedAt DESC")
+    @Query("SELECT * FROM shopping_lists WHERE is_deleted = 0 ORDER BY updated_at DESC")
     fun getAllActiveShoppingLists(): Flow<List<ShoppingListWithItems>>
 
     @Transaction
@@ -51,10 +51,10 @@ interface ShoppingListDao {
     @Query(
         """
     UPDATE shopping_lists 
-    SET name = :name, budgetInCents = :budgetInCents, updatedAt = :updatedAt, isDeleted = :isDeleted
+    SET name = :name, budget_in_cents = :budgetInCents, updated_at = :updatedAt, is_deleted = :isDeleted
     WHERE id = :id AND (
-        updatedAt < :updatedAt
-        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+        updated_at < :updatedAt
+        OR (updated_at = :updatedAt AND is_deleted = 0 AND :isDeleted = 1)
     )
 """
     )
@@ -69,8 +69,8 @@ interface ShoppingListDao {
     @Query(
         """
         UPDATE shopping_lists 
-        SET isDeleted = 1, updatedAt = :updatedAt 
-        WHERE id = :listID AND updatedAt <= :updatedAt
+        SET is_deleted = 1, updated_at = :updatedAt 
+        WHERE id = :listID AND updated_at <= :updatedAt
     """
     )
     suspend fun markShoppingListAsDeleted(listID: String, updatedAt: Long)
@@ -78,6 +78,6 @@ interface ShoppingListDao {
     @Query("DELETE FROM shopping_lists WHERE id = :listID")
     suspend fun deleteShoppingListById(listID: String)
 
-    @Query("UPDATE shopping_lists SET updatedAt = :now WHERE id = :listId")
+    @Query("UPDATE shopping_lists SET updated_at = :now WHERE id = :listId")
     suspend fun updateTimestamp(listId: String, now: Long)
 }

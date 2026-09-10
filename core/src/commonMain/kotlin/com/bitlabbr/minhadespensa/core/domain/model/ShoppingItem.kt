@@ -28,15 +28,25 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class ShoppingItem(
     val id: String,
-    val productId: String,
-    val quantity: Double,
-    val listID: String,
+    val listId: String,
+    val productId: String? = null,
+    val rawText: String? = null,
+    val quantity: Double = 1.0,
     val priceAtTime: Long? = null,
     val isChecked: Boolean = false,
     val updatedAt: Long,
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
 ) {
     override fun toString(): String {
-        return "ShoppingItem(id='$id', productId='$productId', quantity=$quantity, priceAtTime=$priceAtTime, isChecked=$isChecked, updatedAt=$updatedAt, isDeleted=$isDeleted)"
+        return "ShoppingItem(" +
+                "id='$id', " +
+                "listId='$listId'," +
+                " productId=$productId," +
+                " rawText=$rawText, " +
+                "quantity=$quantity, " +
+                "priceAtTime=$priceAtTime, " +
+                "isChecked=$isChecked," +
+                " updatedAt=$updatedAt, " +
+                "isDeleted=$isDeleted)"
     }
 }

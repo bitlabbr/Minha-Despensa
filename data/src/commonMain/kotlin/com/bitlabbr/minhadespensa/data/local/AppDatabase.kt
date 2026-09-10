@@ -51,7 +51,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
         ProductMediaEntity::class,
         ShoppingListEntity::class
     ],
-    version = 3
+    version = 1
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)

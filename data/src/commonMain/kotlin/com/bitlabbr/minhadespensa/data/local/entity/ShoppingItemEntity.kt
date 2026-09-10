@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -30,33 +31,41 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "shopping_items",
-    indices = [
-        Index(value = ["productId"]),
-        Index(value = ["listId"])
-    ],
-
     foreignKeys = [
-        ForeignKey(
-            entity = CatalogProductEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["productId"],
-            onDelete = ForeignKey.CASCADE
-        ),
         ForeignKey(
             entity = ShoppingListEntity::class,
             parentColumns = ["id"],
-            childColumns = ["listId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ]
+            childColumns = ["list_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = CatalogProductEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["product_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
+    indices = [
+        Index("list_id"),
+        Index("product_id"),
+    ],
 )
 data class ShoppingItemEntity(
-    @PrimaryKey val id: String,
-    val productId: String,
+    @PrimaryKey
+    val id: String,
+    @ColumnInfo(name = "list_id")
     val listId: String,
+    @ColumnInfo(name = "product_id")
+    val productId: String?,
+    @ColumnInfo(name = "raw_text")
+    val rawText: String?,
     val quantity: Double,
+    @ColumnInfo(name = "price_at_time")
     val priceAtTime: Long?,
-    val isChecked: Boolean,
+    @ColumnInfo(name = "is_checked")
+    val isChecked: Boolean = false,
+    @ColumnInfo(name = "updated_at")
     val updatedAt: Long,
-    val isDeleted: Boolean
+    @ColumnInfo(name = "is_deleted")
+    val isDeleted: Boolean = false,
 )

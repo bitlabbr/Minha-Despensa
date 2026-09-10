@@ -23,16 +23,23 @@
 
 package com.bitlabbr.minhadespensa.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 
 @Entity(tableName = "shopping_lists")
 data class ShoppingListEntity(
     @PrimaryKey
     val id: String,
-    val updatedAt: Long,
     val name: String,
-    val budgetInCents: Long?,
-    val isDeleted: Boolean
+    @ColumnInfo(name = "list_type")
+    val type: String,
+    @ColumnInfo(name = "list_status")
+    val status: String,
+    @ColumnInfo(name = "budget_in_cents")
+    val budgedInCents: Long?,
+    @ColumnInfo(name = "updated_at")
+    val updatedAt: Long,
+    @ColumnInfo(name = "is_deleted")
+    val isDeleted: Boolean = false,
 )
