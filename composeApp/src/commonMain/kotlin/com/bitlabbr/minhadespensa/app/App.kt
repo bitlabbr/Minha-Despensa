@@ -28,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
 import com.bitlabbr.minhadespensa.uisystem.navigation.*
 import com.bitlabbr.minhadespensa.uisystem.screens.HomeScreen
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsScreen
 import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
@@ -57,6 +59,7 @@ private val bottomNavItems = listOf(
     BottomNavItem("Despensa", Icons.AutoMirrored.Rounded.List, PantryScreenRoute),
     //BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute),
     BottomNavItem("Catálogo", Icons.Default.ShoppingCart, ProductCatalogRoute),
+    BottomNavItem("Listas", Icons.Default.List, ShoppingListsRoute),
 )
 
 @Composable
@@ -145,6 +148,14 @@ fun App() {
                             onProductClick = { product ->
                                 // Ação ao selecionar um produto (ex: navegar para detalhes, edição ou selecionar para despensa)
                             },
+                        )
+                    }
+
+                    composable<ShoppingListsRoute> {
+                        ShoppingListsScreen(
+                            bottomPadding = innerPadding.calculateBottomPadding(),
+                            onNavigateToQuickList = {},
+                            onNavigateToListDetails = {}
                         )
                     }
                 }

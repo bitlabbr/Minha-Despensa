@@ -21,13 +21,5 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
+package com.bitlabbr.minhadespensa.uisystem.features.shopping
 
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
-
-sealed interface PantrySubFlow {
-    data object BarcodeScanner : PantrySubFlow
-    data class CreateCatalogProduct(val initialEan: String? = null) : PantrySubFlow
-    data class AddItemDetails(val product: CatalogProductUiModel) : PantrySubFlow
-    data object QuickList : PantrySubFlow
-}
