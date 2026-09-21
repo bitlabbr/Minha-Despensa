@@ -21,13 +21,25 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
+package com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.model
 
-import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
 
-sealed interface PantrySubFlow {
-    data object BarcodeScanner : PantrySubFlow
-    data class CreateCatalogProduct(val initialEan: String? = null) : PantrySubFlow
-    data class AddItemDetails(val product: CatalogProductUiModel) : PantrySubFlow
-    data object QuickList : PantrySubFlow
-}
+data class ShoppingListSummaryUiModel(
+    val id: String,
+    val name: String,
+    val type: ShoppingListType,
+    val status: ShoppingListStatus,
+    val totalItems: Int,
+    val checkedItems: Int,
+    val budgetInCents: Long?,
+    val formattedDate: String,
+)
+
+data class ShoppingListsUiState(
+    val isLoading: Boolean = true,
+    val activeLists: List<ShoppingListSummaryUiModel> = emptyList(),
+    val completedLists: List<ShoppingListSummaryUiModel> = emptyList(),
+    val error: String? = null,
+)

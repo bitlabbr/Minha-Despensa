@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "93c39db9f6bfd9ca44a72849e71e728c",
+    "identityHash": "17e25403964e989040ec80ae367addb5",
     "entities": [
       {
         "tableName": "catalog_products",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ean` TEXT, `name` TEXT NOT NULL, `brand` TEXT, `measureUnit` TEXT NOT NULL, `netWeight` INTEGER NOT NULL, `thumbnailUrl` TEXT, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `manuallyAdded` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `ean` TEXT, `name` TEXT NOT NULL, `category` TEXT NOT NULL, `brand` TEXT, `measureUnit` TEXT NOT NULL, `netWeight` REAL NOT NULL, `thumbnailUrl` TEXT, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, `manuallyAdded` INTEGER NOT NULL, `notes` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -26,6 +26,12 @@
             "notNull": true
           },
           {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
             "fieldPath": "brand",
             "columnName": "brand",
             "affinity": "TEXT"
@@ -39,7 +45,7 @@
           {
             "fieldPath": "netWeight",
             "columnName": "netWeight",
-            "affinity": "INTEGER",
+            "affinity": "REAL",
             "notNull": true
           },
           {
@@ -64,6 +70,11 @@
             "columnName": "manuallyAdded",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "notes",
+            "columnName": "notes",
+            "affinity": "TEXT"
           }
         ],
         "primaryKey": {
@@ -71,7 +82,18 @@
           "columnNames": [
             "id"
           ]
-        }
+        },
+        "indices": [
+          {
+            "name": "index_catalog_products_ean",
+            "unique": true,
+            "columnNames": [
+              "ean"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_catalog_products_ean` ON `${TABLE_NAME}` (`ean`)"
+          }
+        ]
       },
       {
         "tableName": "pantry_items",
@@ -222,7 +244,7 @@
       },
       {
         "tableName": "shopping_items",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `productId` TEXT NOT NULL, `quantity` REAL NOT NULL, `priceAtTime` INTEGER, `isChecked` INTEGER NOT NULL, `updatedAt` INTEGER NOT NULL, `isDeleted` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`productId`) REFERENCES `catalog_products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `list_id` TEXT NOT NULL, `product_id` TEXT, `raw_text` TEXT, `quantity` REAL NOT NULL, `price_at_time` INTEGER, `is_checked` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, `is_deleted` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`list_id`) REFERENCES `shopping_lists`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`product_id`) REFERENCES `catalog_products`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )",
         "fields": [
           {
             "fieldPath": "id",
@@ -231,10 +253,20 @@
             "notNull": true
           },
           {
-            "fieldPath": "productId",
-            "columnName": "productId",
+            "fieldPath": "listId",
+            "columnName": "list_id",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "rawText",
+            "columnName": "raw_text",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "quantity",
@@ -244,24 +276,24 @@
           },
           {
             "fieldPath": "priceAtTime",
-            "columnName": "priceAtTime",
+            "columnName": "price_at_time",
             "affinity": "INTEGER"
           },
           {
             "fieldPath": "isChecked",
-            "columnName": "isChecked",
+            "columnName": "is_checked",
             "affinity": "INTEGER",
             "notNull": true
           },
           {
             "fieldPath": "updatedAt",
-            "columnName": "updatedAt",
+            "columnName": "updated_at",
             "affinity": "INTEGER",
             "notNull": true
           },
           {
             "fieldPath": "isDeleted",
-            "columnName": "isDeleted",
+            "columnName": "is_deleted",
             "affinity": "INTEGER",
             "notNull": true
           }
@@ -274,13 +306,87 @@
         },
         "indices": [
           {
-            "name": "index_shopping_items_productId",
+            "name": "index_shopping_items_list_id",
+            "unique": false,
+            "columnNames": [
+              "list_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shopping_items_list_id` ON `${TABLE_NAME}` (`list_id`)"
+          },
+          {
+            "name": "index_shopping_items_product_id",
+            "unique": false,
+            "columnNames": [
+              "product_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_shopping_items_product_id` ON `${TABLE_NAME}` (`product_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "shopping_lists",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "list_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "catalog_products",
+            "onDelete": "SET NULL",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "product_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "product_media",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`productId` TEXT NOT NULL, `blob` BLOB NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`productId`), FOREIGN KEY(`productId`) REFERENCES `catalog_products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "productId",
+            "columnName": "productId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "blob",
+            "columnName": "blob",
+            "affinity": "BLOB",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "productId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_product_media_productId",
             "unique": false,
             "columnNames": [
               "productId"
             ],
             "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_shopping_items_productId` ON `${TABLE_NAME}` (`productId`)"
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_product_media_productId` ON `${TABLE_NAME}` (`productId`)"
           }
         ],
         "foreignKeys": [
@@ -296,11 +402,64 @@
             ]
           }
         ]
+      },
+      {
+        "tableName": "shopping_lists",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `list_type` TEXT NOT NULL, `list_status` TEXT NOT NULL, `budget_in_cents` INTEGER, `updated_at` INTEGER NOT NULL, `is_deleted` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "list_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "list_status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "budgedInCents",
+            "columnName": "budget_in_cents",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updated_at",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isDeleted",
+            "columnName": "is_deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '93c39db9f6bfd9ca44a72849e71e728c')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '17e25403964e989040ec80ae367addb5')"
     ]
   }
 }

@@ -39,4 +39,7 @@ data object SettingsRoute
 data object ProductCatalogRoute
 
 @Serializable
+data object ShoppingListsRoute
+
+@Serializable
 data class ProductDetailsRoute(val productId: String)
