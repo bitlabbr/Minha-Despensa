@@ -33,13 +33,4 @@ data class PriceEntry(
     val storeName: String? = null,
     val updatedAt: Long,
     val isDeleted: Boolean = false
-) {
-    override fun toString(): String {
-        return "PriceEntry(id='$id', " +
-                "productId='$productId', " +
-                "priceInCents=$priceInCents, " +
-                "storeName=$storeName, " +
-                "timestamp=$updatedAt, " +
-                "isDeleted=$isDeleted)"
-    }
-}
+) 

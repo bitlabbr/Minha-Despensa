@@ -24,6 +24,7 @@
 package com.bitlabbr.minhadespensa.core.domain.model
 
 import kotlinx.serialization.Serializable
+import kotlin.math.roundToLong
 
 @Serializable
 data class ShoppingItem(
@@ -37,16 +38,6 @@ data class ShoppingItem(
     val updatedAt: Long,
     val isDeleted: Boolean = false,
 ) {
-    override fun toString(): String {
-        return "ShoppingItem(" +
-                "id='$id', " +
-                "listId='$listId'," +
-                " productId=$productId," +
-                " rawText=$rawText, " +
-                "quantity=$quantity, " +
-                "priceAtTime=$priceAtTime, " +
-                "isChecked=$isChecked," +
-                " updatedAt=$updatedAt, " +
-                "isDeleted=$isDeleted)"
-    }
+    val subtotalInCents: Long?
+        get() = priceAtTime?.let { (quantity * it).roundToLong() }
 }
