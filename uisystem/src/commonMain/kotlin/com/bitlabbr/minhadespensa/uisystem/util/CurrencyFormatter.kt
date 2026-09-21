@@ -21,31 +21,15 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.navigation
+package com.bitlabbr.minhadespensa.uisystem.util
 
-import kotlinx.serialization.Serializable
+import kotlin.math.abs
 
-@Serializable
-data object HomeScreenRoute
-
-@Serializable
-data object PantryScreenRoute
-
-@Serializable
-data object SettingsRoute
-
-
-@Serializable
-data object ProductCatalogRoute
-
-@Serializable
-data object ShoppingListsRoute
-
-@Serializable
-data class ShoppingAssistantRoute(val listId: String? = null)
-
-@Serializable
-data object CreatePlannedListRoute
-
-@Serializable
-data class ProductDetailsRoute(val productId: String)
+fun Long.formatPrice(): String {
+    val isNegative = this < 0
+    val totalCents = (abs(this) * 100)
+    val reais = totalCents / 100
+    val centavos = (totalCents % 100).toString().padStart(2, '0')
+    val sign = if (isNegative) "-" else ""
+    return "$sign$reais,$centavos"
+}

@@ -34,6 +34,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -50,17 +53,21 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import org.koin.compose.viewmodel.koinViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingListsScreen(
     bottomPadding: Dp = 0.dp,
     onNavigateToQuickList: () -> Unit,
+    onNavigateToAssistant: (listId: String?) -> Unit,
     onNavigateToListDetails: (listId: String) -> Unit,
+    onNavigateToPlannedList: () -> Unit,
     viewModel: ShoppingListsViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
+    var showCreateListOptions by remember { mutableStateOf(false) }
 
     MainScreenScaffold(
         bottomPadding = bottomPadding,
@@ -71,6 +78,30 @@ fun ShoppingListsScreen(
             textBottom = "Listas de Compras",
             description = "Gerencie suas compras planejadas e anotações rápidas",
         )
+
+        Button(
+            onClick = { onNavigateToAssistant(null) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimens.paddingSmall),
+            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+        ) {
+            Icon(Icons.Rounded.ShoppingCart, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Ir ao Supermercado (Compra Direta)")
+        }
+
+        Button(
+            onClick = { showCreateListOptions = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = dimens.paddingSmall),
+            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
+        ) {
+            Icon(Icons.Rounded.ShoppingCart, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Nova Lista")
+        }
 
         when {
             uiState.isLoading -> {
@@ -126,9 +157,46 @@ fun ShoppingListsScreen(
                     uiState.activeLists.forEach { item ->
                         ShoppingListCard(
                             list = item,
-                            onClick = { onNavigateToListDetails(item.id) },
+                            onClick = { onNavigateToAssistant(item.id) },
                             onDelete = { viewModel.deleteList(item.id) },
                         )
+                    }
+                }
+            }
+        }
+        if (showCreateListOptions) {
+            ModalBottomSheet(onDismissRequest = { showCreateListOptions = false }) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("Qual tipo de lista deseja criar?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+                    OutlinedButton(
+                        onClick = {
+                            showCreateListOptions = false
+                            onNavigateToQuickList()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.EditNote, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Bloco de Notas (Texto Rápido)")
+                    }
+
+                    Button(
+                        onClick = {
+                            showCreateListOptions = false
+                            onNavigateToPlannedList()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(Icons.Rounded.ShoppingCart, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Lista Planejada (Do Catálogo)")
                     }
                 }
             }

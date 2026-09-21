@@ -21,31 +21,20 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.navigation
+package com.bitlabbr.minhadespensa.uisystem.features.shopping.planned.model
 
-import kotlinx.serialization.Serializable
+import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 
-@Serializable
-data object HomeScreenRoute
-
-@Serializable
-data object PantryScreenRoute
-
-@Serializable
-data object SettingsRoute
-
-
-@Serializable
-data object ProductCatalogRoute
-
-@Serializable
-data object ShoppingListsRoute
-
-@Serializable
-data class ShoppingAssistantRoute(val listId: String? = null)
-
-@Serializable
-data object CreatePlannedListRoute
-
-@Serializable
-data class ProductDetailsRoute(val productId: String)
+data class PlannedListUiState(
+    val title: String = "",
+    val budgetInput: String = "",
+    val searchQuery: String = "",
+    val availableProducts: List<CatalogProduct> = emptyList(),
+    val selectedQuantities: Map<String, Double> = emptyMap(),
+    val isSaving: Boolean = false,
+    val isSuccess: Boolean = false,
+    val errorMessage: String? = null,
+) {
+    val canSave: Boolean
+        get() = title.isNotBlank() && selectedQuantities.isNotEmpty() && !isSaving
+}

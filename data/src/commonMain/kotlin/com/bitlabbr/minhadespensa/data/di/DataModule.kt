@@ -29,10 +29,14 @@ import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.CreatePlannedShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.FinalizeShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
@@ -79,4 +83,8 @@ val dataModule = module {
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }
     factory { AddPantryItemUseCase(pantryRepository = get()) }
     factory { CreateQuickShoppingListUseCase(shoppingListRepository = get()) }
+    factory { StartShoppingSessionUseCase(shoppingListRepository = get()) }
+    factory { AddOrUpdateCartItemUseCase(shoppingListRepository = get()) }
+    factory { FinalizeShoppingSessionUseCase(shoppingListRepository = get()) }
+    factory { CreatePlannedShoppingListUseCase(shoppingListRepository = get()) }
 }
