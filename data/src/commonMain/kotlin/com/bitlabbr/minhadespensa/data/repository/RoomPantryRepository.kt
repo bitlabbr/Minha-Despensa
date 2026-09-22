@@ -42,12 +42,11 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class RoomPantryRepository(
-    val db: AppDatabase,
+    private val db: AppDatabase,
     private val logger: AppLogger
 ) : PantryRepository {
-    private val TAG = "RoomPantryRepository"
 
-    val dao = db.pantryDao()
+    private val dao = db.pantryDao()
 
     override fun getAllActivePantryItems(): Flow<List<PantryItem>> {
         logger.d(TAG, "getAllActivePantryItems")
@@ -199,6 +198,7 @@ class RoomPantryRepository(
     }
 
     private companion object {
+        const val TAG = "RoomPantryRepository"
         const val MILLIS_PER_DAY = 86_400_000L
     }
 }

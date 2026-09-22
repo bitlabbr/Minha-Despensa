@@ -39,9 +39,8 @@ class RoomPriceRepository(
     private val db: AppDatabase,
     private val logger: AppLogger
 ) : PriceRepository {
-    private val TAG = "RoomPriceRepository"
 
-    val dao = db.priceDao()
+    private val dao = db.priceDao()
 
     override fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntry>> {
         logger.d(TAG, "getPriceHistoryByProductId: productId: $productId")
@@ -110,5 +109,9 @@ class RoomPriceRepository(
         priceEntry.storeName?.let {
             require(it.isNotBlank()) { "The store name should not be empty" }
         }
+    }
+
+    private companion object {
+        const val TAG = "RoomPriceRepository"
     }
 }

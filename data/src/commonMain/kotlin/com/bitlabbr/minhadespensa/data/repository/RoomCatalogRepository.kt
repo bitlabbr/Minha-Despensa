@@ -29,7 +29,6 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
-import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
@@ -45,7 +44,6 @@ class RoomCatalogRepository(
     private val db: AppDatabase,
     private val logger: AppLogger
 ) : CatalogRepository {
-    private val TAG = "RoomCatalogRepository"
     private val productDao = db.catalogDao()
     private val mediaDao = db.productMediaDao()
 
@@ -54,9 +52,8 @@ class RoomCatalogRepository(
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
         return productDao.findByEan(ean)
             .map { entity ->
-                val product = entity?.toDomain()
-                logger.d(TAG, "getProductByEan:$ean result=$product")
-                product
+                logger.d(TAG, "getProductByEan:$ean result=$entity")
+                entity?.toDomain()
             }
     }
 
@@ -80,22 +77,21 @@ class RoomCatalogRepository(
 
     override suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?) {
         logger.d(TAG, "insertProduct: ${product.name} (hasImage: ${imageBytes != null})")
-        if (imageBytes != null) {
-            val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= CoreConstants.Media.MAX_IMAGE_SIZE_KB) {
-                "File is too large (size: ${imageSizeKb}KB)"
-            }
-        }
+        validateImage(imageBytes)
         validateProduct(product)
-        productDao.insert(product.toEntity())
-        if (imageBytes != null) {
-            mediaDao.insertOrUpdate(
-                ProductMediaEntity(
-                    productId = product.id,
-                    blob = imageBytes,
-                    updatedAt = getCurrentTime()
-                )
-            )
+        db.useWriterConnection { conn ->
+            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                productDao.insert(product.toEntity())
+                if (imageBytes != null) {
+                    mediaDao.insertOrUpdate(
+                        ProductMediaEntity(
+                            productId = product.id,
+                            blob = imageBytes,
+                            updatedAt = product.updatedAt
+                        )
+                    )
+                }
+            }
         }
     }
 
@@ -104,12 +100,7 @@ class RoomCatalogRepository(
         imageBytes: ByteArray?
     ) {
         logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null})")
-        if (imageBytes != null) {
-            val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= CoreConstants.Media.MAX_IMAGE_SIZE_KB) {
-                "File is too large (size: ${imageSizeKb}KB)"
-            }
-        }
+        validateImage(imageBytes)
         validateProduct(product)
         db.useWriterConnection { conn ->
             conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
@@ -119,7 +110,7 @@ class RoomCatalogRepository(
                         ProductMediaEntity(
                             productId = product.id,
                             blob = imageBytes,
-                            updatedAt = getCurrentTime()
+                            updatedAt = product.updatedAt
                         )
                     )
                 }
@@ -136,12 +127,7 @@ class RoomCatalogRepository(
         imageBytes: ByteArray?
     ) {
         logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null})")
-        if (imageBytes != null) {
-            val imageSizeKb = imageBytes.size / 1024
-            require(imageSizeKb <= CoreConstants.Media.MAX_IMAGE_SIZE_KB) {
-                "File is too large (size: ${imageSizeKb}KB)"
-            }
-        }
+        validateImage(imageBytes)
         validateProduct(product)
         db.useWriterConnection { conn ->
             conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
@@ -188,9 +174,18 @@ class RoomCatalogRepository(
     }
 
     override fun getCategories(): Flow<List<String>> {
-        // Por enquanto retorna a lista padrão via Flow.
-        // Futuro: productDao.getDistinctCategories().map { it.ifEmpty { defaultCategories } }
+        // Currently returns the default categories list via Flow.
+        // Future: productDao.getDistinctCategories().map { it.ifEmpty { defaultCategories } }
         return flowOf(defaultCategories)
+    }
+
+    private fun validateImage(imageBytes: ByteArray?) {
+        if (imageBytes != null) {
+            val imageSizeKb = imageBytes.size / 1024
+            require(imageSizeKb <= CoreConstants.Media.MAX_IMAGE_SIZE_KB) {
+                "File is too large (size: ${imageSizeKb}KB)"
+            }
+        }
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -230,5 +225,9 @@ class RoomCatalogRepository(
         require(product.category.isNotBlank()) { "The category shouldn't be empty" }
         require(product.category.length <= CoreConstants.Product.CATEGORY_MAX_LENGTH)
         { "The category should have at most ${CoreConstants.Product.CATEGORY_MAX_LENGTH} characters" }
+    }
+
+    private companion object {
+        const val TAG = "RoomCatalogRepository"
     }
 }

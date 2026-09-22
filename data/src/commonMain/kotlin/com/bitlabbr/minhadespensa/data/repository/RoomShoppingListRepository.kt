@@ -44,13 +44,12 @@ import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 class RoomShoppingListRepository(
-    val db: AppDatabase,
+    private val db: AppDatabase,
     private val logger: AppLogger,
 ) : ShoppingListRepository {
 
     private val listDao = db.shoppingListDao()
     private val itemDao = db.shoppingItemDao()
-    private val TAG = "RoomShoppingListRepository"
 
     override fun getAllActiveShoppingLists(): Flow<List<ShoppingList>> {
         logger.d(TAG, "getAllActiveShoppingLists")
@@ -177,7 +176,7 @@ class RoomShoppingListRepository(
                 checkedItems.forEach { item ->
                     val prodId = item.productId
                     if (prodId != null) {
-                        // Apenas itens associados a um produto entram no inventário da despensa
+                        // Only items associated with a product enter the pantry inventory
                         db.pantryDao().insertPantryItem(
                             PantryItem(
                                 id = Uuid.random().toString(),
@@ -205,13 +204,13 @@ class RoomShoppingListRepository(
                     }
                 }
 
-                // Desmarca todos os itens processados no checkout
+                // Uncheck all items processed during checkout
                 checkedItems.forEach { item ->
                     itemDao.updateCheckStatus(item.id, false, now)
                 }
 
                 listDao.updateTimestamp(listId, now)
-                logger.d(TAG, "Checkout finalizado. [${checkedItems.size}] itens processados.")
+                logger.d(TAG, "Checkout finalized. [${checkedItems.size}] items processed.")
             }
         }
     }
@@ -220,7 +219,7 @@ class RoomShoppingListRepository(
     private fun validateShoppingList(list: ShoppingList) {
         require(runCatching { Uuid.parse(list.id) }.isSuccess) { "Invalid Shopping List UUID: ${list.id}" }
         require(list.name.isNotBlank()) { "Shopping List name cannot be empty" }
-        require(list.name.length <= 50) { "Shopping List name is too long (max 50 chars)" }
+        require(list.name.length <= MAX_NAME_LENGTH) { "Shopping List name is too long (max $MAX_NAME_LENGTH chars)" }
 
         list.budgetInCents?.let {
             require(it >= 0) { "Budget cannot be negative" }
@@ -238,7 +237,7 @@ class RoomShoppingListRepository(
         require(runCatching { Uuid.parse(item.id) }.isSuccess) { "Invalid Shopping Item UUID: ${item.id}" }
         require(runCatching { Uuid.parse(item.listId) }.isSuccess) { "Invalid List ID in item: ${item.listId}" }
 
-        // Validação flexível: pode ter productId (catálogo) ou rawText (bloco de notas)
+        // Flexible validation: can have productId (catalog) or rawText (scratchpad)
         item.productId?.let { prodId ->
             require(runCatching { Uuid.parse(prodId) }.isSuccess) { "Invalid Product UUID: $prodId" }
         }
@@ -254,5 +253,10 @@ class RoomShoppingListRepository(
         require(isValidTimestamp(item.updatedAt)) {
             "Invalid updatedAt timestamp for item"
         }
+    }
+
+    private companion object {
+        const val TAG = "RoomShoppingListRepository"
+        const val MAX_NAME_LENGTH = 50
     }
 }
