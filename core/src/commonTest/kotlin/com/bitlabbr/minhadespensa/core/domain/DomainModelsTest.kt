@@ -32,6 +32,8 @@ import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
+import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
+import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -50,7 +52,7 @@ class DomainModelsTest {
             id = "1",
             listId = "list-1",
             quantity = 1.5,
-            priceAtTime = 1000L, // R$ 10,00 -> total esperado: 1500L (R$ 15,00)
+            priceAtTime = 1000L, // 1.5 * 1000 = 1500L
             updatedAt = 1000L
         )
         assertEquals(1500L, itemFractional.subtotalInCents)
@@ -59,7 +61,7 @@ class DomainModelsTest {
             id = "2",
             listId = "list-1",
             quantity = 0.345, // 345g
-            priceAtTime = 4990L, // R$ 49,90/kg -> 0.345 * 4990 = 1721.55 -> 1722L
+            priceAtTime = 4990L, // 0.345 * 4990 = 1721.55 -> rounds to 1722L
             updatedAt = 1000L
         )
         assertEquals(1722L, itemWeighted.subtotalInCents)
@@ -72,6 +74,15 @@ class DomainModelsTest {
             updatedAt = 1000L
         )
         assertNull(itemNoPrice.subtotalInCents)
+
+        val itemZeroPrice = ShoppingItem(
+            id = "4",
+            listId = "list-1",
+            quantity = 2.0,
+            priceAtTime = 0L,
+            updatedAt = 1000L
+        )
+        assertEquals(0L, itemZeroPrice.subtotalInCents)
     }
 
     @Test
@@ -114,15 +125,60 @@ class DomainModelsTest {
             id = "list-1",
             name = "Compras",
             type = ShoppingListType.PLANNED,
-            budgetInCents = 2000L, // R$ 20,00 de orçamento
+            budgetInCents = 2000L, // 2000 cents budget
             items = listOf(item1, item2, itemUnchecked, itemDeleted),
             updatedAt = 1000L
         )
 
         assertEquals(2, list.totalCheckedItems)
         assertEquals(3, list.totalActiveItems)
-        assertEquals(2500L, list.totalCartInCents) // 1000 + 1500
+        assertEquals(2500L, list.totalCartInCents) // (2.0 * 500) + (1.0 * 1500) = 2500L
         assertTrue(list.isOverBudget) // 2500L > 2000L
+    }
+
+    @Test
+    fun `ShoppingList isOverBudget should be false when budget is null or total equals budget`() {
+        val item = ShoppingItem(
+            id = "1",
+            listId = "list-1",
+            quantity = 1.0,
+            priceAtTime = 2000L,
+            isChecked = true,
+            updatedAt = 1000L
+        )
+
+        val listNoBudget = ShoppingList(
+            id = "list-1",
+            name = "Compras",
+            type = ShoppingListType.PLANNED,
+            budgetInCents = null,
+            items = listOf(item),
+            updatedAt = 1000L
+        )
+        assertFalse(listNoBudget.isOverBudget)
+
+        val listExactBudget = ShoppingList(
+            id = "list-1",
+            name = "Compras",
+            type = ShoppingListType.PLANNED,
+            budgetInCents = 2000L,
+            items = listOf(item),
+            updatedAt = 1000L
+        )
+        assertFalse(listExactBudget.isOverBudget)
+
+        val emptyList = ShoppingList(
+            id = "list-empty",
+            name = "Vazia",
+            type = ShoppingListType.PLANNED,
+            budgetInCents = 1000L,
+            items = emptyList(),
+            updatedAt = 1000L
+        )
+        assertEquals(0, emptyList.totalCheckedItems)
+        assertEquals(0, emptyList.totalActiveItems)
+        assertEquals(0L, emptyList.totalCartInCents)
+        assertFalse(emptyList.isOverBudget)
     }
 
     @Test
@@ -205,5 +261,45 @@ class DomainModelsTest {
         )
         assertEquals("pantry-1", consumption.pantryItemId)
         assertEquals(0.5, consumption.quantityToConsume)
+    }
+
+    @Test
+    fun `ShoppingList totalCartInCents should gracefully ignore checked items with null price`() {
+        val itemPriced = ShoppingItem(
+            id = "1",
+            listId = "list-1",
+            quantity = 2.0,
+            priceAtTime = 300L,
+            isChecked = true,
+            updatedAt = 1000L,
+        )
+        val itemNullPrice = ShoppingItem(
+            id = "2",
+            listId = "list-1",
+            quantity = 1.0,
+            priceAtTime = null,
+            isChecked = true,
+            updatedAt = 1000L,
+        )
+
+        val list = ShoppingList(
+            id = "list-1",
+            name = "Compras",
+            type = ShoppingListType.PLANNED,
+            items = listOf(itemPriced, itemNullPrice),
+            updatedAt = 1000L,
+        )
+
+        assertEquals(2, list.totalCheckedItems)
+        assertEquals(600L, list.totalCartInCents) // ignores itemNullPrice without crashing
+    }
+
+    @Test
+    fun `isValidTimestamp should validate realistic timestamps correctly`() {
+        assertFalse(isValidTimestamp(0L))
+        assertFalse(isValidTimestamp(-100L))
+        assertFalse(isValidTimestamp(946684799000L)) // 1999-12-31 23:59:59 (before 2000-01-01)
+        assertTrue(isValidTimestamp(getCurrentTime()))
+        assertFalse(isValidTimestamp(getCurrentTime() + 10_000_000_000L)) // far future
     }
 }

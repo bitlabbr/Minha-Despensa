@@ -70,6 +70,23 @@ class ShoppingUseCasesTest {
     }
 
     @Test
+    fun `CreateQuickShoppingListUseCase should reject blank content`() = runTest {
+        val blankResult = createQuickListUseCase(rawContent = "   \n  \n")
+        assertTrue(blankResult.isFailure)
+    }
+
+    @Test
+    fun `CreateQuickShoppingListUseCase should use default title when customTitle is null or blank`() = runTest {
+        val resultNullTitle = createQuickListUseCase(rawContent = "Arroz\nFeijão", customTitle = null)
+        assertTrue(resultNullTitle.isSuccess)
+        assertTrue(resultNullTitle.getOrThrow().name.startsWith("Lista rápida de "))
+
+        val resultBlankTitle = createQuickListUseCase(rawContent = "Arroz\nFeijão", customTitle = "   ")
+        assertTrue(resultBlankTitle.isSuccess)
+        assertTrue(resultBlankTitle.getOrThrow().name.startsWith("Lista rápida de "))
+    }
+
+    @Test
     fun `CreatePlannedShoppingListUseCase should enforce items and store budget in cents`() = runTest {
         val drafts = listOf(
             PlannedItemDraft(productId = "prod-1", quantity = 2.0),
@@ -78,7 +95,7 @@ class ShoppingUseCasesTest {
 
         val result = createPlannedListUseCase(
             name = "Compras Planejadas",
-            budgetInCents = 15000L, // R$ 150,00
+            budgetInCents = 15000L, // 15000 cents (R$ 150.00)
             itemsDraft = drafts,
         )
 
@@ -92,6 +109,40 @@ class ShoppingUseCasesTest {
     }
 
     @Test
+    fun `CreatePlannedShoppingListUseCase should reject invalid inputs`() = runTest {
+        val validDrafts = listOf(PlannedItemDraft(productId = "prod-1", quantity = 1.0))
+
+        // Blank name
+        val blankNameResult = createPlannedListUseCase(
+            name = "   ",
+            itemsDraft = validDrafts,
+        )
+        assertTrue(blankNameResult.isFailure)
+
+        // Negative budget
+        val negativeBudgetResult = createPlannedListUseCase(
+            name = "Compras",
+            budgetInCents = -500L,
+            itemsDraft = validDrafts,
+        )
+        assertTrue(negativeBudgetResult.isFailure)
+
+        // Empty drafts
+        val emptyDraftResult = createPlannedListUseCase(
+            name = "Compras",
+            itemsDraft = emptyList(),
+        )
+        assertTrue(emptyDraftResult.isFailure)
+
+        // Invalid item quantity in draft
+        val invalidQtyResult = createPlannedListUseCase(
+            name = "Compras",
+            itemsDraft = listOf(PlannedItemDraft(productId = "prod-1", quantity = 0.0)),
+        )
+        assertTrue(invalidQtyResult.isFailure)
+    }
+
+    @Test
     fun `AddOrUpdateCartItemUseCase should accumulate quantity and accept price in cents`() = runTest {
         val list = ShoppingList(
             id = "list-1",
@@ -101,21 +152,21 @@ class ShoppingUseCasesTest {
         )
         repository.insertShoppingList(list)
 
-        // 1. Inserir primeiro item bipado no carrinho
+        // 1. Insert first scanned item into cart
         val firstAddResult = addOrUpdateCartItemUseCase(
             listId = "list-1",
             productId = "prod-1",
             quantity = 2.0,
-            priceAtTimeInCents = 750L, // R$ 7,50
+            priceAtTimeInCents = 750L, // R$ 7.50
         )
         assertTrue(firstAddResult.isSuccess)
 
-        // 2. Bipar o mesmo produto novamente somando 1.0 unidade com novo preço
+        // 2. Scan the same product again, adding 1.0 unit with updated price
         val secondAddResult = addOrUpdateCartItemUseCase(
             listId = "list-1",
             productId = "prod-1",
             quantity = 1.0,
-            priceAtTimeInCents = 800L, // R$ 8,00
+            priceAtTimeInCents = 800L, // R$ 8.00
         )
         assertTrue(secondAddResult.isSuccess)
 
@@ -126,6 +177,42 @@ class ShoppingUseCasesTest {
         assertEquals(3.0, item.quantity)
         assertEquals(800L, item.priceAtTime)
         assertTrue(item.isChecked)
+    }
+
+    @Test
+    fun `AddOrUpdateCartItemUseCase should update existing item by existingItemId`() = runTest {
+        val initialItem = ShoppingItem(
+            id = "item-edit",
+            listId = "list-1",
+            productId = "prod-1",
+            quantity = 1.0,
+            priceAtTime = 500L,
+            isChecked = true,
+            updatedAt = 1000L,
+        )
+        val list = ShoppingList(
+            id = "list-1",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(initialItem),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = addOrUpdateCartItemUseCase(
+            listId = "list-1",
+            productId = "prod-1",
+            quantity = 4.0, // Replaces quantity when existingItemId is provided
+            priceAtTimeInCents = 600L,
+            existingItemId = "item-edit",
+        )
+        assertTrue(result.isSuccess)
+
+        val updatedList = repository.getShoppingListById("list-1").first()
+        val item = updatedList?.items?.find { it.id == "item-edit" }
+        assertNotNull(item)
+        assertEquals(4.0, item.quantity)
+        assertEquals(600L, item.priceAtTime)
     }
 
     @Test
@@ -153,6 +240,72 @@ class ShoppingUseCasesTest {
             priceAtTimeInCents = 100L,
         )
         assertTrue(zeroQty.isFailure)
+
+        // Missing both productId and rawText
+        val missingBoth = addOrUpdateCartItemUseCase(
+            listId = "list-1",
+            productId = null,
+            rawText = "   ",
+            quantity = 1.0,
+            priceAtTimeInCents = 100L,
+        )
+        assertTrue(missingBoth.isFailure)
+    }
+
+    @Test
+    fun `AddOrUpdateCartItemUseCase should support items with only rawText and null price`() = runTest {
+        val list = ShoppingList(
+            id = "list-cart-raw",
+            name = "Lista",
+            type = ShoppingListType.ASSISTANT,
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = addOrUpdateCartItemUseCase(
+            listId = "list-cart-raw",
+            productId = null,
+            rawText = "Maçã Gala",
+            quantity = 2.0,
+            priceAtTimeInCents = null,
+        )
+        assertTrue(result.isSuccess)
+
+        val item = result.getOrThrow()
+        assertNull(item.productId)
+        assertEquals("Maçã Gala", item.rawText)
+        assertNull(item.priceAtTime)
+        assertTrue(item.isChecked)
+    }
+
+    @Test
+    fun `AddOrUpdateCartItemUseCase should reject operations on deleted or non-existent list`() = runTest {
+        val deletedList = ShoppingList(
+            id = "list-cart-del",
+            name = "Lista Excluída",
+            type = ShoppingListType.ASSISTANT,
+            isDeleted = true,
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(deletedList)
+
+        // Deleted list
+        val onDeletedResult = addOrUpdateCartItemUseCase(
+            listId = "list-cart-del",
+            productId = "prod-1",
+            quantity = 1.0,
+            priceAtTimeInCents = 100L,
+        )
+        assertTrue(onDeletedResult.isFailure)
+
+        // Non-existent list
+        val onNonExistentResult = addOrUpdateCartItemUseCase(
+            listId = "non-existent-list",
+            productId = "prod-1",
+            quantity = 1.0,
+            priceAtTimeInCents = 100L,
+        )
+        assertTrue(onNonExistentResult.isFailure)
     }
 
     @Test
@@ -172,6 +325,12 @@ class ShoppingUseCasesTest {
             result.getOrThrow()
         }
         assertNull(repository.purchaseFinalizedListId)
+    }
+
+    @Test
+    fun `FinalizeShoppingSessionUseCase should fail on non-existent shopping list`() = runTest {
+        val result = finalizeShoppingSessionUseCase("non-existent-id")
+        assertTrue(result.isFailure)
     }
 
     @Test
@@ -238,11 +397,11 @@ class ShoppingUseCasesTest {
         )
         repository.insertShoppingList(deletedList)
 
-        // Lista deletada logicamente
+        // Logically deleted list
         val delResult = startShoppingSessionUseCase(existingListId = "list-del")
         assertTrue(delResult.isFailure)
 
-        // Lista não existente
+        // Non-existent list
         val notFoundResult = startShoppingSessionUseCase(existingListId = "non-existent")
         assertTrue(notFoundResult.isFailure)
     }
@@ -257,7 +416,7 @@ class ShoppingUseCasesTest {
         )
         repository.insertShoppingList(list)
 
-        // 1. Inserir item novo
+        // 1. Insert new item
         val addResult = addCatalogItemUseCase(listId = "list-catalog", productId = "prod-1", quantity = 2.0)
         assertTrue(addResult.isSuccess)
 
@@ -265,7 +424,7 @@ class ShoppingUseCasesTest {
         assertEquals(1, listAfterFirstAdd?.items?.size)
         assertEquals(2.0, listAfterFirstAdd?.items?.first()?.quantity)
 
-        // 2. Adicionar o mesmo produto novamente (deve somar quantidade: 2.0 + 3.0 = 5.0)
+        // 2. Add the same product again (should accumulate quantity: 2.0 + 3.0 = 5.0)
         val secondAddResult = addCatalogItemUseCase(listId = "list-catalog", productId = "prod-1", quantity = 3.0)
         assertTrue(secondAddResult.isSuccess)
 
@@ -284,16 +443,61 @@ class ShoppingUseCasesTest {
         )
         repository.insertShoppingList(list)
 
-        // Quantidade inválida
+        // Invalid quantity
         val zeroQty = addCatalogItemUseCase(listId = "list-val", productId = "prod-1", quantity = 0.0)
         assertTrue(zeroQty.isFailure)
 
-        // Product ID vazio
+        // Blank product ID
         val blankProd = addCatalogItemUseCase(listId = "list-val", productId = "   ", quantity = 1.0)
         assertTrue(blankProd.isFailure)
 
-        // Lista inexistente
+        // Non-existent list
         val noList = addCatalogItemUseCase(listId = "unknown-id", productId = "prod-1", quantity = 1.0)
         assertTrue(noList.isFailure)
+    }
+
+    @Test
+    fun `AddCatalogItemToShoppingListUseCase should reject deleted list`() = runTest {
+        val deletedList = ShoppingList(
+            id = "list-del",
+            name = "Lista Excluída",
+            type = ShoppingListType.PLANNED,
+            isDeleted = true,
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(deletedList)
+
+        val result = addCatalogItemUseCase(listId = "list-del", productId = "prod-1", quantity = 1.0)
+        assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun `AddCatalogItemToShoppingListUseCase should create new item if existing item with same product is deleted`() = runTest {
+        val deletedItem = ShoppingItem(
+            id = "item-deleted",
+            listId = "list-with-del-item",
+            productId = "prod-1",
+            quantity = 2.0,
+            isDeleted = true,
+            updatedAt = 1000L,
+        )
+        val list = ShoppingList(
+            id = "list-with-del-item",
+            name = "Lista",
+            type = ShoppingListType.PLANNED,
+            items = listOf(deletedItem),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = addCatalogItemUseCase(listId = "list-with-del-item", productId = "prod-1", quantity = 1.0)
+        assertTrue(result.isSuccess)
+
+        val updatedList = repository.getShoppingListById("list-with-del-item").first()
+        assertEquals(2, updatedList?.items?.size)
+        val activeItem = updatedList?.items?.find { !it.isDeleted }
+        assertNotNull(activeItem)
+        assertEquals(1.0, activeItem.quantity)
+        assertEquals("prod-1", activeItem.productId)
     }
 }

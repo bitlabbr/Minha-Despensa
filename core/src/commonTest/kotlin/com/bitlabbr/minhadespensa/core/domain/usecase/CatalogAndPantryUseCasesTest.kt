@@ -55,22 +55,41 @@ class CatalogAndPantryUseCasesTest {
         )
         catalogRepository.insertProduct(existing, null)
 
-        // 1. EAN cadastrado
+        // 1. Registered EAN
         val found = checkEanStatusUseCase("7891234567890")
         assertIs<EanStatus.Found>(found)
         assertEquals("Café Torrado", found.product.name)
 
-        // 2. EAN válido não cadastrado
+        // 2. Valid unregistered EAN
         val notFound = checkEanStatusUseCase("12345670")
         assertIs<EanStatus.NotFound>(notFound)
 
-        // 3. EAN com tamanho incorreto
+        // 3. Incorrect length EAN
         val invalidFormat = checkEanStatusUseCase("12345")
         assertIs<EanStatus.InvalidFormat>(invalidFormat)
 
-        // 4. EAN em branco
+        // 4. Non-numeric EAN
+        val nonNumeric = checkEanStatusUseCase("789123456789A")
+        assertIs<EanStatus.InvalidFormat>(nonNumeric)
+
+        // 5. Blank EAN
         val empty = checkEanStatusUseCase("   ")
         assertIs<EanStatus.Empty>(empty)
+    }
+
+    @Test
+    fun `CheckEanStatusUseCase should return NotFound if product is marked as deleted`() = runTest {
+        val deletedProduct = CatalogProduct(
+            id = "prod-del",
+            name = "Produto Deletado",
+            ean = "7899999999999",
+            isDeleted = true,
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(deletedProduct, null)
+
+        val result = checkEanStatusUseCase("7899999999999")
+        assertIs<EanStatus.NotFound>(result)
     }
 
     @Test
@@ -78,7 +97,7 @@ class CatalogAndPantryUseCasesTest {
         val result = saveCatalogProductUseCase(
             name = "  Arroz Branco Tipo 1  ",
             brand = "  Tio João  ",
-            category = "   ", // Deve receber a categoria padrão
+            category = "   ", // Should fallback to default category
             measureUnit = MeasureUnit.KILOGRAM,
             netWeight = 5.0,
             ean = "7891234567890",
@@ -93,6 +112,61 @@ class CatalogAndPantryUseCasesTest {
 
         val inRepo = catalogRepository.getProductById(saved.id).first()
         assertNotNull(inRepo)
+    }
+
+    @Test
+    fun `SaveCatalogProductUseCase should reject invalid inputs`() = runTest {
+        // Blank name
+        val blankName = saveCatalogProductUseCase(
+            name = "   ",
+            measureUnit = MeasureUnit.UNIT,
+        )
+        assertTrue(blankName.isFailure)
+
+        // Name too long
+        val longName = saveCatalogProductUseCase(
+            name = "A".repeat(CoreConstants.Product.NAME_MAX_LENGTH + 1),
+            measureUnit = MeasureUnit.UNIT,
+        )
+        assertTrue(longName.isFailure)
+
+        // Zero or negative net weight
+        val zeroWeight = saveCatalogProductUseCase(
+            name = "Feijão",
+            measureUnit = MeasureUnit.KILOGRAM,
+            netWeight = 0.0,
+        )
+        assertTrue(zeroWeight.isFailure)
+
+        // Invalid EAN format
+        val invalidEan = saveCatalogProductUseCase(
+            name = "Feijão",
+            measureUnit = MeasureUnit.KILOGRAM,
+            ean = "1234",
+        )
+        assertTrue(invalidEan.isFailure)
+
+        // Category too long
+        val longCategory = saveCatalogProductUseCase(
+            name = "Feijão",
+            category = "C".repeat(CoreConstants.Product.CATEGORY_MAX_LENGTH + 1),
+            measureUnit = MeasureUnit.UNIT,
+        )
+        assertTrue(longCategory.isFailure)
+    }
+
+    @Test
+    fun `SaveCatalogProductUseCase should accept custom id and valid EAN lengths`() = runTest {
+        val result = saveCatalogProductUseCase(
+            id = "custom-id-123",
+            name = "Macarrão",
+            measureUnit = MeasureUnit.PACKAGE,
+            ean = "12345678", // 8-digit valid EAN
+        )
+        assertTrue(result.isSuccess)
+        val product = result.getOrThrow()
+        assertEquals("custom-id-123", product.id)
+        assertEquals("12345678", product.ean)
     }
 
     @Test
@@ -113,6 +187,19 @@ class CatalogAndPantryUseCasesTest {
         val inRepo = pantryRepository.getPantryItemById(item.id).first()
         assertNotNull(inRepo)
         assertEquals(3.5, inRepo.quantity)
+    }
+
+    @Test
+    fun `AddPantryItemUseCase should handle blank batchNumber as null`() = runTest {
+        val result = addPantryItemUseCase(
+            productId = "prod-1",
+            quantity = 1.0,
+            batchNumber = "   ",
+        )
+
+        assertTrue(result.isSuccess)
+        val item = result.getOrThrow()
+        assertEquals(null, item.batchNumber)
     }
 
     @Test
@@ -141,14 +228,14 @@ class CatalogAndPantryUseCasesTest {
 
     @Test
     fun `AddPantryItemUseCase should reject invalid inputs`() = runTest {
-        // Quantidade zero ou negativa
+        // Zero or negative quantity
         val zeroQty = addPantryItemUseCase(productId = "prod-1", quantity = 0.0)
         assertTrue(zeroQty.isFailure)
 
         val negativeQty = addPantryItemUseCase(productId = "prod-1", quantity = -1.5)
         assertTrue(negativeQty.isFailure)
 
-        // Product ID em branco
+        // Blank product ID
         val blankProduct = addPantryItemUseCase(productId = "   ", quantity = 1.0)
         assertTrue(blankProduct.isFailure)
     }
