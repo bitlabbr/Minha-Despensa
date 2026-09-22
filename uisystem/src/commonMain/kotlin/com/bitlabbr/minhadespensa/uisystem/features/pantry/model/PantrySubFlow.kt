@@ -29,4 +29,5 @@ sealed interface PantrySubFlow {
     data object BarcodeScanner : PantrySubFlow
     data class CreateCatalogProduct(val initialEan: String? = null) : PantrySubFlow
     data class AddItemDetails(val product: CatalogProductUiModel) : PantrySubFlow
+    data object QuickList : PantrySubFlow
 }

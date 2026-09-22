@@ -167,6 +167,10 @@ class PantryViewModel(
         _activeSubFlow.value = null
     }
 
+    fun onStartQuickListFlow() {
+        _activeSubFlow.value = PantrySubFlow.QuickList
+    }
+
     fun onBarcodeScanned(ean: String) {
         viewModelScope.launch {
             when (val status = checkEanStatusUseCase(ean)) {

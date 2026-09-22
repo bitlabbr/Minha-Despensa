@@ -21,25 +21,15 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local.entity
+package com.bitlabbr.minhadespensa.uisystem.util
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import kotlin.math.abs
 
-@Entity(tableName = "shopping_lists")
-data class ShoppingListEntity(
-    @PrimaryKey
-    val id: String,
-    val name: String,
-    @ColumnInfo(name = "list_type")
-    val type: String,
-    @ColumnInfo(name = "list_status")
-    val status: String,
-    @ColumnInfo(name = "budget_in_cents")
-    val budgedInCents: Long?,
-    @ColumnInfo(name = "updated_at")
-    val updatedAt: Long,
-    @ColumnInfo(name = "is_deleted")
-    val isDeleted: Boolean = false,
-)
+fun Long.formatPrice(): String {
+    val isNegative = this < 0
+    val totalCents = (abs(this) * 100)
+    val reais = totalCents / 100
+    val centavos = (totalCents % 100).toString().padStart(2, '0')
+    val sign = if (isNegative) "-" else ""
+    return "$sign$reais,$centavos"
+}

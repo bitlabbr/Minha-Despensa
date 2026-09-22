@@ -27,10 +27,11 @@ import androidx.room.Embedded
 import androidx.room.Relation
 
 data class ShoppingListWithItems(
-    @Embedded val list: ShoppingListEntity,
+    @Embedded
+    val list: ShoppingListEntity,
     @Relation(
         parentColumn = "id",
-        entityColumn = "listId"
+        entityColumn = "list_id",
     )
-    val items: List<ShoppingItemEntity>
+    val items: List<ShoppingItemEntity>,
 )

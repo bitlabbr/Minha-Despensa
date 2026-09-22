@@ -34,9 +34,8 @@ import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
-import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
-import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListWithItems
+import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -46,7 +45,7 @@ import kotlin.uuid.Uuid
 @OptIn(ExperimentalUuidApi::class)
 class RoomShoppingListRepository(
     val db: AppDatabase,
-    private val logger: AppLogger
+    private val logger: AppLogger,
 ) : ShoppingListRepository {
 
     private val listDao = db.shoppingListDao()
@@ -56,7 +55,7 @@ class RoomShoppingListRepository(
     override fun getAllActiveShoppingLists(): Flow<List<ShoppingList>> {
         logger.d(TAG, "getAllActiveShoppingLists")
         return listDao.getAllActiveShoppingLists().map { list ->
-            list.mapNotNull { it.toDomain() }
+            list.map { it.toDomain() }
         }
     }
 
@@ -66,32 +65,34 @@ class RoomShoppingListRepository(
     }
 
     override suspend fun insertShoppingList(shoppingList: ShoppingList) {
-        logger.d(TAG, "insertShoppingList: shoppingList: ${shoppingList.name}")
+        logger.d(TAG, "insertShoppingList: ${shoppingList.name}")
         validateShoppingList(shoppingList)
         db.useWriterConnection { connection ->
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
                 listDao.insertShoppingList(shoppingList.toEntity())
-                val itemEntities = shoppingList.items.map { it.toEntity() }
-                listDao.insertItems(itemEntities)
+                if (shoppingList.items.isNotEmpty()) {
+                    val itemEntities = shoppingList.items.map { it.toEntity() }
+                    listDao.insertItems(itemEntities)
+                }
             }
         }
     }
 
     override suspend fun forceUpdateForShoppingList(shoppingList: ShoppingList) {
-        logger.d(TAG, "forceUpdateForShoppingList shoppingList: ${shoppingList.name}")
+        logger.d(TAG, "forceUpdateForShoppingList: ${shoppingList.name}")
         validateShoppingList(shoppingList)
         listDao.forceUpdateForShoppingList(shoppingList.toEntity())
     }
 
     override suspend fun updateShoppingListIfNewer(list: ShoppingList) {
-        logger.d(TAG, "updateShoppingListIfNewer list: ${list.name}")
+        logger.d(TAG, "updateShoppingListIfNewer: ${list.name}")
         validateShoppingList(list)
         val rowsAffected = listDao.updateShoppingListIfNewer(
             id = list.id,
             name = list.name,
             budgetInCents = list.budgetInCents,
             updatedAt = list.updatedAt,
-            isDeleted = list.isDeleted
+            isDeleted = list.isDeleted,
         )
         if (rowsAffected == 0) {
             logger.d(TAG, "Update for list ${list.id} ignored: local data is newer or identical.")
@@ -132,7 +133,7 @@ class RoomShoppingListRepository(
             priceAtTime = item.priceAtTime,
             isChecked = item.isChecked,
             updatedAt = item.updatedAt,
-            isDeleted = item.isDeleted
+            isDeleted = item.isDeleted,
         )
         if (rowsAffected == 0) {
             logger.d(TAG, "Update for item ${item.id} ignored: local version is newer.")
@@ -155,12 +156,10 @@ class RoomShoppingListRepository(
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
                 val now = getCurrentTime()
 
-                // checks if list exists
                 val listWithItems = checkNotNull(listDao.getShoppingListById(listId).first()) {
                     "Shopping list not found with ID: $listId"
                 }
 
-                // checks if parent list is not soft deleted
                 require(!listWithItems.list.isDeleted) {
                     "Cannot finalize purchase for a deleted shopping list: $listId"
                 }
@@ -168,39 +167,43 @@ class RoomShoppingListRepository(
                 val checkedItems = listWithItems.items.filter { it.isChecked && !it.isDeleted }
 
                 checkedItems.forEach { item ->
-                    db.pantryDao().insertPantryItem(
-                        PantryItem(
-                            id = Uuid.random().toString(),
-                            productId = item.productId,
-                            quantity = item.quantity,
-                            updatedAt = now,
-                            isDeleted = false,
-                            expirationDate = null,
-                            batchNumber = null,
-
-                        ).toEntity()
-                    )
-
-                    item.priceAtTime?.let { price ->
-                        db.priceDao().insertPriceEntry(
-                            PriceEntry(
+                    val prodId = item.productId
+                    if (prodId != null) {
+                        // Apenas itens associados a um produto entram no inventário da despensa
+                        db.pantryDao().insertPantryItem(
+                            PantryItem(
                                 id = Uuid.random().toString(),
-                                productId = item.productId,
-                                priceInCents = price,
+                                productId = prodId,
+                                quantity = item.quantity,
                                 updatedAt = now,
                                 isDeleted = false,
-                                storeName = "Compra: ${listWithItems.list.name}"
+                                expirationDate = null,
+                                batchNumber = null,
                             ).toEntity()
                         )
+
+                        item.priceAtTime?.let { price ->
+                            db.priceDao().insertPriceEntry(
+                                PriceEntry(
+                                    id = Uuid.random().toString(),
+                                    productId = prodId,
+                                    priceInCents = price,
+                                    updatedAt = now,
+                                    isDeleted = false,
+                                    storeName = "Compra: ${listWithItems.list.name}",
+                                ).toEntity()
+                            )
+                        }
                     }
                 }
 
+                // Desmarca todos os itens processados no checkout
                 checkedItems.forEach { item ->
                     itemDao.updateCheckStatus(item.id, false, now)
                 }
 
                 listDao.updateTimestamp(listId, now)
-                logger.d(TAG, "Checkout done. [${checkedItems.size}] items added to pantry")
+                logger.d(TAG, "Checkout finalizado. [${checkedItems.size}] itens processados.")
             }
         }
     }
@@ -208,7 +211,6 @@ class RoomShoppingListRepository(
     @OptIn(ExperimentalUuidApi::class)
     private fun validateShoppingList(list: ShoppingList) {
         require(runCatching { Uuid.parse(list.id) }.isSuccess) { "Invalid Shopping List UUID: ${list.id}" }
-
         require(list.name.isNotBlank()) { "Shopping List name cannot be empty" }
         require(list.name.length <= 50) { "Shopping List name is too long (max 50 chars)" }
 
@@ -226,8 +228,15 @@ class RoomShoppingListRepository(
     @OptIn(ExperimentalUuidApi::class)
     private fun validateShoppingItem(item: ShoppingItem) {
         require(runCatching { Uuid.parse(item.id) }.isSuccess) { "Invalid Shopping Item UUID: ${item.id}" }
-        require(runCatching { Uuid.parse(item.productId) }.isSuccess) { "Invalid Product UUID: ${item.productId}" }
-        require(runCatching { Uuid.parse(item.listID) }.isSuccess) { "Invalid List ID in item: ${item.listID}" }
+        require(runCatching { Uuid.parse(item.listId) }.isSuccess) { "Invalid List ID in item: ${item.listId}" }
+
+        // Validação flexível: pode ter productId (catálogo) ou rawText (bloco de notas)
+        item.productId?.let { prodId ->
+            require(runCatching { Uuid.parse(prodId) }.isSuccess) { "Invalid Product UUID: $prodId" }
+        }
+        require(!item.productId.isNullOrBlank() || !item.rawText.isNullOrBlank()) {
+            "Item must have either a valid productId or rawText"
+        }
 
         require(item.quantity > 0) { "Quantity must be greater than zero" }
         item.priceAtTime?.let {
@@ -239,46 +248,3 @@ class RoomShoppingListRepository(
         }
     }
 }
-
-fun ShoppingItemEntity.toDomain() = ShoppingItem(
-    id = this.id,
-    productId = this.productId,
-    quantity = this.quantity,
-    listID = this.listId,
-    priceAtTime = this.priceAtTime,
-    isChecked = this.isChecked,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted
-)
-
-fun ShoppingItem.toEntity() = ShoppingItemEntity(
-    id = this.id,
-    productId = this.productId,
-    listId = this.listID,
-    quantity = this.quantity,
-    priceAtTime = this.priceAtTime,
-    isChecked = this.isChecked,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted
-)
-
-fun ShoppingListWithItems?.toDomain(): ShoppingList? {
-    val data = this ?: return null
-    return ShoppingList(
-        id = data.list.id,
-        name = data.list.name,
-        budgetInCents = data.list.budgetInCents,
-        updatedAt = data.list.updatedAt,
-        isDeleted = data.list.isDeleted,
-        items = data.items.map { it.toDomain() }
-    )
-}
-
-fun ShoppingList.toEntity() = ShoppingListEntity(
-    id = this.id,
-    name = this.name,
-    budgetInCents = this.budgetInCents,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted
-)
-

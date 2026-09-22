@@ -21,25 +21,25 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local.entity
+package com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.model
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
 
-@Entity(tableName = "shopping_lists")
-data class ShoppingListEntity(
-    @PrimaryKey
+data class ShoppingListSummaryUiModel(
     val id: String,
     val name: String,
-    @ColumnInfo(name = "list_type")
-    val type: String,
-    @ColumnInfo(name = "list_status")
-    val status: String,
-    @ColumnInfo(name = "budget_in_cents")
-    val budgedInCents: Long?,
-    @ColumnInfo(name = "updated_at")
-    val updatedAt: Long,
-    @ColumnInfo(name = "is_deleted")
-    val isDeleted: Boolean = false,
+    val type: ShoppingListType,
+    val status: ShoppingListStatus,
+    val totalItems: Int,
+    val checkedItems: Int,
+    val budgetInCents: Long?,
+    val formattedDate: String,
+)
+
+data class ShoppingListsUiState(
+    val isLoading: Boolean = true,
+    val activeLists: List<ShoppingListSummaryUiModel> = emptyList(),
+    val completedLists: List<ShoppingListSummaryUiModel> = emptyList(),
+    val error: String? = null,
 )

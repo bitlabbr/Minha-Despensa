@@ -29,6 +29,10 @@ import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.ShoppingAssistantViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.planned.PlannedListViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist.QuickListViewModel
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
@@ -46,7 +50,7 @@ val uiModule = module {
             catalogRepository = get(),
             checkEanStatusUseCase = get(),
             addPantryItemUseCase = get(),
-            logger = get(named(DiQualifiers.APP_LOGGER)),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
         )
     }
@@ -56,6 +60,40 @@ val uiModule = module {
             logger = get(named(DiQualifiers.UI_LOGGER)),
             catalogRepository = get(),
             notificationManager = get(),
+        )
+    }
+
+    viewModel {
+        QuickListViewModel(
+            createQuickShoppingListUseCase = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        ShoppingListsViewModel(
+            shoppingListRepository = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        ShoppingAssistantViewModel(
+            startShoppingSessionUseCase = get(),
+            addOrUpdateCartItemUseCase = get(),
+            finalizeShoppingSessionUseCase = get(),
+            checkEanStatusUseCase = get(),
+            shoppingListRepository = get(),
+            catalogRepository = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        PlannedListViewModel(
+            createPlannedShoppingListUseCase = get(),
+            catalogRepository = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
         )
     }
 
