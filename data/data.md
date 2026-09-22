@@ -80,10 +80,10 @@ These classes define the structure of the tables in the Room database.
 These interfaces define the methods for database interactions.
 
 *   **`CatalogProductDao`**: Provides methods for inserting, updating (force and LWW), searching, retrieving, marking as deleted, and deleting `CatalogProductEntity` objects.
-*   **`PantryRepositoryDao`**: Provides methods for inserting, retrieving (by product ID, all active), marking as deleted, force updating, LWW updating, and deleting `PantryItemEntity` objects.
-*   **`PriceEntryDao`**: Provides methods for inserting, retrieving price history, getting the latest price, marking as deleted, deleting, force updating, and LWW updating `PriceEntryEntity` objects.
+*   **`PantryItemDao`**: Provides methods for inserting, retrieving (by product ID, all active, with category), marking as deleted, force updating, LWW updating, and deleting `PantryItemEntity` objects.
+*   **`PriceEntryDao`**: Provides methods for inserting, retrieving price history, getting the latest price, finding by ID, marking as deleted, deleting, force updating, and LWW updating `PriceEntryEntity` objects.
 *   **`ProductMediaDao`**: Provides methods for inserting/updating, retrieving, and deleting `ProductMediaEntity` objects by `productId`.
-*   **`ShoppingItemDao`**: Provides methods for retrieving active items, inserting, finding by ID, force updating, LWW updating, toggling check status, logically deleting all, and marking as deleted for `ShoppingItemEntity` objects.
+*   **`ShoppingItemDao`**: Provides methods for retrieving active items, inserting, finding by ID, querying by list ID, force updating, LWW updating, toggling check status, and marking as deleted for `ShoppingItemEntity` objects.
 *   **`ShoppingListDao`**: Provides methods for retrieving active shopping lists (with items), getting a shopping list by ID (with items), inserting lists and items, force updating, LWW updating, marking as deleted, deleting, and updating the timestamp for `ShoppingListEntity` objects.
 
 #### `Converters.kt`

@@ -119,7 +119,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
                 items = listOf(listItem)
             )
         )
-        val updatedItem = listItem.copy(productId = productB.id, updatedAt = getCurrentTime(), quantity = 10.0)
+        val updatedItem = listItem.copy(productId = productB.id, updatedAt = getCurrentTime() + 100, quantity = 10.0)
         shoppingListRepository.updateShoppingItemIfNewer(updatedItem)
         val list = shoppingListRepository.getShoppingListById(listId).first()
         assertEquals(productB.id, list?.items?.get(0)?.productId, "O item deveria ter sido atualizado para o Produto B")
@@ -222,7 +222,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
         shoppingListRepository.insertShoppingList(createDummyShoppingList(id = listId, items = listOf(item1, item2)))
 
-        shoppingListRepository.markAsDeleted(item1ID)
+        shoppingListRepository.markShoppingItemAsDeleted(item1ID, getCurrentTime())
 
         val updatedList = shoppingListRepository.getShoppingListById(listId).first()
         val activeItems = updatedList?.items?.filter { !it.isDeleted } ?: emptyList()
@@ -323,7 +323,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         val deletedItem = createDummyShoppingItem(id = itemId, productId = product.id, listId = listId, quantity = 1.0)
 
         shoppingListRepository.insertShoppingList(createDummyShoppingList(id = listId, items = listOf(deletedItem)))
-        shoppingListRepository.markAsDeleted(itemId)
+        shoppingListRepository.markShoppingItemAsDeleted(itemId, getCurrentTime())
 
         val syncUpdate = deletedItem.copy(isDeleted = false, updatedAt = getCurrentTime() - 1000)
         shoppingListRepository.updateShoppingItemIfNewer(syncUpdate)
@@ -424,7 +424,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         shoppingListRepository.insertShoppingList(
             createDummyShoppingList(id = listId, items = listOf(activeChecked, deletedChecked))
         )
-        shoppingListRepository.markAsDeleted(deletedChecked.id)
+        shoppingListRepository.markShoppingItemAsDeleted(deletedChecked.id, getCurrentTime())
 
         shoppingListRepository.finalizePurchase(listId)
 
@@ -515,7 +515,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
     ) = ShoppingItem(
         id = id,
         productId = productId,
-        listID = listId,
+        listId = listId,
         quantity = quantity,
         isChecked = isChecked,
         priceAtTime = priceAtTime,

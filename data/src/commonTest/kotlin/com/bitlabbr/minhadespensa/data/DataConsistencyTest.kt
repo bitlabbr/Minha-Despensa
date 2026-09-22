@@ -654,7 +654,7 @@ class DataConsistencyTest : BaseTest() {
     ) = ShoppingItem(
         id = id,
         productId = productId,
-        listID = listId,
+        listId = listId,
         quantity = quantity,
         priceAtTime = priceAtTime,
         isChecked = isChecked,
@@ -696,7 +696,7 @@ private fun createDummyShoppingItem(
 ) = ShoppingItem(
     id = id,
     productId = productId,
-    listID = listId,
+    listId = listId,
     quantity = quantity,
     isChecked = isChecked,
     priceAtTime = priceAtTime,

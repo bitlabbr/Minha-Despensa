@@ -63,8 +63,8 @@ class RoomPantryRepository(
     }
 
     override fun getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategory?> {
-        logger.d(TAG, "getPantryItemWithCategoryByID: pantryItemId: $pantryItemId")
-        return dao.getPantryItemWithCategoryByID(pantryItemId).map { it?.toDomain() }
+        logger.d(TAG, "getPantryItemWithCategoryById: pantryItemId: $pantryItemId")
+        return dao.getPantryItemWithCategoryById(pantryItemId).map { it?.toDomain() }
     }
 
     override fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>> {
@@ -74,7 +74,7 @@ class RoomPantryRepository(
         val now = getCurrentTime()
         val expirationThreshold = now + thresholdDays.toLong() * MILLIS_PER_DAY
 
-        return dao.getExpiringPantryItemsDao(
+        return dao.getExpiringPantryItems(
             now = now,
             expirationThreshold = expirationThreshold
         ).map { pantryItemsWithCategoryDaoResult ->
@@ -127,7 +127,7 @@ class RoomPantryRepository(
 
         db.useWriterConnection { connection ->
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val item = checkNotNull(dao.getPantryItemByID(pantryItemId).first()) {
+                val item = checkNotNull(dao.getPantryItemById(pantryItemId).first()) {
                     "Pantry item not found with ID: $pantryItemId"
                 }
                 require(!item.isDeleted) { "Cannot consume a deleted pantry item: $pantryItemId" }
@@ -160,7 +160,7 @@ class RoomPantryRepository(
                         "Quantity to consume must be greater than zero for item ${consumption.pantryItemId}"
                     }
 
-                    val item = checkNotNull(dao.getPantryItemByID(consumption.pantryItemId).first()) {
+                    val item = checkNotNull(dao.getPantryItemById(consumption.pantryItemId).first()) {
                         "Pantry item not found with ID: ${consumption.pantryItemId}"
                     }
                     require(!item.isDeleted) {
@@ -182,13 +182,13 @@ class RoomPantryRepository(
     }
 
     override fun getPantryItemById(pantryItemId: String): Flow<PantryItem?> {
-        logger.d(TAG, "getPantryItemsByID: pantryItemId: $pantryItemId")
-        return dao.getPantryItemByID(pantryItemId).map { it?.toDomain() }
+        logger.d(TAG, "getPantryItemById: pantryItemId: $pantryItemId")
+        return dao.getPantryItemById(pantryItemId).map { it?.toDomain() }
     }
 
     override fun getPantryItemsByProductId(productId: String): Flow<List<PantryItem>> {
-        logger.d(TAG, "getPantryItemsByProductID: productId: $productId")
-        return dao.getPantryItemsByProductID(productId).map { entities -> entities.map { it.toDomain() } }
+        logger.d(TAG, "getPantryItemsByProductId: productId: $productId")
+        return dao.getPantryItemsByProductId(productId).map { entities -> entities.map { it.toDomain() } }
     }
 
     @OptIn(ExperimentalUuidApi::class)

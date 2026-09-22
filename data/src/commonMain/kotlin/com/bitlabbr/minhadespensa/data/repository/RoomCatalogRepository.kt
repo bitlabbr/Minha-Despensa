@@ -156,7 +156,8 @@ class RoomCatalogRepository(
                     netWeight = product.netWeight,
                     updatedAt = product.updatedAt,
                     isDeleted = product.isDeleted,
-                    manuallyAdded = product.manuallyAdded
+                    manuallyAdded = product.manuallyAdded,
+                    notes = product.notes
                 )
                 if (rowsAffected > 0 && imageBytes != null) {
                     mediaDao.insertOrUpdate(
@@ -169,6 +170,11 @@ class RoomCatalogRepository(
                 }
             }
         }
+    }
+
+    override suspend fun markProductAsDeleted(id: String, updatedAt: Long) {
+        logger.d(TAG, "markProductAsDeleted id: $id, updatedAt: $updatedAt")
+        productDao.markAsDeleted(id, updatedAt)
     }
 
     override suspend fun deleteProductById(id: String) {

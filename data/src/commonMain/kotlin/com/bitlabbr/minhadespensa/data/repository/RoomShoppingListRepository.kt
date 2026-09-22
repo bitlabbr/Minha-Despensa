@@ -90,6 +90,8 @@ class RoomShoppingListRepository(
         val rowsAffected = listDao.updateShoppingListIfNewer(
             id = list.id,
             name = list.name,
+            type = list.type.name,
+            status = list.status.name,
             budgetInCents = list.budgetInCents,
             updatedAt = list.updatedAt,
             isDeleted = list.isDeleted,
@@ -101,14 +103,14 @@ class RoomShoppingListRepository(
         }
     }
 
-    override suspend fun markShoppingListAsDeleted(listID: String, updatedAt: Long) {
-        logger.d(TAG, "markShoppingListAsDeleted listID:$listID")
-        listDao.markShoppingListAsDeleted(listID, updatedAt)
+    override suspend fun markShoppingListAsDeleted(listId: String, updatedAt: Long) {
+        logger.d(TAG, "markShoppingListAsDeleted listId:$listId")
+        listDao.markShoppingListAsDeleted(listId, updatedAt)
     }
 
-    override suspend fun deleteShoppingListById(listID: String) {
-        logger.d(TAG, "deleteShoppingListById listID:$listID")
-        listDao.deleteShoppingListById(listID)
+    override suspend fun deleteShoppingListById(listId: String) {
+        logger.d(TAG, "deleteShoppingListById listId:$listId")
+        listDao.deleteShoppingListById(listId)
     }
 
     override suspend fun insertShoppingItem(item: ShoppingItem) {
@@ -129,6 +131,7 @@ class RoomShoppingListRepository(
         val rowsAffected = itemDao.updateItemIfNewer(
             id = item.id,
             productId = item.productId,
+            rawText = item.rawText,
             quantity = item.quantity,
             priceAtTime = item.priceAtTime,
             isChecked = item.isChecked,
@@ -140,14 +143,19 @@ class RoomShoppingListRepository(
         }
     }
 
-    override suspend fun toggleItemCheck(id: String, isChecked: Boolean) {
-        logger.d(TAG, "toggleItemCheck id:$id isChecked:$isChecked")
-        itemDao.updateCheckStatus(id, isChecked, getCurrentTime())
+    override suspend fun toggleItemCheck(itemId: String, isChecked: Boolean) {
+        logger.d(TAG, "toggleItemCheck itemId:$itemId isChecked:$isChecked")
+        itemDao.updateCheckStatus(itemId, isChecked, getCurrentTime())
     }
 
-    override suspend fun markAsDeleted(id: String) {
-        logger.d(TAG, "markAsDeleted id:$id")
-        itemDao.markAsDeleted(id, getCurrentTime())
+    override suspend fun markShoppingItemAsDeleted(itemId: String, updatedAt: Long) {
+        logger.d(TAG, "markShoppingItemAsDeleted itemId:$itemId, updatedAt:$updatedAt")
+        itemDao.markAsDeleted(itemId, updatedAt)
+    }
+
+    override suspend fun deleteShoppingItemById(itemId: String) {
+        logger.d(TAG, "deleteShoppingItemById itemId:$itemId")
+        itemDao.deleteById(itemId)
     }
 
     override suspend fun finalizePurchase(listId: String) {

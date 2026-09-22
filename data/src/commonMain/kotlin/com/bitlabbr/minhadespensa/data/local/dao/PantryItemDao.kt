@@ -23,21 +23,28 @@
 
 package com.bitlabbr.minhadespensa.data.local.dao
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
 import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
-interface PantryRepositoryDao {
+interface PantryItemDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPantryItem(item: PantryItemEntity): Long
 
     @Query("SELECT * FROM pantry_items WHERE productId = :productId AND isDeleted = 0")
-    fun getPantryItemsByProductID(productId: String): Flow<List<PantryItemEntity>>
+    fun getPantryItemsByProductId(productId: String): Flow<List<PantryItemEntity>>
 
     @Query("SELECT * FROM pantry_items WHERE isDeleted = 0")
     fun getAllActivePantryItems(): Flow<List<PantryItemEntity>>
+
+    @Query("SELECT * FROM pantry_items WHERE id = :pantryItemId")
+    fun getPantryItemById(pantryItemId: String): Flow<PantryItemEntity?>
 
     @Query(
         """
@@ -46,7 +53,7 @@ interface PantryRepositoryDao {
         WHERE id = :id AND updatedAt <= :updatedAt
     """
     )
-    suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long)
+    suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long): Int
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun forceUpdatePantryItem(pantryItem: PantryItemEntity): Int
@@ -74,26 +81,28 @@ interface PantryRepositoryDao {
     @Query("DELETE FROM pantry_items WHERE id = :id")
     suspend fun deletePantryItemById(id: String): Int
 
-    @Query("SELECT * FROM pantry_items WHERE id = :pantryItemId")
-    fun getPantryItemByID(pantryItemId: String): Flow<PantryItemEntity?>
-
-    @Query("""
+    @Query(
+        """
         SELECT p.*, c.category, c.name 
         FROM pantry_items p 
         INNER JOIN catalog_products c ON p.productId = c.id 
         WHERE p.isDeleted = 0 AND c.isDeleted = 0
-    """)
+    """
+    )
     fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategoryDaoResult>>
 
-    @Query("""
+    @Query(
+        """
         SELECT p.*, c.category, c.name 
         FROM pantry_items p 
         INNER JOIN catalog_products c ON p.productId = c.id 
         WHERE p.id = :pantryItemId AND p.isDeleted = 0 AND c.isDeleted = 0
-    """)
-    fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategoryDaoResult?>
+    """
+    )
+    fun getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategoryDaoResult?>
 
-    @Query("""
+    @Query(
+        """
         SELECT p.*, c.category, c.name 
         FROM pantry_items p 
         INNER JOIN catalog_products c ON p.productId = c.id 
@@ -103,6 +112,9 @@ interface PantryRepositoryDao {
           AND p.expirationDate >= :now
           AND p.expirationDate <= :expirationThreshold
         ORDER BY p.expirationDate ASC
-    """)
-    fun getExpiringPantryItemsDao(now: Long, expirationThreshold: Long): Flow<List<PantryItemWithCategoryDaoResult>>
-    }
+    """
+    )
+    fun getExpiringPantryItems(now: Long, expirationThreshold: Long): Flow<List<PantryItemWithCategoryDaoResult>>
+}
+
+typealias PantryRepositoryDao = PantryItemDao

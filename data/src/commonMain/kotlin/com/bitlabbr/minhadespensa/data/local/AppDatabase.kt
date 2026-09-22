@@ -30,7 +30,7 @@ import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
 import com.bitlabbr.minhadespensa.data.local.converter.Converters
 import com.bitlabbr.minhadespensa.data.local.dao.CatalogProductDao
-import com.bitlabbr.minhadespensa.data.local.dao.PantryRepositoryDao
+import com.bitlabbr.minhadespensa.data.local.dao.PantryItemDao
 import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
 import com.bitlabbr.minhadespensa.data.local.dao.ProductMediaDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingItemDao
@@ -57,7 +57,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase: RoomDatabase() {
     abstract fun catalogDao(): CatalogProductDao
-    abstract fun pantryDao(): PantryRepositoryDao
+    abstract fun pantryDao(): PantryItemDao
     abstract fun priceDao(): PriceEntryDao
     abstract fun shoppingItemDao(): ShoppingItemDao
     abstract fun productMediaDao(): ProductMediaDao

@@ -82,5 +82,5 @@ fun ShoppingItem.toEntity(): ShoppingItemEntity =
 
 fun ShoppingListWithItems.toDomain(): ShoppingList =
     list.toDomain(
-        items = items.filterNot { it.isDeleted }.map { it.toDomain() }
+        items = items.map { it.toDomain() }
     )

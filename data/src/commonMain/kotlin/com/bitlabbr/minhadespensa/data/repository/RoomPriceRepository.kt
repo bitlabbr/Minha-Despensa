@@ -50,8 +50,8 @@ class RoomPriceRepository(
     }
 
     override fun getLatestPriceForProductId(productId: String): Flow<PriceEntry?> {
-        logger.d(TAG, "getLatestPriceForProductID: productId: $productId")
-        return dao.getLatestPriceForProductID(productId).map { it?.toDomain() }
+        logger.d(TAG, "getLatestPriceForProductId: productId: $productId")
+        return dao.getLatestPriceForProductId(productId).map { it?.toDomain() }
     }
 
     override suspend fun insertPriceEntry(priceEntry: PriceEntry) {
@@ -85,9 +85,9 @@ class RoomPriceRepository(
         }
     }
 
-    override suspend fun markPriceEntryAsDeleted(priceEntryId: String) {
-        logger.d(TAG, "markPriceEntryAsDeletedById: priceEntryId: $priceEntryId")
-        dao.markPriceEntryAsDeletedById(priceEntryId, getCurrentTime())
+    override suspend fun markPriceEntryAsDeleted(priceEntryId: String, updatedAt: Long) {
+        logger.d(TAG, "markPriceEntryAsDeleted: priceEntryId: $priceEntryId, updatedAt: $updatedAt")
+        dao.markPriceEntryAsDeleted(priceEntryId, updatedAt)
     }
 
     override suspend fun deletePriceEntryById(priceEntryId: String) {
