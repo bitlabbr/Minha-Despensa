@@ -23,24 +23,23 @@
 
 package com.bitlabbr.minhadespensa.core.domain.util
 
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlin.time.Duration.Companion.minutes
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
-fun getCurrentTime(): Long = Clock.System.now().toEpochMilliseconds()
+class ConsoleLoggerTest {
 
-fun isValidTimestamp(timestamp: Long): Boolean {
-    if (timestamp <= 0) return false
+    private val logger = ConsoleLogger(moduleName = "TestModule")
 
-    val instant = try {
-        Instant.fromEpochMilliseconds(timestamp)
-    } catch (e: Exception) {
-        return false
+    @Test
+    fun `ConsoleLogger methods execute without throwing exceptions`() {
+        // Verify all log levels run cleanly
+        logger.d("TestTag", "Debug message")
+        logger.i("TestTag", "Info message")
+        logger.w("TestTag", "Warning message")
+        logger.w("TestTag", "Warning message with error", IllegalStateException("Test error"))
+        logger.e("TestTag", "Error message")
+        logger.e("TestTag", "Error message with error", RuntimeException("Crash test"))
+
+        assertTrue(true)
     }
-
-    val now = Clock.System.now()
-    val minValid = Instant.parse("2000-01-01T00:00:00Z")
-    val maxFuture = now.plus(1.minutes)
-
-    return instant in minValid..maxFuture
 }
