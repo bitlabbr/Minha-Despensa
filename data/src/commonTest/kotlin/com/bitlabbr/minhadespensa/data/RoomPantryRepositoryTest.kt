@@ -72,7 +72,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val pantryItem = createDummyPantryItem(productId = product.id, quantity = 5.0)
         pantryRepository.insertPantryItem(pantryItem)
 
-        pantryRepository.getPantryItemsByID(pantryItem.id).test {
+        pantryRepository.getPantryItemById(pantryItem.id).test {
             val item = awaitItem()
             assertNotNull(item)
             assertEquals(5.0, item.quantity)
@@ -95,7 +95,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val olderSyncItem = localItem.copy(quantity = 2.0, updatedAt = oldTimestamp)
         pantryRepository.updatePantryItemIfNewer(olderSyncItem)
 
-        val result = pantryRepository.getPantryItemsByID(localItem.id).first()
+        val result = pantryRepository.getPantryItemById(localItem.id).first()
         assertNotNull(result)
         assertEquals(10.0, result.quantity, "Should ignore old records")
     }
@@ -141,7 +141,7 @@ class RoomPantryRepositoryTest : BaseTest() {
 
         pantryRepository.deletePantryItemById(item.id)
 
-        pantryRepository.getPantryItemsByID(item.id).test {
+        pantryRepository.getPantryItemById(item.id).test {
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -156,7 +156,7 @@ class RoomPantryRepositoryTest : BaseTest() {
 
         catalogRepository.deleteProductById(product.id)
 
-        pantryRepository.getPantryItemsByID(item.id).test {
+        pantryRepository.getPantryItemById(item.id).test {
             assertNull(awaitItem(), "The item should be deleted")
             cancelAndIgnoreRemainingEvents()
         }
@@ -173,7 +173,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val newerSyncItem = localItem.copy(quantity = 5.0, updatedAt = getCurrentTime() + 100)
         pantryRepository.updatePantryItemIfNewer(newerSyncItem)
 
-        val result = pantryRepository.getPantryItemsByID(localItem.id).first()
+        val result = pantryRepository.getPantryItemById(localItem.id).first()
         assertNotNull(result)
         assertEquals(5.0, result.quantity, "The db should accept the newest value")
     }
@@ -191,7 +191,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         )
 
         pantryRepository.insertPantryItem(item)
-        val saved = pantryRepository.getPantryItemsByID(item.id).first()
+        val saved = pantryRepository.getPantryItemById(item.id).first()
 
         assertNotNull(saved)
         assertEquals(expiry, saved.expirationDate)
@@ -201,7 +201,7 @@ class RoomPantryRepositoryTest : BaseTest() {
     @OptIn(ExperimentalUuidApi::class)
     @Test
     fun `should return empty list when searching for non-existent product ID`() = runTest {
-        pantryRepository.getPantryItemsByProductID(Uuid.random().toString()).test {
+        pantryRepository.getPantryItemsByProductId(Uuid.random().toString()).test {
             assertTrue(awaitItem().isEmpty())
             cancelAndIgnoreRemainingEvents()
         }
@@ -218,7 +218,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         pantryRepository.insertPantryItem(createDummyPantryItem(productId = productA.id))
         pantryRepository.insertPantryItem(createDummyPantryItem(productId = productB.id))
 
-        pantryRepository.getPantryItemsByProductID(productA.id).test {
+        pantryRepository.getPantryItemsByProductId(productA.id).test {
             val list = awaitItem()
             assertEquals(2, list.size)
             assertTrue(list.all { it.productId == productA.id })
@@ -256,7 +256,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val item = createDummyPantryItem(productId = product.id, quantity = 2.0)
         pantryRepository.insertPantryItem(item)
 
-        pantryRepository.getPantryItemWithCategoryByID(item.id).test {
+        pantryRepository.getPantryItemWithCategoryById(item.id).test {
             val result = awaitItem()
             assertNotNull(result)
             assertEquals(item.id, result.pantryItem.id)
@@ -275,7 +275,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         pantryRepository.insertPantryItem(item)
 
         // Soft-delete no produto do catálogo
-        catalogRepository.updateForProductIfNewer(
+        catalogRepository.updateProductIfNewer(
             product.copy(isDeleted = true, updatedAt = getCurrentTime() + 100),
             null
         )
@@ -299,7 +299,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val zeroQuantityItem = createDummyPantryItem(productId = product.id, quantity = 0.0)
         pantryRepository.insertPantryItem(zeroQuantityItem)
 
-        val result = pantryRepository.getPantryItemsByID(zeroQuantityItem.id).first()
+        val result = pantryRepository.getPantryItemById(zeroQuantityItem.id).first()
         assertNotNull(result)
         assertEquals(0.0, result.quantity)
     }
@@ -320,7 +320,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val sameTimestampUpdate = localItem.copy(quantity = 10.0, updatedAt = timestamp)
         pantryRepository.updatePantryItemIfNewer(sameTimestampUpdate)
 
-        val result = pantryRepository.getPantryItemsByID(localItem.id).first()
+        val result = pantryRepository.getPantryItemById(localItem.id).first()
         assertNotNull(result)
         assertEquals(5.0, result.quantity, "Atualizações com timestamp igual não devem sobrescrever estado local")
     }
@@ -340,7 +340,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val forcedItem = initialItem.copy(quantity = 1.0, updatedAt = olderForcedTimestamp)
         pantryRepository.forceUpdatePantryItem(forcedItem)
 
-        val result = pantryRepository.getPantryItemsByID(initialItem.id).first()
+        val result = pantryRepository.getPantryItemById(initialItem.id).first()
         assertNotNull(result)
         assertEquals(1.0, result.quantity)
         assertEquals(olderForcedTimestamp, result.updatedAt)
@@ -399,7 +399,7 @@ class RoomPantryRepositoryTest : BaseTest() {
 
         pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = 1.5)
 
-        val updated = pantryRepository.getPantryItemsByID(item.id).first()
+        val updated = pantryRepository.getPantryItemById(item.id).first()
         assertNotNull(updated)
         assertEquals(3.5, updated.quantity, 0.001)
         assertTrue(updated.updatedAt > initialTime, "updatedAt must be updated after consumption")
@@ -415,7 +415,7 @@ class RoomPantryRepositoryTest : BaseTest() {
 
         pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = 2.0)
 
-        val updated = pantryRepository.getPantryItemsByID(item.id).first()
+        val updated = pantryRepository.getPantryItemById(item.id).first()
         assertNotNull(updated)
         assertEquals(0.0, updated.quantity, "the pantry should be zeroed immediately")
         assertFalse(
@@ -436,7 +436,7 @@ class RoomPantryRepositoryTest : BaseTest() {
             pantryRepository.consumePantryItem(pantryItemId = item.id, quantityToConsume = 1.5)
         }
 
-        val intact = pantryRepository.getPantryItemsByID(item.id).first()
+        val intact = pantryRepository.getPantryItemById(item.id).first()
         assertNotNull(intact)
         assertEquals(1.0, intact.quantity, "The balance cannot be changed if validation fails.")
     }
@@ -502,9 +502,9 @@ class RoomPantryRepositoryTest : BaseTest() {
 
         pantryRepository.consumeBatch(recipeConsumptions)
 
-        assertEquals(4.0, pantryRepository.getPantryItemsByID(itemRice.id).first()?.quantity)
-        assertEquals(1.5, pantryRepository.getPantryItemsByID(itemOil.id).first()?.quantity)
-        assertEquals(9.0, pantryRepository.getPantryItemsByID(itemEgg.id).first()?.quantity)
+        assertEquals(4.0, pantryRepository.getPantryItemById(itemRice.id).first()?.quantity)
+        assertEquals(1.5, pantryRepository.getPantryItemById(itemOil.id).first()?.quantity)
+        assertEquals(9.0, pantryRepository.getPantryItemById(itemEgg.id).first()?.quantity)
     }
 
     @Test
@@ -533,12 +533,12 @@ class RoomPantryRepositoryTest : BaseTest() {
         // Rollback verificado: o arroz não pode ter sido descontado
         assertEquals(
             5.0,
-            pantryRepository.getPantryItemsByID(itemRice.id).first()?.quantity,
+            pantryRepository.getPantryItemById(itemRice.id).first()?.quantity,
             "The rice must undergo rollback."
         )
         assertEquals(
             0.2,
-            pantryRepository.getPantryItemsByID(itemOil.id).first()?.quantity,
+            pantryRepository.getPantryItemById(itemOil.id).first()?.quantity,
             "The oil should remain unchanged."
         )
     }

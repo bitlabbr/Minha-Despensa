@@ -46,6 +46,8 @@ class StartShoppingSessionUseCase(
             val existingList = shoppingListRepository.getShoppingListById(existingListId).firstOrNull()
                 ?: throw IllegalArgumentException("Lista não encontrada: $existingListId")
 
+            require(!existingList.isDeleted) { "Não é possível iniciar compras em uma lista excluída" }
+
             val updatedList = existingList.copy(
                 status = ShoppingListStatus.SHOPPING,
                 updatedAt = now,

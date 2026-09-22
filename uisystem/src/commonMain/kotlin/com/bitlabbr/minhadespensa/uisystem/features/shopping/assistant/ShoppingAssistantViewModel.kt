@@ -92,7 +92,7 @@ class ShoppingAssistantViewModel(
     // Combine principal reduzido para apenas 3 fluxos
     val uiState: StateFlow<ShoppingAssistantUiState> = combine(
         currentListFlow,
-        catalogRepository.getAllActives(),
+        catalogRepository.getAllActiveProducts(),
         sessionControlFlow,
     ) { currentList, catalogProducts, control ->
         if (currentList == null) {

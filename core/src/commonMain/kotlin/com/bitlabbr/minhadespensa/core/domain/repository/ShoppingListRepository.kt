@@ -28,18 +28,25 @@ import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import kotlinx.coroutines.flow.Flow
 
 interface ShoppingListRepository {
+    // Reactive queries
     fun getAllActiveShoppingLists(): Flow<List<ShoppingList>>
     fun getShoppingListById(listId: String): Flow<ShoppingList?>
-    suspend fun insertShoppingList(shoppingList: ShoppingList)
-    suspend fun forceUpdateForShoppingList(shoppingList: ShoppingList)
-    suspend fun markShoppingListAsDeleted(listID: String, updatedAt: Long)
-    suspend fun deleteShoppingListById(listID: String)
-    suspend fun updateShoppingListIfNewer(list: ShoppingList)
 
+    // Shopping list operations
+    suspend fun insertShoppingList(shoppingList: ShoppingList)
+    suspend fun forceUpdateShoppingList(shoppingList: ShoppingList)
+    suspend fun updateShoppingListIfNewer(list: ShoppingList)
+    suspend fun markShoppingListAsDeleted(listId: String, updatedAt: Long)
+    suspend fun deleteShoppingListById(listId: String)
+
+    // List Item operations
     suspend fun insertShoppingItem(item: ShoppingItem)
-    suspend fun forceUpdateForShoppingItem(item: ShoppingItem)
-    suspend fun toggleItemCheck(id: String, isChecked: Boolean)
-    suspend fun markAsDeleted(id: String)
-    suspend fun finalizePurchase(listId: String)
+    suspend fun forceUpdateShoppingItem(item: ShoppingItem)
     suspend fun updateShoppingItemIfNewer(item: ShoppingItem)
+    suspend fun toggleItemCheck(itemId: String, isChecked: Boolean)
+    suspend fun markShoppingItemAsDeleted(itemId: String, updatedAt: Long)
+    suspend fun deleteShoppingItemById(itemId: String)
+
+    // Checkout
+    suspend fun finalizePurchase(listId: String)
 }

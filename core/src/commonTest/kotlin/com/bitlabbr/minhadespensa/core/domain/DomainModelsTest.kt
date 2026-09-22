@@ -21,10 +21,13 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core
+package com.bitlabbr.minhadespensa.core.domain
 
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
@@ -156,5 +159,51 @@ class DomainModelsTest {
 
         assertEquals(entry, deserialized)
         assertEquals(2599L, deserialized.priceInCents)
+    }
+
+    @Test
+    fun `PantryItem serialization and properties should be consistent`() {
+        val pantryItem = PantryItem(
+            id = "pantry-1",
+            productId = "prod-1",
+            quantity = 4.0,
+            expirationDate = 1700000000L,
+            batchNumber = "LOTE-A",
+            updatedAt = 123456L,
+            isDeleted = false,
+        )
+
+        val serialized = json.encodeToString(pantryItem)
+        val deserialized = json.decodeFromString<PantryItem>(serialized)
+
+        assertEquals(pantryItem, deserialized)
+        assertEquals("LOTE-A", deserialized.batchNumber)
+        assertEquals(4.0, deserialized.quantity)
+    }
+
+    @Test
+    fun `Pantry auxiliary models should instantiate correctly`() {
+        val item = PantryItem(
+            id = "pantry-1",
+            productId = "prod-1",
+            quantity = 2.0,
+            expirationDate = null,
+            updatedAt = 1000L,
+        )
+
+        val joined = PantryItemWithCategory(
+            pantryItem = item,
+            category = "Grãos",
+            name = "Feijão Carioca",
+        )
+        assertEquals("Grãos", joined.category)
+        assertEquals("Feijão Carioca", joined.name)
+
+        val consumption = PantryItemConsumption(
+            pantryItemId = "pantry-1",
+            quantityToConsume = 0.5,
+        )
+        assertEquals("pantry-1", consumption.pantryItemId)
+        assertEquals(0.5, consumption.quantityToConsume)
     }
 }
