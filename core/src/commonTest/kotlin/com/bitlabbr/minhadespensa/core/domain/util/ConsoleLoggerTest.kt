@@ -21,23 +21,25 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.core.domain.model
+package com.bitlabbr.minhadespensa.core.domain.util
 
-import kotlinx.serialization.Serializable
-import kotlin.math.roundToLong
+import kotlin.test.Test
+import kotlin.test.assertTrue
 
-@Serializable
-data class ShoppingItem(
-    val id: String,
-    val listId: String,
-    val productId: String? = null,
-    val rawText: String? = null,
-    val quantity: Double = 1.0,
-    val priceAtTime: Long? = null,
-    val isChecked: Boolean = false,
-    val updatedAt: Long,
-    val isDeleted: Boolean = false,
-) {
-    val subtotalInCents: Long?
-        get() = priceAtTime?.let { (quantity * it).roundToLong() }
+class ConsoleLoggerTest {
+
+    private val logger = ConsoleLogger(moduleName = "TestModule")
+
+    @Test
+    fun `ConsoleLogger methods execute without throwing exceptions`() {
+        // Verify all log levels run cleanly
+        logger.d("TestTag", "Debug message")
+        logger.i("TestTag", "Info message")
+        logger.w("TestTag", "Warning message")
+        logger.w("TestTag", "Warning message with error", IllegalStateException("Test error"))
+        logger.e("TestTag", "Error message")
+        logger.e("TestTag", "Error message with error", RuntimeException("Crash test"))
+
+        assertTrue(true)
+    }
 }

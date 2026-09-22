@@ -44,6 +44,7 @@ class AddCatalogItemToShoppingListUseCase(
 
         val currentList = shoppingListRepository.getShoppingListById(listId).firstOrNull()
             ?: throw IllegalArgumentException("Lista não encontrada: $listId")
+        require(!currentList.isDeleted) { "Não é possível alterar uma lista que foi excluída" }
 
         val now = getCurrentTime()
         val existingItem = currentList.items.find { it.productId == productId && !it.isDeleted }

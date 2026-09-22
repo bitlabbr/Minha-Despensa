@@ -54,7 +54,7 @@ class PlannedListViewModel(
         combine(_title, _budgetInput, _searchQuery) { title, budget, query ->
             Triple(title, budget, query)
         },
-        catalogRepository.getAllActives(),
+        catalogRepository.getAllActiveProducts(),
         _selectedQuantities,
         combine(_isSaving, _isSuccess, _errorMessage) { saving, success, error ->
             Triple(saving, success, error)

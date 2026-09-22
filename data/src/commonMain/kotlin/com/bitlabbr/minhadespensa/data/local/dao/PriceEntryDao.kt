@@ -29,20 +29,23 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PriceEntryDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insertPriceEntry(entry: PriceEntryEntity): Long
+
+    @Query("SELECT * FROM price_entries WHERE id = :id")
+    fun findById(id: String): Flow<PriceEntryEntity?>
 
     @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC")
     fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntryEntity>>
 
     @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC LIMIT 1")
-    fun getLatestPriceForProductID(productId: String): Flow<PriceEntryEntity?>
+    fun getLatestPriceForProductId(productId: String): Flow<PriceEntryEntity?>
 
     @Query("UPDATE price_entries SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id AND updatedAt <= :updatedAt")
-    suspend fun markPriceEntryAsDeletedById(id: String, updatedAt: Long)
+    suspend fun markPriceEntryAsDeleted(id: String, updatedAt: Long): Int
 
     @Query("DELETE FROM price_entries WHERE id = :id")
-    suspend fun deletePriceEntryById(id: String)
+    suspend fun deletePriceEntryById(id: String): Int
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun forceUpdatePriceEntry(priceEntry: PriceEntryEntity): Int

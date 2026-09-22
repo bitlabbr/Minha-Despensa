@@ -28,7 +28,9 @@ import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 object CoreConstants {
 
     object Product {
-        val DEFAULT_MEASURE_UNITY = MeasureUnit.UNIT
+        val DEFAULT_MEASURE_UNIT = MeasureUnit.UNIT
+        @Deprecated("Use DEFAULT_MEASURE_UNIT instead", ReplaceWith("DEFAULT_MEASURE_UNIT"))
+        val DEFAULT_MEASURE_UNITY = DEFAULT_MEASURE_UNIT
         const val DEFAULT_CATEGORY = "Outros"
         const val NAME_MAX_LENGTH = 30
         const val BRAND_MAX_LENGTH = 30
@@ -52,13 +54,13 @@ object CoreConstants {
     }
 
     object Validation {
-        const val ERROR_PRODUCT_CATEGORY_TOO_LONG = "A categoria ultrapassa o limite máximo de :"
+        const val ERROR_PRODUCT_CATEGORY_TOO_LONG = "A categoria ultrapassa o limite máximo de"
         const val ERROR_PRODUCT_ID_REQUIRED = "O ID do produto é obrigatório"
         const val ERROR_PANTRY_QUANTITY_POSITIVE = "A quantidade adicionada deve ser maior que zero"
         const val ERROR_PRODUCT_NAME_BLANK = "O nome do produto não pode ser vazio"
         const val ERROR_PRODUCT_NAME_TOO_LONG = "O nome do produto excede o limite máximo de caracteres"
         const val ERROR_PRODUCT_NET_WEIGHT_POSITIVE = "O peso ou quantidade líquida deve ser maior que zero"
-        const val ERROR_EAN_INVALID_FORMAT = "Código de barras inválido. Deve conter 8, 13 ou 14 dígitos numéricos"
+        const val ERROR_EAN_INVALID_FORMAT = "Código de barras inválido. Deve conter 8, 12, 13 ou 14 dígitos numéricos"
     }
 
     object CatalogCategories {

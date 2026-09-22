@@ -77,7 +77,7 @@ class SaveCatalogProductUseCase(
         )
 
         if (isEditing) {
-            catalogRepository.updateForProductIfNewer(product, imageBytes)
+            catalogRepository.updateProductIfNewer(product, imageBytes)
         } else {
             catalogRepository.insertProduct(product, imageBytes)
         }

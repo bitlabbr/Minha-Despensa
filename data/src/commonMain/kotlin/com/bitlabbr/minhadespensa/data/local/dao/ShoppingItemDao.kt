@@ -48,7 +48,7 @@ interface ShoppingItemDao {
     @Query(
         """
     UPDATE shopping_items 
-    SET product_id = :productId, quantity = :quantity, price_at_time = :priceAtTime, 
+    SET product_id = :productId, raw_text = :rawText, quantity = :quantity, price_at_time = :priceAtTime, 
         is_checked = :isChecked, updated_at = :updatedAt, is_deleted = :isDeleted
     WHERE id = :id AND (
         updated_at < :updatedAt
@@ -59,6 +59,7 @@ interface ShoppingItemDao {
     suspend fun updateItemIfNewer(
         id: String,
         productId: String?,
+        rawText: String?,
         quantity: Double,
         priceAtTime: Long?,
         isChecked: Boolean,
@@ -66,15 +67,15 @@ interface ShoppingItemDao {
         isDeleted: Boolean
     ): Int
 
-    @Query("UPDATE shopping_items SET is_checked = :checked, updated_at = :now WHERE id = :id")
-    suspend fun updateCheckStatus(id: String, checked: Boolean, now: Long)
+    @Query("SELECT * FROM shopping_items WHERE list_id = :listId AND is_deleted = 0")
+    fun getItemsByListId(listId: String): Flow<List<ShoppingItemEntity>>
 
-    @Query("UPDATE shopping_items SET is_deleted = 1, updated_at = :now WHERE updated_at <= :now")
-    suspend fun deleteAllLogical(now: Long)
+    @Query("UPDATE shopping_items SET is_checked = :checked, updated_at = :now WHERE id = :id")
+    suspend fun updateCheckStatus(id: String, checked: Boolean, now: Long): Int
 
     @Query("UPDATE shopping_items SET is_deleted = 1, updated_at = :updatedAt WHERE id = :id AND updated_at <= :updatedAt")
-    suspend fun markAsDeleted(id: String, updatedAt: Long)
+    suspend fun markAsDeleted(id: String, updatedAt: Long): Int
 
-    @Query("SELECT * FROM shopping_items WHERE is_checked = 1 AND is_deleted = 0")
-    fun getCheckedItemsSync(): Flow<List<ShoppingItemEntity>>
+    @Query("DELETE FROM shopping_items WHERE id = :id")
+    suspend fun deleteById(id: String): Int
 }

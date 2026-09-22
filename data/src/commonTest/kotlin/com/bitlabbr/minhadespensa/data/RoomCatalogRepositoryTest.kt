@@ -35,8 +35,8 @@ import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
 import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
-import com.bitlabbr.minhadespensa.data.repository.toEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
@@ -476,7 +476,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
             netWeight = 0.75,
             updatedAt = getCurrentTime()
         )
-        catalogRepository.updateForProductIfNewer(updatedProduct, null)
+        catalogRepository.updateProductIfNewer(updatedProduct, null)
 
         catalogRepository.getProductById(productId).test {
             val result = awaitItem()
@@ -506,7 +506,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(product, imageBytes)
 
         val updatedProduct = product.copy(name = "Leite Desnatado")
-        catalogRepository.updateForProductIfNewer(updatedProduct, null)
+        catalogRepository.updateProductIfNewer(updatedProduct, null)
 
         val mediaExists = db.productMediaDao().getByProductId(productId)
         assertTrue(mediaExists != null, "Media should still exist")
@@ -529,7 +529,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(product, null)
 
         val deletedProduct = product.copy(isDeleted = true, updatedAt = getCurrentTime() + 1)
-        catalogRepository.updateForProductIfNewer(deletedProduct, null)
+        catalogRepository.updateProductIfNewer(deletedProduct, null)
 
         val result = catalogRepository.getProductById(productId).first()
         assertNotNull(result)
@@ -567,9 +567,9 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(otherItem2, null)
 
         val deletedProduct = product.copy(isDeleted = true, updatedAt = getCurrentTime() + 1)
-        catalogRepository.updateForProductIfNewer(deletedProduct, null)
+        catalogRepository.updateProductIfNewer(deletedProduct, null)
 
-        val result = catalogRepository.getAllActives().first()
+        val result = catalogRepository.getAllActiveProducts().first()
         assertNotNull(result)
         assertEquals(result.size, 2)
         result.forEach { item -> assertTrue { !item.isDeleted } }
@@ -587,7 +587,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
         val imageB = byteArrayOf(2, 2, 2)
         val updatedProduct = product.copy(name = "Produto com Nova Foto", updatedAt = getCurrentTime())
-        catalogRepository.updateForProductIfNewer(updatedProduct, imageB)
+        catalogRepository.updateProductIfNewer(updatedProduct, imageB)
 
         val finalMedia = db.productMediaDao().getByProductId(product.id)
         assertNotNull(finalMedia)
@@ -682,14 +682,14 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
         catalogRepository.insertProduct(product1, null)
 
-        catalogRepository.exists(id).test {
+        catalogRepository.existsById(id).test {
             val result = awaitItem()
             assertTrue { result }
         }
 
         catalogRepository.deleteProductById(id)
 
-        catalogRepository.exists(id).test {
+        catalogRepository.existsById(id).test {
             val result = awaitItem()
             assertTrue { !result }
         }
@@ -729,7 +729,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(localProduct, null)
         val remoteProduct = localProduct.copy(name = "Versão Antiga", updatedAt = olderRemoteTime)
 
-        catalogRepository.updateForProductIfNewer(remoteProduct, null)
+        catalogRepository.updateProductIfNewer(remoteProduct, null)
 
         val result = catalogRepository.getProductById(productId).first()
         assertEquals("Versão Recente", result?.name, "Should not accept older records overwrite (Last Write Wins)")
@@ -744,12 +744,12 @@ class RoomCatalogRepositoryTest : BaseTest() {
         catalogRepository.insertProduct(product, null)
 
         val deleteTime = getCurrentTime()
-        catalogRepository.updateForProductIfNewer(product.copy(isDeleted = true, updatedAt = deleteTime), null)
+        catalogRepository.updateProductIfNewer(product.copy(isDeleted = true, updatedAt = deleteTime), null)
 
         val oldSyncTime = deleteTime - 1000
         val resurrectedProduct = product.copy(isDeleted = false, updatedAt = oldSyncTime)
 
-        catalogRepository.updateForProductIfNewer(resurrectedProduct, null)
+        catalogRepository.updateProductIfNewer(resurrectedProduct, null)
 
         val result = catalogRepository.getProductById(productId).first()
         assertEquals(result?.isDeleted, true, "An old synchronization record should not 'delete' a product.")
@@ -942,7 +942,7 @@ class RoomCatalogRepositoryTest : BaseTest() {
         val newRejectedImage = byteArrayOf(9, 9, 9, 9)
 
         // Executa update defasado (LWW deve ignorar metadados e imagem)
-        catalogRepository.updateForProductIfNewer(outdatedRemoteProduct, newRejectedImage)
+        catalogRepository.updateProductIfNewer(outdatedRemoteProduct, newRejectedImage)
 
         val savedProduct = catalogRepository.getProductById(initialProduct.id).first()
         assertEquals("Produto Original", savedProduct?.name, "O produto deve manter os metadados locais mais novos")

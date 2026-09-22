@@ -27,15 +27,18 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import kotlinx.coroutines.flow.Flow
 
 interface CatalogRepository {
-    fun getProductByEan(ean: String): Flow<CatalogProduct?>
     fun getProductById(id: String): Flow<CatalogProduct?>
-    fun getAllActives(): Flow<List<CatalogProduct>>
+    fun getProductByEan(ean: String): Flow<CatalogProduct?>
+    fun getAllActiveProducts(): Flow<List<CatalogProduct>>
     fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>
-    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun forceUpdateForProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun updateForProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun deleteProductById(id: String)
-    fun exists(id: String): Flow<Boolean>
+    fun existsById(id: String): Flow<Boolean>
     fun getCategories(): Flow<List<String>>
     fun getProductImage(productId: String): Flow<ByteArray?>
+
+    // Persistence & synchronization LWW
+    suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
+    suspend fun forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?)
+    suspend fun updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
+    suspend fun markProductAsDeleted(id: String, updatedAt: Long)
+    suspend fun deleteProductById(id: String)
 }

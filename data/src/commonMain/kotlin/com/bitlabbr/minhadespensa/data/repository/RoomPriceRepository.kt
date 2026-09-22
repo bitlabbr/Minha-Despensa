@@ -26,11 +26,10 @@ package com.bitlabbr.minhadespensa.data.repository
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
-import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
+import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
@@ -40,18 +39,17 @@ class RoomPriceRepository(
     private val db: AppDatabase,
     private val logger: AppLogger
 ) : PriceRepository {
-    private val TAG = "RoomPriceRepository"
 
-    val dao = db.priceDao()
+    private val dao = db.priceDao()
 
     override fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntry>> {
         logger.d(TAG, "getPriceHistoryByProductId: productId: $productId")
         return dao.getPriceHistoryByProductId(productId).map { entities -> entities.map { it.toDomain() } }
     }
 
-    override fun getLatestPriceForProductID(productId: String): Flow<PriceEntry?> {
-        logger.d(TAG, "getLatestPriceForProductID: productId: $productId")
-        return dao.getLatestPriceForProductID(productId).map { it?.toDomain() }
+    override fun getLatestPriceForProductId(productId: String): Flow<PriceEntry?> {
+        logger.d(TAG, "getLatestPriceForProductId: productId: $productId")
+        return dao.getLatestPriceForProductId(productId).map { it?.toDomain() }
     }
 
     override suspend fun insertPriceEntry(priceEntry: PriceEntry) {
@@ -85,9 +83,9 @@ class RoomPriceRepository(
         }
     }
 
-    override suspend fun markPriceEntryAsDeletedById(priceEntryId: String) {
-        logger.d(TAG, "markPriceEntryAsDeletedById: priceEntryId: $priceEntryId")
-        dao.markPriceEntryAsDeletedById(priceEntryId, getCurrentTime())
+    override suspend fun markPriceEntryAsDeleted(priceEntryId: String, updatedAt: Long) {
+        logger.d(TAG, "markPriceEntryAsDeleted: priceEntryId: $priceEntryId, updatedAt: $updatedAt")
+        dao.markPriceEntryAsDeleted(priceEntryId, updatedAt)
     }
 
     override suspend fun deletePriceEntryById(priceEntryId: String) {
@@ -113,22 +111,7 @@ class RoomPriceRepository(
         }
     }
 
+    private companion object {
+        const val TAG = "RoomPriceRepository"
+    }
 }
-
-fun PriceEntryEntity.toDomain() = PriceEntry(
-    id = this.id,
-    productId = this.productId,
-    priceInCents = this.priceInCents,
-    storeName = this.storeName,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted
-)
-
-fun PriceEntry.toEntity() = PriceEntryEntity(
-    id = this.id,
-    productId = this.productId,
-    priceInCents = this.priceInCents,
-    storeName = this.storeName,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted
-)

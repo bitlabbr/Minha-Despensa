@@ -29,10 +29,19 @@ import kotlinx.datetime.toLocalDateTime
 
 class ConsoleLogger(private val moduleName: String) : AppLogger {
 
-    private val appName = "Minha Despensa:"
+    private val appName = "Minha Despensa"
 
     override fun d(tag: String, message: String) {
         println(buildLogLine("D", tag, message))
+    }
+
+    override fun i(tag: String, message: String) {
+        println(buildLogLine("I", tag, message))
+    }
+
+    override fun w(tag: String, message: String, error: Throwable?) {
+        val fullMessage = message + (error?.let { "\n${it.stackTraceToString()}" } ?: "")
+        println(buildLogLine("W", tag, fullMessage))
     }
 
     override fun e(tag: String, message: String, error: Throwable?) {
@@ -41,13 +50,13 @@ class ConsoleLogger(private val moduleName: String) : AppLogger {
     }
 
     private fun buildLogLine(type: String, tag: String, message: String): String {
-        val time = getCurrentTime()
+        val time = getFormattedTimestamp()
         return "$time [$type] [$appName] [$moduleName] [$tag]: $message"
     }
 
-    private fun getCurrentTime(): String {
+    private fun getFormattedTimestamp(): String {
         val now = Clock.System.now()
-        val local = now.toLocalDateTime(TimeZone.Companion.currentSystemDefault())
+        val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
 
         val year = local.year
         val month = local.monthNumber.pad()

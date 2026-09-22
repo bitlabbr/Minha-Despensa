@@ -29,24 +29,27 @@ import kotlinx.serialization.Serializable
 data class ShoppingList(
     val id: String,
     val name: String,
-    val type: ShoppingListType,
+    val type: ShoppingListType = ShoppingListType.PLANNED,
     val status: ShoppingListStatus = ShoppingListStatus.DRAFT,
     val items: List<ShoppingItem> = emptyList(),
     val budgetInCents: Long? = null,
     val updatedAt: Long,
     val isDeleted: Boolean = false,
-) {
-    override fun toString(): String {
-        return "ShoppingList(" +
-                "id='$id', " +
-                "name='$name'," +
-                " type=$type, " +
-                "status=$status, " +
-                "items=$items, " +
-                "totalBudget=$budgetInCents," +
-                " updatedAt=$updatedAt, " +
-                "isDeleted=$isDeleted)"
-    }
+){
+    val totalCheckedItems: Int
+        get() = items.count { it.isChecked && !it.isDeleted }
+
+    val totalActiveItems: Int
+        get() = items.count { !it.isDeleted }
+
+    val totalCartInCents: Long
+        get() = items
+            .filter { it.isChecked && !it.isDeleted }
+            .mapNotNull { it.subtotalInCents }
+            .sum()
+
+    val isOverBudget: Boolean
+        get() = budgetInCents != null && totalCartInCents > budgetInCents
 }
 
 enum class ShoppingListType {

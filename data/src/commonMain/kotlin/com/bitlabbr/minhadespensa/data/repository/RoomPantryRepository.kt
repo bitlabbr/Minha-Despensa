@@ -25,7 +25,6 @@ package com.bitlabbr.minhadespensa.data.repository
 
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
@@ -34,8 +33,8 @@ import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
-import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -43,12 +42,11 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class RoomPantryRepository(
-    val db: AppDatabase,
+    private val db: AppDatabase,
     private val logger: AppLogger
 ) : PantryRepository {
-    private val TAG = "RoomPantryRepository"
 
-    val dao = db.pantryDao()
+    private val dao = db.pantryDao()
 
     override fun getAllActivePantryItems(): Flow<List<PantryItem>> {
         logger.d(TAG, "getAllActivePantryItems")
@@ -62,9 +60,9 @@ class RoomPantryRepository(
         }
     }
 
-    override fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategory?> {
-        logger.d(TAG, "getPantryItemWithCategoryByID: pantryItemId: $pantryItemId")
-        return dao.getPantryItemWithCategoryByID(pantryItemId).map { it?.toDomain() }
+    override fun getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategory?> {
+        logger.d(TAG, "getPantryItemWithCategoryById: pantryItemId: $pantryItemId")
+        return dao.getPantryItemWithCategoryById(pantryItemId).map { it?.toDomain() }
     }
 
     override fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>> {
@@ -74,7 +72,7 @@ class RoomPantryRepository(
         val now = getCurrentTime()
         val expirationThreshold = now + thresholdDays.toLong() * MILLIS_PER_DAY
 
-        return dao.getExpiringPantryItemsDao(
+        return dao.getExpiringPantryItems(
             now = now,
             expirationThreshold = expirationThreshold
         ).map { pantryItemsWithCategoryDaoResult ->
@@ -127,7 +125,7 @@ class RoomPantryRepository(
 
         db.useWriterConnection { connection ->
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val item = checkNotNull(dao.getPantryItemByID(pantryItemId).first()) {
+                val item = checkNotNull(dao.getPantryItemById(pantryItemId).first()) {
                     "Pantry item not found with ID: $pantryItemId"
                 }
                 require(!item.isDeleted) { "Cannot consume a deleted pantry item: $pantryItemId" }
@@ -160,7 +158,7 @@ class RoomPantryRepository(
                         "Quantity to consume must be greater than zero for item ${consumption.pantryItemId}"
                     }
 
-                    val item = checkNotNull(dao.getPantryItemByID(consumption.pantryItemId).first()) {
+                    val item = checkNotNull(dao.getPantryItemById(consumption.pantryItemId).first()) {
                         "Pantry item not found with ID: ${consumption.pantryItemId}"
                     }
                     require(!item.isDeleted) {
@@ -181,14 +179,14 @@ class RoomPantryRepository(
         }
     }
 
-    override fun getPantryItemsByID(pantryItemId: String): Flow<PantryItem?> {
-        logger.d(TAG, "getPantryItemsByID: pantryItemId: $pantryItemId")
-        return dao.getPantryItemByID(pantryItemId).map { it?.toDomain() }
+    override fun getPantryItemById(pantryItemId: String): Flow<PantryItem?> {
+        logger.d(TAG, "getPantryItemById: pantryItemId: $pantryItemId")
+        return dao.getPantryItemById(pantryItemId).map { it?.toDomain() }
     }
 
-    override fun getPantryItemsByProductID(productId: String): Flow<List<PantryItem>> {
-        logger.d(TAG, "getPantryItemsByProductID: productId: $productId")
-        return dao.getPantryItemsByProductID(productId).map { entities -> entities.map { it.toDomain() } }
+    override fun getPantryItemsByProductId(productId: String): Flow<List<PantryItem>> {
+        logger.d(TAG, "getPantryItemsByProductId: productId: $productId")
+        return dao.getPantryItemsByProductId(productId).map { entities -> entities.map { it.toDomain() } }
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -200,38 +198,7 @@ class RoomPantryRepository(
     }
 
     private companion object {
+        const val TAG = "RoomPantryRepository"
         const val MILLIS_PER_DAY = 86_400_000L
     }
-}
-
-fun PantryItemEntity.toDomain(): PantryItem {
-    return PantryItem(
-        id = this.id,
-        productId = this.productId,
-        quantity = this.quantity,
-        expirationDate = this.expirationDate,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted,
-        batchNumber = this.batchNumber,
-    )
-}
-
-fun PantryItem.toEntity(): PantryItemEntity {
-    return PantryItemEntity(
-        id = this.id,
-        productId = this.productId,
-        quantity = this.quantity,
-        expirationDate = this.expirationDate,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted,
-        batchNumber = this.batchNumber,
-    )
-}
-
-fun PantryItemWithCategoryDaoResult.toDomain(): PantryItemWithCategory {
-    return PantryItemWithCategory(
-        pantryItem = this.pantryItem.toDomain(),
-        category = this.category,
-        name = this.name
-    )
 }

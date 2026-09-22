@@ -35,14 +35,3 @@ data class PantryItem(
     val updatedAt: Long,
     val isDeleted: Boolean = false
 )
-{
-    override fun toString(): String {
-        return "PantryItem(id='$id', " +
-                "productId='$productId', " +
-                "quantity=$quantity, " +
-                "expirationDate=$expirationDate, " +
-                "batchNumber=$batchNumber, " +
-                "updatedAt=$updatedAt, " +
-                "isDeleted=$isDeleted)"
-    }
-}

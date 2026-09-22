@@ -28,10 +28,12 @@ import kotlinx.coroutines.flow.Flow
 
 interface PriceRepository {
     fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntry>>
-    fun getLatestPriceForProductID(productId: String): Flow<PriceEntry?>
+    fun getLatestPriceForProductId(productId: String): Flow<PriceEntry?>
+
+    // Persistency e synchronization LWW with temporal support
     suspend fun insertPriceEntry(priceEntry: PriceEntry)
     suspend fun forceUpdatePriceEntry(priceEntry: PriceEntry)
     suspend fun updatePriceEntryIfNewer(priceEntry: PriceEntry)
-    suspend fun markPriceEntryAsDeletedById(priceEntryId: String)
+    suspend fun markPriceEntryAsDeleted(priceEntryId: String, updatedAt: Long)
     suspend fun deletePriceEntryById(priceEntryId: String)
 }

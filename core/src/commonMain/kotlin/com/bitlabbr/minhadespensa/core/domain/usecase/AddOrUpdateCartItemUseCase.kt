@@ -44,20 +44,22 @@ class AddOrUpdateCartItemUseCase(
     ): Result<ShoppingItem> = runCatching {
         require(quantity > 0.0) { "A quantidade deve ser maior que zero" }
         priceAtTimeInCents?.let {
-            require(it >= 0.0) { "O preço não pode ser negativo" }
+            require(it >= 0L) { "O preço não pode ser negativo" }
         }
         require(!productId.isNullOrBlank() || !rawText.isNullOrBlank()) {
             "O item deve possuir um produto vinculado ou descrição em texto"
         }
 
-        val now = getCurrentTime()
         val currentList = shoppingListRepository.getShoppingListById(listId).firstOrNull()
             ?: throw IllegalArgumentException("Lista não encontrada: $listId")
+        require(!currentList.isDeleted) { "Não é possível alterar uma lista que foi excluída" }
 
+        val now = getCurrentTime()
+        
         val itemToUpdate = existingItemId?.let { id ->
-            currentList.items.find { it.id == id }
+            currentList.items.find { it.id == id && !it.isDeleted }
         } ?: productId?.let { prodId ->
-            currentList.items.find { it.productId == prodId }
+            currentList.items.find { it.productId == prodId && !it.isDeleted }
         }
 
         if (itemToUpdate != null) {
@@ -77,7 +79,7 @@ class AddOrUpdateCartItemUseCase(
                 listId = listId,
                 productId = productId,
                 rawText = rawText,
-                quantity = quantity.toDouble(),
+                quantity = quantity,
                 priceAtTime = priceAtTimeInCents,
                 isChecked = true,
                 updatedAt = now,

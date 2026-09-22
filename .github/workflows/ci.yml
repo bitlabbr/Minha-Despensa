@@ -1,9 +1,9 @@
 name: CI Check
 on:
   push:
-    branches: [ "main", "dev", "hotfix" ]
+    branches: [ "main", "dev", "hotfix", "epic/**" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "epic/**" ]
 
 jobs:
   build-and-test:
@@ -31,8 +31,8 @@ jobs:
         run: ./gradlew :composeApp:assembleDebug
 
       # 5. Rodar os Testes Unitários
-      - name: Run Android Unit Tests
-        run: ./gradlew :composeApp:testDebugUnitTest --info
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest --info
       
       - name: Publish Test Report
         if: always()

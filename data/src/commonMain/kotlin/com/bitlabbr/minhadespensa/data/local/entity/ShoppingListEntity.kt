@@ -42,4 +42,7 @@ data class ShoppingListEntity(
     val updatedAt: Long,
     @ColumnInfo(name = "is_deleted")
     val isDeleted: Boolean = false,
-)
+) {
+    val budgetInCents: Long?
+        get() = budgedInCents
+}

@@ -20,16 +20,26 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.core
 
-import kotlin.test.Test
-import kotlin.test.assertTrue
+package com.bitlabbr.minhadespensa.data.local.mapper
 
-class ArchitectureTest {
+import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
+import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 
-    @Test
-    fun `framework de testes deve estar funcionando`() {
-        assertTrue(true, "Testing...")
-    }
+fun PriceEntryEntity.toDomain(): PriceEntry = PriceEntry(
+    id = this.id,
+    productId = this.productId,
+    priceInCents = this.priceInCents,
+    storeName = this.storeName,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted,
+)
 
-}
+fun PriceEntry.toEntity(): PriceEntryEntity = PriceEntryEntity(
+    id = this.id,
+    productId = this.productId,
+    priceInCents = this.priceInCents,
+    storeName = this.storeName,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted,
+)

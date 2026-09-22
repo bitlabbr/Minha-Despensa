@@ -108,7 +108,7 @@ class RoomPriceRepositoryTest : BaseTest() {
         priceRepository.insertPriceEntry(oldEntry)
         priceRepository.insertPriceEntry(newEntry)
 
-        priceRepository.getLatestPriceForProductID(productId).test {
+        priceRepository.getLatestPriceForProductId(productId).test {
             val latest = awaitItem()
             assertEquals(900L, latest?.priceInCents)
             cancelAndIgnoreRemainingEvents()
@@ -130,7 +130,7 @@ class RoomPriceRepositoryTest : BaseTest() {
         val olderRemoteEntry = localEntry.copy(priceInCents = 500, updatedAt = oldTimestamp)
         priceRepository.updatePriceEntryIfNewer(olderRemoteEntry)
 
-        val result = priceRepository.getLatestPriceForProductID(productId).first()
+        val result = priceRepository.getLatestPriceForProductId(productId).first()
         assertEquals(1000L, result?.priceInCents, "Should keep the newer local price")
     }
 
@@ -151,7 +151,7 @@ class RoomPriceRepositoryTest : BaseTest() {
         val olderForcedEntry = entry.copy(priceInCents = 500, updatedAt = newTimestamp)
         priceRepository.forceUpdatePriceEntry(olderForcedEntry)
 
-        val result = priceRepository.getLatestPriceForProductID(productId).first()
+        val result = priceRepository.getLatestPriceForProductId(productId).first()
         assertEquals(500L, result?.priceInCents, "Force update should overwrite based on ID")
     }
 
@@ -166,7 +166,7 @@ class RoomPriceRepositoryTest : BaseTest() {
         val entry = createDummyPriceEntry(productId = productId)
         priceRepository.insertPriceEntry(entry)
 
-        priceRepository.markPriceEntryAsDeletedById(entry.id)
+        priceRepository.markPriceEntryAsDeleted(entry.id, getCurrentTime())
 
         priceRepository.getPriceHistoryByProductId(entry.productId).test {
             val history = awaitItem()
@@ -234,7 +234,7 @@ class RoomPriceRepositoryTest : BaseTest() {
 
         priceRepository.deletePriceEntryById(entry.id)
 
-        val result = priceRepository.getLatestPriceForProductID(entry.productId).first()
+        val result = priceRepository.getLatestPriceForProductId(entry.productId).first()
         assertNull(result, "Entry should no longer exist in DB")
     }
 
@@ -263,7 +263,7 @@ class RoomPriceRepositoryTest : BaseTest() {
         val sameTimeUpdate = entry.copy(priceInCents = 2000, updatedAt = now)
         priceRepository.updatePriceEntryIfNewer(sameTimeUpdate)
 
-        val result = priceRepository.getLatestPriceForProductID(entry.productId).first()
+        val result = priceRepository.getLatestPriceForProductId(entry.productId).first()
         assertEquals(1000L, result?.priceInCents, "Should not update if timestamp is not strictly greater")
     }
 
@@ -278,7 +278,7 @@ class RoomPriceRepositoryTest : BaseTest() {
     @OptIn(ExperimentalUuidApi::class)
     @Test
     fun `getLatestPrice should emit null when no prices are available`() = runTest {
-        priceRepository.getLatestPriceForProductID(Uuid.random().toString()).test {
+        priceRepository.getLatestPriceForProductId(Uuid.random().toString()).test {
             assertNull(awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
