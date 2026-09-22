@@ -32,10 +32,12 @@ class FinalizeShoppingSessionUseCase(
     private val shoppingListRepository: ShoppingListRepository,
 ) {
     suspend operator fun invoke(listId: String): Result<Unit> = runCatching {
-        val now = getCurrentTime()
         val list = shoppingListRepository.getShoppingListById(listId).firstOrNull()
             ?: throw IllegalArgumentException("Lista não encontrada: $listId")
 
+        require(!list.isDeleted) { "Não é possível finalizar uma lista que foi excluída" }
+
+        val now = getCurrentTime()
         shoppingListRepository.finalizePurchase(listId)
 
         val completedList = list.copy(

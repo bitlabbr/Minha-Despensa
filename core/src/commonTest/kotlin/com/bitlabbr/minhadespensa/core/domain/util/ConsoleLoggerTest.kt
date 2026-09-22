@@ -20,16 +20,26 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-package com.bitlabbr.minhadespensa.core
+
+package com.bitlabbr.minhadespensa.core.domain.util
 
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class ArchitectureTest {
+class ConsoleLoggerTest {
+
+    private val logger = ConsoleLogger(moduleName = "TestModule")
 
     @Test
-    fun `framework de testes deve estar funcionando`() {
-        assertTrue(true, "Testing...")
-    }
+    fun `ConsoleLogger methods execute without throwing exceptions`() {
+        // Verify all log levels run cleanly
+        logger.d("TestTag", "Debug message")
+        logger.i("TestTag", "Info message")
+        logger.w("TestTag", "Warning message")
+        logger.w("TestTag", "Warning message with error", IllegalStateException("Test error"))
+        logger.e("TestTag", "Error message")
+        logger.e("TestTag", "Error message with error", RuntimeException("Crash test"))
 
+        assertTrue(true)
+    }
 }

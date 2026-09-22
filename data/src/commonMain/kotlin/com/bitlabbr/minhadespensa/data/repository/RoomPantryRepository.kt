@@ -62,7 +62,7 @@ class RoomPantryRepository(
         }
     }
 
-    override fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategory?> {
+    override fun getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategory?> {
         logger.d(TAG, "getPantryItemWithCategoryByID: pantryItemId: $pantryItemId")
         return dao.getPantryItemWithCategoryByID(pantryItemId).map { it?.toDomain() }
     }
@@ -181,12 +181,12 @@ class RoomPantryRepository(
         }
     }
 
-    override fun getPantryItemsByID(pantryItemId: String): Flow<PantryItem?> {
+    override fun getPantryItemById(pantryItemId: String): Flow<PantryItem?> {
         logger.d(TAG, "getPantryItemsByID: pantryItemId: $pantryItemId")
         return dao.getPantryItemByID(pantryItemId).map { it?.toDomain() }
     }
 
-    override fun getPantryItemsByProductID(productId: String): Flow<List<PantryItem>> {
+    override fun getPantryItemsByProductId(productId: String): Flow<List<PantryItem>> {
         logger.d(TAG, "getPantryItemsByProductID: productId: $productId")
         return dao.getPantryItemsByProductID(productId).map { entities -> entities.map { it.toDomain() } }
     }

@@ -29,17 +29,21 @@ import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import kotlinx.coroutines.flow.Flow
 
 interface PantryRepository {
-    fun getPantryItemsByID(pantryItemId: String): Flow<PantryItem?>
-    fun getPantryItemsByProductID(productId: String): Flow<List<PantryItem>>
+    fun getPantryItemById(pantryItemId: String): Flow<PantryItem?>
+    fun getPantryItemsByProductId(productId: String): Flow<List<PantryItem>>
     fun getAllActivePantryItems(): Flow<List<PantryItem>>
     fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategory>>
-    fun getPantryItemWithCategoryByID(pantryItemId: String): Flow<PantryItemWithCategory?>
+    fun getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategory?>
     fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>>
+
+    // Persistency e synchronization LWW
     suspend fun insertPantryItem(item: PantryItem)
     suspend fun forceUpdatePantryItem(item: PantryItem)
     suspend fun updatePantryItemIfNewer(item: PantryItem)
     suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long)
     suspend fun deletePantryItemById(id: String)
+
+    // consumption operations
     suspend fun consumePantryItem(pantryItemId: String, quantityToConsume: Double)
     suspend fun consumeBatch(consumptions: List<PantryItemConsumption>)
 }

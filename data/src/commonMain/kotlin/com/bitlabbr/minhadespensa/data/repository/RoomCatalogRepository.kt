@@ -65,7 +65,7 @@ class RoomCatalogRepository(
         return productDao.findById(id).map { it?.toDomain() }
     }
 
-    override fun getAllActives(): Flow<List<CatalogProduct>> {
+    override fun getAllActiveProducts(): Flow<List<CatalogProduct>> {
         logger.d(TAG, "getAllActives")
         return productDao.getAllActive().map { it.map { it.toDomain() } }
     }
@@ -99,7 +99,7 @@ class RoomCatalogRepository(
         }
     }
 
-    override suspend fun forceUpdateForProduct(
+    override suspend fun forceUpdateProduct(
         product: CatalogProduct,
         imageBytes: ByteArray?
     ) {
@@ -131,7 +131,7 @@ class RoomCatalogRepository(
         return mediaDao.getByProductIdFlow(productId).map { it?.blob }
     }
 
-    override suspend fun updateForProductIfNewer(
+    override suspend fun updateProductIfNewer(
         product: CatalogProduct,
         imageBytes: ByteArray?
     ) {
@@ -176,7 +176,7 @@ class RoomCatalogRepository(
         productDao.deleteProductById(id)
     }
 
-    override fun exists(id: String): Flow<Boolean> {
+    override fun existsById(id: String): Flow<Boolean> {
         logger.d(TAG, "exists id:  $id")
         return productDao.exists(id)
     }

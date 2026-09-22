@@ -60,7 +60,7 @@ class CatalogViewModel(
     val userMessage: StateFlow<UiText?> = _userMessage.asStateFlow()
 
     val uiState: StateFlow<CatalogUiState> = combine(
-        catalogRepository.getAllActives(),
+        catalogRepository.getAllActiveProducts(),
         _searchQuery,
         _selectedCategory,
         _formState,
@@ -263,7 +263,7 @@ class CatalogViewModel(
     }
 
     fun getAllActives(): Flow<List<CatalogProduct>> {
-        return catalogRepository.getAllActives()
+        return catalogRepository.getAllActiveProducts()
     }
 
     fun getProductImage(productId: String): Flow<ByteArray?> {

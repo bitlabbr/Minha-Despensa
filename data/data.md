@@ -39,19 +39,19 @@ These classes implement the repository interfaces from the `:core:domain` module
 
 *   **`RoomPriceRepository`**:
     *   **Purpose**: Manages price entry data for products.
-    *   **Key Methods**: `getPriceHistoryByProductId`, `getLatestPriceForProductID`, `insertPriceEntry`, `forceUpdatePriceEntry`, `updatePriceEntryIfNewer` (LWW), `markPriceEntryAsDeletedById`, `deletePriceEntryById`.
+    * **Key Methods**: `getPriceHistoryByProductId`, `getLatestPriceForProductId`, `insertPriceEntry`, `forceUpdatePriceEntry`, `updatePriceEntryIfNewer` (LWW), `markPriceEntryAsDeleted`, `deletePriceEntryById`.
     *   **Dependencies**: `AppDatabase`, `AppLogger`.
 *   **`RoomPantryRepository`**:
     *   **Purpose**: Manages pantry item data.
-    *   **Key Methods**: `getAllActivePantryItems`, `insertPantryItem`, `forceUpdatePantryItem`, `updatePantryItemIfNewer` (LWW), `markPantryItemAsDeleted`, `deletePantryItemById`, `getPantryItemsByID`, `getPantryItemsByProductID`.
+    * **Key Methods**: `getAllActivePantryItems`, `insertPantryItem`, `forceUpdatePantryItem`, `updatePantryItemIfNewer` (LWW), `markPantryItemAsDeleted`, `deletePantryItemById`, `getPantryItemById`, `getPantryItemsByProductId`.
     *   **Dependencies**: `AppDatabase`, `AppLogger`.
 *   **`RoomCatalogRepository`**:
     *   **Purpose**: Manages product catalog data, including product details and images.
-    *   **Key Methods**: `getProductByEan`, `getProductById`, `getAllActives`, `searchProductsByNameOrBrand`, `insertProduct` (with image handling), `forceUpdateForProduct` (with image handling), `updateForProductIfNewer` (LWW with image handling), `deleteProductById`, `exists`.
+    * **Key Methods**: `getProductByEan`, `getProductById`, `getAllActiveProducts`, `searchProductsByNameOrBrand`, `insertProduct` (with image handling), `forceUpdateProduct` (with image handling), `updateProductIfNewer` (LWW with image handling), `deleteProductById`, `exists`.
     *   **Dependencies**: `AppDatabase`, `AppLogger`. Uses Room transactions for atomic operations involving product and media data.
 *   **`RoomShoppingListRepository`**:
     *   **Purpose**: Manages shopping lists and their items.
-    *   **Key Methods**: `getAllActiveShoppingLists`, `getShoppingListById`, `insertShoppingList`, `forceUpdateForShoppingList`, `updateShoppingListIfNewer` (LWW), `markShoppingListAsDeleted`, `deleteShoppingListById`, `insertShoppingItem`, `forceUpdateForShoppingItem`, `updateShoppingItemIfNewer` (LWW), `toggleItemCheck`, `markAsDeleted`, `finalizePurchase`.
+    * **Key Methods**: `getAllActiveShoppingLists`, `getShoppingListById`, `insertShoppingList`, `forceUpdateShoppingList`, `updateShoppingListIfNewer` (LWW), `markShoppingListAsDeleted`, `deleteShoppingListById`, `insertShoppingItem`, `forceUpdateShoppingItem`, `updateShoppingItemIfNewer` (LWW), `toggleItemCheck`, `markAsDeleted`, `finalizePurchase`.
     *   **Dependencies**: `AppDatabase`, `AppLogger`. `finalizePurchase` is a complex operation that moves checked items to the pantry and records their prices.
 
 ### 4.2. Local Data (Room)

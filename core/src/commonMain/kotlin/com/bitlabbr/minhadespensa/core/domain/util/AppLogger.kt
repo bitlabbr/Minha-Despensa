@@ -25,5 +25,7 @@ package com.bitlabbr.minhadespensa.core.domain.util
 
 interface AppLogger {
     fun d(tag: String, message: String)
+    fun i(tag: String, message: String) {}
+    fun w(tag: String, message: String, error: Throwable? = null) {}
     fun e(tag: String, message: String, error: Throwable? = null)
 }

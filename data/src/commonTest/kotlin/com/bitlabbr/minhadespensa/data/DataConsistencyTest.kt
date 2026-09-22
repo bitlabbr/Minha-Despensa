@@ -126,19 +126,19 @@ class DataConsistencyTest : BaseTest() {
         val product = createProduct(name = "Original", updatedAt = timestamp)
         catalogRepository.insertProduct(product, null)
 
-        catalogRepository.updateForProductIfNewer(
+        catalogRepository.updateProductIfNewer(
             product.copy(name = "Same timestamp update", updatedAt = timestamp),
             null
         )
         assertEquals("Original", catalogRepository.getProductById(product.id).first()?.name)
 
-        catalogRepository.updateForProductIfNewer(
+        catalogRepository.updateProductIfNewer(
             product.copy(isDeleted = true, updatedAt = timestamp),
             null
         )
         assertEquals(true, catalogRepository.getProductById(product.id).first()?.isDeleted)
 
-        catalogRepository.updateForProductIfNewer(
+        catalogRepository.updateProductIfNewer(
             product.copy(name = "Resurrected", isDeleted = false, updatedAt = timestamp),
             null
         )
@@ -159,17 +159,17 @@ class DataConsistencyTest : BaseTest() {
         pantryRepository.updatePantryItemIfNewer(
             item.copy(quantity = 99.0, updatedAt = timestamp)
         )
-        assertEquals(2.0, pantryRepository.getPantryItemsByID(item.id).first()?.quantity)
+        assertEquals(2.0, pantryRepository.getPantryItemById(item.id).first()?.quantity)
 
         pantryRepository.updatePantryItemIfNewer(
             item.copy(isDeleted = true, updatedAt = timestamp)
         )
-        assertEquals(true, pantryRepository.getPantryItemsByID(item.id).first()?.isDeleted)
+        assertEquals(true, pantryRepository.getPantryItemById(item.id).first()?.isDeleted)
 
         pantryRepository.updatePantryItemIfNewer(
             item.copy(quantity = 50.0, isDeleted = false, updatedAt = timestamp)
         )
-        val final = pantryRepository.getPantryItemsByID(item.id).first()
+        val final = pantryRepository.getPantryItemById(item.id).first()
         assertEquals(true, final?.isDeleted)
         assertEquals(2.0, final?.quantity)
     }
@@ -186,17 +186,17 @@ class DataConsistencyTest : BaseTest() {
         priceRepository.updatePriceEntryIfNewer(
             price.copy(priceInCents = 2000, updatedAt = timestamp)
         )
-        assertEquals(1000L, priceRepository.getLatestPriceForProductID(product.id).first()?.priceInCents)
+        assertEquals(1000L, priceRepository.getLatestPriceForProductId(product.id).first()?.priceInCents)
 
         priceRepository.updatePriceEntryIfNewer(
             price.copy(isDeleted = true, updatedAt = timestamp)
         )
-        assertNull(priceRepository.getLatestPriceForProductID(product.id).first())
+        assertNull(priceRepository.getLatestPriceForProductId(product.id).first())
 
         priceRepository.updatePriceEntryIfNewer(
             price.copy(priceInCents = 3000, isDeleted = false, updatedAt = timestamp)
         )
-        assertNull(priceRepository.getLatestPriceForProductID(product.id).first())
+        assertNull(priceRepository.getLatestPriceForProductId(product.id).first())
     }
 
     @Test
@@ -289,7 +289,7 @@ class DataConsistencyTest : BaseTest() {
         )
 
         val result = pantryRepository
-            .getPantryItemsByID(item.id)
+            .getPantryItemById(item.id)
             .first()
 
         assertNotNull(result)
@@ -337,7 +337,7 @@ class DataConsistencyTest : BaseTest() {
             pantryRepository.insertPantryItem(item)
         }
 
-        assertNull(pantryRepository.getPantryItemsByID(item.id).first())
+        assertNull(pantryRepository.getPantryItemById(item.id).first())
     }
 
     @Test

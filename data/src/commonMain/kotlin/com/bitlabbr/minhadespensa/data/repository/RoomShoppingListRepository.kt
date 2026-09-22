@@ -78,7 +78,7 @@ class RoomShoppingListRepository(
         }
     }
 
-    override suspend fun forceUpdateForShoppingList(shoppingList: ShoppingList) {
+    override suspend fun forceUpdateShoppingList(shoppingList: ShoppingList) {
         logger.d(TAG, "forceUpdateForShoppingList: ${shoppingList.name}")
         validateShoppingList(shoppingList)
         listDao.forceUpdateForShoppingList(shoppingList.toEntity())
@@ -117,7 +117,7 @@ class RoomShoppingListRepository(
         itemDao.insertShoppingItem(item.toEntity())
     }
 
-    override suspend fun forceUpdateForShoppingItem(item: ShoppingItem) {
+    override suspend fun forceUpdateShoppingItem(item: ShoppingItem) {
         logger.d(TAG, "forceUpdateForShoppingItem itemId: ${item.id}")
         validateShoppingItem(item)
         itemDao.forceUpdateItem(item.toEntity())
