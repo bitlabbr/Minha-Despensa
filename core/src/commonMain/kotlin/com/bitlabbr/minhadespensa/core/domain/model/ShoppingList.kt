@@ -29,7 +29,7 @@ import kotlinx.serialization.Serializable
 data class ShoppingList(
     val id: String,
     val name: String,
-    val type: ShoppingListType,
+    val type: ShoppingListType = ShoppingListType.PLANNED,
     val status: ShoppingListStatus = ShoppingListStatus.DRAFT,
     val items: List<ShoppingItem> = emptyList(),
     val budgetInCents: Long? = null,

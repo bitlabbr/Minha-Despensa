@@ -44,7 +44,7 @@ interface CatalogProductDao {
     @Query(
         """
     UPDATE catalog_products 
-    SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, updatedAt = :updatedAt, isDeleted = :isDeleted
+    SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, notes = :notes, updatedAt = :updatedAt, isDeleted = :isDeleted
     WHERE id = :id AND (
         updatedAt < :updatedAt
         OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
@@ -63,6 +63,7 @@ interface CatalogProductDao {
         updatedAt: Long,
         isDeleted: Boolean,
         manuallyAdded: Boolean,
+        notes: String?,
     ): Int
 
     @Query("SELECT EXISTS(SELECT 1 FROM catalog_products WHERE id = :id)")
@@ -79,6 +80,7 @@ interface CatalogProductDao {
         SELECT * FROM catalog_products 
         WHERE (name LIKE '%' || :query || '%' OR brand LIKE '%' || :query || '%') 
         AND isDeleted = 0
+        ORDER BY name ASC
     """
     )
     fun searchByNameOrBrand(query: String): Flow<List<CatalogProductEntity>>
@@ -93,8 +95,8 @@ interface CatalogProductDao {
         WHERE id = :id AND updatedAt <= :updatedAt
     """
     )
-    suspend fun markAsDeleted(id: String, updatedAt: Long)
+    suspend fun markAsDeleted(id: String, updatedAt: Long): Int
 
     @Query("DELETE FROM catalog_products WHERE id = :id")
-    suspend fun deleteProductById(id: String)
+    suspend fun deleteProductById(id: String): Int
 }

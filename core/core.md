@@ -1,91 +1,197 @@
 # Core Module Analysis
 
-This document provides an analysis of the `:core` module, outlining its purpose, architecture, dependencies, and key components.
+This document provides a comprehensive analysis of the `:core` module, outlining its purpose, architecture, dependencies, domain models, use cases, repository contracts, and utilities.
 
 ## 1. Module Purpose & Technology Stack
 
-The `:core` module serves as the central domain layer for the Minha Dispensa application.
-It is built using **Kotlin Multiplatform (KMP)**, targeting both Android and iOS, and functions as an Android library.
+The `:core` module serves as the central domain layer for the **Minha Despensa** application. It encapsulates all core business logic, domain entities, use cases, repository contracts, and domain-level utilities.
 
-Key technologies and architectural aspects include:
-*   **Kotlin Multiplatform (KMP):** Enables code sharing across Android and iOS platforms.
-*   **Serialization:** Utilizes `kotlinx.serialization` (specifically `kotlinx.serialization.json`) for efficient and type-safe data serialization and deserialization.
-*   **Asynchronous Programming:** Employs `kotlinx.coroutines.core` for managing asynchronous operations, ensuring a responsive user experience.
-*   **Dependency Injection:** Integrates `koin.core` for managing dependencies, promoting modularity and testability. Koin is exposed as an `api` dependency, allowing consuming modules to leverage it.
-*   **Date/Time Handling:** Uses `kotlinx.datetime` for robust and multiplatform-compatible date and time operations, also exposed as an `api` dependency.
-*   **Clean Architecture Principles:** The module's structure (e.g., `domain/model`, `domain/repository`, `domain/util`) strongly suggests adherence to Clean Architecture, separating concerns and promoting maintainability.
+Following **Clean Architecture** principles, the `:core` module has **zero dependencies on outer layers** (such as `:data` or `:uisystem`). It is completely framework-independent, with persistence and UI details abstracted behind interfaces.
+
+Key technologies and architectural characteristics include:
+*   **Kotlin Multiplatform (KMP)**: Enables full domain logic sharing between Android and iOS.
+*   **Coroutines & Reactive Streams**: Utilizes `kotlinx.coroutines.core` and `Flow` for reactive, asynchronous data streams.
+*   **Serialization**: Uses `kotlinx.serialization.json` for domain model serialization.
+*   **Dependency Injection**: Integrates `koin-core` (exposed via `api`), allowing downstream modules to register and consume domain use cases and qualifiers.
+*   **Date & Time Operations**: Uses `kotlinx.datetime` (exposed via `api`) for multiplatform timestamp management.
+*   **Result-based / Exception-safe Contracts**: Domain use cases utilize Kotlin's `Result<T>` and strict domain preconditions (`require`) with localized Portuguese validation errors.
+
+---
 
 ## 2. Dependencies
 
-The `build.gradle.kts` file indicates the following primary dependencies:
+### Build Configuration (`core/build.gradle.kts`)
+*   `androidLibrary`: Configures Android library target.
+*   `kotlinMultiplatform`: Targets Android (`JVM 11`) and iOS (`iosX64`, `iosArm64`, `iosSimulatorArm64` with static framework `Core`).
 
-*   `implementation(libs.kotlinx.coroutines.core)`: Kotlin Coroutines for asynchronous programming.
-*   `implementation(libs.kotlinx.serialization.json)`: Kotlinx Serialization for JSON handling.
-*   `api(libs.koin.core)`: Koin for dependency injection (exposed to consumers).
-*   `api(libs.kotlinx.datetime)`: Kotlinx DateTime for date and time utilities (exposed to consumers).
-*   `implementation(libs.kotlin.test)`: For common test code.
-*   `implementation(libs.kotlinx.coroutines.test)`: For testing coroutines.
+### Dependencies:
+*   `api(libs.koin.core)`: Exposed to consumers for dependency injection definitions.
+*   `api(libs.kotlinx.datetime)`: Exposed to consumers for date/time operations.
+*   `implementation(libs.kotlinx.coroutines.core)`: Core coroutine primitives and Flows.
+*   `implementation(libs.kotlinx.serialization.json)`: JSON serialization support.
+*   `implementation(libs.kotlin.test)`: Multiplatform test framework (`commonTest`).
+*   `implementation(libs.kotlinx.coroutines.test)`: Test dispatchers and `runTest` utilities.
 
-## 3. Android Specifics
+### Android Specifics:
+*   **Namespace**: `com.bitlabbr.minhadespensa.core`
+*   **Compile SDK**: 36
+*   **Min SDK**: 24
+*   **JVM Target**: JVM 11
 
-*   **Namespace:** `com.bitlabbr.minhadespensa.core`
-*   **Compile SDK:** Uses the version defined by `libs.versions.android.compileSdk` version 36.
-*   **Min SDK:** Uses the version defined by `libs.versions.android.minSdk` version 24.
-*   **Java Compatibility:** Configured to use Java 11 for both source and target compatibility.
+---
 
-## 4. Domain Layer Analysis
+## 3. Domain Layer Structure
 
-The `core/src/commonMain/kotlin/com/bitlabbr/minhadespensa/core/domain` package contains the core business logic, data models, and interfaces.
+The code is located under `core/src/commonMain/kotlin/com/bitlabbr/minhadespensa/core/domain/`.
 
-### 4.1. Models (`domain/model`)
+```
+com.bitlabbr.minhadespensa.core.domain/
+├── model/        # Core business models & enums
+├── repository/   # Repository contracts (interfaces)
+├── usecase/      # Business logic workflows & interactors
+└── util/         # Logging, validation constants, timestamp helpers, image processor
+```
 
-This package defines the core data entities used throughout the application. All `data class` models are `Serializable` using `kotlinx.serialization`, indicating they are designed for easy persistence and network transfer.
+---
 
-*   **`PantryItem.kt`**: Defines `PantryItem`, representing an item stored in the user's pantry, including details like `productId`, `quantity`, `expirationDate`, and `batchNumber`.
-*   **`PriceEntry.kt`**: Defines `PriceEntry`, capturing price information for a product at a specific store and time.
-*   **`IconKeys.kt`**: An `object` containing `const val` string identifiers for various icons, categorized by product type (e.g., beverages, cleaning, grains). This is likely used to map product categories to specific UI icons.
-*   **`MeasureUnit.kt`**: An `enum class` defining standard units of measurement such as `UNITY`, `KILOGRAM`, `LITER`, and `PACKAGE`.
-*   **`ShoppingItem.kt`**: Defines `ShoppingItem`, representing an individual item within a shopping list, including `productId`, `quantity`, `listID`, and a `isChecked` status.
-*   **`ShoppingList.kt`**: Defines `ShoppingList`, representing a collection of `ShoppingItem`s, with properties like `name` and an optional `budgetInCents`.
-*   **`CatalogProduct.kt`**: Defines `CatalogProduct`, representing a product in a broader catalog, with attributes like `ean`, `name`, `brand`, `measureUnit`, `netWeight`, and `thumbnailUrl`.
-*   **`ExpiringItemCard.kt`**: A UI-specific `data class` designed to display information about expiring pantry items, including labels, progress, and icon URIs.
-*   **`ConsumptionTrendItemCard.kt`**: A UI-specific `data class` for presenting product consumption trends, including product details, consumption amount, and icon URIs.
+## 4. Key Components
 
-### 4.2. Repositories (`domain/repository`)
+### 4.1. Domain Models (`domain/model`)
 
-This package defines interfaces for data access operations, adhering to the repository pattern. These interfaces abstract the data source, allowing different implementations (e.g., local database, remote API). All methods are `suspend` for asynchronous execution and many return `Flow` for reactive data streams.
+All domain models are plain Kotlin data classes or enums annotated with `@Serializable`:
 
-*   **`PantryRepository.kt`**: Interface for managing `PantryItem` data, including methods for retrieving items by ID or product ID, getting all active items, inserting, updating, and marking items as deleted.
-*   **`PriceRepository.kt`**: Interface for managing `PriceEntry` data, providing methods to get price history, the latest price for a product, insert, update, and delete price entries.
-*   **`CatalogRepository.kt`**: Interface for managing `CatalogProduct` data, with functions to retrieve products by EAN or ID, get all active products, search by name/brand, insert, update, and delete products. It also handles image bytes for thumbnails.
-*   **`ShoppingListRepository.kt`**: Interface for managing `ShoppingList` and `ShoppingItem` data. It includes methods for retrieving shopping lists, inserting, updating, deleting lists, and also for managing individual shopping items within a list (insert, update, toggle check, mark as deleted, finalize purchase).
+*   **`CatalogProduct`**: Represents a product in the global/local catalog.
+    *   *Fields*: `id`, `name`, `brand`, `measureUnit`, `netWeight`, `thumbnailUrl`, `updatedAt`, `isDeleted`, `manuallyAdded`, `ean`, `category`, `notes`.
+*   **`MeasureUnit`**: Supported physical measurement units: `UNIT`, `KILOGRAM`, `GRAM`, `LITER`, `MILLILITER`, `PACKAGE`. Provides `toLabel()` extensions in UI.
+*   **`PantryItem`**: Represents product stock in the user's pantry.
+    *   *Fields*: `id`, `productId`, `quantity`, `expirationDate`, `batchNumber`, `updatedAt`, `isDeleted`.
+*   **`PantryItemConsumption`**: Data class representing a consumption entry for batch pantry deduction (`pantryItemId`, `quantityToConsume`).
+*   **`PantryItemWithCategory`**: Composite read model combining `PantryItem` with product catalog details (`name`, `category`, `measureUnit`, `netWeight`).
+*   **`PriceEntry`**: Historical price recording for a catalog product.
+    *   *Fields*: `id`, `productId`, `priceInCents`, `storeName`, `updatedAt`, `isDeleted`.
+*   **`ShoppingItem`**: An item within a shopping list. Supports both catalog-linked items (`productId`) and scratchpad free-text entries (`rawText`).
+    *   *Fields*: `id`, `productId`, `listId`, `rawText`, `quantity`, `priceAtTime`, `isChecked`, `updatedAt`, `isDeleted`.
+*   **`ShoppingList`**: Represents a shopping list with status and type metadata.
+    *   *Fields*: `id`, `name`, `type` (`PLANNED`, `QUICK`, `SCRATCHPAD`), `status` (`ACTIVE`, `IN_PROGRESS`, `COMPLETED`, `ARCHIVED`), `budgetInCents`, `items`, `updatedAt`, `isDeleted`.
+    *   *Computed Domain Properties*:
+        *   `totalActiveItems`: Count of non-deleted items.
+        *   `totalCheckedItems`: Count of non-deleted checked items.
+        *   `totalCartInCents`: Sum of `(priceAtTime * quantity)` for checked items.
+        *   `progress`: Completion ratio (`0.0f` to `1.0f`).
+*   **`IconKeys`**: String keys mapping domain categories to application icons (e.g., `GRAINS`, `CLEANING`, `BEVERAGES`).
 
-### 4.3. Utilities (`domain/util`)
+---
 
-This package contains general utility classes and interfaces that support the domain logic.
+### 4.2. Domain Use Cases (`domain/usecase`)
 
-*   **`AppLogger.kt`**: An interface defining basic logging functionalities (`d` for debug, `e` for error), promoting a consistent logging approach across platforms.
-*   **`ConsoleLogger.kt`**: A concrete multiplatform implementation of `AppLogger` that prints log messages to the console, including timestamps, log levels, and module information.
-*   **`DiQualifiers.kt`**: An `object` containing string constants used as qualifiers for dependency injection (likely with Koin). This allows for injecting specific instances of dependencies based on their intended use (e.g., `APP_LOGGER`, `CORE_LOGGER`).
-*   **`Helpers.kt`**: Provides utility functions such as `getCurrentTime()` (returning epoch milliseconds) and `isValidTimestamp()` for validating timestamp values within a reasonable range.
-*   **`ImageProcessor.kt`**: An interface for image processing, specifically for generating compressed WebP thumbnails (max 300x300px) from raw image `ByteArray` input. This suggests the module handles image manipulation for product visuals.
+Encapsulate discrete application business rules and orchestration between repositories:
 
-## 5. Main Architecture of the Module
+*   **`SaveCatalogProductUseCase`**:
+    *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
+    *   Saves the product via `CatalogRepository` with optional image thumbnail bytes.
+*   **`CheckEanStatusUseCase`**:
+    *   Validates EAN barcode format and checks if a product with this EAN already exists in `CatalogRepository`.
+*   **`AddPantryItemUseCase`**:
+    *   Validates pantry item fields (positive quantity, valid IDs) and persists the item via `PantryRepository`.
+*   **`CreatePlannedShoppingListUseCase`**:
+    *   Creates a planned shopping list (`ShoppingListType.PLANNED`) with specified items and budget constraints.
+*   **`CreateQuickShoppingListUseCase`**:
+    *   Generates a quick shopping list (`ShoppingListType.QUICK` or `SCRATCHPAD`) for immediate market trips.
+*   **`AddCatalogItemToShoppingListUseCase`**:
+    *   Attaches a catalog product to an active shopping list as a `ShoppingItem`, capturing current catalog or price estimates.
+*   **`AddOrUpdateCartItemUseCase`**:
+    *   Handles in-cart item adjustments (quantity updates, price overrides, check/uncheck status) during a shopping trip.
+*   **`StartShoppingSessionUseCase`**:
+    *   Transitions an active list into `ShoppingListStatus.IN_PROGRESS` and prepares checkout state.
+*   **`FinalizeShoppingSessionUseCase`**:
+    *   Executes checkout: invokes `ShoppingListRepository.finalizePurchase()`, moving checked items into `PantryRepository` and registering price history entries in `PriceRepository`.
 
-The `:core` module is structured following a clear **Clean Architecture** approach, focusing on the domain layer.
+---
 
-*   **Domain Models:** Defined in `domain/model`, these are plain Kotlin data classes that represent the core business entities, independent of any specific framework or data source.
-*   **Domain Repositories:** Defined as interfaces in `domain/repository`, these abstract the data access logic. They specify *what* data operations can be performed, without dictating *how* they are performed. This separation allows for different data source implementations (e.g., local database, network API) in other modules (e.g., `:data`).
-*   **Domain Utilities:** Located in `domain/util`, these provide cross-cutting concerns and helper functions that are essential for the domain logic but do not belong to specific entities or repositories.
+### 4.3. Repository Contracts (`domain/repository`)
 
-The module's multiplatform nature is evident in its `commonMain` source set, ensuring that these core definitions are available across all targeted platforms (Android and iOS). The use of `Flow` and `suspend` functions indicates a modern, reactive, and asynchronous programming paradigm.
+Interface definitions implemented by the data persistence layer (e.g. `:data`):
 
-## 6. Public APIs Calls
+*   **`CatalogRepository`**:
+    *   `getProductByEan(ean: String): Flow<CatalogProduct?>`
+    *   `getProductById(id: String): Flow<CatalogProduct?>`
+    *   `getAllActiveProducts(): Flow<List<CatalogProduct>>`
+    *   `searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>`
+    *   `insertProduct(product: CatalogProduct, imageBytes: ByteArray?)`
+    *   `forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?)`
+    *   `updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)`
+    *   `markProductAsDeleted(id: String, updatedAt: Long)`
+    *   `deleteProductById(id: String)`
+    *   `existsById(id: String): Flow<Boolean>`
+    *   `getCategories(): Flow<List<String>>`
+    *   `getProductImage(productId: String): Flow<ByteArray?>`
+*   **`PantryRepository`**:
+    *   `getAllActivePantryItems(): Flow<List<PantryItem>>`
+    *   `getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategory>>`
+    *   `getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategory?>`
+    *   `getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>>`
+    *   `getPantryItemById(pantryItemId: String): Flow<PantryItem?>`
+    *   `getPantryItemsByProductId(productId: String): Flow<List<PantryItem>>`
+    *   `insertPantryItem(item: PantryItem)`
+    *   `forceUpdatePantryItem(item: PantryItem)`
+    *   `updatePantryItemIfNewer(item: PantryItem)`
+    *   `markPantryItemAsDeleted(id: String, updatedAt: Long)`
+    *   `deletePantryItemById(id: String)`
+    *   `consumePantryItem(pantryItemId: String, quantityToConsume: Double)`
+    *   `consumeBatch(consumptions: List<PantryItemConsumption>)`
+*   **`PriceRepository`**:
+    *   `getPriceHistoryByProductId(productId: String): Flow<List<PriceEntry>>`
+    *   `getLatestPriceForProductId(productId: String): Flow<PriceEntry?>`
+    *   `insertPriceEntry(priceEntry: PriceEntry)`
+    *   `forceUpdatePriceEntry(priceEntry: PriceEntry)`
+    *   `updatePriceEntryIfNewer(priceEntry: PriceEntry)`
+    *   `markPriceEntryAsDeleted(priceEntryId: String, updatedAt: Long)`
+    *   `deletePriceEntryById(priceEntryId: String)`
+*   **`ShoppingListRepository`**:
+    *   `getAllActiveShoppingLists(): Flow<List<ShoppingList>>`
+    *   `getShoppingListById(listId: String): Flow<ShoppingList?>`
+    *   `insertShoppingList(shoppingList: ShoppingList)`
+    *   `forceUpdateShoppingList(shoppingList: ShoppingList)`
+    *   `updateShoppingListIfNewer(list: ShoppingList)`
+    *   `markShoppingListAsDeleted(listId: String, updatedAt: Long)`
+    *   `deleteShoppingListById(listId: String)`
+    *   `insertShoppingItem(item: ShoppingItem)`
+    *   `forceUpdateShoppingItem(item: ShoppingItem)`
+    *   `updateShoppingItemIfNewer(item: ShoppingItem)`
+    *   `toggleItemCheck(itemId: String, isChecked: Boolean)`
+    *   `markShoppingItemAsDeleted(itemId: String, updatedAt: Long)`
+    *   `deleteShoppingItemById(itemId: String)`
+    *   `finalizePurchase(listId: String)`
 
-The public APIs of the `:core` module are primarily exposed through its **repository interfaces** (`PantryRepository`, `PriceRepository`, `CatalogRepository`, `ShoppingListRepository`) and the **utility interfaces** (`AppLogger`, `ImageProcessor`). Any module depending on `:core` can interact with the application's core business logic by injecting and using implementations of these interfaces.
+---
 
-The `api` dependencies on `koin.core` and `kotlinx.datetime` also mean that these libraries are part of the public API contract, and modules consuming `:core` will implicitly have access to them.
+### 4.4. Domain Utilities (`domain/util`)
 
-## 7. Conclusion
+*   **`CoreConstants`**: Centralized domain constants for validation and defaults:
+    *   `Product`: `NAME_MAX_LENGTH (30)`, `BRAND_MAX_LENGTH (30)`, `CATEGORY_MAX_LENGTH (30)`, `NOTES_MAX_LENGTH (255)`, `DEFAULT_CATEGORY ("Outros")`, `DEFAULT_NET_WEIGHT (1.0)`, `EAN_VALID_LENGTHS (setOf(8, 12, 13, 14))`.
+    *   `Media`: `MAX_IMAGE_SIZE_KB (100)`.
+    *   `ShoppingList`: `NAME_MAX_LENGTH (30)`.
+    *   `Pantry`: `EXPIRING_THRESHOLD_DAYS (7)`.
+    *   `Validation`: Standard localized error strings (Portuguese) for domain validation messages.
+    *   `CatalogCategories`: Predefined default product categories list.
+*   **`AppLogger` & `ConsoleLogger`**: Logging contract and multiplatform standard output implementation.
+*   **`DiQualifiers`**: Named injection qualifiers (`CORE_LOGGER`, `DATA_LOGGER`, `APP_LOGGER`).
+*   **`Helpers.kt`**:
+    *   `getCurrentTime()`: Epoch milliseconds using `Clock.System.now().toEpochMilliseconds()`.
+    *   `isValidTimestamp(timestamp: Long, toleranceMillis: Long)`: Timestamp boundary validation preventing negative values and distant future anomalies, accounting for clock skew.
+*   **`ImageProcessor`**: Multiplatform `expect` interface for scaling and compressing raw image bytes to WebP thumbnails.
 
-The `:core` module is a well-structured, multiplatform domain layer that encapsulates the essential business logic and data definitions for the Minha Dispensa application. Its adherence to Clean Architecture principles, use of modern Kotlin features (coroutines, flows, serialization), and clear separation of concerns make it a robust and maintainable foundation for the application. It defines the "what" of the application's operations, leaving the "how" to other modules.
+---
+
+## 5. Testing & Verification
+
+The `:core` module contains comprehensive unit tests located in `core/src/commonTest/`:
+*   `CatalogAndPantryUseCasesTest`: Validates `SaveCatalogProductUseCase` and `AddPantryItemUseCase` business rules, constraints, and error handling.
+*   `ShoppingUseCasesTest`: Validates shopping session lifecycles, list creations, and cart transitions.
+*   `CheckEanStatusUseCaseTest`: Tests barcode validation, digit checking, and repository lookup.
+*   `DomainModelsTest`: Tests model serialization, copy operations, and computed properties (`totalCartInCents`, `progress`, etc.).
+*   `CoreConstantsTest`: Ensures domain constants remain immutable and properly bounded.
+*   `TimestampToleranceTest`: Verifies clock skew tolerance and boundary enforcement.
+*   `ConsoleLoggerTest`: Verifies formatting and level output.
+
+All 39 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.

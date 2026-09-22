@@ -44,13 +44,12 @@ import kotlin.uuid.Uuid
 
 @OptIn(ExperimentalUuidApi::class)
 class RoomShoppingListRepository(
-    val db: AppDatabase,
+    private val db: AppDatabase,
     private val logger: AppLogger,
 ) : ShoppingListRepository {
 
     private val listDao = db.shoppingListDao()
     private val itemDao = db.shoppingItemDao()
-    private val TAG = "RoomShoppingListRepository"
 
     override fun getAllActiveShoppingLists(): Flow<List<ShoppingList>> {
         logger.d(TAG, "getAllActiveShoppingLists")
@@ -90,6 +89,8 @@ class RoomShoppingListRepository(
         val rowsAffected = listDao.updateShoppingListIfNewer(
             id = list.id,
             name = list.name,
+            type = list.type.name,
+            status = list.status.name,
             budgetInCents = list.budgetInCents,
             updatedAt = list.updatedAt,
             isDeleted = list.isDeleted,
@@ -101,14 +102,14 @@ class RoomShoppingListRepository(
         }
     }
 
-    override suspend fun markShoppingListAsDeleted(listID: String, updatedAt: Long) {
-        logger.d(TAG, "markShoppingListAsDeleted listID:$listID")
-        listDao.markShoppingListAsDeleted(listID, updatedAt)
+    override suspend fun markShoppingListAsDeleted(listId: String, updatedAt: Long) {
+        logger.d(TAG, "markShoppingListAsDeleted listId:$listId")
+        listDao.markShoppingListAsDeleted(listId, updatedAt)
     }
 
-    override suspend fun deleteShoppingListById(listID: String) {
-        logger.d(TAG, "deleteShoppingListById listID:$listID")
-        listDao.deleteShoppingListById(listID)
+    override suspend fun deleteShoppingListById(listId: String) {
+        logger.d(TAG, "deleteShoppingListById listId:$listId")
+        listDao.deleteShoppingListById(listId)
     }
 
     override suspend fun insertShoppingItem(item: ShoppingItem) {
@@ -129,6 +130,7 @@ class RoomShoppingListRepository(
         val rowsAffected = itemDao.updateItemIfNewer(
             id = item.id,
             productId = item.productId,
+            rawText = item.rawText,
             quantity = item.quantity,
             priceAtTime = item.priceAtTime,
             isChecked = item.isChecked,
@@ -140,14 +142,19 @@ class RoomShoppingListRepository(
         }
     }
 
-    override suspend fun toggleItemCheck(id: String, isChecked: Boolean) {
-        logger.d(TAG, "toggleItemCheck id:$id isChecked:$isChecked")
-        itemDao.updateCheckStatus(id, isChecked, getCurrentTime())
+    override suspend fun toggleItemCheck(itemId: String, isChecked: Boolean) {
+        logger.d(TAG, "toggleItemCheck itemId:$itemId isChecked:$isChecked")
+        itemDao.updateCheckStatus(itemId, isChecked, getCurrentTime())
     }
 
-    override suspend fun markAsDeleted(id: String) {
-        logger.d(TAG, "markAsDeleted id:$id")
-        itemDao.markAsDeleted(id, getCurrentTime())
+    override suspend fun markShoppingItemAsDeleted(itemId: String, updatedAt: Long) {
+        logger.d(TAG, "markShoppingItemAsDeleted itemId:$itemId, updatedAt:$updatedAt")
+        itemDao.markAsDeleted(itemId, updatedAt)
+    }
+
+    override suspend fun deleteShoppingItemById(itemId: String) {
+        logger.d(TAG, "deleteShoppingItemById itemId:$itemId")
+        itemDao.deleteById(itemId)
     }
 
     override suspend fun finalizePurchase(listId: String) {
@@ -169,7 +176,7 @@ class RoomShoppingListRepository(
                 checkedItems.forEach { item ->
                     val prodId = item.productId
                     if (prodId != null) {
-                        // Apenas itens associados a um produto entram no inventário da despensa
+                        // Only items associated with a product enter the pantry inventory
                         db.pantryDao().insertPantryItem(
                             PantryItem(
                                 id = Uuid.random().toString(),
@@ -197,13 +204,13 @@ class RoomShoppingListRepository(
                     }
                 }
 
-                // Desmarca todos os itens processados no checkout
+                // Uncheck all items processed during checkout
                 checkedItems.forEach { item ->
                     itemDao.updateCheckStatus(item.id, false, now)
                 }
 
                 listDao.updateTimestamp(listId, now)
-                logger.d(TAG, "Checkout finalizado. [${checkedItems.size}] itens processados.")
+                logger.d(TAG, "Checkout finalized. [${checkedItems.size}] items processed.")
             }
         }
     }
@@ -212,7 +219,7 @@ class RoomShoppingListRepository(
     private fun validateShoppingList(list: ShoppingList) {
         require(runCatching { Uuid.parse(list.id) }.isSuccess) { "Invalid Shopping List UUID: ${list.id}" }
         require(list.name.isNotBlank()) { "Shopping List name cannot be empty" }
-        require(list.name.length <= 50) { "Shopping List name is too long (max 50 chars)" }
+        require(list.name.length <= MAX_NAME_LENGTH) { "Shopping List name is too long (max $MAX_NAME_LENGTH chars)" }
 
         list.budgetInCents?.let {
             require(it >= 0) { "Budget cannot be negative" }
@@ -230,7 +237,7 @@ class RoomShoppingListRepository(
         require(runCatching { Uuid.parse(item.id) }.isSuccess) { "Invalid Shopping Item UUID: ${item.id}" }
         require(runCatching { Uuid.parse(item.listId) }.isSuccess) { "Invalid List ID in item: ${item.listId}" }
 
-        // Validação flexível: pode ter productId (catálogo) ou rawText (bloco de notas)
+        // Flexible validation: can have productId (catalog) or rawText (scratchpad)
         item.productId?.let { prodId ->
             require(runCatching { Uuid.parse(prodId) }.isSuccess) { "Invalid Product UUID: $prodId" }
         }
@@ -246,5 +253,10 @@ class RoomShoppingListRepository(
         require(isValidTimestamp(item.updatedAt)) {
             "Invalid updatedAt timestamp for item"
         }
+    }
+
+    private companion object {
+        const val TAG = "RoomShoppingListRepository"
+        const val MAX_NAME_LENGTH = 50
     }
 }

@@ -21,28 +21,25 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.data.local.entity
+package com.bitlabbr.minhadespensa.data.local.mapper
 
-import androidx.room.ColumnInfo
-import androidx.room.Entity
-import androidx.room.PrimaryKey
+import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
+import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 
-@Entity(tableName = "shopping_lists")
-data class ShoppingListEntity(
-    @PrimaryKey
-    val id: String,
-    val name: String,
-    @ColumnInfo(name = "list_type")
-    val type: String,
-    @ColumnInfo(name = "list_status")
-    val status: String,
-    @ColumnInfo(name = "budget_in_cents")
-    val budgedInCents: Long?,
-    @ColumnInfo(name = "updated_at")
-    val updatedAt: Long,
-    @ColumnInfo(name = "is_deleted")
-    val isDeleted: Boolean = false,
-) {
-    val budgetInCents: Long?
-        get() = budgedInCents
-}
+fun PriceEntryEntity.toDomain(): PriceEntry = PriceEntry(
+    id = this.id,
+    productId = this.productId,
+    priceInCents = this.priceInCents,
+    storeName = this.storeName,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted,
+)
+
+fun PriceEntry.toEntity(): PriceEntryEntity = PriceEntryEntity(
+    id = this.id,
+    productId = this.productId,
+    priceInCents = this.priceInCents,
+    storeName = this.storeName,
+    updatedAt = this.updatedAt,
+    isDeleted = this.isDeleted,
+)

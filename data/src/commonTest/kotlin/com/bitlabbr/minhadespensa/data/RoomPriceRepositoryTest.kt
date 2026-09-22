@@ -166,7 +166,7 @@ class RoomPriceRepositoryTest : BaseTest() {
         val entry = createDummyPriceEntry(productId = productId)
         priceRepository.insertPriceEntry(entry)
 
-        priceRepository.markPriceEntryAsDeleted(entry.id)
+        priceRepository.markPriceEntryAsDeleted(entry.id, getCurrentTime())
 
         priceRepository.getPriceHistoryByProductId(entry.productId).test {
             val history = awaitItem()

@@ -35,8 +35,8 @@ import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
 import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
-import com.bitlabbr.minhadespensa.data.repository.toEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*

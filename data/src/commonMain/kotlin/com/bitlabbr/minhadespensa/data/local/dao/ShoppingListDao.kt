@@ -51,7 +51,7 @@ interface ShoppingListDao {
     @Query(
         """
     UPDATE shopping_lists 
-    SET name = :name, budget_in_cents = :budgetInCents, updated_at = :updatedAt, is_deleted = :isDeleted
+    SET name = :name, list_type = :type, list_status = :status, budget_in_cents = :budgetInCents, updated_at = :updatedAt, is_deleted = :isDeleted
     WHERE id = :id AND (
         updated_at < :updatedAt
         OR (updated_at = :updatedAt AND is_deleted = 0 AND :isDeleted = 1)
@@ -61,6 +61,8 @@ interface ShoppingListDao {
     suspend fun updateShoppingListIfNewer(
         id: String,
         name: String,
+        type: String,
+        status: String,
         budgetInCents: Long?,
         updatedAt: Long,
         isDeleted: Boolean
@@ -70,14 +72,14 @@ interface ShoppingListDao {
         """
         UPDATE shopping_lists 
         SET is_deleted = 1, updated_at = :updatedAt 
-        WHERE id = :listID AND updated_at <= :updatedAt
+        WHERE id = :listId AND updated_at <= :updatedAt
     """
     )
-    suspend fun markShoppingListAsDeleted(listID: String, updatedAt: Long)
+    suspend fun markShoppingListAsDeleted(listId: String, updatedAt: Long): Int
 
-    @Query("DELETE FROM shopping_lists WHERE id = :listID")
-    suspend fun deleteShoppingListById(listID: String)
+    @Query("DELETE FROM shopping_lists WHERE id = :listId")
+    suspend fun deleteShoppingListById(listId: String): Int
 
     @Query("UPDATE shopping_lists SET updated_at = :now WHERE id = :listId")
-    suspend fun updateTimestamp(listId: String, now: Long)
+    suspend fun updateTimestamp(listId: String, now: Long): Int
 }

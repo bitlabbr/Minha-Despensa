@@ -1,5 +1,6 @@
 # MinhaDespensa 🛒
 
+[![CI Check](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml/badge.svg)](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpack-compose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room-KMP-3DDC84?logo=android&logoColor=white)
@@ -82,68 +83,63 @@ Product images are stored separately from catalog metadata through a dedicated m
 
 ## 🛒 Shopping Lists
 
-Shopping lists are modeled as persistent entities and can contain multiple shopping items.
+Shopping lists are modeled as persistent entities supporting diverse household shopping workflows.
 
 Current data/domain capabilities include:
 
-- Multiple shopping lists
-- Custom list names
-- Optional budget per list
-- Product quantity
-- Price recorded during shopping
-- Checked / unchecked state
-- Soft deletion
-- Timestamp-based updates
-- Retrieval of lists together with their items
-
-Each shopping item references a product from the catalog instead of duplicating product data.
+- **List Types**: Planned lists (`PLANNED`), quick lists (`QUICK`), and scratchpad free-text lists (`SCRATCHPAD`)
+- **Lifecycle Statuses**: `ACTIVE`, `IN_PROGRESS`, `COMPLETED`, and `ARCHIVED`
+- **Budget Tracking**: Optional budget per list (`budgetInCents`) with live cart total comparison
+- **Flexible Items**: Supports both catalog-linked items (`productId`) and scratchpad notes (`rawText`)
+- **Dynamic Computed Metrics**:
+  - `totalActiveItems`: non-deleted item count
+  - `totalCheckedItems`: items checked during shopping
+  - `totalCartInCents`: total monetary value of checked items
+  - `progress`: dynamic completion ratio (`0.0f` to `1.0f`)
+- **Soft Deletion & LWW Synchronization**: Retains versioning for synchronization
+- **Retrieval**: Reactive `Flow` queries fetching lists together with their items
 
 ---
 
 ## 💳 Purchase Finalization
 
-MinhaDespensa already implements a purchase finalization flow.
+MinhaDespensa implements an atomic checkout flow executed inside a SQLite write transaction (`withTransaction(IMMEDIATE)`).
 
-When a shopping list is finalized, checked items can be:
+When a shopping list is finalized, checked items are:
 
-1. Added to the pantry
-2. Recorded in the product price history
-3. Reset in the shopping list for future reuse
-
-This creates a direct relationship between shopping, inventory, and historical prices.
+1. Added to the pantry inventory as active `PantryItem` records
+2. Recorded in `PriceEntry` history if a price was entered at the time of purchase
+3. Automatically unchecked in the list while preserving items for future reuse
+4. Updated with the latest checkout timestamp
 
 ```text
-Shopping Item
+Shopping Item (Checked)
      │
-     │ finalizePurchase()
+     │ finalizePurchase() [SQLite IMMEDIATE Transaction]
      ▼
- ┌───────────────┐
- │               │
- ▼               ▼
-Pantry       Price Entry
+ ┌───────────────┬───────────────┐
+ │               │               │
+ ▼               ▼               ▼
+Pantry      Price History   List State Reset
+(Inventory)   (Tracker)     (Uncheck Items)
 ```
 
 ---
 
-## 🏠 Pantry Management
+## 🏠 Pantry Management & Consumption
 
-The pantry module already contains domain, repository, DAO, ViewModel, and UI-state implementations.
+The pantry module contains full domain, repository, DAO, ViewModel, and UI implementations.
 
 Current capabilities include:
 
-- Persistent pantry items
-- Quantity tracking
-- Expiration date
-- Batch number
-- Product association
-- Category-aware pantry queries
-- Active pantry item queries
-- Pantry item detail retrieval
-- Soft deletion
-- Timestamp-aware updates
-- Reactive UI state with Kotlin Flow / StateFlow
-
-The pantry UI is currently being expanded and integrated with the rest of the application.
+- **Persistent Pantry Items**: Stock tracking with quantity, batch number, and expiration date
+- **Category Joins**: Reactive queries combining pantry items with catalog categories and net weight
+- **Consumption Flows**:
+  - `consumePantryItem`: Individual item stock reduction with negative stock guards
+  - `consumeBatch`: Atomic multi-item consumption for recipes or bulk usage
+- **Expiration Tracking**: Strict separation of items nearing expiration threshold (`getExpiringPantryItems`) from already expired items
+- **Soft Deletion & LWW**: Conflict-safe updates preserving synchronization integrity
+- **Reactive UI**: StateFlow-driven presentation for real-time pantry updates
 
 ---
 
@@ -202,6 +198,22 @@ Camera/gallery integration, barcode scanning, reminders, and final persistence w
 
 ---
 
+## ⚡ Domain Use Cases
+
+The `:core` domain layer defines 9 use cases that orchestrate application logic independently of UI and database frameworks:
+
+1. **`SaveCatalogProductUseCase`**: Validates constraints (name, category, EAN lengths/digits, positive weight) and saves catalog products with image blobs.
+2. **`CheckEanStatusUseCase`**: Validates barcode formatting and verifies product existence by EAN.
+3. **`AddPantryItemUseCase`**: Enforces inventory preconditions and stores active pantry stock.
+4. **`CreatePlannedShoppingListUseCase`**: Builds structured shopping lists with budget thresholds and planned items.
+5. **`CreateQuickShoppingListUseCase`**: Creates quick market trip lists and scratchpad notes.
+6. **`AddCatalogItemToShoppingListUseCase`**: Attaches catalog products to shopping lists with pre-filled defaults.
+7. **`AddOrUpdateCartItemUseCase`**: Manages dynamic adjustments (quantity, price, checked state) during shopping trips.
+8. **`StartShoppingSessionUseCase`**: Transitions shopping lists into the active `IN_PROGRESS` shopping state.
+9. **`FinalizeShoppingSessionUseCase`**: Atomically orchestrates purchase finalization across pantry, price history, and shopping lists.
+
+---
+
 # 🚧 Development Status
 
 | Feature | Status |
@@ -210,18 +222,20 @@ Camera/gallery integration, barcode scanning, reminders, and final persistence w
 | Compose Multiplatform UI | ✅ Implemented |
 | Clean Architecture + MVVM | ✅ Implemented |
 | Koin dependency injection | ✅ Implemented |
-| Room KMP persistence | ✅ Implemented |
+| Room KMP persistence (v3) | ✅ Implemented |
 | Local product catalog | ✅ Implemented |
-| Search by EAN | ✅ Data layer |
-| Search by name / brand | ✅ Data layer |
-| Shopping list persistence | ✅ Implemented |
-| Shopping list budget | ✅ Domain/Data |
-| Shopping checklist state | ✅ Domain/Data |
-| Purchase finalization | ✅ Implemented |
+| Search by EAN | ✅ Implemented (Domain / Data / Usecase) |
+| Search by name / brand | ✅ Implemented (Domain / Data) |
+| Shopping list persistence & types | ✅ Implemented (Planned, Quick, Scratchpad) |
+| Shopping list budget & cart analytics | ✅ Implemented |
+| Shopping checklist state & progress | ✅ Implemented |
+| Purchase finalization (atomic transaction) | ✅ Implemented |
 | Automatic pantry entry after purchase | ✅ Implemented |
-| Price history | ✅ Domain/Data |
+| Price history tracking | ✅ Implemented |
 | Pantry domain and persistence | ✅ Implemented |
+| Pantry single & batch consumption | ✅ Implemented |
 | Pantry reactive ViewModel | ✅ Implemented |
+| Automated CI & Unit Tests (158+ tests) | ✅ Implemented |
 | Pantry full UI experience | 🚧 In development |
 | Expiration tracking | 🚧 In development |
 | Product registration form | 🚧 In development |
@@ -290,8 +304,8 @@ The project is modularized to keep presentation, domain rules, data access, and 
 |---|---|---|
 | `:composeApp` | Application entry point, integration, and dependency configuration | Application |
 | `:uisystem` | Screens, reusable UI components, ViewModels, UI state, theme, and design system | Presentation |
-| `:core` | Domain models, repository interfaces, shared contracts, and business abstractions | Domain |
-| `:data` | Room database, DAOs, entities, repository implementations, and platform-specific data utilities | Data / Infrastructure |
+| `:core` | Domain models, use cases, repository interfaces, shared contracts, and business abstractions | Domain |
+| `:data` | Room database, DAOs, entities, mappers, repository implementations, and platform-specific data utilities | Data / Infrastructure |
 
 ---
 
@@ -464,6 +478,7 @@ MinhaDespensa/
 │               └── com/bitlabbr/minhadespensa/core/
 │                   └── domain/
 │                       ├── model/
+│                       ├── usecase/
 │                       ├── repository/
 │                       └── util/
 │
@@ -475,7 +490,9 @@ MinhaDespensa/
 │       │           ├── local/
 │       │           │   ├── dao/
 │       │           │   ├── entity/
-│       │           │   └── dto/
+│       │           │   ├── dto/
+│       │           │   ├── mapper/
+│       │           │   └── converter/
 │       │           ├── repository/
 │       │           └── di/
 │       │
@@ -499,6 +516,29 @@ MinhaDespensa/
 ├── iosApp/
 │
 └── README.md
+```
+
+---
+
+# 🧪 Testing & Continuous Integration
+
+MinhaDespensa maintains a comprehensive automated testing suite:
+
+- **`:core` (39 tests)**: Multiplatform tests verifying use case business rules, barcode validation, domain metrics, clock-drift tolerances, and model serialization.
+- **`:data` (119 tests)**: In-memory Room SQLite tests validating DAOs, Last-Write-Wins (LWW) conflict handling, entity-domain mappers, cascade deletes, and multi-table transactions (`finalizePurchase`, `consumeBatch`).
+- **`:composeApp`**: Multiplatform application integration tests.
+
+The entire test suite is executed continuously on every Pull Request and branch push to `main`, `dev`, and `epic/**` via **GitHub Actions** ([`ci.yml`](.github/workflows/ci.yml)).
+
+Run tests locally with Gradle:
+
+```bash
+# Run all unit tests across all modules
+./gradlew testDebugUnitTest
+
+# Run specific module test suites
+./gradlew :core:test
+./gradlew :data:test
 ```
 
 ---
@@ -559,8 +599,8 @@ These mechanisms provide a foundation that may be used in future synchronization
 ## Clone
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/MinhaDespensa.git
-cd MinhaDespensa
+git clone https://github.com/bitlabbr/Minha-Despensa.git
+cd Minha-Despensa
 ```
 
 Open the project in Android Studio or IntelliJ IDEA and wait for Gradle synchronization to complete.

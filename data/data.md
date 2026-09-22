@@ -1,121 +1,174 @@
 # Data Module Analysis
 
+This document provides an in-depth analysis of the `:data` module, outlining its purpose, clean architecture implementation, Room persistence schema, mappers, DAOs, repositories, multiplatform utilities, and testing strategies.
+
 ## 1. Module Purpose
 
-The `:data` module in MinhaDespensa is a Kotlin Multiplatform (KMP) module primarily responsible for managing and persisting application data. It acts as the single source of truth for local data storage, abstracting the underlying persistence mechanism (Room database) from the domain and presentation layers. It provides concrete implementations for the repository interfaces defined in the `:core:domain` module.
+The `:data` module in **Minha Despensa** is a Kotlin Multiplatform (KMP) library responsible for data persistence and local storage. It acts as the single source of truth for all local data, implementing the repository interfaces declared in `:core:domain`.
 
-## 2. Architecture
+Key capabilities:
+*   **Offline-First Local Storage**: Uses Google Room Multiplatform backed by SQLite (`BundledSQLiteDriver`).
+*   **Conflict Resolution**: Enforces Last-Write-Wins (LWW) conflict resolution on updates via SQL timestamp comparison (`updated_at < :updatedAt`).
+*   **Atomic Transactions**: Protects multi-table operations (such as product creation with media, pantry consumption batches, and shopping checkout) using Room's `useWriterConnection { conn -> conn.withTransaction(IMMEDIATE) { ... } }`.
+*   **Clean Architecture Separation**: Pure separation between Room database entities and core domain models via dedicated mappers in `com.bitlabbr.minhadespensa.data.local.mapper`.
 
-The module follows a clean architecture approach, specifically focusing on the data layer.
+---
 
-*   **Kotlin Multiplatform (KMP)**: The core logic, including Room database definitions, entities, DAOs, and repository implementations, resides in `commonMain`. Platform-specific implementations (e.g., `ImageProcessor`) are provided in `androidMain` and `iosMain`.
-*   **Room Persistence Library**: Used for local data storage, providing an SQLite abstraction layer.
-*   **Repositories**: Implementations of domain-layer repository interfaces, handling data operations (CRUD, LWW conflict resolution) and mapping between domain models and Room entities.
-*   **DAOs (Data Access Objects)**: Define the methods for interacting with the Room database tables.
-*   **Entities**: Represent the schema of the database tables.
-*   **Dependency Injection (Koin)**: `DataModule` configures and provides instances of the database, DAOs, and repositories.
+## 2. Architecture & Directory Structure
+
+```
+data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/
+├── di/                     # Koin DataModule dependency injection
+├── local/
+│   ├── AppDatabase.kt      # Main Room database declaration (Version 3)
+│   ├── converter/          # Room TypeConverters (Instant, MeasureUnit)
+│   ├── dao/                # Room Data Access Objects (DAOs)
+│   ├── dto/                # Room query projection DTOs (e.g. joins)
+│   ├── entity/             # Room SQLite table entities
+│   └── mapper/             # Bidirectional Entity <-> Domain mappers
+├── repository/             # Room repository implementations
+└── util/                   # Common utilities (ImageProcessor expect interface)
+```
+
+Platform-specific source sets:
+*   `data/src/androidMain/`: Android `actual` implementation of `ImageProcessor` utilizing Android `Bitmap` and `ExifInterface`.
+*   `data/src/iosMain/`: iOS `actual` implementation of `ImageProcessor` utilizing `UIKit` and `CoreGraphics`.
+
+---
 
 ## 3. Dependencies
 
-### Internal Dependencies:
+### Internal:
+*   `:core`: Consumes domain models (`CatalogProduct`, `PantryItem`, `PriceEntry`, `ShoppingList`, `ShoppingItem`, etc.), repository interfaces, and utilities (`AppLogger`, `CoreConstants`, `DiQualifiers`, `Helpers`).
 
-*   `:core:domain`: Depends on interfaces defined in the domain layer (e.g., `PriceRepository`, `PantryRepository`, `CatalogRepository`, `ShoppingListRepository`, `AppLogger`, `ImageProcessor`).
+### External:
+*   **AndroidX Room Multiplatform** (`androidx.room:room-runtime`, `ksp` compiler): SQLite ORM.
+*   **SQLite Bundled Driver** (`androidx.sqlite:sqlite-bundled`): Multiplatform SQLite driver.
+*   **Koin Core** (`koin-core`): Dependency injection.
+*   **Kotlinx Coroutines & Flow**: Reactive querying.
+*   **Kotlinx DateTime**: Timestamps.
+*   **Kotlinx UUID**: UUID parsing and generation.
+*   **Turbine & Kotlinx Coroutines Test**: Flow and async test assertions.
 
-### External Dependencies:
-
-*   **Room**: For local database persistence.
-*   **Koin**: For dependency injection.
-*   **Kotlinx Coroutines**: For asynchronous operations and Flow.
-*   **Kotlinx Datetime**: For handling timestamps.
-*   **Kotlinx UUID**: For UUID generation and parsing.
-*   **Android Graphics/Media (Android-specific)**: For image processing on Android.
-*   **UIKit/CoreGraphics/Foundation (iOS-specific)**: For image processing on iOS.
+---
 
 ## 4. Key Components
 
-### 4.1. Repositories
-
-These classes implement the repository interfaces from the `:core:domain` module and interact with the Room DAOs. They handle data mapping between domain models and Room entities, and often include data validation and conflict resolution logic (Last-Write-Wins - LWW).
-
-*   **`RoomPriceRepository`**:
-    *   **Purpose**: Manages price entry data for products.
-    * **Key Methods**: `getPriceHistoryByProductId`, `getLatestPriceForProductId`, `insertPriceEntry`, `forceUpdatePriceEntry`, `updatePriceEntryIfNewer` (LWW), `markPriceEntryAsDeleted`, `deletePriceEntryById`.
-    *   **Dependencies**: `AppDatabase`, `AppLogger`.
-*   **`RoomPantryRepository`**:
-    *   **Purpose**: Manages pantry item data.
-    * **Key Methods**: `getAllActivePantryItems`, `insertPantryItem`, `forceUpdatePantryItem`, `updatePantryItemIfNewer` (LWW), `markPantryItemAsDeleted`, `deletePantryItemById`, `getPantryItemById`, `getPantryItemsByProductId`.
-    *   **Dependencies**: `AppDatabase`, `AppLogger`.
-*   **`RoomCatalogRepository`**:
-    *   **Purpose**: Manages product catalog data, including product details and images.
-    * **Key Methods**: `getProductByEan`, `getProductById`, `getAllActiveProducts`, `searchProductsByNameOrBrand`, `insertProduct` (with image handling), `forceUpdateProduct` (with image handling), `updateProductIfNewer` (LWW with image handling), `deleteProductById`, `exists`.
-    *   **Dependencies**: `AppDatabase`, `AppLogger`. Uses Room transactions for atomic operations involving product and media data.
-*   **`RoomShoppingListRepository`**:
-    *   **Purpose**: Manages shopping lists and their items.
-    * **Key Methods**: `getAllActiveShoppingLists`, `getShoppingListById`, `insertShoppingList`, `forceUpdateShoppingList`, `updateShoppingListIfNewer` (LWW), `markShoppingListAsDeleted`, `deleteShoppingListById`, `insertShoppingItem`, `forceUpdateShoppingItem`, `updateShoppingItemIfNewer` (LWW), `toggleItemCheck`, `markAsDeleted`, `finalizePurchase`.
-    *   **Dependencies**: `AppDatabase`, `AppLogger`. `finalizePurchase` is a complex operation that moves checked items to the pantry and records their prices.
-
-### 4.2. Local Data (Room)
-
-#### `AppDatabase.kt`
-
-*   **Purpose**: The main Room database class. It defines the database version, lists all entities, and provides abstract methods to access the DAOs. It also integrates `TypeConverters` for custom type handling.
+### 4.1. Room Database (`local/AppDatabase.kt`)
 *   **Entities**: `CatalogProductEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`.
 *   **Version**: `3`.
-*   **Multiplatform**: Uses `expect object AppDatabaseConstructor` for platform-specific database initialization.
+*   **Driver**: `BundledSQLiteDriver()`.
+*   **Platform Initialization**: Uses `expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>` to instantiate platform SQLite drivers.
 
-#### Entities (`.kt` files in `data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/local/entity`)
+---
 
-These classes define the structure of the tables in the Room database.
+### 4.2. Database Entities (`local/entity/`)
+*   **`CatalogProductEntity`** (`catalog_products`):
+    *   *Columns*: `id` (PK), `ean` (Unique Index), `name`, `brand`, `measure_unit`, `net_weight`, `thumbnail_url`, `updated_at`, `is_deleted`, `manually_added`, `category`, `notes`.
+*   **`PantryItemEntity`** (`pantry_items`):
+    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `quantity`, `expiration_date`, `batch_number`, `updated_at`, `is_deleted`.
+*   **`PriceEntryEntity`** (`price_entries`):
+    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `price_in_cents`, `store_name`, `updated_at`, `is_deleted`.
+*   **`ProductMediaEntity`** (`product_media`):
+    *   *Columns*: `product_id` (PK and FK to `catalog_products.id` on delete cascade), `blob` (`ByteArray`), `updated_at`.
+*   **`ShoppingItemEntity`** (`shopping_items`):
+    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id`), `list_id` (FK to `shopping_lists.id` on delete cascade), `raw_text`, `quantity`, `price_at_time`, `is_checked`, `updated_at`, `is_deleted`.
+*   **`ShoppingListEntity`** (`shopping_lists`):
+    *   *Columns*: `id` (PK), `name`, `budged_in_cents` (with `budgetInCents` alias getter), `list_type`, `list_status`, `updated_at`, `is_deleted`.
+*   **`ShoppingListWithItems`**:
+    *   Room relation data class holding `ShoppingListEntity` with `@Relation` child `List<ShoppingItemEntity>`.
 
-*   **`CatalogProductEntity`**: Represents a product in the catalog. Fields include `id`, `ean`, `name`, `brand`, `measureUnit`, `netWeight`, `thumbnailUrl`, `updatedAt`, `isDeleted`, `manuallyAdded`. Has a unique index on `ean`.
-*   **`PantryItemEntity`**: Represents an item in the user's pantry. Fields include `id`, `productId` (foreign key to `CatalogProductEntity`), `quantity`, `expirationDate`, `batchNumber`, `updatedAt`, `isDeleted`.
-*   **`PriceEntryEntity`**: Stores historical price information for products. Fields include `id`, `productId` (foreign key to `CatalogProductEntity`), `priceInCents`, `storeName`, `updatedAt`, `isDeleted`.
-*   **`ProductMediaEntity`**: Stores binary data (e.g., images) for products. Fields include `productId` (primary key and foreign key to `CatalogProductEntity`), `blob` (ByteArray), `updatedAt`.
-*   **`ShoppingItemEntity`**: Represents an item within a shopping list. Fields include `id`, `productId` (foreign key to `CatalogProductEntity`), `listId` (foreign key to `ShoppingListEntity`), `quantity`, `priceAtTime`, `isChecked`, `updatedAt`, `isDeleted`.
-*   **`ShoppingListEntity`**: Represents a shopping list. Fields include `id`, `updatedAt`, `name`, `budgetInCents`, `isDeleted`.
-*   **`ShoppingListWithItems`**: A data class used by Room to represent a `ShoppingListEntity` along with its associated `ShoppingItemEntity`s using `@Relation`.
+---
 
-#### DAOs (`.kt` files in `data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/local/dao`)
+### 4.3. Data Transfer Objects (`local/dto/`)
+*   **`PantryItemWithCategoryDaoResult`**:
+    *   Flat Room query projection joining `pantry_items` with `catalog_products` (`name`, `category`, `measure_unit`, `net_weight`).
 
-These interfaces define the methods for database interactions.
+---
 
-*   **`CatalogProductDao`**: Provides methods for inserting, updating (force and LWW), searching, retrieving, marking as deleted, and deleting `CatalogProductEntity` objects.
-*   **`PantryRepositoryDao`**: Provides methods for inserting, retrieving (by product ID, all active), marking as deleted, force updating, LWW updating, and deleting `PantryItemEntity` objects.
-*   **`PriceEntryDao`**: Provides methods for inserting, retrieving price history, getting the latest price, marking as deleted, deleting, force updating, and LWW updating `PriceEntryEntity` objects.
-*   **`ProductMediaDao`**: Provides methods for inserting/updating, retrieving, and deleting `ProductMediaEntity` objects by `productId`.
-*   **`ShoppingItemDao`**: Provides methods for retrieving active items, inserting, finding by ID, force updating, LWW updating, toggling check status, logically deleting all, and marking as deleted for `ShoppingItemEntity` objects.
-*   **`ShoppingListDao`**: Provides methods for retrieving active shopping lists (with items), getting a shopping list by ID (with items), inserting lists and items, force updating, LWW updating, marking as deleted, deleting, and updating the timestamp for `ShoppingListEntity` objects.
+### 4.4. Domain & Entity Mappers (`local/mapper/`)
 
-#### `Converters.kt`
+Centralized and decoupled from repositories:
+*   **`CatalogMapper.kt`**:
+    *   `CatalogProductEntity.toDomain()` (with safe `runCatching` fallback for `MeasureUnit`).
+    *   `CatalogProduct.toEntity()`.
+*   **`PantryMapper.kt`**:
+    *   `PantryItemEntity.toDomain()`.
+    *   `PantryItem.toEntity()`.
+    *   `PantryItemWithCategoryDaoResult.toDomain()`.
+*   **`PriceMapper.kt`**:
+    *   `PriceEntryEntity.toDomain()`.
+    *   `PriceEntry.toEntity()`.
+*   **`ShoppingMapper.kt`**:
+    *   `ShoppingListWithItems.toDomain()`: Preserves soft-deleted items (`isDeleted = true`) so domain synchronization, cart totals, and LWW state machines have full visibility into the item states.
+    *   `ShoppingList.toEntity()`.
+    *   `ShoppingItemEntity.toDomain()`.
+    *   `ShoppingItem.toEntity()`.
 
-*   **Purpose**: Contains `TypeConverter` methods for Room to handle custom data types, specifically `Instant` (from `kotlinx.datetime`) and `MeasureUnit` (from `:core:domain`).
+---
 
-### 4.3. Dependency Injection (`di/DataModule.kt`)
+### 4.5. Data Access Objects (`local/dao/`)
+*   **`CatalogProductDao`**:
+    *   `findByEan`, `findById`, `getAllActive`, `searchByNameOrBrand` (ordered by name ASC).
+    *   `insert` (`ABORT`), `forceUpdateForProduct`, `updateProductIfNewer` (LWW with all product fields including notes), `markAsDeleted`, `deleteProductById`, `exists`.
+*   **`PantryItemDao`**:
+    *   `getAllActivePantryItems`, `getAllActivePantryItemsWithCategory`, `getPantryItemWithCategoryById`, `getExpiringPantryItems`.
+    *   `getPantryItemById`, `getPantryItemsByProductId`.
+    *   `insertPantryItem`, `forceUpdatePantryItem`, `updatePantryItemIfNewer`, `markPantryItemAsDeleted`, `deletePantryItemById`.
+    *   *(Provides `typealias PantryRepositoryDao = PantryItemDao` for backwards compatibility).*
+*   **`PriceEntryDao`**:
+    *   `getPriceHistoryByProductId`, `getLatestPriceForProductId`, `findById`.
+    *   `insertPriceEntry` (`ABORT`), `forceUpdatePriceEntry`, `updatePriceEntryIfNewer`, `markPriceEntryAsDeleted`, `deletePriceEntryById`.
+*   **`ProductMediaDao`**:
+    *   `getByProductIdFlow`, `insertOrUpdate`, `deleteByProductId`.
+*   **`ShoppingItemDao`**:
+    *   `getItemsByListId`, `findById`, `insertShoppingItem`, `forceUpdateItem`, `updateItemIfNewer`, `updateCheckStatus`, `markAsDeleted`, `deleteById`.
+*   **`ShoppingListDao`**:
+    *   `getAllActiveShoppingLists` (returns `@Transaction Flow<List<ShoppingListWithItems>>`), `getShoppingListById`.
+    *   `insertShoppingList`, `insertItems`, `forceUpdateForShoppingList`, `updateShoppingListIfNewer` (LWW including `type` and `status`), `updateTimestamp`, `markShoppingListAsDeleted`, `deleteShoppingListById`.
 
-*   **`dataModule`**: A Koin module that configures and provides singletons for:
-    *   `AppDatabase`: The Room database instance, initialized with `BundledSQLiteDriver` and `Dispatchers.IO` for background operations.
-    *   All DAOs: `catalogDao`, `pantryDao`, `priceDao`, `shoppingListDao`.
-    *   All Repository implementations: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`. These repositories are injected with `AppDatabase` and an `AppLogger` (qualified as `DiQualifiers.DATA_LOGGER`).
+---
 
-### 4.4. Utilities (`util/ImageProcessor.kt`)
+### 4.6. Repositories (`repository/`)
 
-*   **`ImageProcessor` (commonMain)**: An `expect` interface defining the `processForThumbnail` method.
-*   **`ImageProcessorImpl` (androidMain)**: The `actual` implementation for Android, using `android.graphics.Bitmap` and `ExifInterface` to decode, fix orientation, center crop, scale, and compress images into a thumbnail.
-*   **`ImageProcessorImpl` (iosMain)**: The `actual` implementation for iOS, using `UIImage` and `CoreGraphics` to resize and compress images into a thumbnail.
+Implement domain contracts with encapsulated state, logging, input validation, and atomic transactions:
 
-## 5. Usage
+*   **`RoomCatalogRepository`**:
+    *   Encapsulates DAOs (`productDao`, `mediaDao`).
+    *   Executes `insertProduct`, `forceUpdateProduct`, and `updateProductIfNewer` within immediate write transactions (`db.useWriterConnection { conn -> conn.withTransaction(IMMEDIATE) { ... } }`), guaranteeing atomicity between product catalog rows and binary media blobs.
+    *   Aligns media timestamps directly with `product.updatedAt`.
+*   **`RoomPantryRepository`**:
+    *   Encapsulates database and DAO as private members.
+    *   `consumePantryItem` and `consumeBatch`: Atomically validates stock, prevents consumption of soft-deleted items, and updates quantities inside an immediate transaction.
+    *   `getExpiringPantryItems`: Accurately separates active non-expired items approaching the threshold from already expired items.
+*   **`RoomPriceRepository`**:
+    *   Encapsulates DAO as private member.
+    *   Manages price history entries with LWW conflict protection.
+*   **`RoomShoppingListRepository`**:
+    *   Encapsulates database and DAOs as private members.
+    *   `insertShoppingList`: Atomically saves list entity and its associated items.
+    *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries, records `PriceEntry` records when prices are present, unchecks items, and updates the list timestamp.
 
-Other modules (e.g., `:core:domain`, `:features:`) interact with the `:data` module primarily through the repository interfaces defined in `:core:domain`. These interfaces are then provided by the Koin `dataModule` with their `Room`-based implementations.
+---
 
-Example: A use case in the domain layer would depend on `PriceRepository`, and at runtime, Koin would inject `RoomPriceRepository`.
+### 4.7. Dependency Injection (`di/DataModule.kt`)
 
-## 6. Public APIs
+Configures singletons via Koin:
+*   `AppDatabase`: Initialized with in-memory or on-disk platform database builder, `BundledSQLiteDriver`, and background dispatchers.
+*   DAOs: `catalogDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `productMediaDao`.
+*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
 
-The primary public APIs of the `:data` module are the concrete implementations of the repository interfaces:
+---
 
-*   `com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository`
-*   `com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository`
-*   `com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository`
-*   `com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository`
+## 5. Testing & Verification
 
-Additionally, the `dataModule` in `com.bitlabbr.minhadespensa.data.di` is a public API for configuring dependency injection for this module.
+The test suite resides in `data/src/commonTest/` using an in-memory SQLite database (`createInMemoryDatabase(getTestDatabaseBuilder())`):
+*   **`RoomCatalogRepositoryTest`**: Tests EAN lookups, search, CRUD, LWW updates, media blob handling, and validation limits.
+*   **`RoomPantryRepositoryTest`**: Tests pantry joins with categories, expiration filtering, single/batch consumption deductions, and negative balance guards.
+*   **`RoomPriceRepositoryTest`**: Tests price history queries, latest price resolution, LWW conflict handling, and store name validations.
+*   **`RoomShoppingListRepositoryTest`**: Tests shopping lists, item management, scratchpad items, LWW updates, and checkout (`finalizePurchase`).
+*   **`DataConsistencyTest`**: Cross-repository integration tests validating database cascade deletions, foreign key enforcement, and end-to-end multi-table transactions.
+*   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
+*   **`AndroidImageProcessorTest`**: Android-specific thumbnail processing tests.
+
+All 119 tests in `:data` run under Gradle via `./gradlew :data:test` and `./gradlew testDebugUnitTest`.
