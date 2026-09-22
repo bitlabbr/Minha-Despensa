@@ -25,7 +25,6 @@ package com.bitlabbr.minhadespensa.data.repository
 
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
@@ -34,8 +33,8 @@ import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
-import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -202,36 +201,4 @@ class RoomPantryRepository(
     private companion object {
         const val MILLIS_PER_DAY = 86_400_000L
     }
-}
-
-fun PantryItemEntity.toDomain(): PantryItem {
-    return PantryItem(
-        id = this.id,
-        productId = this.productId,
-        quantity = this.quantity,
-        expirationDate = this.expirationDate,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted,
-        batchNumber = this.batchNumber,
-    )
-}
-
-fun PantryItem.toEntity(): PantryItemEntity {
-    return PantryItemEntity(
-        id = this.id,
-        productId = this.productId,
-        quantity = this.quantity,
-        expirationDate = this.expirationDate,
-        updatedAt = this.updatedAt,
-        isDeleted = this.isDeleted,
-        batchNumber = this.batchNumber,
-    )
-}
-
-fun PantryItemWithCategoryDaoResult.toDomain(): PantryItemWithCategory {
-    return PantryItemWithCategory(
-        pantryItem = this.pantryItem.toDomain(),
-        category = this.category,
-        name = this.name
-    )
 }

@@ -26,15 +26,15 @@ package com.bitlabbr.minhadespensa.data.repository
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
+import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -232,33 +232,3 @@ class RoomCatalogRepository(
         { "The category should have at most ${CoreConstants.Product.CATEGORY_MAX_LENGTH} characters" }
     }
 }
-
-fun CatalogProductEntity.toDomain() = CatalogProduct(
-    id = this.id,
-    ean = this.ean,
-    name = this.name,
-    category = this.category,
-    brand = this.brand,
-    measureUnit = MeasureUnit.valueOf(this.measureUnit),
-    netWeight = this.netWeight,
-    thumbnailUrl = this.thumbnailUrl,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted,
-    manuallyAdded = this.manuallyAdded,
-    notes = this.notes
-)
-
-fun CatalogProduct.toEntity() = CatalogProductEntity(
-    id = this.id,
-    ean = this.ean,
-    name = this.name,
-    category = this.category,
-    brand = this.brand,
-    measureUnit = this.measureUnit.name,
-    netWeight = this.netWeight,
-    thumbnailUrl = this.thumbnailUrl,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted,
-    manuallyAdded = this.manuallyAdded,
-    notes = this.notes
-)

@@ -26,11 +26,10 @@ package com.bitlabbr.minhadespensa.data.repository
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
-import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
-import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
-import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
+import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
+import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
@@ -112,23 +111,4 @@ class RoomPriceRepository(
             require(it.isNotBlank()) { "The store name should not be empty" }
         }
     }
-
 }
-
-fun PriceEntryEntity.toDomain() = PriceEntry(
-    id = this.id,
-    productId = this.productId,
-    priceInCents = this.priceInCents,
-    storeName = this.storeName,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted
-)
-
-fun PriceEntry.toEntity() = PriceEntryEntity(
-    id = this.id,
-    productId = this.productId,
-    priceInCents = this.priceInCents,
-    storeName = this.storeName,
-    updatedAt = this.updatedAt,
-    isDeleted = this.isDeleted
-)
