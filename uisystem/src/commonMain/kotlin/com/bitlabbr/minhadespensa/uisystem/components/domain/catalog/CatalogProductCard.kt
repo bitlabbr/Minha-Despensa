@@ -51,7 +51,6 @@ import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
-import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
 import com.bitlabbr.minhadespensa.uisystem.theme.AppDimens
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
@@ -74,12 +73,6 @@ fun CatalogProductCard(
         imageBytes?.let { bytes ->
             runCatching { bytes.decodeToImageBitmap() }.getOrNull()
         }
-    }
-
-    val formattedWeight = if (product.netWeight % 1.0 == 0.0) {
-        product.netWeight.toLong().toString()
-    } else {
-        product.netWeight.toString().replace('.', ',')
     }
 
     ItemContainerGlassCard(
@@ -114,7 +107,7 @@ fun CatalogProductCard(
             )
 
             MinhaDespensaText(
-                text = "$formattedWeight ${product.measureUnit.toAbbreviation()}",
+                text = product.formattedWeight,
                 fontStyle = typography.bodySmall,
                 fontWeight = FontWeight.Light,
                 color = colors.onSecondaryContainer.copy(alpha = 0.65f),

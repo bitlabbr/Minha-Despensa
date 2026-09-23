@@ -44,7 +44,7 @@ fun RegisterProductWidget(
             onClick = viewModel::openAddProductSheet,
             isCallToAction = isCallToAction
         )
-        RegisterProductSheet(
+        RegisterProductBottomSheet(
             isOpen = uiState.isFormOpen,
             formState = uiState.formState,
             onFormChange = viewModel::onFormChange,

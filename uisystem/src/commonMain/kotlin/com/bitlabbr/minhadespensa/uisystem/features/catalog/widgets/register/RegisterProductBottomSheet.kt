@@ -41,6 +41,31 @@ import org.koin.compose.koinInject
 @Composable
 fun RegisterProductBottomSheet(
     isOpen: Boolean,
+    formState: ProductFormState,
+    onFormChange: (ProductFormState) -> Unit,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!isOpen) return
+
+    MinhaDespensaBottomSheet(
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+    ) {
+        RegisterProductFormContent(
+            state = formState,
+            onStateChange = onFormChange,
+            onSaveClick = onSave,
+            onCancelClick = onDismiss,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RegisterProductBottomSheet(
+    isOpen: Boolean,
     prefilledEan: String? = null,
     availableCategories: List<String> = emptyList(),
     onProductCreated: (CatalogProduct) -> Unit,

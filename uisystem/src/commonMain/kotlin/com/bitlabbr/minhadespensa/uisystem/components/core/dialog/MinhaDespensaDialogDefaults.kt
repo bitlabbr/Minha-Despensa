@@ -23,97 +23,61 @@
 
 package com.bitlabbr.minhadespensa.uisystem.components.core.dialog
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
-import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun MinhaDespensaDialog(
-    onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier,
-    title: String? = null,
-    description: String? = null,
-    properties: DialogProperties = MinhaDespensaDialogDefaults.properties,
-    shape: Shape = MinhaDespensaDialogDefaults.shape(),
-    backgroundBrush: Brush = MinhaDespensaDialogDefaults.backgroundBrush(),
-    border: androidx.compose.foundation.BorderStroke = MinhaDespensaDialogDefaults.borderStroke(),
-    buttons: (@Composable () -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val dimens = MinhaDespensaTheme.dimens
-    val typography = MinhaDespensaTheme.typography
-    val colors = getAppColors()
+object MinhaDespensaDialogDefaults {
 
-    BasicAlertDialog(
-        onDismissRequest = onDismissRequest,
-        properties = properties,
-        modifier = modifier.padding(horizontal = dimens.paddingLarge),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(MinhaDespensaDialogDefaults.Elevation, shape)
-                .clip(shape)
-                .background(backgroundBrush)
-                .border(border, shape)
-                .padding(dimens.paddingMedium),
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(dimens.paddingMedium),
-            ) {
-                if (title != null || description != null) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                    ) {
-                        if (title != null) {
-                            MinhaDespensaText(
-                                text = title,
-                                fontStyle = typography.displayMedium,
-                                color = colors.onSurface,
-                                fontWeight = FontWeight.Bold,
-                            )
-                        }
-                        if (description != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            MinhaDespensaText(
-                                text = description,
-                                fontStyle = typography.bodySmall,
-                                color = colors.onSurface.copy(alpha = 0.65f),
-                            )
-                        }
-                    }
-                }
-                content()
-                if (buttons != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    buttons()
-                }
-            }
+    val Elevation: Dp = 12.dp
+
+    val properties: DialogProperties = DialogProperties(
+        usePlatformDefaultWidth = false,
+        dismissOnBackPress = true,
+        dismissOnClickOutside = true,
+    )
+
+    @Composable
+    fun shape(): Shape {
+        val dimens = MinhaDespensaTheme.dimens
+        return RoundedCornerShape(dimens.cardCorner * 0.75f)
+    }
+
+    @Composable
+    fun backgroundBrush(isDark: Boolean = isSystemInDarkTheme()): Brush {
+        val colors = getAppColors()
+        val baseColor = colors.surface
+
+        val primaryAlpha = if (isDark) 0.95f else 0.98f
+        val secondaryAlpha = if (isDark) 0.92f else 0.96f
+
+        return Brush.linearGradient(
+            colors = listOf(
+                baseColor.copy(alpha = primaryAlpha),
+                baseColor.copy(alpha = secondaryAlpha),
+            ),
+            start = Offset(0f, 0f),
+            end = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+        )
+    }
+
+    @Composable
+    fun borderStroke(isDark: Boolean = isSystemInDarkTheme()): BorderStroke {
+        val strokeColor = if (isDark) {
+            Color.White.copy(alpha = 0.16f)
+        } else {
+            getAppColors().onSurface.copy(alpha = 0.10f)
         }
+        return BorderStroke(1.dp, strokeColor)
     }
 }

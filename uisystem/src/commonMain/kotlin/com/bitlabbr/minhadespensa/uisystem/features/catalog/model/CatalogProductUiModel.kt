@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.catalog.model
 
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
 
 data class CatalogProductUiModel(
     val id: String,
@@ -38,6 +39,11 @@ data class CatalogProductUiModel(
 )
 
 fun CatalogProduct.toUiModel(): CatalogProductUiModel {
+    val weightStr = if (this.netWeight % 1.0 == 0.0) {
+        this.netWeight.toLong().toString()
+    } else {
+        this.netWeight.toString().replace('.', ',')
+    }
     return CatalogProductUiModel(
         id = this.id,
         name = this.name,
@@ -46,6 +52,6 @@ fun CatalogProduct.toUiModel(): CatalogProductUiModel {
         measureUnit = this.measureUnit,
         netWeight = this.netWeight,
         ean = this.ean,
-        formattedWeight = "${this.netWeight} ${this.measureUnit.name.lowercase()}"
+        formattedWeight = "$weightStr ${this.measureUnit.toAbbreviation()}"
     )
 }

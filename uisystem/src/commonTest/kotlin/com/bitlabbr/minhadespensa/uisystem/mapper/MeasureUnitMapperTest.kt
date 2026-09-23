@@ -21,32 +21,29 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.model
+package com.bitlabbr.minhadespensa.uisystem.mapper
 
-import androidx.compose.runtime.Composable
-import org.jetbrains.compose.resources.StringResource
-import org.jetbrains.compose.resources.getString
-import org.jetbrains.compose.resources.stringResource
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
-sealed interface UiText {
-    data class DynamicString(val value: String) : UiText
-    data class Resource(
-        val resource: StringResource,
-        val args: List<Any> = emptyList(),
-    ) : UiText
+class MeasureUnitMapperTest {
 
-    @Composable
-    fun asString(): String {
-        return when (this) {
-            is DynamicString -> value
-            is Resource -> stringResource(resource, *args.toTypedArray())
-        }
+    @Test
+    fun toAbbreviation_returnsCorrectAbbreviationForEachUnit() {
+        assertEquals("kg", MeasureUnit.KILOGRAM.toAbbreviation())
+        assertEquals("g", MeasureUnit.GRAM.toAbbreviation())
+        assertEquals("L", MeasureUnit.LITER.toAbbreviation())
+        assertEquals("ml", MeasureUnit.MILLILITER.toAbbreviation())
+        assertEquals("un", MeasureUnit.UNIT.toAbbreviation())
+        assertEquals("pct", MeasureUnit.PACKAGE.toAbbreviation())
     }
 
-    suspend fun asStringAsync(): String {
-        return when (this) {
-            is DynamicString -> value
-            is Resource -> getString(resource, *args.toTypedArray())
+    @Test
+    fun labelRes_mapsEveryUnitToAStringResource() {
+        MeasureUnit.entries.forEach { unit ->
+            assertNotNull(unit.labelRes, "MeasureUnit $unit should have a non-null StringResource label")
         }
     }
 }

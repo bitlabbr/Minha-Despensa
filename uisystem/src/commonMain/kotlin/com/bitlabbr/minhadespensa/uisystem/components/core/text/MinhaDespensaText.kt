@@ -33,8 +33,34 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+
+@Composable
+fun MinhaDespensaText(
+    text: UiText?,
+    modifier: Modifier = Modifier.wrapContentWidth(),
+    alignment: TextAlign = TextAlign.Start,
+    fontWeight: FontWeight? = null,
+    color: Color = getAppColors().onSurface,
+    fontStyle: TextStyle = MinhaDespensaTheme.typography.bodyLarge,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip,
+    softWrap: Boolean = true,
+) {
+    MinhaDespensaText(
+        text = text?.asString(),
+        modifier = modifier,
+        alignment = alignment,
+        fontWeight = fontWeight,
+        color = color,
+        fontStyle = fontStyle,
+        maxLines = maxLines,
+        overflow = overflow,
+        softWrap = softWrap,
+    )
+}
 
 @Composable
 fun MinhaDespensaText(

@@ -25,32 +25,22 @@ package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
-import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.toUiModel
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryFilterSubState
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryListSubState
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryUiState
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantrySubFlow
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.*
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import kotlin.time.Duration.Companion.milliseconds
 
 class PantryViewModel(
     private val pantryRepository: PantryRepository,
@@ -85,10 +75,11 @@ class PantryViewModel(
         val allUiItems = allItems.map { it.toPantryItemUiModel() }
         val isPantryEmpty = allUiItems.isEmpty()
 
-        val dynamicCategories = (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allUiItems.map { it.category.trim() })
-            .filter { it.isNotBlank() }
-            .distinct()
-            .sorted()
+        val dynamicCategories =
+            (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allUiItems.map { it.category.trim() })
+                .filter { it.isNotBlank() }
+                .distinct()
+                .sorted()
 
         val filteredProducts = allUiItems.filter { item ->
             val matchesCategory = selectedCategory == null ||
@@ -178,10 +169,12 @@ class PantryViewModel(
                     // Produto existe: transiciona direto para configurar quantidade e validade
                     _activeSubFlow.value = PantrySubFlow.AddItemDetails(status.product.toUiModel())
                 }
+
                 is EanStatus.NotFound, is EanStatus.InvalidFormat -> {
                     // Produto não existe: abre o formulário de cadastro com o EAN lido
                     _activeSubFlow.value = PantrySubFlow.CreateCatalogProduct(initialEan = ean)
                 }
+
                 EanStatus.Empty -> Unit
             }
         }
@@ -226,7 +219,7 @@ class PantryViewModel(
             category = this.category,
             brand = null,
             quantity = this.pantryItem.quantity,
-            measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNITY,
+            measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNIT,
             netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
             expirationDate = this.pantryItem.expirationDate,
             isExpired = isExpired,
