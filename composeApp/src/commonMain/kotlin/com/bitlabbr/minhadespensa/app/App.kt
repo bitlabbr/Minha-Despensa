@@ -49,12 +49,13 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainer
 import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.GlobalNotificationHost
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
+import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
+import com.bitlabbr.minhadespensa.uisystem.features.settings.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.ShoppingAssistantScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.planned.CreatePlannedListScreen
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist.QuickListScreen
 import com.bitlabbr.minhadespensa.uisystem.navigation.*
-import com.bitlabbr.minhadespensa.uisystem.screens.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
@@ -171,6 +172,7 @@ fun App() {
                         ShoppingListsScreen(
                             bottomPadding = innerPadding.calculateBottomPadding(),
                             onNavigateToQuickList = {
+                                navController.navigate(QuickListRoute)
                             },
                             onNavigateToPlannedList = {
                                 navController.navigate(CreatePlannedListRoute)
@@ -178,7 +180,7 @@ fun App() {
                             onNavigateToAssistant = { listId ->
                                 navController.navigate(ShoppingAssistantRoute(listId = listId))
                             },
-                            onNavigateToListDetails = { listId ->}
+                            onNavigateToListDetails = { listId -> }
                         )
                     }
 
@@ -192,6 +194,15 @@ fun App() {
 
                     composable<CreatePlannedListRoute> {
                         CreatePlannedListScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onListSaved = { listId ->
+                                navController.popBackStack()
+                            },
+                        )
+                    }
+
+                    composable<QuickListRoute> {
+                        QuickListScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onListSaved = { listId ->
                                 navController.popBackStack()

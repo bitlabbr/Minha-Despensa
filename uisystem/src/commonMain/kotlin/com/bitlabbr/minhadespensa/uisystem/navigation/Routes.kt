@@ -48,4 +48,7 @@ data class ShoppingAssistantRoute(val listId: String? = null)
 data object CreatePlannedListRoute
 
 @Serializable
+data object QuickListRoute
+
+@Serializable
 data class ProductDetailsRoute(val productId: String)

@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.screens
+package com.bitlabbr.minhadespensa.uisystem.features.home
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -69,7 +69,6 @@ fun HomeScreen(
         containerColor = Color.Transparent
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize()) {
-
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(

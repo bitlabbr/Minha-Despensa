@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.screens
+package com.bitlabbr.minhadespensa.uisystem.features.settings
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
@@ -45,15 +45,14 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaT
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.settins_section_tile_bottom
-import minhadespensa.uisystem.generated.resources.settins_section_tile_top
+import minhadespensa.uisystem.generated.resources.settings_section_title_bottom
+import minhadespensa.uisystem.generated.resources.settings_section_title_top
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun SettingsScreen(
     bottomPadding: Dp = 0.dp
 ) {
-
     val appDimens = MinhaDespensaTheme.dimens
 
     Scaffold(
@@ -96,8 +95,8 @@ fun SettingsScreen(
                                 )
                         ) {
                             PrimaryContainerHeader(
-                                textTop = stringResource(Res.string.settins_section_tile_top),
-                                textBottom = stringResource(Res.string.settins_section_tile_bottom)
+                                textTop = stringResource(Res.string.settings_section_title_top),
+                                textBottom = stringResource(Res.string.settings_section_title_bottom)
                             ) {}
                             SecondaryContainerGlassCard(
                                 modifier = Modifier
@@ -132,8 +131,7 @@ fun SettingsScreen(
                                         BudgetGauge(
                                             modifier = Modifier.size(200.dp),
                                             progress = 1f,
-
-                                            )
+                                        )
                                         Spacer(modifier = Modifier.size(appDimens.paddingSmall))
                                         InverseAnchoredGauge(
                                             progress = 1.5f,

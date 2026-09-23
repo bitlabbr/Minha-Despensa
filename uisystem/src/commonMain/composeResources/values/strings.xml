@@ -119,4 +119,50 @@
     <string name="pantry_categories_empty_message">Sua despensa está vazia\nAdicione produtos no botão abaixo!</string>
     <string name="pantry_categories_not_found">Nenhum item nesta categoria da despensa.</string>
 
+    <!-- Shopping Assistant -->
+    <string name="shopping_assistant_title">Assistente de Compras</string>
+    <string name="shopping_assistant_cart_count">Carrinho (%1$d/%2$d)</string>
+    <string name="shopping_assistant_total">Total: %1$s</string>
+    <string name="shopping_assistant_scan_barcode">Escanear</string>
+    <string name="shopping_assistant_finalize_stock">Finalizar e Estocar</string>
+    <string name="shopping_assistant_empty_cart">Nenhum item no carrinho.\nBipe o código de barras do primeiro produto!</string>
+    <string name="shopping_assistant_no_price">Sem preço</string>
+    <string name="shopping_assistant_item_summary">%1$sx • %2$s</string>
+
+    <!-- Planned List -->
+    <string name="planned_list_title">Nova Lista Planejada</string>
+    <string name="planned_list_name_label">Nome da Lista *</string>
+    <string name="planned_list_name_placeholder">Ex: Feira do Mês</string>
+    <string name="planned_list_budget_label">Teto de Gastos (Opcional)</string>
+    <string name="planned_list_budget_placeholder">R$ 250,00</string>
+    <string name="planned_list_search_catalog">Buscar no Catálogo</string>
+    <string name="planned_list_catalog_products">Produtos do Catálogo</string>
+    <string name="planned_list_empty_products">Nenhum produto encontrado no catálogo.</string>
+    <string name="planned_list_save_button">Salvar Lista (%1$d itens)</string>
+    <string name="planned_list_select_products">Selecione produtos</string>
+    <string name="planned_list_no_brand">Sem marca</string>
+
+    <!-- Quick List -->
+    <string name="quick_list_title">Lista Rápida (Bloco de Notas)</string>
+    <string name="quick_list_name_label">Nome da Lista (Opcional)</string>
+    <string name="quick_list_name_placeholder">Ex: Lista rápida de hoje</string>
+    <string name="quick_list_content_label">Itens (um por linha) *</string>
+    <string name="quick_list_content_placeholder">3 Pães\n1 Leite\n1 Café\n500g de presunto</string>
+    <string name="quick_list_content_supporting">Escreva livremente o que precisa comprar</string>
+    <string name="quick_list_create_button">Criar Lista Rápida</string>
+
+    <!-- Shopping Overview -->
+    <string name="shopping_lists_header_title_top">Minhas</string>
+    <string name="shopping_lists_header_title_bottom">Listas de Compras</string>
+    <string name="shopping_lists_header_description">Gerencie suas compras planejadas e anotações rápidas</string>
+    <string name="shopping_lists_direct_shopping_button">Ir ao Supermercado (Compra Direta)</string>
+    <string name="shopping_lists_new_list_button">Nova Lista</string>
+    <string name="shopping_lists_empty_title">Nenhuma lista criada ainda</string>
+    <string name="shopping_lists_empty_description">Toque em 'Nova Lista' para anotar itens rapidamente</string>
+    <string name="shopping_lists_dialog_title">Qual tipo de lista deseja criar?</string>
+    <string name="shopping_lists_dialog_quick_option">Bloco de Notas (Texto Rápido)</string>
+    <string name="shopping_lists_dialog_planned_option">Lista Planejada (Do Catálogo)</string>
+    <string name="shopping_lists_delete_content_description">Excluir Lista</string>
+    <string name="shopping_lists_items_count">%1$d itens • Criada em %2$s</string>
+
 </resources>
