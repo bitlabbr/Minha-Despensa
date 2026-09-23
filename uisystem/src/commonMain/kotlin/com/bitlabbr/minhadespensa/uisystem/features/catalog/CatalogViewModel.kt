@@ -27,9 +27,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
-import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.*
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
@@ -40,13 +40,12 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import minhadespensa.uisystem.generated.resources.*
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class CatalogViewModel(
     private val catalogRepository: CatalogRepository,
+    private val saveProductUseCase: SaveCatalogProductUseCase,
     private val logger: AppLogger,
-    private val notificationManager: AppNotificationManager
+    private val notificationManager: AppNotificationManager,
 ) : ViewModel() {
 
     private val TAG = "CatalogViewModel"
@@ -222,7 +221,6 @@ class CatalogViewModel(
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     fun saveProduct() {
         viewModelScope.launch {
             val currentForm = _formState.value
@@ -232,32 +230,25 @@ class CatalogViewModel(
             }
 
             _formState.update { it.copy(isSaving = true) }
-            try {
-                val netWeight = currentForm.netWeight.replace(',', '.').toDoubleOrNull() ?: 1.0
-                val unit = currentForm.measureUnit
-                val category = currentForm.category.ifBlank { CoreConstants.Product.DEFAULT_CATEGORY }
+            val netWeight = currentForm.netWeight.replace(',', '.').toDoubleOrNull() ?: 1.0
+            val result = saveProductUseCase(
+                name = currentForm.name,
+                brand = currentForm.brand.takeIf { it.isNotBlank() },
+                category = currentForm.category,
+                measureUnit = currentForm.measureUnit,
+                netWeight = netWeight,
+                ean = currentForm.ean.takeIf { it.isNotBlank() },
+                imageBytes = currentForm.imageBytes,
+            )
 
-                val newProduct = CatalogProduct(
-                    id = Uuid.random().toString(),
-                    name = currentForm.name.trim(),
-                    brand = currentForm.brand.trim().takeIf { it.isNotBlank() },
-                    category = category,
-                    measureUnit = unit,
-                    netWeight = netWeight,
-                    updatedAt = getCurrentTime(),
-                    isDeleted = false,
-                    manuallyAdded = true,
-                    ean = currentForm.ean.trim().takeIf { it.isNotBlank() },
-                )
-
-                catalogRepository.insertProduct(newProduct, currentForm.imageBytes)
-                _selectedCategory.value = currentForm.category
+            result.onSuccess { createdProduct ->
+                logger.d(TAG, "Product saved successfully: ${createdProduct.name}")
+                _selectedCategory.value = createdProduct.category
                 _searchQuery.value = ""
-
                 closeAddProductSheet()
-            } catch (e: Exception) {
-                logger.e(TAG, "Error while saving product: ${e.message}", e)
-                _formState.update { it.copy(isSaving = false) }
+            }.onFailure { error ->
+                logger.e(TAG, "Error while saving product: ${error.message}", error)
+                _formState.update { it.copy(isSaving = false, errorMessage = error.message) }
             }
         }
     }

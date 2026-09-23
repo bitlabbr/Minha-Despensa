@@ -21,27 +21,12 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
+package com.bitlabbr.minhadespensa.uisystem.features.home.model
 
-import androidx.compose.runtime.Immutable
-import com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel
-
-sealed class HomeWidget {
-    data class FinancialSummary(
-        val consumptionProgress: Float,
-        val consumptionTargetChartLabel: String,
-        val currentConsumption: String,
-        val budget: String,
-    ) : HomeWidget()
-
-    @Immutable
-    data class ExpiringSoon(
-        val items: List<ExpiringItemCard>
-    ) : HomeWidget()
-
-    @Immutable
-    data class ConsumptionTrend(
-        val items: List<ConsumptionTrendItemUiModel>
-    ) : HomeWidget()
-
-}
+data class ConsumptionTrendItemUiModel(
+    val productName: String,
+    val productCategory: String,
+    val productMeasureUnity: String,
+    val consumptionAmount: String,
+    val iconPainterURI: String?
+)

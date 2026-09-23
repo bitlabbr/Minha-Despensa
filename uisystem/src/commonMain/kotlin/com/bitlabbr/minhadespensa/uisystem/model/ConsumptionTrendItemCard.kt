@@ -23,10 +23,13 @@
 
 package com.bitlabbr.minhadespensa.uisystem.model
 
-data class ConsumptionTrendItemCard(
-    val productName: String,
-    val productCategory: String,
-    val productMeasureUnity: String,
-    val consumptionAmount: String,
-    val iconPainterURI: String?
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel
+
+@Deprecated(
+    message = "Use ConsumptionTrendItemUiModel instead",
+    replaceWith = ReplaceWith(
+        "ConsumptionTrendItemUiModel",
+        "com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel"
+    )
 )
+typealias ConsumptionTrendItemCard = ConsumptionTrendItemUiModel

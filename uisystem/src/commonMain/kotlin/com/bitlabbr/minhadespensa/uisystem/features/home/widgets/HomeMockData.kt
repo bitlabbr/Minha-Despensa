@@ -23,7 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
-import com.bitlabbr.minhadespensa.uisystem.model.ConsumptionTrendItemCard
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel
 import com.bitlabbr.minhadespensa.core.domain.model.IconKeys
 
 object HomeMockData {
@@ -104,42 +104,42 @@ object HomeMockData {
         ),
         HomeWidget.ConsumptionTrend(
             items = listOf(
-                ConsumptionTrendItemCard(
+                ConsumptionTrendItemUiModel(
                     productName = "Café",
                     productCategory = "Bebidas",
                     iconPainterURI = IconKeys.BEVERAGE_COFFEE,
                     productMeasureUnity = "Pacotes",
                     consumptionAmount = "8",
                 ),
-                ConsumptionTrendItemCard(
+                ConsumptionTrendItemUiModel(
                     productName = "Arroz Parboilizado",
                     productCategory = "Grãos",
                     iconPainterURI = IconKeys.GRAINS_RICE,
                     productMeasureUnity = "Quilos",
                     consumptionAmount = "4",
                 ),
-                ConsumptionTrendItemCard(
+                ConsumptionTrendItemUiModel(
                     productName = "Feijão Mulatinho",
                     productCategory = "Grãos",
                     iconPainterURI = IconKeys.GRAINS_BEAN_BROWN,
                     productMeasureUnity = "Quilos",
                     consumptionAmount = "2",
                 ),
-                ConsumptionTrendItemCard(
+                ConsumptionTrendItemUiModel(
                     productName = "Coca-Cola",
                     productCategory = "Bebidas",
                     iconPainterURI = IconKeys.BEVERAGE_SODA_COLA,
                     productMeasureUnity = "Litros",
                     consumptionAmount = "2,5",
                 ),
-                ConsumptionTrendItemCard(
+                ConsumptionTrendItemUiModel(
                     productName = "Vinho Tinto",
                     productCategory = "Bebidas",
                     iconPainterURI = IconKeys.BEVERAGE_WINE,
                     productMeasureUnity = "Unidade",
                     consumptionAmount = "1",
                 ),
-                ConsumptionTrendItemCard(
+                ConsumptionTrendItemUiModel(
                     productName = "Papel Toalha",
                     productCategory = "Produtos de Limpeza",
                     iconPainterURI = IconKeys.CLEANING_PAPER_TOWEL,

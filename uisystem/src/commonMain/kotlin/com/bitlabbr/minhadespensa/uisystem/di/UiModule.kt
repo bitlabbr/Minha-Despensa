@@ -23,7 +23,6 @@
 
 package com.bitlabbr.minhadespensa.uisystem.di
 
-import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
@@ -39,7 +38,6 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val uiModule = module {
-    factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
         ConsoleLogger(moduleName = "UISystem")
     }
@@ -57,8 +55,9 @@ val uiModule = module {
 
     viewModel {
         CatalogViewModel(
-            logger = get(named(DiQualifiers.UI_LOGGER)),
             catalogRepository = get(),
+            saveProductUseCase = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
         )
     }
