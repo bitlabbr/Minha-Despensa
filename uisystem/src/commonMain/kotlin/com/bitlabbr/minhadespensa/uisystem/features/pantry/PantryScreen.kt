@@ -24,21 +24,11 @@
 package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
@@ -85,17 +75,6 @@ fun PantryScreen(
             onProductClick = onProductClick,
         )
         AddPantryItemWidget(viewModel = viewModel)
-
-        OutlinedButton(
-            onClick = { viewModel.onStartQuickListFlow() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            Icon(Icons.Rounded.EditNote, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Criar Lista Rápida (Bloco de Notas)")
-        }
     }
 
     when (val subFlow = uiState.activeSubFlow) {
@@ -118,6 +97,7 @@ fun PantryScreen(
                     viewModel.onBarcodeScanned(ean)
                 },
                 onDismissRequest = viewModel::onDismissSubFlow,
+                onManualEntryClick = { viewModel.onStartManualRegisterFlow() },
             )
         }
 

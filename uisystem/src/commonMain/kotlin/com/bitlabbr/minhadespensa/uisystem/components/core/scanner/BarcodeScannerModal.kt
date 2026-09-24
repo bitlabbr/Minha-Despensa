@@ -26,7 +26,10 @@ package com.bitlabbr.minhadespensa.uisystem.components.core.scanner
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -37,23 +40,29 @@ import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import com.bitlabbr.minhadespensa.uisystem.components.core.feedback.rememberHapticFeedbackManager
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.action_manual_register
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BarcodeScannerModal(
     onBarcodeScanned: (String) -> Unit,
     onDismissRequest: () -> Unit,
+    onManualEntryClick: (() -> Unit)? = null,
 ) {
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
@@ -100,14 +109,34 @@ fun BarcodeScannerModal(
                 )
             }
 
-            MinhaDespensaText(
-                text = "Aponte a câmera para o código de barras",
-                color = Color.White,
-                fontStyle = MinhaDespensaTheme.typography.bodySmall,
+            Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 60.dp),
-            )
+                    .padding(bottom = 48.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                MinhaDespensaText(
+                    text = "Aponte a câmera para o código de barras",
+                    color = Color.White,
+                    fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                )
+                if (onManualEntryClick != null) {
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(
+                        onClick = {
+                            onDismissRequest()
+                            onManualEntryClick()
+                        },
+                    ) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.action_manual_register),
+                            color = colors.primary,
+                            fontStyle = MinhaDespensaTheme.typography.button,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
         }
     }
 }
