@@ -43,7 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
@@ -86,23 +86,21 @@ fun PantryItemCard(
         }
     }
 
-    SecondaryContainerGlassCard(
+    ItemContainerGlassCard(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(dimens.cardCorner))
+            .clip(RoundedCornerShape(dimens.cardCorner * 0.75f))
             .clickable(onClick = onClick),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimens.paddingSmall),
+            modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             // Imagem do Produto + Tag Flutuante de Validade
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(90.dp)
+                    .height(115.dp)
                     .clip(RoundedCornerShape(dimens.cardCorner * 0.4f))
                     .background(colors.onSurface.copy(alpha = 0.06f)),
                 contentAlignment = Alignment.Center,
@@ -119,7 +117,7 @@ fun PantryItemCard(
                         imageVector = Icons.Rounded.Kitchen,
                         contentDescription = null,
                         tint = colors.primary.copy(alpha = 0.6f),
-                        modifier = Modifier.size(36.dp),
+                        modifier = Modifier.size(50.dp),
                     )
                 }
 
