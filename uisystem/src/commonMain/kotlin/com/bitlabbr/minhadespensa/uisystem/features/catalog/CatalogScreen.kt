@@ -40,11 +40,13 @@ import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.product_catalog_title_bottom
 import minhadespensa.uisystem.generated.resources.product_catalog_title_top
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun CatalogScreen(
     onProductClick: (CatalogProductUiModel) -> Unit = {},
-    bottomPadding: Dp = 0.dp
+    bottomPadding: Dp = 0.dp,
+    viewModel: CatalogViewModel = koinViewModel(),
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     MainScreenScaffold(
@@ -62,15 +64,18 @@ fun CatalogScreen(
         )
 
         CatalogSearchBarWidget(
+            viewModel = viewModel,
             onProductSelected = onProductClick,
         )
 
         CatalogCategoriesWidget(
+            viewModel = viewModel,
             onProductClick = onProductClick,
         )
 
         RegisterProductWidget(
-            isCallToAction = true
+            viewModel = viewModel,
+            isCallToAction = true,
         )
     }
 }
