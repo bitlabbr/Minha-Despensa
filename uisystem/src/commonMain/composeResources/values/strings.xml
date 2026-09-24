@@ -99,7 +99,8 @@
     <string name="error_invalid_number">Valor numérico inválido</string>
     <string name="error_ean_invalid_length">EAN deve ter 8, 13 ou 14 dígitos</string>
     <string name="error_ean_already_exists">Código já cadastrado: %1$s</string>
-    <string name="catalog_product_saved_success">Sucesso</string>
+    <string name="catalog_product_saved_success">Produto adicionado ao catálogo com sucesso!</string>
+    <string name="catalog_product_saved_error">Erro ao salvar no catálogo</string>
     <string name="snackbar_dismiss_text">Fechar notificação</string>
     <string name="pantry_search_bar_no_info">Sem informação</string>
     <string name="pantry_search_bar_expired_product_warn">Atenção: Produto Vencido</string>

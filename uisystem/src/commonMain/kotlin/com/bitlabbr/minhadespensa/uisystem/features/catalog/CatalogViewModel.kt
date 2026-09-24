@@ -246,9 +246,11 @@ class CatalogViewModel(
                 _selectedCategory.value = createdProduct.category
                 _searchQuery.value = ""
                 closeAddProductSheet()
+                notificationManager.showSuccess(UiText.Resource(Res.string.catalog_product_saved_success))
             }.onFailure { error ->
                 logger.e(TAG, "Error while saving product: ${error.message}", error)
                 _formState.update { it.copy(isSaving = false, errorMessage = error.message) }
+                notificationManager.showError(UiText.DynamicString("Erro ao salvar produto: ${error.message}"))
             }
         }
     }

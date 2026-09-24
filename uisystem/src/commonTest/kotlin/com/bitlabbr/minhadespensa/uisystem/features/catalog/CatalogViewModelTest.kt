@@ -23,8 +23,10 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.catalog
 
+import app.cash.turbine.test
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
+import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.MinhaDespensaSnackbarType
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeCatalogRepository
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
@@ -152,32 +154,37 @@ class CatalogViewModelTest {
     }
 
     @Test
-    fun `saveProduct should persist product via SaveCatalogProductUseCase and close sheet`() = runTest(testDispatcher) {
+    fun `saveProduct should persist product via SaveCatalogProductUseCase, close sheet, and emit success notification`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 
-        viewModel.openAddProductSheet()
-        testScheduler.advanceUntilIdle()
+        notificationManager.notifications.test {
+            viewModel.openAddProductSheet()
+            testScheduler.advanceUntilIdle()
 
-        viewModel.onFormChange(
-            ProductFormState(
-                name = "Açúcar Demerara",
-                brand = "União",
-                category = "Mercearia",
-                netWeight = "1",
+            viewModel.onFormChange(
+                ProductFormState(
+                    name = "Açúcar Demerara",
+                    brand = "União",
+                    category = "Mercearia",
+                    netWeight = "1",
+                )
             )
-        )
-        testScheduler.advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.formState.isFormValid)
+            testScheduler.advanceUntilIdle()
+            assertTrue(viewModel.uiState.value.formState.isFormValid)
 
-        viewModel.saveProduct()
-        testScheduler.advanceUntilIdle()
+            viewModel.saveProduct()
+            testScheduler.advanceUntilIdle()
 
-        assertFalse(viewModel.uiState.value.isFormOpen)
+            assertFalse(viewModel.uiState.value.isFormOpen)
 
-        val allProducts = catalogRepository.getAllActiveProducts().first()
-        val created = allProducts.firstOrNull { it.name == "Açúcar Demerara" }
-        assertNotNull(created)
-        assertEquals("União", created.brand)
-        assertEquals("Mercearia", created.category)
+            val allProducts = catalogRepository.getAllActiveProducts().first()
+            val created = allProducts.firstOrNull { it.name == "Açúcar Demerara" }
+            assertNotNull(created)
+            assertEquals("União", created.brand)
+            assertEquals("Mercearia", created.category)
+
+            val notification = awaitItem()
+            assertEquals(MinhaDespensaSnackbarType.SUCCESS, notification.type)
+        }
     }
 }
