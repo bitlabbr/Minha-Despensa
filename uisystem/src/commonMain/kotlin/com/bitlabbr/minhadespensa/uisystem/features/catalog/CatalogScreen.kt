@@ -43,7 +43,7 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun CatalogScreen(
-    onProductClick: (CatalogProductUiModel) -> Unit,
+    onProductClick: (CatalogProductUiModel) -> Unit = {},
     bottomPadding: Dp = 0.dp
 ) {
     val snackbarHostState = remember { SnackbarHostState() }

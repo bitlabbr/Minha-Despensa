@@ -46,6 +46,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaf
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.RegisterProductBottomSheet
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantrySubFlow
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemDetailsSheet
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemWidget
@@ -63,6 +64,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun PantryScreen(
     bottomPadding: Dp = 0.dp,
     viewModel: PantryViewModel = koinViewModel(),
+    onProductClick: (PantryItemUiModel) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -78,7 +80,10 @@ fun PantryScreen(
         ) {}
 
         PantrySearchBarWidget(viewModel = viewModel)
-        PantryCategoriesWidget(viewModel = viewModel)
+        PantryCategoriesWidget(
+            viewModel = viewModel,
+            onProductClick = onProductClick,
+        )
         AddPantryItemWidget(viewModel = viewModel)
 
         OutlinedButton(

@@ -40,7 +40,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun PantryCategoriesWidget(
     modifier: Modifier = Modifier,
     viewModel: PantryViewModel = koinViewModel(),
-    onProductClick: (PantryItemUiModel) -> Unit = viewModel::onSearchResultSelected,
+    onProductClick: (PantryItemUiModel) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
