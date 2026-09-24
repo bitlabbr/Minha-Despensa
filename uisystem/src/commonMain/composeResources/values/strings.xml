@@ -97,7 +97,7 @@
     <string name="error_name_required">Nome é obrigatório</string>
     <string name="error_name_max_length">Máximo de %1$d caracteres</string>
     <string name="error_invalid_number">Valor numérico inválido</string>
-    <string name="error_ean_invalid_length">EAN deve ter 8, 13 ou 14 dígitos</string>
+    <string name="error_ean_invalid_length">EAN deve ter 8, 12, 13 ou 14 dígitos</string>
     <string name="error_ean_already_exists">Código já cadastrado: %1$s</string>
     <string name="catalog_product_saved_success">Produto adicionado ao catálogo com sucesso!</string>
     <string name="catalog_product_saved_error">Erro ao salvar no catálogo</string>
