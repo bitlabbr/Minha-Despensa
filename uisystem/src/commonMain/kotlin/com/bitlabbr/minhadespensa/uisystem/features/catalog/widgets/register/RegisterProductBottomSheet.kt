@@ -27,6 +27,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
@@ -72,6 +74,7 @@ fun RegisterProductBottomSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     saveProductUseCase: SaveCatalogProductUseCase = koinInject(),
+    checkEanStatusUseCase: CheckEanStatusUseCase = koinInject(),
 ) {
     if (!isOpen) return
 
@@ -107,6 +110,18 @@ fun RegisterProductBottomSheet(
                 }
 
                 coroutineScope.launch {
+                    val candidateEan = formState.ean.filter { it.isDigit() }.takeIf { it.isNotBlank() }
+                    if (candidateEan != null) {
+                        when (val status = checkEanStatusUseCase(candidateEan)) {
+                            is EanStatus.Found -> {
+                                formState = formState.copy(isSaving = false)
+                                onProductCreated(status.product)
+                                return@launch
+                            }
+                            else -> Unit
+                        }
+                    }
+
                     formState = formState.copy(isSaving = true)
                     val result = saveProductUseCase(
                         name = formState.name,
