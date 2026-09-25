@@ -58,7 +58,6 @@ class PantryViewModel(
 
     private val _selectedCategory = MutableStateFlow<String?>(null)
     private val _activeSubFlow = MutableStateFlow<PantrySubFlow?>(null)
-    private val pantryIdToProductIdMap = mutableMapOf<String, String>()
 
     val uiState: StateFlow<PantryUiState> = combine(
         pantryRepository.getAllActivePantryItemsWithCategory(),
@@ -67,11 +66,6 @@ class PantryViewModel(
         _selectedCategory,
         _activeSubFlow,
     ) { allItems, expiringItems, query, selectedCategory, subFlow ->
-
-        allItems.forEach { item ->
-            pantryIdToProductIdMap[item.pantryItem.id] = item.pantryItem.productId
-            pantryIdToProductIdMap[item.pantryItem.productId] = item.pantryItem.productId
-        }
 
         val allUiItems = aggregatePantryItems(allItems)
         val isPantryEmpty = allUiItems.isEmpty()
@@ -136,11 +130,10 @@ class PantryViewModel(
         _searchQuery.value = item.name
     }
 
-    fun getProductImage(id: String): Flow<ByteArray?> {
-        val targetProductId = pantryIdToProductIdMap[id] ?: id
-        return catalogRepository.getProductImage(targetProductId)
+    fun getProductImage(productId: String): Flow<ByteArray?> {
+        return catalogRepository.getProductImage(productId)
             .catch { error ->
-                logger.e(TAG, "Error while loading image for id:$id: ${error.message}", error)
+                logger.e(TAG, "Error while loading image for productId:$productId: ${error.message}", error)
                 emit(null)
             }
     }
