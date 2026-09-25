@@ -97,17 +97,19 @@
     <string name="error_name_required">Nome é obrigatório</string>
     <string name="error_name_max_length">Máximo de %1$d caracteres</string>
     <string name="error_invalid_number">Valor numérico inválido</string>
-    <string name="error_ean_invalid_length">EAN deve ter 8, 13 ou 14 dígitos</string>
+    <string name="error_ean_invalid_length">EAN deve ter 8, 12, 13 ou 14 dígitos</string>
     <string name="error_ean_already_exists">Código já cadastrado: %1$s</string>
-    <string name="catalog_product_saved_success">Sucesso</string>
+    <string name="catalog_product_saved_success">Produto adicionado ao catálogo com sucesso!</string>
+    <string name="catalog_product_saved_error">Erro ao salvar no catálogo</string>
     <string name="snackbar_dismiss_text">Fechar notificação</string>
     <string name="pantry_search_bar_no_info">Sem informação</string>
     <string name="pantry_search_bar_expired_product_warn">Atenção: Produto Vencido</string>
     <string name="pantry_search_bar_sock_quantity">Estoque</string>
-    <string name="add_pantry_item_cta_title">Adicionar item à despensa</string>
-    <string name="add_pantry_item_cta_subtitle">Clique aqui para inserir item à despensa</string>
+    <string name="add_pantry_item_cta_title">Adicionar à Despensa</string>
+    <string name="add_pantry_item_cta_subtitle">Escanear código de barras ou cadastrar item</string>
     <string name="action_scan_barcode">Clique aqui para escanear</string>
     <string name="action_search_catalog">Clique para digitar</string>
+    <string name="action_manual_register">Cadastrar manualmente</string>
     <string name="register_bottom_sheet_name_is_required">Nome é obrigatório</string>
     <string name="register_bottom_sheet_invalid_quantity">Peso/Qtd inválido</string>
     <string name="category_others">Outros</string>
@@ -155,7 +157,7 @@
     <string name="shopping_lists_header_title_top">Minhas</string>
     <string name="shopping_lists_header_title_bottom">Listas de Compras</string>
     <string name="shopping_lists_header_description">Gerencie suas compras planejadas e anotações rápidas</string>
-    <string name="shopping_lists_direct_shopping_button">Ir ao Supermercado (Compra Direta)</string>
+    <string name="shopping_lists_direct_shopping_button">Compra Direta</string>
     <string name="shopping_lists_new_list_button">Nova Lista</string>
     <string name="shopping_lists_empty_title">Nenhuma lista criada ainda</string>
     <string name="shopping_lists_empty_description">Toque em 'Nova Lista' para anotar itens rapidamente</string>
@@ -164,5 +166,14 @@
     <string name="shopping_lists_dialog_planned_option">Lista Planejada (Do Catálogo)</string>
     <string name="shopping_lists_delete_content_description">Excluir Lista</string>
     <string name="shopping_lists_items_count">%1$d itens • Criada em %2$s</string>
+    <string name="shopping_lists_completed_section_title">Listas Finalizadas</string>
+    <string name="shopping_lists_status_completed">Finalizada</string>
+
+    <!-- Shopping Assistant Exit Confirmation -->
+    <string name="shopping_assistant_exit_dialog_title">Sair das compras</string>
+    <string name="shopping_assistant_exit_dialog_desc">Deseja salvar esta lista em andamento para continuar depois ou prefere descartá-la?</string>
+    <string name="shopping_assistant_exit_dialog_save">Salvar Lista</string>
+    <string name="shopping_assistant_exit_dialog_discard">Descartar Lista</string>
+    <string name="shopping_assistant_exit_dialog_cancel">Continuar Comprando</string>
 
 </resources>

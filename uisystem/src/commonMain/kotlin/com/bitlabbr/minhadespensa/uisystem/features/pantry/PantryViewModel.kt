@@ -164,7 +164,8 @@ class PantryViewModel(
 
     fun onBarcodeScanned(ean: String) {
         viewModelScope.launch {
-            when (val status = checkEanStatusUseCase(ean)) {
+            val cleanEan = ean.filter { it.isDigit() }
+            when (val status = checkEanStatusUseCase(cleanEan)) {
                 is EanStatus.Found -> {
                     // Produto existe: transiciona direto para configurar quantidade e validade
                     _activeSubFlow.value = PantrySubFlow.AddItemDetails(status.product.toUiModel())
@@ -172,7 +173,7 @@ class PantryViewModel(
 
                 is EanStatus.NotFound, is EanStatus.InvalidFormat -> {
                     // Produto não existe: abre o formulário de cadastro com o EAN lido
-                    _activeSubFlow.value = PantrySubFlow.CreateCatalogProduct(initialEan = ean)
+                    _activeSubFlow.value = PantrySubFlow.CreateCatalogProduct(initialEan = cleanEan.takeIf { it.isNotBlank() })
                 }
 
                 EanStatus.Empty -> Unit

@@ -23,20 +23,29 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
-import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.CallToActionGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.action_scan_barcode
-import minhadespensa.uisystem.generated.resources.action_search_catalog
+import com.bitlabbr.minhadespensa.uisystem.theme.actionGradient
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -55,31 +64,73 @@ fun AddPantryItemWidget(
 @Composable
 fun AddPantryItemContent(
     onClickScan: () -> Unit,
-    onClickManual: () -> Unit,
+    onClickManual: () -> Unit = onClickScan,
     modifier: Modifier = Modifier,
 ) {
+    val colors = getAppColors()
+    val typography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
 
     CallToActionGlassCard(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = dimens.paddingSmall),
+            .padding(horizontal = dimens.paddingSmall)
+            .animateContentSize(),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(dimens.cardCorner))
+                .clickable(onClick = onClickScan)
+                .padding(dimens.paddingMedium),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        actionGradient(
+                            primary = colors.primary,
+                            secondary = colors.primary.copy(alpha = 0.1f),
+                        )
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.QrCodeScanner,
+                    contentDescription = stringResource(Res.string.action_scan_barcode),
+                    tint = colors.onSecondaryContainer.copy(alpha = 0.85f),
+                    modifier = Modifier.size(24.dp),
+                )
+            }
 
-            MinhaDespensaPrimaryButton(
-                text = stringResource(Res.string.action_scan_barcode),
-                modifier = Modifier.weight(1.4f),
-                onClick = onClickScan,
-            )
+            Spacer(Modifier.width(dimens.paddingMedium))
 
-            MinhaDespensaSecondaryButton(
-                text = stringResource(Res.string.action_search_catalog),
+            Column(
                 modifier = Modifier.weight(1f),
-                onClick = onClickManual,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                MinhaDespensaText(
+                    text = stringResource(Res.string.add_pantry_item_cta_title),
+                    fontStyle = typography.bodyLarge,
+                    color = colors.onSecondaryContainer.copy(alpha = 0.85f),
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Spacer(Modifier.height(2.dp))
+                MinhaDespensaText(
+                    text = stringResource(Res.string.add_pantry_item_cta_subtitle),
+                    fontStyle = typography.bodySmall,
+                    color = colors.onSecondaryContainer.copy(alpha = 0.65f),
+                    fontWeight = FontWeight.Normal,
+                )
+            }
+
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = stringResource(Res.string.chevron_right_icon_desc),
+                tint = colors.onSecondaryContainer.copy(alpha = 0.70f),
+                modifier = Modifier.size(24.dp),
             )
         }
     }

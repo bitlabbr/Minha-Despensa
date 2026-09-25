@@ -27,10 +27,10 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.List
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Kitchen
+import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -61,11 +61,11 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 private val bottomNavItems = listOf(
-    BottomNavItem("Início", Icons.Default.Home, HomeScreenRoute),
-    BottomNavItem("Despensa", Icons.AutoMirrored.Rounded.List, PantryScreenRoute),
+    BottomNavItem("Início", Icons.Rounded.Home, HomeScreenRoute),
+    BottomNavItem("Despensa", Icons.Rounded.Kitchen, PantryScreenRoute),
     //BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute),
-    BottomNavItem("Catálogo", Icons.Default.ShoppingCart, ProductCatalogRoute),
-    BottomNavItem("Listas", Icons.Default.List, ShoppingListsRoute),
+    BottomNavItem("Catálogo", Icons.Rounded.Category, ProductCatalogRoute),
+    BottomNavItem("Listas", Icons.Rounded.ShoppingCart, ShoppingListsRoute),
 )
 
 @Composable

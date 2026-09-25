@@ -78,8 +78,9 @@ class ShoppingListsViewModel(
             .toLocalDateTime(TimeZone.currentSystemDefault())
         val formattedDate = "${dateTime.dayOfMonth.toString().padStart(2, '0')}/${dateTime.monthNumber.toString().padStart(2, '0')}"
 
-        val total = items.size
-        val checked = items.count { it.isChecked }
+        val activeItems = items.filter { !it.isDeleted }
+        val total = activeItems.size
+        val checked = activeItems.count { it.isChecked }
 
         return ShoppingListSummaryUiModel(
             id = id,

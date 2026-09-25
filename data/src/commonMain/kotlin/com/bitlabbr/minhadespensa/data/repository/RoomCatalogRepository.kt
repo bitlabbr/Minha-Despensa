@@ -23,8 +23,6 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
-import androidx.room.Transactor
-import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
@@ -79,19 +77,15 @@ class RoomCatalogRepository(
         logger.d(TAG, "insertProduct: ${product.name} (hasImage: ${imageBytes != null})")
         validateImage(imageBytes)
         validateProduct(product)
-        db.useWriterConnection { conn ->
-            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                productDao.insert(product.toEntity())
-                if (imageBytes != null) {
-                    mediaDao.insertOrUpdate(
-                        ProductMediaEntity(
-                            productId = product.id,
-                            blob = imageBytes,
-                            updatedAt = product.updatedAt
-                        )
-                    )
-                }
-            }
+        productDao.insert(product.toEntity())
+        if (imageBytes != null) {
+            mediaDao.insertOrUpdate(
+                ProductMediaEntity(
+                    productId = product.id,
+                    blob = imageBytes,
+                    updatedAt = product.updatedAt
+                )
+            )
         }
     }
 
@@ -102,19 +96,15 @@ class RoomCatalogRepository(
         logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null})")
         validateImage(imageBytes)
         validateProduct(product)
-        db.useWriterConnection { conn ->
-            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                productDao.forceUpdateForProduct(product.toEntity())
-                if (imageBytes != null) {
-                    mediaDao.insertOrUpdate(
-                        ProductMediaEntity(
-                            productId = product.id,
-                            blob = imageBytes,
-                            updatedAt = product.updatedAt
-                        )
-                    )
-                }
-            }
+        productDao.forceUpdateForProduct(product.toEntity())
+        if (imageBytes != null) {
+            mediaDao.insertOrUpdate(
+                ProductMediaEntity(
+                    productId = product.id,
+                    blob = imageBytes,
+                    updatedAt = product.updatedAt
+                )
+            )
         }
     }
 
@@ -129,32 +119,28 @@ class RoomCatalogRepository(
         logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null})")
         validateImage(imageBytes)
         validateProduct(product)
-        db.useWriterConnection { conn ->
-            conn.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val rowsAffected = productDao.updateProductIfNewer(
-                    id = product.id,
-                    name = product.name,
-                    category = product.category,
-                    ean = product.ean,
-                    brand = product.brand,
-                    measureUnit = product.measureUnit,
-                    thumbnailUrl = product.thumbnailUrl,
-                    netWeight = product.netWeight,
-                    updatedAt = product.updatedAt,
-                    isDeleted = product.isDeleted,
-                    manuallyAdded = product.manuallyAdded,
-                    notes = product.notes
+        val rowsAffected = productDao.updateProductIfNewer(
+            id = product.id,
+            name = product.name,
+            category = product.category,
+            ean = product.ean,
+            brand = product.brand,
+            measureUnit = product.measureUnit,
+            thumbnailUrl = product.thumbnailUrl,
+            netWeight = product.netWeight,
+            updatedAt = product.updatedAt,
+            isDeleted = product.isDeleted,
+            manuallyAdded = product.manuallyAdded,
+            notes = product.notes
+        )
+        if (rowsAffected > 0 && imageBytes != null) {
+            mediaDao.insertOrUpdate(
+                ProductMediaEntity(
+                    productId = product.id,
+                    blob = imageBytes,
+                    updatedAt = product.updatedAt
                 )
-                if (rowsAffected > 0 && imageBytes != null) {
-                    mediaDao.insertOrUpdate(
-                        ProductMediaEntity(
-                            productId = product.id,
-                            blob = imageBytes,
-                            updatedAt = product.updatedAt
-                        )
-                    )
-                }
-            }
+            )
         }
     }
 

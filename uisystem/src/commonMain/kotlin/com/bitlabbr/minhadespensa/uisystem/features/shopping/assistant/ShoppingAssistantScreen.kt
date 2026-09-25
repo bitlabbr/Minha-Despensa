@@ -31,13 +31,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
+import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +48,8 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaP
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaDialog
+import com.bitlabbr.minhadespensa.uisystem.components.core.navigation.BackHandler
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
@@ -73,6 +74,27 @@ fun ShoppingAssistantScreen(
     val typography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
 
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    val handleBackPress: () -> Unit = {
+        if (uiState.activeSubFlow != null) {
+            viewModel.onCloseSubFlow()
+        } else if (uiState.isCompleted) {
+            onNavigateBack()
+        } else if (uiState.hasChanges) {
+            showExitDialog = true
+        } else if (uiState.isDirectShopping) {
+            viewModel.discardSession(onNavigateBack)
+        } else {
+            onNavigateBack()
+        }
+    }
+
+    val backHandlerEnabled = uiState.activeSubFlow != null || (!uiState.isCompleted && (uiState.hasChanges || uiState.isDirectShopping))
+    BackHandler(enabled = backHandlerEnabled) {
+        handleBackPress()
+    }
+
     LaunchedEffect(listId) {
         viewModel.startSession(listId)
     }
@@ -84,7 +106,7 @@ fun ShoppingAssistantScreen(
             MinhaDespensaTopBar(
                 backgroundColor = Color.Transparent,
                 leftContent = {
-                    IconButton(onClick = onNavigateBack) {
+                    IconButton(onClick = handleBackPress) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
                             contentDescription = stringResource(Res.string.register_product_form_back_button_desc),
@@ -268,24 +290,76 @@ fun ShoppingAssistantScreen(
         }
 
         is ShoppingAssistantSubFlow.AddItemDetails -> {
-            AddCartItemDetailsSheet(
-                product = subFlow.product,
-                rawText = subFlow.rawText,
-                initialQuantity = subFlow.initialQuantity,
-                initialPrice = subFlow.initialPriceInCents,
-                onConfirm = { qty, price ->
-                    viewModel.onConfirmItemDetails(
-                        product = subFlow.product,
-                        rawText = subFlow.rawText,
-                        quantity = qty,
-                        priceInCents = price,
-                        existingItemId = subFlow.existingItemId,
-                    )
-                },
-                onDismiss = viewModel::onCloseSubFlow,
-            )
+            key(subFlow.existingItemId ?: subFlow.product?.id ?: subFlow.rawText ?: "cart_details") {
+                AddCartItemDetailsSheet(
+                    product = subFlow.product,
+                    rawText = subFlow.rawText,
+                    initialQuantity = subFlow.initialQuantity,
+                    initialPrice = subFlow.initialPriceInCents,
+                    onConfirm = { qty, price ->
+                        viewModel.onConfirmItemDetails(
+                            product = subFlow.product,
+                            rawText = subFlow.rawText,
+                            quantity = qty,
+                            priceInCents = price,
+                            existingItemId = subFlow.existingItemId,
+                        )
+                    },
+                    onDismiss = viewModel::onCloseSubFlow,
+                )
+            }
         }
 
         null -> Unit
+    }
+
+    if (showExitDialog) {
+        MinhaDespensaDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = stringResource(Res.string.shopping_assistant_exit_dialog_title),
+            description = stringResource(Res.string.shopping_assistant_exit_dialog_desc),
+            buttons = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                ) {
+                    MinhaDespensaPrimaryButton(
+                        text = stringResource(Res.string.shopping_assistant_exit_dialog_save),
+                        onClick = {
+                            showExitDialog = false
+                            onNavigateBack()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIcon = Icons.Rounded.Save,
+                    )
+
+                    MinhaDespensaSecondaryButton(
+                        text = stringResource(Res.string.shopping_assistant_exit_dialog_discard),
+                        onClick = {
+                            showExitDialog = false
+                            if (uiState.isDirectShopping) {
+                                viewModel.discardSession(onNavigateBack)
+                            } else {
+                                onNavigateBack()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        leadingIcon = Icons.Rounded.DeleteOutline,
+                    )
+
+                    TextButton(
+                        onClick = { showExitDialog = false },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.shopping_assistant_exit_dialog_cancel),
+                            fontStyle = typography.bodySmall,
+                            color = colors.onSurface.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            },
+        ) {
+        }
     }
 }

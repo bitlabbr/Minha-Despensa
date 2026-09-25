@@ -24,21 +24,11 @@
 package com.bitlabbr.minhadespensa.uisystem.features.pantry
 
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
@@ -46,6 +36,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaf
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.RegisterProductBottomSheet
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantrySubFlow
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemDetailsSheet
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemWidget
@@ -63,6 +54,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun PantryScreen(
     bottomPadding: Dp = 0.dp,
     viewModel: PantryViewModel = koinViewModel(),
+    onProductClick: (PantryItemUiModel) -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -78,19 +70,11 @@ fun PantryScreen(
         ) {}
 
         PantrySearchBarWidget(viewModel = viewModel)
-        PantryCategoriesWidget(viewModel = viewModel)
+        PantryCategoriesWidget(
+            viewModel = viewModel,
+            onProductClick = onProductClick,
+        )
         AddPantryItemWidget(viewModel = viewModel)
-
-        OutlinedButton(
-            onClick = { viewModel.onStartQuickListFlow() },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
-            Icon(Icons.Rounded.EditNote, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Criar Lista Rápida (Bloco de Notas)")
-        }
     }
 
     when (val subFlow = uiState.activeSubFlow) {
@@ -113,6 +97,7 @@ fun PantryScreen(
                     viewModel.onBarcodeScanned(ean)
                 },
                 onDismissRequest = viewModel::onDismissSubFlow,
+                onManualEntryClick = { viewModel.onStartManualRegisterFlow() },
             )
         }
 

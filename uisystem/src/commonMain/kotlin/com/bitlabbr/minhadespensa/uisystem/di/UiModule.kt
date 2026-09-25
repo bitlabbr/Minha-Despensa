@@ -59,6 +59,7 @@ val uiModule = module {
             saveProductUseCase = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
+            checkEanStatusUseCase = get(),
         )
     }
 

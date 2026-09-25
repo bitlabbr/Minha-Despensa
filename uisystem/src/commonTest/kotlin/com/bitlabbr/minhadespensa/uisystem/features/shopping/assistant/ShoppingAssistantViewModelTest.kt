@@ -38,6 +38,7 @@ import com.bitlabbr.minhadespensa.uisystem.fakes.FakeShoppingListRepository
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantSubFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -249,5 +250,284 @@ class ShoppingAssistantViewModelTest {
         assertEquals("list-finalize", shoppingListRepository.purchaseFinalizedListId)
         assertTrue(viewModel.uiState.value.isCompleted)
         assertFalse(viewModel.uiState.value.isFinalizing)
+    }
+
+    @Test
+    fun `onConfirmItemDetails with price should update item values and increment total cart value without duplicating`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-rice", name = "Arroz", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val list = ShoppingList(
+            id = "list-cart-calc",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-rice-1",
+                    listId = "list-cart-calc",
+                    productId = "p-rice",
+                    quantity = 1.0,
+                    priceAtTime = null,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-cart-calc")
+        testScheduler.advanceUntilIdle()
+
+        // Before setting price: subtotal = 0, cart total = 0
+        assertEquals(1, viewModel.uiState.value.items.size)
+        assertEquals(0L, viewModel.uiState.value.items.first().subtotalInCents)
+        assertEquals(0L, viewModel.uiState.value.totalCartValueInCents)
+
+        // User edits item to quantity = 2.0, unit price = 550 cents (R$ 5,50)
+        viewModel.onConfirmItemDetails(
+            product = prod,
+            rawText = null,
+            quantity = 2.0,
+            priceInCents = 550L,
+            existingItemId = "item-rice-1",
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.items.size, "Item must not be duplicated")
+        val item = state.items.first()
+        assertEquals(2.0, item.quantity)
+        assertEquals(550L, item.priceAtTime)
+        assertEquals(1100L, item.subtotalInCents, "Subtotal must be 2 * 550 = 1100")
+        assertEquals(1100L, state.totalCartValueInCents, "Total cart value must increment to 1100")
+    }
+
+    @Test
+    fun `soft deleted items should be excluded from assistant uiState items`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-deleted-test",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "i-active",
+                    listId = "list-deleted-test",
+                    rawText = "Ativo",
+                    quantity = 1.0,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                    isDeleted = false,
+                ),
+                ShoppingItem(
+                    id = "i-deleted",
+                    listId = "list-deleted-test",
+                    rawText = "Excluído",
+                    quantity = 1.0,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                    isDeleted = true,
+                ),
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-deleted-test")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.items.size)
+        assertEquals("i-active", state.items.first().id)
+        assertEquals(1, state.totalCount)
+    }
+
+    @Test
+    fun `discardSession should delete shopping list and call onFinished`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-discard",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-discard")
+        testScheduler.advanceUntilIdle()
+
+        assertNotNull(shoppingListRepository.getShoppingListById("list-discard").first())
+
+        var callbackCalled = false
+        viewModel.discardSession {
+            callbackCalled = true
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertTrue(callbackCalled)
+        assertNull(shoppingListRepository.getShoppingListById("list-discard").first())
+    }
+
+    @Test
+    fun `isCompleted should be true when starting session with completed list`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val completedList = ShoppingList(
+            id = "list-comp",
+            name = "Compras Finalizadas",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(completedList)
+
+        viewModel.startSession("list-comp")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isCompleted)
+    }
+
+    @Test
+    fun `direct shopping session should have isDirectShopping true and hasChanges false initially`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.startSession(null)
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isDirectShopping)
+        assertFalse(state.hasChanges)
+    }
+
+    @Test
+    fun `direct shopping session should set hasChanges true when item is added`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.startSession(null)
+        testScheduler.advanceUntilIdle()
+
+        val prod = CatalogProduct(id = "p-direct", name = "Sabão", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        viewModel.onConfirmItemDetails(
+            product = prod,
+            rawText = null,
+            quantity = 1.0,
+            priceInCents = 1500L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isDirectShopping)
+        assertTrue(state.hasChanges)
+    }
+
+    @Test
+    fun `existing list session should have isDirectShopping false and hasChanges false initially`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-exist",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "i1",
+                    listId = "list-exist",
+                    rawText = "Pão",
+                    quantity = 1.0,
+                    isChecked = false,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-exist")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isDirectShopping)
+        assertFalse(state.hasChanges)
+
+        // Toggle item check -> hasChanges should become true
+        viewModel.onToggleItemChecked("i1", true)
+        testScheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.hasChanges)
+
+        // Revert check back -> hasChanges should become false
+        viewModel.onToggleItemChecked("i1", false)
+        testScheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.hasChanges)
+    }
+
+    @Test
+    fun `scanning and confirming product details should add a new item to the list rather than updating existing items`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-scanned", name = "Pão", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val list = ShoppingList(
+            id = "list-scan-add",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-existing-pao",
+                    listId = "list-scan-add",
+                    rawText = "Pão",
+                    quantity = 1.0,
+                    isChecked = false,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-scan-add")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.items.size)
+
+        // User scans barcode and confirms product (existingItemId is null)
+        viewModel.onConfirmItemDetails(
+            product = prod,
+            rawText = null,
+            quantity = 2.0,
+            priceInCents = 600L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.items.size, "Scanned product must be added as a new item, not update existing item")
+        assertEquals(2, state.totalCount)
+
+        val existingItem = state.items.find { it.id == "item-existing-pao" }
+        assertNotNull(existingItem)
+        assertEquals(1.0, existingItem.quantity)
+        assertFalse(existingItem.isChecked)
+
+        val newItem = state.items.find { it.id != "item-existing-pao" }
+        assertNotNull(newItem)
+        assertEquals("p-scanned", newItem.productId)
+        assertEquals(2.0, newItem.quantity)
+        assertEquals(600L, newItem.priceAtTime)
+        assertTrue(newItem.isChecked)
     }
 }

@@ -95,6 +95,30 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
     @OptIn(ExperimentalUuidApi::class)
     @Test
+    fun `should EMIT new products via getAllActiveProducts when insertProduct is called`() = runTest {
+        catalogRepository.getAllActiveProducts().test {
+            val initial = awaitItem()
+            val newProduct = CatalogProduct(
+                id = Uuid.random().toString(),
+                name = "Produto Reativo",
+                brand = "Marca",
+                measureUnit = MeasureUnit.UNIT,
+                netWeight = 1.0,
+                updatedAt = getCurrentTime(),
+                isDeleted = false,
+                manuallyAdded = true,
+                ean = null,
+                thumbnailUrl = null
+            )
+            catalogRepository.insertProduct(newProduct, null)
+            val updated = awaitItem()
+            assertEquals(initial.size + 1, updated.size)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
     fun `should NOT SAVE product WITH INVALID TIMESTAMP`() = runTest {
         val productId = Uuid.random().toString()
         val now = 92929L
