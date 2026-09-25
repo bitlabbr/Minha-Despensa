@@ -39,6 +39,7 @@ import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.Car
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantSubFlow
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantUiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -67,13 +68,25 @@ class ShoppingAssistantViewModel(
     private val _activeSubFlow = MutableStateFlow<ShoppingAssistantSubFlow?>(null)
     private val _isFinalizing = MutableStateFlow(false)
     private val _isCompleted = MutableStateFlow(false)
+    private val _isDirectShopping = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
 
-    // Agrupa os controles transitórios de UI (4 fluxos <= 5)
+    private var initialSnapshot: List<ItemSnapshot>? = null
+    private var startSessionJob: Job? = null
+
+    private data class ItemSnapshot(
+        val id: String,
+        val isChecked: Boolean,
+        val quantity: Double,
+        val priceAtTime: Long?,
+    )
+
+    // Agrupa os controles transitórios de UI (5 fluxos <= 5)
     private data class SessionControlState(
         val subFlow: ShoppingAssistantSubFlow?,
         val isFinalizing: Boolean,
         val isCompleted: Boolean,
+        val isDirectShopping: Boolean,
         val errorMessage: String?,
     )
 
@@ -81,9 +94,10 @@ class ShoppingAssistantViewModel(
         _activeSubFlow,
         _isFinalizing,
         _isCompleted,
+        _isDirectShopping,
         _errorMessage,
-    ) { subFlow, isFinalizing, isCompleted, error ->
-        SessionControlState(subFlow, isFinalizing, isCompleted, error)
+    ) { subFlow, isFinalizing, isCompleted, isDirectShopping, error ->
+        SessionControlState(subFlow, isFinalizing, isCompleted, isDirectShopping, error)
     }
 
     private val currentListFlow = _currentListId.flatMapLatest { id ->
@@ -100,12 +114,33 @@ class ShoppingAssistantViewModel(
             return@combine ShoppingAssistantUiState(
                 isLoading = _currentListId.value != null,
                 errorMessage = control.errorMessage,
+                isDirectShopping = control.isDirectShopping,
             )
         }
 
         val catalogMap = catalogProducts.associateBy { it.id }
 
-        val uiItems = currentList.items.filter { !it.isDeleted }.map { item ->
+        val activeItems = currentList.items.filter { !it.isDeleted }
+        val currentSnapshot = activeItems.map {
+            ItemSnapshot(
+                id = it.id,
+                isChecked = it.isChecked,
+                quantity = it.quantity,
+                priceAtTime = it.priceAtTime,
+            )
+        }
+
+        if (initialSnapshot == null && !control.isDirectShopping) {
+            initialSnapshot = currentSnapshot
+        }
+
+        val hasChanges = if (control.isDirectShopping) {
+            activeItems.isNotEmpty()
+        } else {
+            initialSnapshot != null && currentSnapshot != initialSnapshot
+        }
+
+        val uiItems = activeItems.map { item ->
             val product = item.productId?.let { catalogMap[it] }
             val displayName = product?.name ?: item.rawText ?: "Item sem nome"
             val price = item.priceAtTime ?: 0L
@@ -135,6 +170,8 @@ class ShoppingAssistantViewModel(
             activeSubFlow = control.subFlow,
             isFinalizing = control.isFinalizing,
             isCompleted = control.isCompleted || currentList.status == ShoppingListStatus.COMPLETED,
+            isDirectShopping = control.isDirectShopping,
+            hasChanges = hasChanges,
             errorMessage = control.errorMessage,
         )
     }.stateIn(
@@ -144,7 +181,10 @@ class ShoppingAssistantViewModel(
     )
 
     fun startSession(existingListId: String? = null) {
-        viewModelScope.launch {
+        _isDirectShopping.value = existingListId == null
+        initialSnapshot = null
+        startSessionJob?.cancel()
+        startSessionJob = viewModelScope.launch {
             val result = startShoppingSessionUseCase(existingListId)
             result.onSuccess { list ->
                 _currentListId.value = list.id
@@ -245,6 +285,7 @@ class ShoppingAssistantViewModel(
     }
 
     fun discardSession(onFinished: () -> Unit) {
+        startSessionJob?.cancel()
         val listId = _currentListId.value ?: run {
             onFinished()
             return

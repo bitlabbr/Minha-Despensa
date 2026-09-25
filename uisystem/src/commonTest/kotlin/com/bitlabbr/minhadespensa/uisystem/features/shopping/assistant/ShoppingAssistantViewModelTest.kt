@@ -395,4 +395,81 @@ class ShoppingAssistantViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.isCompleted)
     }
+
+    @Test
+    fun `direct shopping session should have isDirectShopping true and hasChanges false initially`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.startSession(null)
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isDirectShopping)
+        assertFalse(state.hasChanges)
+    }
+
+    @Test
+    fun `direct shopping session should set hasChanges true when item is added`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.startSession(null)
+        testScheduler.advanceUntilIdle()
+
+        val prod = CatalogProduct(id = "p-direct", name = "Sabão", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        viewModel.onConfirmItemDetails(
+            product = prod,
+            rawText = null,
+            quantity = 1.0,
+            priceInCents = 1500L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isDirectShopping)
+        assertTrue(state.hasChanges)
+    }
+
+    @Test
+    fun `existing list session should have isDirectShopping false and hasChanges false initially`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-exist",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "i1",
+                    listId = "list-exist",
+                    rawText = "Pão",
+                    quantity = 1.0,
+                    isChecked = false,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-exist")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isDirectShopping)
+        assertFalse(state.hasChanges)
+
+        // Toggle item check -> hasChanges should become true
+        viewModel.onToggleItemChecked("i1", true)
+        testScheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.hasChanges)
+
+        // Revert check back -> hasChanges should become false
+        viewModel.onToggleItemChecked("i1", false)
+        testScheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.hasChanges)
+    }
 }

@@ -77,14 +77,21 @@ fun ShoppingAssistantScreen(
     var showExitDialog by remember { mutableStateOf(false) }
 
     val handleBackPress: () -> Unit = {
-        if (uiState.isCompleted) {
+        if (uiState.activeSubFlow != null) {
+            viewModel.onCloseSubFlow()
+        } else if (uiState.isCompleted) {
             onNavigateBack()
-        } else {
+        } else if (uiState.hasChanges) {
             showExitDialog = true
+        } else if (uiState.isDirectShopping) {
+            viewModel.discardSession(onNavigateBack)
+        } else {
+            onNavigateBack()
         }
     }
 
-    BackHandler(enabled = !uiState.isCompleted) {
+    val backHandlerEnabled = uiState.activeSubFlow != null || (!uiState.isCompleted && (uiState.hasChanges || uiState.isDirectShopping))
+    BackHandler(enabled = backHandlerEnabled) {
         handleBackPress()
     }
 
@@ -330,7 +337,11 @@ fun ShoppingAssistantScreen(
                         text = stringResource(Res.string.shopping_assistant_exit_dialog_discard),
                         onClick = {
                             showExitDialog = false
-                            viewModel.discardSession(onNavigateBack)
+                            if (uiState.isDirectShopping) {
+                                viewModel.discardSession(onNavigateBack)
+                            } else {
+                                onNavigateBack()
+                            }
                         },
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = Icons.Rounded.DeleteOutline,
