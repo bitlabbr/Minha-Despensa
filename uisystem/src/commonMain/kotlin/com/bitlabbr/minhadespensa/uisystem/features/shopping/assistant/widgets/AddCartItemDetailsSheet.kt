@@ -55,13 +55,17 @@ fun AddCartItemDetailsSheet(
     isReplacement: Boolean = false,
     onReplaceItem: (() -> Unit)? = null,
     onRemoveItem: (() -> Unit)? = null,
-    onConfirm: (quantity: Double, price: Long?) -> Unit,
+    onConfirm: (name: String?, quantity: Double, price: Long?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
     val colors = getAppColors()
+
+    var customNameText by remember(product?.id, rawText) {
+        mutableStateOf(rawText ?: "")
+    }
 
     var quantityText by remember(product?.id, rawText, initialQuantity) {
         mutableStateOf(
@@ -94,16 +98,37 @@ fun AddCartItemDetailsSheet(
                     Spacer(Modifier.height(4.dp))
                 }
 
-                Text(
-                    text = product?.name ?: rawText ?: "Adicionar ao Carrinho",
-                    style = typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                product?.brand?.let {
+                if (product != null) {
                     Text(
-                        text = "$it • ${product.category}",
-                        style = typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        text = product.name,
+                        style = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    product.brand?.let {
+                        Text(
+                            text = "$it • ${product.category}",
+                            style = typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                } else {
+                    Text(
+                        text = if (rawText.isNullOrBlank()) {
+                            stringResource(Res.string.shopping_assistant_add_text_item_title)
+                        } else {
+                            stringResource(Res.string.shopping_assistant_edit_text_item_title)
+                        },
+                        style = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    ProductTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        value = customNameText,
+                        onValueChange = { customNameText = it },
+                        label = stringResource(Res.string.shopping_assistant_item_name_label),
+                        placeholder = stringResource(Res.string.shopping_assistant_item_name_placeholder),
+                        isRequired = true,
                     )
                 }
 
@@ -190,13 +215,17 @@ fun AddCartItemDetailsSheet(
                         Text("Cancelar")
                     }
 
+                    val isNameValid = product != null || customNameText.isNotBlank()
+                    val qtyValue = quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0
+                    val isQtyValid = qtyValue > 0.0
+
                     Button(
                         onClick = {
-                            val qty = quantityText.replace(',', '.').toDoubleOrNull() ?: 1.0
                             val price = priceText.replace(',', '.').toDoubleOrNull()?.let { (it * 100).roundToLong() }
-                            onConfirm(qty, price)
+                            val finalName = if (product != null) null else customNameText.trim()
+                            onConfirm(finalName, qtyValue, price)
                         },
-                        enabled = (quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0.0,
+                        enabled = isNameValid && isQtyValid,
                         modifier = Modifier.weight(1.5f),
                     ) {
                         Text("Confirmar")

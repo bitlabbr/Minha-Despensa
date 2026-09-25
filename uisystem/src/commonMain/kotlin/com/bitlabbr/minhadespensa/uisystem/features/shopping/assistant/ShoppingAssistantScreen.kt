@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DocumentScanner
@@ -62,6 +63,7 @@ import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.Reg
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.CartItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantSubFlow
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets.AddCartItemDetailsSheet
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets.AddItemOptionsSheet
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets.CatalogProductPickerSheet
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets.ReplaceItemOptionsSheet
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets.ShoppingFinancialDashboard
@@ -205,10 +207,10 @@ fun ShoppingAssistantScreen(
                             horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                         ) {
                             MinhaDespensaSecondaryButton(
-                                text = stringResource(Res.string.shopping_assistant_scan_barcode),
-                                onClick = viewModel::onScanBarcodeClicked,
+                                text = stringResource(Res.string.shopping_assistant_add_item_action),
+                                onClick = viewModel::onOpenAddItemOptions,
                                 modifier = Modifier.weight(1f),
-                                leadingIcon = Icons.Rounded.DocumentScanner,
+                                leadingIcon = Icons.Rounded.Add,
                             )
 
                             MinhaDespensaPrimaryButton(
@@ -254,12 +256,24 @@ fun ShoppingAssistantScreen(
                         .padding(dimens.paddingMedium),
                     contentAlignment = Alignment.Center,
                 ) {
-                    MinhaDespensaText(
-                        text = stringResource(Res.string.shopping_assistant_empty_cart),
-                        fontStyle = typography.bodyLarge,
-                        color = colors.onBackground.copy(alpha = 0.7f),
-                        alignment = TextAlign.Center,
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(dimens.paddingMedium),
+                    ) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.shopping_assistant_empty_cart),
+                            fontStyle = typography.bodyLarge,
+                            color = colors.onBackground.copy(alpha = 0.7f),
+                            alignment = TextAlign.Center,
+                        )
+                        if (!uiState.isCompleted) {
+                            MinhaDespensaSecondaryButton(
+                                text = stringResource(Res.string.shopping_assistant_add_item_action),
+                                onClick = viewModel::onOpenAddItemOptions,
+                                leadingIcon = Icons.Rounded.Add,
+                            )
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
@@ -369,6 +383,27 @@ fun ShoppingAssistantScreen(
             BarcodeScannerModal(
                 onBarcodeScanned = viewModel::onBarcodeScanned,
                 onDismissRequest = viewModel::onCloseSubFlow,
+                onManualEntryClick = { viewModel.onStartAddTextItem() },
+            )
+        }
+
+        is ShoppingAssistantSubFlow.AddItemOptions -> {
+            AddItemOptionsSheet(
+                onScanBarcode = viewModel::onScanBarcodeClicked,
+                onSearchCatalog = viewModel::onStartAddFromCatalog,
+                onAddTextItem = { viewModel.onStartAddTextItem() },
+                onDismiss = viewModel::onCloseSubFlow,
+            )
+        }
+
+        is ShoppingAssistantSubFlow.SearchCatalogForNewItem -> {
+            CatalogProductPickerSheet(
+                products = uiState.availableProducts,
+                title = stringResource(Res.string.shopping_assistant_add_catalog_title),
+                searchPlaceholder = stringResource(Res.string.shopping_assistant_add_catalog_search_placeholder),
+                onProductSelected = viewModel::onProductSelectedForNewItem,
+                onAddAsText = viewModel::onStartAddTextItem,
+                onDismiss = viewModel::onCloseSubFlow,
             )
         }
 
@@ -402,10 +437,10 @@ fun ShoppingAssistantScreen(
                             }
                         } else null
                     } else null,
-                    onConfirm = { qty, price ->
+                    onConfirm = { name, qty, price ->
                         viewModel.onConfirmItemDetails(
                             product = subFlow.product,
-                            rawText = subFlow.rawText,
+                            rawText = name ?: subFlow.rawText,
                             quantity = qty,
                             priceInCents = price,
                             existingItemId = subFlow.existingItemId,

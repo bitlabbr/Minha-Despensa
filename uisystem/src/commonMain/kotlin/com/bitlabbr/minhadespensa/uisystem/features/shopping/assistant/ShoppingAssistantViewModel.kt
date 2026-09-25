@@ -204,6 +204,35 @@ class ShoppingAssistantViewModel(
         }
     }
 
+    fun onOpenAddItemOptions() {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemOptions
+    }
+
+    fun onStartAddFromCatalog() {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.SearchCatalogForNewItem
+    }
+
+    fun onProductSelectedForNewItem(product: CatalogProduct) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+            product = product,
+            initialQuantity = 1.0,
+            isReplacement = false,
+        )
+    }
+
+    fun onStartAddTextItem(initialText: String? = null) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+            product = null,
+            rawText = initialText,
+            initialQuantity = 1.0,
+            isReplacement = false,
+        )
+    }
+
     fun onScanBarcodeClicked() {
         if (uiState.value.isCompleted) return
         _activeSubFlow.value = ShoppingAssistantSubFlow.BarcodeScanner

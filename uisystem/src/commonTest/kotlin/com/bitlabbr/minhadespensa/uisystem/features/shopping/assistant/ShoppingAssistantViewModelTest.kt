@@ -1097,6 +1097,163 @@ class ShoppingAssistantViewModelTest {
         val repoItem1 = repoList?.items?.find { it.id == "item-1" }
         assertFalse(repoItem1?.isDeleted == true)
     }
+
+    @Test
+    fun `onOpenAddItemOptions should set activeSubFlow to AddItemOptions`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.onOpenAddItemOptions()
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ShoppingAssistantSubFlow.AddItemOptions>(viewModel.uiState.value.activeSubFlow)
+    }
+
+    @Test
+    fun `onStartAddFromCatalog should set activeSubFlow to SearchCatalogForNewItem`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.onStartAddFromCatalog()
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ShoppingAssistantSubFlow.SearchCatalogForNewItem>(viewModel.uiState.value.activeSubFlow)
+    }
+
+    @Test
+    fun `onProductSelectedForNewItem should set activeSubFlow to AddItemDetails with product`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(id = "p-new", name = "Azeite de Oliva", updatedAt = 1000L)
+        viewModel.onProductSelectedForNewItem(product)
+        testScheduler.advanceUntilIdle()
+
+        val subFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(subFlow)
+        assertEquals("p-new", subFlow.product?.id)
+        assertFalse(subFlow.isReplacement)
+        assertNull(subFlow.existingItemId)
+    }
+
+    @Test
+    fun `onStartAddTextItem should set activeSubFlow to AddItemDetails with rawText and null product`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.onStartAddTextItem(initialText = "Tomate Seco")
+        testScheduler.advanceUntilIdle()
+
+        val subFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(subFlow)
+        assertNull(subFlow.product)
+        assertEquals("Tomate Seco", subFlow.rawText)
+        assertFalse(subFlow.isReplacement)
+        assertNull(subFlow.existingItemId)
+    }
+
+    @Test
+    fun `onConfirmItemDetails with free text should add item and update uiState`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-free-text"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Texto Livre",
+                type = ShoppingListType.ASSISTANT,
+                items = emptyList(),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onConfirmItemDetails(
+            product = null,
+            rawText = "Pão de Forma",
+            quantity = 2.0,
+            priceInCents = 850L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.activeSubFlow)
+        assertEquals(1, viewModel.uiState.value.items.size)
+        val addedItem = viewModel.uiState.value.items.first()
+        assertEquals("Pão de Forma", addedItem.displayName)
+        assertEquals(2.0, addedItem.quantity)
+        assertEquals(850L, addedItem.priceAtTime)
+        assertEquals(1700L, addedItem.subtotalInCents)
+    }
+
+    @Test
+    fun `onConfirmItemDetails with catalog product should add item and update uiState`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-catalog-add"
+        val product = CatalogProduct(id = "prod-arroz", name = "Arroz Branco", updatedAt = 1000L)
+        catalogRepository.insertProduct(product, null)
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Catálogo",
+                type = ShoppingListType.ASSISTANT,
+                items = emptyList(),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onConfirmItemDetails(
+            product = product,
+            rawText = null,
+            quantity = 3.0,
+            priceInCents = 2000L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.activeSubFlow)
+        assertEquals(1, viewModel.uiState.value.items.size)
+        val addedItem = viewModel.uiState.value.items.first()
+        assertEquals("Arroz Branco", addedItem.displayName)
+        assertEquals("prod-arroz", addedItem.productId)
+        assertEquals(3.0, addedItem.quantity)
+        assertEquals(2000L, addedItem.priceAtTime)
+        assertEquals(6000L, addedItem.subtotalInCents)
+    }
+
+    @Test
+    fun `adding item options should be disabled when list is completed`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-comp-add"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Concluída",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.COMPLETED,
+                items = emptyList(),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onOpenAddItemOptions()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        viewModel.onStartAddFromCatalog()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        viewModel.onStartAddTextItem()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+    }
 }
 
 

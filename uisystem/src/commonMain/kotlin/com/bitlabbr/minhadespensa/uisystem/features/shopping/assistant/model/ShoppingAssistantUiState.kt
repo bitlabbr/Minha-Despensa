@@ -27,6 +27,8 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 
 sealed interface ShoppingAssistantSubFlow {
     data object BarcodeScanner : ShoppingAssistantSubFlow
+    data object AddItemOptions : ShoppingAssistantSubFlow
+    data object SearchCatalogForNewItem : ShoppingAssistantSubFlow
     data class CreateProduct(
         val initialEan: String? = null,
         val replacingItemId: String? = null,

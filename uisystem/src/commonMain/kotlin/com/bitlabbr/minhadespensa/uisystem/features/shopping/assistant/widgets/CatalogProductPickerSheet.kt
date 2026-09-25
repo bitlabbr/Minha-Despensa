@@ -53,6 +53,9 @@ fun CatalogProductPickerSheet(
     products: List<CatalogProduct>,
     onProductSelected: (CatalogProduct) -> Unit,
     onDismiss: () -> Unit,
+    title: String = stringResource(Res.string.shopping_assistant_replace_picker_title),
+    searchPlaceholder: String = stringResource(Res.string.shopping_assistant_replace_picker_search_placeholder),
+    onAddAsText: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val dimens = MinhaDespensaTheme.dimens
@@ -85,7 +88,7 @@ fun CatalogProductPickerSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             MinhaDespensaText(
-                text = stringResource(Res.string.shopping_assistant_replace_picker_title),
+                text = title,
                 fontStyle = typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = colors.onPrimaryContainer,
@@ -94,8 +97,8 @@ fun CatalogProductPickerSheet(
             ProductTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = stringResource(Res.string.shopping_assistant_replace_picker_title),
-                placeholder = stringResource(Res.string.shopping_assistant_replace_picker_search_placeholder),
+                label = title,
+                placeholder = searchPlaceholder,
                 leadingContent = {
                     Icon(
                         imageVector = Icons.Rounded.Search,
@@ -112,11 +115,28 @@ fun CatalogProductPickerSheet(
                         .padding(vertical = 24.dp),
                     contentAlignment = Alignment.Center,
                 ) {
-                    MinhaDespensaText(
-                        text = stringResource(Res.string.shopping_assistant_replace_picker_empty),
-                        fontStyle = typography.bodySmall,
-                        color = colors.onSecondaryContainer.copy(alpha = 0.6f),
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                    ) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.shopping_assistant_replace_picker_empty),
+                            fontStyle = typography.bodySmall,
+                            color = colors.onSecondaryContainer.copy(alpha = 0.6f),
+                        )
+                        if (onAddAsText != null && searchQuery.isNotBlank()) {
+                            TextButton(
+                                onClick = { onAddAsText(searchQuery.trim()) },
+                            ) {
+                                MinhaDespensaText(
+                                    text = stringResource(Res.string.shopping_assistant_add_as_text, searchQuery.trim()),
+                                    fontStyle = typography.button,
+                                    color = colors.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
                 }
             } else {
                 LazyColumn(
