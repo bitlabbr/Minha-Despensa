@@ -58,7 +58,6 @@ class PantryViewModel(
 
     private val _selectedCategory = MutableStateFlow<String?>(null)
     private val _activeSubFlow = MutableStateFlow<PantrySubFlow?>(null)
-    private val pantryIdToProductIdMap = mutableMapOf<String, String>()
 
     val uiState: StateFlow<PantryUiState> = combine(
         pantryRepository.getAllActivePantryItemsWithCategory(),
@@ -68,11 +67,7 @@ class PantryViewModel(
         _activeSubFlow,
     ) { allItems, expiringItems, query, selectedCategory, subFlow ->
 
-        allItems.forEach { item ->
-            pantryIdToProductIdMap[item.pantryItem.id] = item.pantryItem.productId
-        }
-
-        val allUiItems = allItems.map { it.toPantryItemUiModel() }
+        val allUiItems = aggregatePantryItems(allItems)
         val isPantryEmpty = allUiItems.isEmpty()
 
         val dynamicCategories =
@@ -108,7 +103,7 @@ class PantryViewModel(
                 error = null,
             ),
             allActivePantryItems = allUiItems,
-            expiringPantryItems = expiringItems.map { it.toPantryItemUiModel() },
+            expiringPantryItems = aggregatePantryItems(expiringItems).sortedBy { it.expirationDate ?: Long.MAX_VALUE },
             searchResults = searchResults,
             activeSubFlow = subFlow,
             isLoading = false,
@@ -135,11 +130,10 @@ class PantryViewModel(
         _searchQuery.value = item.name
     }
 
-    fun getProductImage(id: String): Flow<ByteArray?> {
-        val targetProductId = pantryIdToProductIdMap[id] ?: id
-        return catalogRepository.getProductImage(targetProductId)
+    fun getProductImage(productId: String): Flow<ByteArray?> {
+        return catalogRepository.getProductImage(productId)
             .catch { error ->
-                logger.e(TAG, "Error while loading image for id:$id: ${error.message}", error)
+                logger.e(TAG, "Error while loading image for productId:$productId: ${error.message}", error)
                 emit(null)
             }
     }
@@ -210,21 +204,32 @@ class PantryViewModel(
         }
     }
 
-    private fun PantryItemWithCategory.toPantryItemUiModel(): PantryItemUiModel {
+    private fun aggregatePantryItems(items: List<PantryItemWithCategory>): List<PantryItemUiModel> {
         val now = Clock.System.now().toEpochMilliseconds()
-        val isExpired = this.pantryItem.expirationDate?.let { it < now } ?: false
+        return items
+            .groupBy { it.pantryItem.productId }
+            .map { (productId, groupedItems) ->
+                val firstItem = groupedItems.first()
+                val totalQuantity = groupedItems.sumOf { it.pantryItem.quantity }
+                val closestExpirationDate = groupedItems
+                    .mapNotNull { it.pantryItem.expirationDate }
+                    .minOrNull()
+                val isExpired = groupedItems.any { item ->
+                    item.pantryItem.expirationDate?.let { exp -> exp < now } ?: false
+                }
 
-        return PantryItemUiModel(
-            id = this.pantryItem.id,
-            name = this.name,
-            category = this.category,
-            brand = null,
-            quantity = this.pantryItem.quantity,
-            measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNIT,
-            netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
-            expirationDate = this.pantryItem.expirationDate,
-            isExpired = isExpired,
-        )
+                PantryItemUiModel(
+                    id = productId,
+                    name = firstItem.name,
+                    category = firstItem.category,
+                    brand = null,
+                    quantity = totalQuantity,
+                    measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNIT,
+                    netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
+                    expirationDate = closestExpirationDate,
+                    isExpired = isExpired,
+                )
+            }
     }
 
     companion object {
