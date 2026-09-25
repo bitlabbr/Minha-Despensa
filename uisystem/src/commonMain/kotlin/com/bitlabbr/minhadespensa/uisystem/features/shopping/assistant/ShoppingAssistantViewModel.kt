@@ -104,7 +104,7 @@ class ShoppingAssistantViewModel(
 
         val catalogMap = catalogProducts.associateBy { it.id }
 
-        val uiItems = currentList.items.map { item ->
+        val uiItems = currentList.items.filter { !it.isDeleted }.map { item ->
             val product = item.productId?.let { catalogMap[it] }
             val displayName = product?.name ?: item.rawText ?: "Item sem nome"
             val price = item.priceAtTime ?: 0L
@@ -163,8 +163,9 @@ class ShoppingAssistantViewModel(
     }
 
     fun onBarcodeScanned(ean: String) {
+        val sanitizedEan = ean.filter { it.isDigit() }
         viewModelScope.launch {
-            when (val status = checkEanStatusUseCase(ean)) {
+            when (val status = checkEanStatusUseCase(sanitizedEan)) {
                 is EanStatus.Found -> {
                     _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
                         product = status.product,
@@ -172,7 +173,7 @@ class ShoppingAssistantViewModel(
                     )
                 }
                 is EanStatus.NotFound, is EanStatus.InvalidFormat -> {
-                    _activeSubFlow.value = ShoppingAssistantSubFlow.CreateProduct(initialEan = ean)
+                    _activeSubFlow.value = ShoppingAssistantSubFlow.CreateProduct(initialEan = sanitizedEan)
                 }
                 EanStatus.Empty -> Unit
             }

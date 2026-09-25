@@ -66,15 +66,8 @@ class RoomShoppingListRepository(
     override suspend fun insertShoppingList(shoppingList: ShoppingList) {
         logger.d(TAG, "insertShoppingList: ${shoppingList.name}")
         validateShoppingList(shoppingList)
-        db.useWriterConnection { connection ->
-            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                listDao.insertShoppingList(shoppingList.toEntity())
-                if (shoppingList.items.isNotEmpty()) {
-                    val itemEntities = shoppingList.items.map { it.toEntity() }
-                    listDao.insertItems(itemEntities)
-                }
-            }
-        }
+        val itemEntities = shoppingList.items.map { it.toEntity() }
+        listDao.insertShoppingListWithItems(shoppingList.toEntity(), itemEntities)
     }
 
     override suspend fun forceUpdateShoppingList(shoppingList: ShoppingList) {

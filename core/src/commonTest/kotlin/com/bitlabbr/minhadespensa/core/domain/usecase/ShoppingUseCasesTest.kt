@@ -216,6 +216,41 @@ class ShoppingUseCasesTest {
     }
 
     @Test
+    fun `AddOrUpdateCartItemUseCase should fail when existingItemId does not exist instead of duplicating other item`() = runTest {
+        val initialItem = ShoppingItem(
+            id = "item-1",
+            listId = "list-1",
+            productId = "prod-1",
+            quantity = 1.0,
+            priceAtTime = 500L,
+            isChecked = true,
+            updatedAt = 1000L,
+        )
+        val list = ShoppingList(
+            id = "list-1",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(initialItem),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = addOrUpdateCartItemUseCase(
+            listId = "list-1",
+            productId = "prod-1",
+            quantity = 10.0,
+            priceAtTimeInCents = 999L,
+            existingItemId = "invalid-or-ghost-id",
+        )
+        assertTrue(result.isFailure, "Must fail when existingItemId is not found")
+
+        val currentList = repository.getShoppingListById("list-1").first()
+        assertNotNull(currentList)
+        assertEquals(1, currentList.items.size, "Must not create a duplicate item")
+        assertEquals(1.0, currentList.items.first().quantity, "Must not corrupt existing item")
+    }
+
+    @Test
     fun `AddOrUpdateCartItemUseCase should reject negative price or invalid quantity`() = runTest {
         val list = ShoppingList(
             id = "list-1",

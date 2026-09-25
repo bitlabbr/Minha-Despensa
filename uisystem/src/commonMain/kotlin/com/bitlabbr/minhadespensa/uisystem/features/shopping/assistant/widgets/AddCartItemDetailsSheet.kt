@@ -36,6 +36,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBo
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
+import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,13 +52,13 @@ fun AddCartItemDetailsSheet(
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
 
-    var quantityText by remember {
+    var quantityText by remember(product?.id, rawText, initialQuantity) {
         mutableStateOf(
             if (initialQuantity % 1.0 == 0.0) initialQuantity.toLong().toString() else initialQuantity.toString()
         )
     }
 
-    var priceText by remember {
+    var priceText by remember(product?.id, rawText, initialPrice) {
         mutableStateOf(initialPrice?.formatPrice() ?: "")
     }
 
@@ -131,7 +132,7 @@ fun AddCartItemDetailsSheet(
                     Button(
                         onClick = {
                             val qty = quantityText.replace(',', '.').toDoubleOrNull() ?: 1.0
-                            val price = priceText.replace(',', '.').toLongOrNull()
+                            val price = priceText.replace(',', '.').toDoubleOrNull()?.let { (it * 100).roundToLong() }
                             onConfirm(qty, price)
                         },
                         enabled = (quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0.0,

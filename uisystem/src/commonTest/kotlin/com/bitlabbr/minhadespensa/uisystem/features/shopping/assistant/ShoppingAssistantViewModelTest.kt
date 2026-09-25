@@ -250,4 +250,100 @@ class ShoppingAssistantViewModelTest {
         assertTrue(viewModel.uiState.value.isCompleted)
         assertFalse(viewModel.uiState.value.isFinalizing)
     }
+
+    @Test
+    fun `onConfirmItemDetails with price should update item values and increment total cart value without duplicating`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-rice", name = "Arroz", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val list = ShoppingList(
+            id = "list-cart-calc",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-rice-1",
+                    listId = "list-cart-calc",
+                    productId = "p-rice",
+                    quantity = 1.0,
+                    priceAtTime = null,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-cart-calc")
+        testScheduler.advanceUntilIdle()
+
+        // Before setting price: subtotal = 0, cart total = 0
+        assertEquals(1, viewModel.uiState.value.items.size)
+        assertEquals(0L, viewModel.uiState.value.items.first().subtotalInCents)
+        assertEquals(0L, viewModel.uiState.value.totalCartValueInCents)
+
+        // User edits item to quantity = 2.0, unit price = 550 cents (R$ 5,50)
+        viewModel.onConfirmItemDetails(
+            product = prod,
+            rawText = null,
+            quantity = 2.0,
+            priceInCents = 550L,
+            existingItemId = "item-rice-1",
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.items.size, "Item must not be duplicated")
+        val item = state.items.first()
+        assertEquals(2.0, item.quantity)
+        assertEquals(550L, item.priceAtTime)
+        assertEquals(1100L, item.subtotalInCents, "Subtotal must be 2 * 550 = 1100")
+        assertEquals(1100L, state.totalCartValueInCents, "Total cart value must increment to 1100")
+    }
+
+    @Test
+    fun `soft deleted items should be excluded from assistant uiState items`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-deleted-test",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "i-active",
+                    listId = "list-deleted-test",
+                    rawText = "Ativo",
+                    quantity = 1.0,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                    isDeleted = false,
+                ),
+                ShoppingItem(
+                    id = "i-deleted",
+                    listId = "list-deleted-test",
+                    rawText = "Excluído",
+                    quantity = 1.0,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                    isDeleted = true,
+                ),
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-deleted-test")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.items.size)
+        assertEquals("i-active", state.items.first().id)
+        assertEquals(1, state.totalCount)
+    }
 }

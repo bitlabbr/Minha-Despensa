@@ -38,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -268,22 +269,24 @@ fun ShoppingAssistantScreen(
         }
 
         is ShoppingAssistantSubFlow.AddItemDetails -> {
-            AddCartItemDetailsSheet(
-                product = subFlow.product,
-                rawText = subFlow.rawText,
-                initialQuantity = subFlow.initialQuantity,
-                initialPrice = subFlow.initialPriceInCents,
-                onConfirm = { qty, price ->
-                    viewModel.onConfirmItemDetails(
-                        product = subFlow.product,
-                        rawText = subFlow.rawText,
-                        quantity = qty,
-                        priceInCents = price,
-                        existingItemId = subFlow.existingItemId,
-                    )
-                },
-                onDismiss = viewModel::onCloseSubFlow,
-            )
+            key(subFlow.existingItemId ?: subFlow.product?.id ?: subFlow.rawText ?: "cart_details") {
+                AddCartItemDetailsSheet(
+                    product = subFlow.product,
+                    rawText = subFlow.rawText,
+                    initialQuantity = subFlow.initialQuantity,
+                    initialPrice = subFlow.initialPriceInCents,
+                    onConfirm = { qty, price ->
+                        viewModel.onConfirmItemDetails(
+                            product = subFlow.product,
+                            rawText = subFlow.rawText,
+                            quantity = qty,
+                            priceInCents = price,
+                            existingItemId = subFlow.existingItemId,
+                        )
+                    },
+                    onDismiss = viewModel::onCloseSubFlow,
+                )
+            }
         }
 
         null -> Unit
