@@ -124,7 +124,7 @@ class PantryViewModelTest {
         viewModel.onSearchQueryChanged("Queijo")
         testScheduler.advanceUntilIdle()
         assertEquals(1, viewModel.uiState.value.listState.products.size)
-        assertEquals("p-2", viewModel.uiState.value.listState.products.first().id)
+        assertEquals("prod-2", viewModel.uiState.value.listState.products.first().id)
 
         // Clear filter
         viewModel.onCategorySelected(null)
@@ -209,4 +209,101 @@ class PantryViewModelTest {
             assertEquals(MinhaDespensaSnackbarType.SUCCESS, notification.type)
         }
     }
+
+    @Test
+    fun `multiple occurrences of the same product should be aggregated summing quantities and picking closest expiration`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val item1BatchA = PantryItemWithCategory(
+            pantryItem = PantryItem(
+                id = "p-1",
+                productId = "prod-1",
+                quantity = 4.0,
+                expirationDate = 2100000000000L,
+                updatedAt = 1000L,
+            ),
+            name = "Arroz Branco",
+            category = "Grãos",
+        )
+        val item1BatchB = PantryItemWithCategory(
+            pantryItem = PantryItem(
+                id = "p-2",
+                productId = "prod-1",
+                quantity = 4.0,
+                expirationDate = 2000000000000L,
+                updatedAt = 1100L,
+            ),
+            name = "Arroz Branco",
+            category = "Grãos",
+        )
+        val item2Single = PantryItemWithCategory(
+            pantryItem = PantryItem(
+                id = "p-3",
+                productId = "prod-2",
+                quantity = 2.0,
+                expirationDate = null,
+                updatedAt = 1200L,
+            ),
+            name = "Feijão Preto",
+            category = "Grãos",
+        )
+
+        pantryRepository.customItemsWithCategory.value = listOf(item1BatchA, item1BatchB, item2Single)
+        testScheduler.advanceUntilIdle()
+
+        val products = viewModel.uiState.value.listState.products
+        assertEquals(2, products.size)
+
+        val aggregatedArroz = products.first { it.id == "prod-1" }
+        assertEquals("Arroz Branco", aggregatedArroz.name)
+        assertEquals("Grãos", aggregatedArroz.category)
+        assertEquals(8.0, aggregatedArroz.quantity)
+        assertEquals(2000000000000L, aggregatedArroz.expirationDate)
+        assertFalse(aggregatedArroz.isExpired)
+
+        val feijao = products.first { it.id == "prod-2" }
+        assertEquals("Feijão Preto", feijao.name)
+        assertEquals(2.0, feijao.quantity)
+        assertNull(feijao.expirationDate)
+    }
+
+    @Test
+    fun `expired batch should mark aggregated product as expired`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val batchExpired = PantryItemWithCategory(
+            pantryItem = PantryItem(
+                id = "p-1",
+                productId = "prod-1",
+                quantity = 1.0,
+                expirationDate = 100L, // past date
+                updatedAt = 1000L,
+            ),
+            name = "Iogurte",
+            category = "Laticínios",
+        )
+        val batchValid = PantryItemWithCategory(
+            pantryItem = PantryItem(
+                id = "p-2",
+                productId = "prod-1",
+                quantity = 2.0,
+                expirationDate = 3000000000000L, // future date
+                updatedAt = 1100L,
+            ),
+            name = "Iogurte",
+            category = "Laticínios",
+        )
+
+        pantryRepository.customItemsWithCategory.value = listOf(batchExpired, batchValid)
+        testScheduler.advanceUntilIdle()
+
+        val products = viewModel.uiState.value.listState.products
+        assertEquals(1, products.size)
+
+        val aggregatedIogurte = products.first()
+        assertEquals(3.0, aggregatedIogurte.quantity)
+        assertEquals(100L, aggregatedIogurte.expirationDate)
+        assertTrue(aggregatedIogurte.isExpired)
+    }
 }
+

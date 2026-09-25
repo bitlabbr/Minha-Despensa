@@ -70,9 +70,10 @@ class PantryViewModel(
 
         allItems.forEach { item ->
             pantryIdToProductIdMap[item.pantryItem.id] = item.pantryItem.productId
+            pantryIdToProductIdMap[item.pantryItem.productId] = item.pantryItem.productId
         }
 
-        val allUiItems = allItems.map { it.toPantryItemUiModel() }
+        val allUiItems = aggregatePantryItems(allItems)
         val isPantryEmpty = allUiItems.isEmpty()
 
         val dynamicCategories =
@@ -108,7 +109,7 @@ class PantryViewModel(
                 error = null,
             ),
             allActivePantryItems = allUiItems,
-            expiringPantryItems = expiringItems.map { it.toPantryItemUiModel() },
+            expiringPantryItems = aggregatePantryItems(expiringItems).sortedBy { it.expirationDate ?: Long.MAX_VALUE },
             searchResults = searchResults,
             activeSubFlow = subFlow,
             isLoading = false,
@@ -210,21 +211,32 @@ class PantryViewModel(
         }
     }
 
-    private fun PantryItemWithCategory.toPantryItemUiModel(): PantryItemUiModel {
+    private fun aggregatePantryItems(items: List<PantryItemWithCategory>): List<PantryItemUiModel> {
         val now = Clock.System.now().toEpochMilliseconds()
-        val isExpired = this.pantryItem.expirationDate?.let { it < now } ?: false
+        return items
+            .groupBy { it.pantryItem.productId }
+            .map { (productId, groupedItems) ->
+                val firstItem = groupedItems.first()
+                val totalQuantity = groupedItems.sumOf { it.pantryItem.quantity }
+                val closestExpirationDate = groupedItems
+                    .mapNotNull { it.pantryItem.expirationDate }
+                    .minOrNull()
+                val isExpired = groupedItems.any { item ->
+                    item.pantryItem.expirationDate?.let { exp -> exp < now } ?: false
+                }
 
-        return PantryItemUiModel(
-            id = this.pantryItem.id,
-            name = this.name,
-            category = this.category,
-            brand = null,
-            quantity = this.pantryItem.quantity,
-            measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNIT,
-            netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
-            expirationDate = this.pantryItem.expirationDate,
-            isExpired = isExpired,
-        )
+                PantryItemUiModel(
+                    id = productId,
+                    name = firstItem.name,
+                    category = firstItem.category,
+                    brand = null,
+                    quantity = totalQuantity,
+                    measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNIT,
+                    netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
+                    expirationDate = closestExpirationDate,
+                    isExpired = isExpired,
+                )
+            }
     }
 
     companion object {
