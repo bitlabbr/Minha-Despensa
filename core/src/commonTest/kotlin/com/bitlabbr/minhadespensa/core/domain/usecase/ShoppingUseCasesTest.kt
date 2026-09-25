@@ -28,6 +28,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -103,6 +104,16 @@ class ShoppingUseCasesTest {
             budgetInCents = -100L,
         )
         assertTrue(negativeResult.isFailure)
+    }
+
+    @Test
+    fun `CreateQuickShoppingListUseCase should reject customTitle exceeding NAME_MAX_LENGTH`() = runTest {
+        val longTitle = "A".repeat(CoreConstants.ShoppingList.NAME_MAX_LENGTH + 1)
+        val result = createQuickListUseCase(
+            rawContent = "Arroz\nFeijão",
+            customTitle = longTitle,
+        )
+        assertTrue(result.isFailure)
     }
 
     @Test

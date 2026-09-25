@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist
 
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
+
 data class QuickListUiState(
     val title: String = "",
     val rawContent: String = "",
@@ -33,4 +35,7 @@ data class QuickListUiState(
 ) {
     val canSave: Boolean
         get() = rawContent.lines().any { it.isNotBlank() } && !isSaving
+
+    val hasLongItems: Boolean
+        get() = rawContent.lines().any { it.trim().length > CoreConstants.Product.NAME_MAX_LENGTH }
 }

@@ -28,6 +28,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -46,6 +47,12 @@ class CreateQuickShoppingListUseCase(
     ): Result<ShoppingList> = runCatching {
         budgetInCents?.let {
             require(it >= 0L) { "O teto de gastos não pode ser negativo" }
+        }
+
+        customTitle?.trim()?.takeIf { it.isNotBlank() }?.let { title ->
+            require(title.length <= CoreConstants.ShoppingList.NAME_MAX_LENGTH) {
+                "O nome da lista deve ter no máximo ${CoreConstants.ShoppingList.NAME_MAX_LENGTH} caracteres"
+            }
         }
 
         val lines = rawContent

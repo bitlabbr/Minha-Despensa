@@ -27,6 +27,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import kotlin.math.roundToLong
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,7 +46,7 @@ class QuickListViewModel(
     val uiState: StateFlow<QuickListUiState> = _uiState.asStateFlow()
 
     fun onTitleChange(newTitle: String) {
-        _uiState.update { it.copy(title = newTitle) }
+        _uiState.update { it.copy(title = newTitle.take(CoreConstants.ShoppingList.NAME_MAX_LENGTH)) }
     }
 
     fun onContentChange(newContent: String) {

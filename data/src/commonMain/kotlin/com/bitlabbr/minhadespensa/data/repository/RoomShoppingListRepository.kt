@@ -175,16 +175,21 @@ class RoomShoppingListRepository(
                         item.productId
                     } else if (!item.rawText.isNullOrBlank()) {
                         val trimmedName = item.rawText.trim()
-                        val existingProduct = db.catalogDao().findByName(trimmedName)
+                        val sanitizedName = trimmedName.take(CoreConstants.Product.NAME_MAX_LENGTH).trim()
+                        val existingProduct = db.catalogDao().findByName(sanitizedName)
+                            ?: if (sanitizedName != trimmedName) db.catalogDao().findByName(trimmedName) else null
                         if (existingProduct != null) {
                             itemDao.updateProductId(item.id, existingProduct.id, now)
                             existingProduct.id
                         } else {
                             val newProductId = Uuid.random().toString()
+                            val notes = if (trimmedName != sanitizedName) {
+                                "Nome original: $trimmedName".take(CoreConstants.Product.NOTES_MAX_LENGTH)
+                            } else null
                             val newProduct = CatalogProductEntity(
                                 id = newProductId,
                                 ean = null,
-                                name = trimmedName,
+                                name = sanitizedName,
                                 category = CoreConstants.Product.DEFAULT_CATEGORY,
                                 brand = null,
                                 measureUnit = MeasureUnit.UNIT.name,
@@ -193,7 +198,7 @@ class RoomShoppingListRepository(
                                 updatedAt = now,
                                 isDeleted = false,
                                 manuallyAdded = true,
-                                notes = null,
+                                notes = notes,
                             )
                             db.catalogDao().insert(newProduct)
                             itemDao.updateProductId(item.id, newProductId, now)

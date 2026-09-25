@@ -214,6 +214,7 @@
     <string name="quick_list_content_label">Itens (um por linha) </string>
     <string name="quick_list_content_placeholder">3 Pães\n1 Leite\n1 Café\n500g de presunto</string>
     <string name="quick_list_content_supporting">Escreva livremente o que precisa comprar</string>
+    <string name="quick_list_long_items_warning">Atenção: itens com mais de 30 caracteres serão encurtados ao entrar no catálogo</string>
     <string name="quick_list_create_button">Criar Lista Rápida</string>
 
     <!-- Shopping Overview -->
