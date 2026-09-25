@@ -90,4 +90,7 @@ interface ShoppingListDao {
 
     @Query("UPDATE shopping_lists SET updated_at = :now WHERE id = :listId")
     suspend fun updateTimestamp(listId: String, now: Long): Int
+
+    @Query("UPDATE shopping_lists SET list_status = :status, updated_at = :now WHERE id = :listId")
+    suspend fun updateStatus(listId: String, status: String, now: Long): Int
 }

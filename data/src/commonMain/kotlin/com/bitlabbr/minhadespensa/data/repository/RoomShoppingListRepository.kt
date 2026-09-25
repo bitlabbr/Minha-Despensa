@@ -29,6 +29,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
@@ -202,7 +203,7 @@ class RoomShoppingListRepository(
                     itemDao.updateCheckStatus(item.id, false, now)
                 }
 
-                listDao.updateTimestamp(listId, now)
+                listDao.updateStatus(listId, ShoppingListStatus.COMPLETED.name, now)
                 logger.d(TAG, "Checkout finalized. [${checkedItems.size}] items processed.")
             }
         }

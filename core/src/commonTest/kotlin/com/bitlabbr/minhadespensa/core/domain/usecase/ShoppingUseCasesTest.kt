@@ -422,6 +422,25 @@ class ShoppingUseCasesTest {
     }
 
     @Test
+    fun `StartShoppingSessionUseCase should preserve COMPLETED status for already finished list`() = runTest {
+        val completedList = ShoppingList(
+            id = "list-finished",
+            name = "Compras Passadas",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(completedList)
+
+        val result = startShoppingSessionUseCase(existingListId = "list-finished")
+        assertTrue(result.isSuccess)
+
+        val retrieved = repository.getShoppingListById("list-finished").first()
+        assertNotNull(retrieved)
+        assertEquals(ShoppingListStatus.COMPLETED, retrieved.status)
+    }
+
+    @Test
     fun `StartShoppingSessionUseCase should fail on deleted or non-existent list`() = runTest {
         val deletedList = ShoppingList(
             id = "list-del",

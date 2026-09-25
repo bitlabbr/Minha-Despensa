@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.ShoppingCart
@@ -44,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
@@ -155,12 +157,38 @@ fun ShoppingListsScreen(
                         .padding(horizontal = dimens.paddingSmall),
                     verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                 ) {
-                    uiState.activeLists.forEach { item ->
-                        ShoppingListCard(
-                            list = item,
-                            onClick = { onNavigateToAssistant(item.id) },
-                            onDelete = { viewModel.deleteList(item.id) },
+                    if (uiState.activeLists.isNotEmpty()) {
+                        uiState.activeLists.forEach { item ->
+                            ShoppingListCard(
+                                list = item,
+                                onClick = { onNavigateToAssistant(item.id) },
+                                onDelete = { viewModel.deleteList(item.id) },
+                            )
+                        }
+                    }
+
+                    if (uiState.completedLists.isNotEmpty()) {
+                        if (uiState.activeLists.isNotEmpty()) {
+                            Spacer(Modifier.height(dimens.paddingSmall))
+                        }
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.shopping_lists_completed_section_title),
+                            fontStyle = typography.displayMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(
+                                horizontal = dimens.paddingSmall,
+                                vertical = 4.dp,
+                            ),
                         )
+
+                        uiState.completedLists.forEach { item ->
+                            ShoppingListCard(
+                                list = item,
+                                onClick = { onNavigateToAssistant(item.id) },
+                                onDelete = { viewModel.deleteList(item.id) },
+                            )
+                        }
                     }
                 }
             }
@@ -216,6 +244,7 @@ private fun ShoppingListCard(
     val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
+    val isCompleted = list.status == ShoppingListStatus.COMPLETED
 
     ItemContainerGlassCard(
         modifier = Modifier
@@ -236,7 +265,13 @@ private fun ShoppingListCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
-                        imageVector = if (list.type == ShoppingListType.SCRATCHPAD) Icons.Rounded.EditNote else Icons.Rounded.ShoppingCart,
+                        imageVector = if (isCompleted) {
+                            Icons.Rounded.CheckCircle
+                        } else if (list.type == ShoppingListType.SCRATCHPAD) {
+                            Icons.Rounded.EditNote
+                        } else {
+                            Icons.Rounded.ShoppingCart
+                        },
                         contentDescription = null,
                         tint = colors.primary,
                         modifier = Modifier.size(20.dp),
@@ -246,6 +281,21 @@ private fun ShoppingListCard(
                         fontStyle = typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                     )
+                    if (isCompleted) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = colors.primary.copy(alpha = 0.12f),
+                            modifier = Modifier.padding(start = 4.dp),
+                        ) {
+                            MinhaDespensaText(
+                                text = stringResource(Res.string.shopping_lists_status_completed),
+                                fontStyle = typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(4.dp))

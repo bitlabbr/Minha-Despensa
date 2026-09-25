@@ -38,6 +38,7 @@ import com.bitlabbr.minhadespensa.uisystem.fakes.FakeShoppingListRepository
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantSubFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -345,5 +346,53 @@ class ShoppingAssistantViewModelTest {
         assertEquals(1, state.items.size)
         assertEquals("i-active", state.items.first().id)
         assertEquals(1, state.totalCount)
+    }
+
+    @Test
+    fun `discardSession should delete shopping list and call onFinished`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-discard",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-discard")
+        testScheduler.advanceUntilIdle()
+
+        assertNotNull(shoppingListRepository.getShoppingListById("list-discard").first())
+
+        var callbackCalled = false
+        viewModel.discardSession {
+            callbackCalled = true
+        }
+        testScheduler.advanceUntilIdle()
+
+        assertTrue(callbackCalled)
+        assertNull(shoppingListRepository.getShoppingListById("list-discard").first())
+    }
+
+    @Test
+    fun `isCompleted should be true when starting session with completed list`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val completedList = ShoppingList(
+            id = "list-comp",
+            name = "Compras Finalizadas",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(completedList)
+
+        viewModel.startSession("list-comp")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isCompleted)
     }
 }

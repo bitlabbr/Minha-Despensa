@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
@@ -133,7 +134,7 @@ class ShoppingAssistantViewModel(
             totalCount = uiItems.size,
             activeSubFlow = control.subFlow,
             isFinalizing = control.isFinalizing,
-            isCompleted = control.isCompleted,
+            isCompleted = control.isCompleted || currentList.status == ShoppingListStatus.COMPLETED,
             errorMessage = control.errorMessage,
         )
     }.stateIn(
@@ -240,6 +241,17 @@ class ShoppingAssistantViewModel(
                 _isFinalizing.value = false
                 _errorMessage.value = error.message ?: "Erro ao finalizar compra"
             }
+        }
+    }
+
+    fun discardSession(onFinished: () -> Unit) {
+        val listId = _currentListId.value ?: run {
+            onFinished()
+            return
+        }
+        viewModelScope.launch {
+            shoppingListRepository.deleteShoppingListById(listId)
+            onFinished()
         }
     }
 }

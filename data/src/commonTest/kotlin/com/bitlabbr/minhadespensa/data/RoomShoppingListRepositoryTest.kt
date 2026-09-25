@@ -28,6 +28,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
@@ -91,6 +92,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         assertNotNull(updatedList)
         assertFalse(updatedList.items[0].isChecked, "O item deveria ter sido desmarcado após o checkout")
         assertTrue(updatedList.updatedAt >= startTime, "O timestamp da lista deveria ter sido atualizado")
+        assertEquals(ShoppingListStatus.COMPLETED, updatedList.status, "O status da lista deveria ser COMPLETED")
     }
 
     @Test

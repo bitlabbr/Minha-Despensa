@@ -166,5 +166,14 @@
     <string name="shopping_lists_dialog_planned_option">Lista Planejada (Do Catálogo)</string>
     <string name="shopping_lists_delete_content_description">Excluir Lista</string>
     <string name="shopping_lists_items_count">%1$d itens • Criada em %2$s</string>
+    <string name="shopping_lists_completed_section_title">Listas Finalizadas</string>
+    <string name="shopping_lists_status_completed">Finalizada</string>
+
+    <!-- Shopping Assistant Exit Confirmation -->
+    <string name="shopping_assistant_exit_dialog_title">Sair das compras</string>
+    <string name="shopping_assistant_exit_dialog_desc">Deseja salvar esta lista em andamento para continuar depois ou prefere descartá-la?</string>
+    <string name="shopping_assistant_exit_dialog_save">Salvar Lista</string>
+    <string name="shopping_assistant_exit_dialog_discard">Descartar Lista</string>
+    <string name="shopping_assistant_exit_dialog_cancel">Continuar Comprando</string>
 
 </resources>

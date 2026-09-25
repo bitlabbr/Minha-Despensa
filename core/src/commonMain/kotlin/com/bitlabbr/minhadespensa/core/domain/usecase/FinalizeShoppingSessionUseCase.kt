@@ -44,6 +44,6 @@ class FinalizeShoppingSessionUseCase(
             status = ShoppingListStatus.COMPLETED,
             updatedAt = now,
         )
-        shoppingListRepository.updateShoppingListIfNewer(completedList)
+        shoppingListRepository.forceUpdateShoppingList(completedList)
     }
 }
