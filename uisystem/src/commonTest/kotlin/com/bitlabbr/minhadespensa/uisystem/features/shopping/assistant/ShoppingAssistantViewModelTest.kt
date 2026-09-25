@@ -472,4 +472,62 @@ class ShoppingAssistantViewModelTest {
         testScheduler.advanceUntilIdle()
         assertFalse(viewModel.uiState.value.hasChanges)
     }
+
+    @Test
+    fun `scanning and confirming product details should add a new item to the list rather than updating existing items`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-scanned", name = "Pão", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val list = ShoppingList(
+            id = "list-scan-add",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-existing-pao",
+                    listId = "list-scan-add",
+                    rawText = "Pão",
+                    quantity = 1.0,
+                    isChecked = false,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-scan-add")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.items.size)
+
+        // User scans barcode and confirms product (existingItemId is null)
+        viewModel.onConfirmItemDetails(
+            product = prod,
+            rawText = null,
+            quantity = 2.0,
+            priceInCents = 600L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(2, state.items.size, "Scanned product must be added as a new item, not update existing item")
+        assertEquals(2, state.totalCount)
+
+        val existingItem = state.items.find { it.id == "item-existing-pao" }
+        assertNotNull(existingItem)
+        assertEquals(1.0, existingItem.quantity)
+        assertFalse(existingItem.isChecked)
+
+        val newItem = state.items.find { it.id != "item-existing-pao" }
+        assertNotNull(newItem)
+        assertEquals("p-scanned", newItem.productId)
+        assertEquals(2.0, newItem.quantity)
+        assertEquals(600L, newItem.priceAtTime)
+        assertTrue(newItem.isChecked)
+    }
 }
