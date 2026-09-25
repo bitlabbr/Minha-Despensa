@@ -32,6 +32,7 @@ import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeShoppingListRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -41,6 +42,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -132,4 +134,36 @@ class ShoppingListsViewModelTest {
             assertTrue(state2.activeLists.isEmpty())
         }
     }
+
+    @Test
+    fun `updateListDetails should update list name and budget in repository and uiState`() = runTest(testDispatcher) {
+        val list = ShoppingList(
+            id = "list-overview-edit",
+            name = "Nome Antigo",
+            type = ShoppingListType.PLANNED,
+            status = ShoppingListStatus.DRAFT,
+            budgetInCents = null,
+            updatedAt = 1711200000000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.uiState.test {
+            val state1 = awaitItem().let { if (it.isLoading) awaitItem() else it }
+            val item1 = state1.activeLists.first { it.id == "list-overview-edit" }
+            assertEquals("Nome Antigo", item1.name)
+            assertNull(item1.budgetInCents)
+
+            viewModel.updateListDetails("list-overview-edit", "Nome Novo", 50000L)
+
+            val state2 = awaitItem()
+            val item2 = state2.activeLists.first { it.id == "list-overview-edit" }
+            assertEquals("Nome Novo", item2.name)
+            assertEquals(50000L, item2.budgetInCents)
+        }
+
+        val updatedRepoList = shoppingListRepository.getShoppingListById("list-overview-edit").first()
+        assertEquals("Nome Novo", updatedRepoList?.name)
+        assertEquals(50000L, updatedRepoList?.budgetInCents)
+    }
 }
+

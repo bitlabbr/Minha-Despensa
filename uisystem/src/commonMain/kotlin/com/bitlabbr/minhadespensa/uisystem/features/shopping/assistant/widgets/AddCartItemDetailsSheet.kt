@@ -23,8 +23,12 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -35,7 +39,10 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,12 +52,20 @@ fun AddCartItemDetailsSheet(
     rawText: String?,
     initialQuantity: Double,
     initialPrice: Long?,
-    onConfirm: (quantity: Double, price: Long?) -> Unit,
+    isReplacement: Boolean = false,
+    onReplaceItem: (() -> Unit)? = null,
+    onRemoveItem: (() -> Unit)? = null,
+    onConfirm: (name: String?, quantity: Double, price: Long?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
+    val colors = getAppColors()
+
+    var customNameText by remember(product?.id, rawText) {
+        mutableStateOf(rawText ?: "")
+    }
 
     var quantityText by remember(product?.id, rawText, initialQuantity) {
         mutableStateOf(
@@ -73,16 +88,47 @@ fun AddCartItemDetailsSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
-                Text(
-                    text = product?.name ?: rawText ?: "Adicionar ao Carrinho",
-                    style = typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                product?.brand?.let {
+                if (isReplacement) {
                     Text(
-                        text = "$it • ${product.category}",
+                        text = stringResource(Res.string.shopping_assistant_replace_confirm_title),
                         style = typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+
+                if (product != null) {
+                    Text(
+                        text = product.name,
+                        style = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    product.brand?.let {
+                        Text(
+                            text = "$it • ${product.category}",
+                            style = typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
+                    }
+                } else {
+                    Text(
+                        text = if (rawText.isNullOrBlank()) {
+                            stringResource(Res.string.shopping_assistant_add_text_item_title)
+                        } else {
+                            stringResource(Res.string.shopping_assistant_edit_text_item_title)
+                        },
+                        style = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    ProductTextField(
+                        modifier = Modifier.fillMaxWidth(),
+                        value = customNameText,
+                        onValueChange = { customNameText = it },
+                        label = stringResource(Res.string.shopping_assistant_item_name_label),
+                        placeholder = stringResource(Res.string.shopping_assistant_item_name_placeholder),
+                        isRequired = true,
                     )
                 }
 
@@ -98,7 +144,7 @@ fun AddCartItemDetailsSheet(
                         onValueChange = { input ->
                             quantityText = input.filter { it.isDigit() || it == '.' || it == ',' }.take(6)
                         },
-                        label = "Quantidade *",
+                        label = "Quantidade",
                         placeholder = "1",
                         keyboardType = KeyboardType.Decimal,
                         isRequired = true,
@@ -116,6 +162,46 @@ fun AddCartItemDetailsSheet(
                     )
                 }
 
+                if (onReplaceItem != null) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onReplaceItem,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SwapHoriz,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(Res.string.shopping_assistant_replace_item_action))
+                    }
+                }
+
+                if (onRemoveItem != null) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onRemoveItem,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = colors.error,
+                        ),
+                        border = BorderStroke(1.dp, colors.error.copy(alpha = 0.5f)),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.DeleteOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = colors.error,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(Res.string.shopping_assistant_remove_item_action),
+                            color = colors.error,
+                        )
+                    }
+                }
+
                 Spacer(Modifier.height(16.dp))
 
                 Row(
@@ -129,13 +215,17 @@ fun AddCartItemDetailsSheet(
                         Text("Cancelar")
                     }
 
+                    val isNameValid = product != null || customNameText.isNotBlank()
+                    val qtyValue = quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0
+                    val isQtyValid = qtyValue > 0.0
+
                     Button(
                         onClick = {
-                            val qty = quantityText.replace(',', '.').toDoubleOrNull() ?: 1.0
                             val price = priceText.replace(',', '.').toDoubleOrNull()?.let { (it * 100).roundToLong() }
-                            onConfirm(qty, price)
+                            val finalName = if (product != null) null else customNameText.trim()
+                            onConfirm(finalName, qtyValue, price)
                         },
-                        enabled = (quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0.0,
+                        enabled = isNameValid && isQtyValid,
                         modifier = Modifier.weight(1.5f),
                     ) {
                         Text("Confirmar")

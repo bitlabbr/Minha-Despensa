@@ -31,10 +31,13 @@ import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.FinalizeShoppingSessionUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.RemoveCartItemUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeCatalogRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeShoppingListRepository
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.CartItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantSubFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -64,6 +67,8 @@ class ShoppingAssistantViewModelTest {
     private lateinit var addOrUpdateCartItemUseCase: AddOrUpdateCartItemUseCase
     private lateinit var finalizeShoppingSessionUseCase: FinalizeShoppingSessionUseCase
     private lateinit var checkEanStatusUseCase: CheckEanStatusUseCase
+    private lateinit var replaceCartItemUseCase: ReplaceCartItemUseCase
+    private lateinit var removeCartItemUseCase: RemoveCartItemUseCase
     private lateinit var logger: FakeAppLogger
     private lateinit var viewModel: ShoppingAssistantViewModel
 
@@ -76,6 +81,8 @@ class ShoppingAssistantViewModelTest {
         addOrUpdateCartItemUseCase = AddOrUpdateCartItemUseCase(shoppingListRepository)
         finalizeShoppingSessionUseCase = FinalizeShoppingSessionUseCase(shoppingListRepository)
         checkEanStatusUseCase = CheckEanStatusUseCase(catalogRepository)
+        replaceCartItemUseCase = ReplaceCartItemUseCase(shoppingListRepository)
+        removeCartItemUseCase = RemoveCartItemUseCase(shoppingListRepository)
         logger = FakeAppLogger()
 
         viewModel = ShoppingAssistantViewModel(
@@ -83,6 +90,8 @@ class ShoppingAssistantViewModelTest {
             addOrUpdateCartItemUseCase = addOrUpdateCartItemUseCase,
             finalizeShoppingSessionUseCase = finalizeShoppingSessionUseCase,
             checkEanStatusUseCase = checkEanStatusUseCase,
+            replaceCartItemUseCase = replaceCartItemUseCase,
+            removeCartItemUseCase = removeCartItemUseCase,
             shoppingListRepository = shoppingListRepository,
             catalogRepository = catalogRepository,
             logger = logger,
@@ -530,4 +539,721 @@ class ShoppingAssistantViewModelTest {
         assertEquals(600L, newItem.priceAtTime)
         assertTrue(newItem.isChecked)
     }
+
+    @Test
+    fun `onReplaceItemClicked should open ReplaceItemOptions subflow`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val cartItem = CartItemUiModel(
+            id = "item-1",
+            productId = null,
+            displayName = "Leite",
+            quantity = 2.0,
+            priceAtTime = null,
+            isChecked = false,
+            subtotalInCents = 0,
+        )
+
+        viewModel.onReplaceItemClicked(cartItem)
+        testScheduler.advanceUntilIdle()
+
+        val active = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.ReplaceItemOptions>(active)
+        assertEquals("item-1", active.item.id)
+    }
+
+    @Test
+    fun `onStartReplaceBarcodeScan and onStartReplaceCatalogSearch transitions`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val cartItem = CartItemUiModel(
+            id = "item-1",
+            productId = null,
+            displayName = "Leite",
+            quantity = 2.0,
+            priceAtTime = null,
+            isChecked = false,
+            subtotalInCents = 0,
+        )
+
+        viewModel.onStartReplaceBarcodeScan(cartItem)
+        testScheduler.advanceUntilIdle()
+        val scanFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.ReplaceItemBarcodeScanner>(scanFlow)
+        assertEquals("item-1", scanFlow.item.id)
+
+        viewModel.onStartReplaceCatalogSearch(cartItem)
+        testScheduler.advanceUntilIdle()
+        val searchFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.SearchCatalogForReplacement>(searchFlow)
+        assertEquals("item-1", searchFlow.item.id)
+    }
+
+    @Test
+    fun `onBarcodeScannedForReplacement with found product transitions to AddItemDetails with isReplacement true`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-leite-b", name = "Leite Marca B", ean = "7891000333123", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val cartItem = CartItemUiModel(
+            id = "item-1",
+            productId = null,
+            displayName = "Leite genérico",
+            quantity = 3.0,
+            priceAtTime = null,
+            isChecked = false,
+            subtotalInCents = 0,
+        )
+
+        viewModel.onBarcodeScannedForReplacement(cartItem, "7891000333123")
+        testScheduler.advanceUntilIdle()
+
+        val active = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(active)
+        assertEquals("p-leite-b", active.product?.id)
+        assertEquals("item-1", active.existingItemId)
+        assertEquals(3.0, active.initialQuantity)
+        assertTrue(active.isReplacement)
+    }
+
+    @Test
+    fun `onBarcodeScannedForReplacement with unknown product transitions to CreateProduct with replacingItemId`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val cartItem = CartItemUiModel(
+            id = "item-free-text",
+            productId = null,
+            displayName = "Café",
+            quantity = 1.0,
+            priceAtTime = null,
+            isChecked = false,
+            subtotalInCents = 0,
+        )
+
+        viewModel.onBarcodeScannedForReplacement(cartItem, "7899999999123")
+        testScheduler.advanceUntilIdle()
+
+        val active = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.CreateProduct>(active)
+        assertEquals("7899999999123", active.initialEan)
+        assertEquals("item-free-text", active.replacingItemId)
+
+        // Then, registering the product transitions to AddItemDetails with isReplacement true
+        val createdProd = CatalogProduct(id = "p-cafe-novo", name = "Café Gourmet", ean = "7899999999123", updatedAt = 1000L)
+        viewModel.onProductCreatedFromCatalog(createdProd)
+        testScheduler.advanceUntilIdle()
+
+        val nextActive = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(nextActive)
+        assertEquals("p-cafe-novo", nextActive.product?.id)
+        assertEquals("item-free-text", nextActive.existingItemId)
+        assertTrue(nextActive.isReplacement)
+    }
+
+    @Test
+    fun `onReplacementProductSelected transitions to AddItemDetails with isReplacement true`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-manteiga", name = "Manteiga Extra", updatedAt = 1000L)
+        val cartItem = CartItemUiModel(
+            id = "item-butter",
+            productId = null,
+            displayName = "Manteiga",
+            quantity = 2.0,
+            priceAtTime = null,
+            isChecked = false,
+            subtotalInCents = 0,
+        )
+
+        viewModel.onReplacementProductSelected(cartItem, prod)
+        testScheduler.advanceUntilIdle()
+
+        val active = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(active)
+        assertEquals("p-manteiga", active.product?.id)
+        assertEquals("item-butter", active.existingItemId)
+        assertEquals(2.0, active.initialQuantity)
+        assertTrue(active.isReplacement)
+    }
+
+    @Test
+    fun `onConfirmItemDetails with isReplacement true replaces free-text item with catalog product and updates price`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prodSub = CatalogProduct(id = "p-leite-ninho", name = "Leite Ninho 1L", updatedAt = 1000L)
+        catalogRepository.insertProduct(prodSub, null)
+
+        val list = ShoppingList(
+            id = "list-repl-test",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-raw-milk",
+                    listId = "list-repl-test",
+                    rawText = "milk",
+                    quantity = 2.0,
+                    isChecked = false,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-repl-test")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onConfirmItemDetails(
+            product = prodSub,
+            rawText = null,
+            quantity = 3.0,
+            priceInCents = 650L,
+            existingItemId = "item-raw-milk",
+            isReplacement = true,
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.items.size)
+        val replaced = state.items.first()
+        assertEquals("item-raw-milk", replaced.id, "ID of item must be preserved")
+        assertEquals("p-leite-ninho", replaced.productId)
+        assertEquals("Leite Ninho 1L", replaced.displayName)
+        assertEquals(3.0, replaced.quantity)
+        assertEquals(650L, replaced.priceAtTime)
+        assertTrue(replaced.isChecked)
+        assertEquals(1950L, state.totalCartValueInCents)
+        assertNull(state.activeSubFlow)
+    }
+
+    @Test
+    fun `onConfirmItemDetails with isReplacement true replaces catalog product A with catalog product B`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prodA = CatalogProduct(id = "p-brand-a", name = "Leite Marca A", updatedAt = 1000L)
+        val prodB = CatalogProduct(id = "p-brand-b", name = "Leite Marca B", updatedAt = 1000L)
+        catalogRepository.insertProduct(prodA, null)
+        catalogRepository.insertProduct(prodB, null)
+
+        val list = ShoppingList(
+            id = "list-repl-catalog",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-prod-a",
+                    listId = "list-repl-catalog",
+                    productId = "p-brand-a",
+                    quantity = 1.0,
+                    priceAtTime = 400L,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-repl-catalog")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onConfirmItemDetails(
+            product = prodB,
+            rawText = null,
+            quantity = 2.0,
+            priceInCents = 450L,
+            existingItemId = "item-prod-a",
+            isReplacement = true,
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.items.size)
+        val replaced = state.items.first()
+        assertEquals("item-prod-a", replaced.id, "ID of item must be preserved")
+        assertEquals("p-brand-b", replaced.productId)
+        assertEquals("Leite Marca B", replaced.displayName)
+        assertEquals(2.0, replaced.quantity)
+        assertEquals(450L, replaced.priceAtTime)
+        assertTrue(replaced.isChecked)
+        assertEquals(900L, state.totalCartValueInCents)
+    }
+
+    @Test
+    fun `completed list cannot switch product or be mutated`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-completed-vm",
+            name = "Compras Finalizadas",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-comp-1",
+                    listId = "list-completed-vm",
+                    rawText = "Leite",
+                    quantity = 1.0,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-completed-vm")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isCompleted)
+
+        val cartItem = state.items.first()
+
+        // Attempts to replace or scan or edit should do nothing
+        viewModel.onReplaceItemClicked(cartItem)
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        viewModel.onScanBarcodeClicked()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        viewModel.onEditItemClicked(cartItem)
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        // Toggle check should do nothing
+        viewModel.onToggleItemChecked("item-comp-1", false)
+        testScheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.items.first().isChecked)
+    }
+
+    @Test
+    fun `onUpdateListTitle updates list name in repository and reflects in uiState`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-rename",
+            name = "Nome Antigo",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = emptyList(),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-rename")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("Nome Antigo", viewModel.uiState.value.listTitle)
+
+        viewModel.onUpdateListTitle("Nome Novo")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("Nome Novo", viewModel.uiState.value.listTitle)
+        val repoList = shoppingListRepository.getShoppingListById("list-rename").first()
+        assertEquals("Nome Novo", repoList?.name)
+    }
+
+    @Test
+    fun `onUpdateListTitle ignores blank or whitespace-only titles`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-rename-blank",
+            name = "Nome Original",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = emptyList(),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-rename-blank")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onUpdateListTitle("   ")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("Nome Original", viewModel.uiState.value.listTitle)
+    }
+
+    @Test
+    fun `onUpdateListTitle does nothing when list is completed`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-rename-completed",
+            name = "Lista Finalizada",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            items = emptyList(),
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-rename-completed")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onUpdateListTitle("Tentativa de Renomear")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("Lista Finalizada", viewModel.uiState.value.listTitle)
+        val repoList = shoppingListRepository.getShoppingListById("list-rename-completed").first()
+        assertEquals("Lista Finalizada", repoList?.name)
+    }
+
+    @Test
+    fun `onUpdateListDetails updates title and budget in repository and reflects in uiState`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val list = ShoppingList(
+            id = "list-details",
+            name = "Lista Inicial",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.SHOPPING,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-budget-1",
+                    listId = "list-details",
+                    rawText = "Vinho",
+                    quantity = 2.0,
+                    priceAtTime = 6000L,
+                    isChecked = true,
+                    updatedAt = 1000L,
+                )
+            ),
+            budgetInCents = 10000L,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(list)
+
+        viewModel.startSession("list-details")
+        testScheduler.advanceUntilIdle()
+
+        val initialState = viewModel.uiState.value
+        assertEquals("Lista Inicial", initialState.listTitle)
+        assertEquals(10000L, initialState.budgetInCents)
+        assertTrue(initialState.isOverBudget)
+
+        // Increase budget to 15000L and rename
+        viewModel.onUpdateListDetails("Lista Atualizada", 15000L)
+        testScheduler.advanceUntilIdle()
+
+        val updatedState = viewModel.uiState.value
+        assertEquals("Lista Atualizada", updatedState.listTitle)
+        assertEquals(15000L, updatedState.budgetInCents)
+        assertFalse(updatedState.isOverBudget)
+
+        val repoList = shoppingListRepository.getShoppingListById("list-details").first()
+        assertEquals("Lista Atualizada", repoList?.name)
+        assertEquals(15000L, repoList?.budgetInCents)
+    }
+
+    @Test
+    fun `ShoppingAssistantUiState computes remainingBudget and budgetProgress correctly`() {
+        val stateWithoutBudget = com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantUiState(
+            budgetInCents = null,
+            totalCartValueInCents = 5000L,
+        )
+        assertNull(stateWithoutBudget.remainingBudgetInCents)
+        assertNull(stateWithoutBudget.budgetProgress)
+        assertFalse(stateWithoutBudget.isOverBudget)
+
+        val stateWithinBudget = com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantUiState(
+            budgetInCents = 10000L,
+            totalCartValueInCents = 4000L,
+        )
+        assertEquals(6000L, stateWithinBudget.remainingBudgetInCents)
+        assertEquals(0.4f, stateWithinBudget.budgetProgress)
+        assertFalse(stateWithinBudget.isOverBudget)
+
+        val stateOverBudget = com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantUiState(
+            budgetInCents = 10000L,
+            totalCartValueInCents = 12000L,
+        )
+        assertEquals(-2000L, stateOverBudget.remainingBudgetInCents)
+        assertEquals(1.2f, stateOverBudget.budgetProgress)
+        assertTrue(stateOverBudget.isOverBudget)
+    }
+
+    @Test
+    fun `onRemoveItem should mark item as deleted and remove from ui items`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-remove-test"
+        val item1 = ShoppingItem(
+            id = "item-1",
+            listId = listId,
+            rawText = "Item 1",
+            quantity = 2.0,
+            priceAtTime = 500L,
+            updatedAt = 1000L,
+        )
+        val item2 = ShoppingItem(
+            id = "item-2",
+            listId = listId,
+            rawText = "Item 2",
+            quantity = 1.0,
+            priceAtTime = 1000L,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista de Remoção",
+                type = ShoppingListType.ASSISTANT,
+                items = listOf(item1, item2),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.items.size)
+
+        viewModel.onRemoveItem("item-1")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.items.size)
+        assertEquals("item-2", viewModel.uiState.value.items[0].id)
+
+        val updatedRepoList = shoppingListRepository.getShoppingListById(listId).first()
+        val repoItem1 = updatedRepoList?.items?.find { it.id == "item-1" }
+        assertTrue(repoItem1?.isDeleted == true)
+    }
+
+    @Test
+    fun `onRemoveItem should close AddItemDetails subflow if opened for the item`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-subflow-remove"
+        val item1 = ShoppingItem(
+            id = "item-1",
+            listId = listId,
+            rawText = "Item Subflow",
+            quantity = 1.0,
+            priceAtTime = 500L,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Subflow",
+                type = ShoppingListType.ASSISTANT,
+                items = listOf(item1),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        val cartItem = viewModel.uiState.value.items.first()
+        viewModel.onEditItemClicked(cartItem)
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(viewModel.uiState.value.activeSubFlow)
+
+        viewModel.onRemoveItem("item-1")
+        testScheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.activeSubFlow)
+        assertEquals(0, viewModel.uiState.value.items.size)
+    }
+
+    @Test
+    fun `onRemoveItem should not remove item if list is already completed`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-comp-remove"
+        val item1 = ShoppingItem(
+            id = "item-1",
+            listId = listId,
+            rawText = "Item Concluído",
+            quantity = 1.0,
+            priceAtTime = 500L,
+            updatedAt = 1000L,
+        )
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Concluída",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.COMPLETED,
+                items = listOf(item1),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onRemoveItem("item-1")
+        testScheduler.advanceUntilIdle()
+
+        val repoList = shoppingListRepository.getShoppingListById(listId).first()
+        val repoItem1 = repoList?.items?.find { it.id == "item-1" }
+        assertFalse(repoItem1?.isDeleted == true)
+    }
+
+    @Test
+    fun `onOpenAddItemOptions should set activeSubFlow to AddItemOptions`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.onOpenAddItemOptions()
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ShoppingAssistantSubFlow.AddItemOptions>(viewModel.uiState.value.activeSubFlow)
+    }
+
+    @Test
+    fun `onStartAddFromCatalog should set activeSubFlow to SearchCatalogForNewItem`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.onStartAddFromCatalog()
+        testScheduler.advanceUntilIdle()
+
+        assertIs<ShoppingAssistantSubFlow.SearchCatalogForNewItem>(viewModel.uiState.value.activeSubFlow)
+    }
+
+    @Test
+    fun `onProductSelectedForNewItem should set activeSubFlow to AddItemDetails with product`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(id = "p-new", name = "Azeite de Oliva", updatedAt = 1000L)
+        viewModel.onProductSelectedForNewItem(product)
+        testScheduler.advanceUntilIdle()
+
+        val subFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(subFlow)
+        assertEquals("p-new", subFlow.product?.id)
+        assertFalse(subFlow.isReplacement)
+        assertNull(subFlow.existingItemId)
+    }
+
+    @Test
+    fun `onStartAddTextItem should set activeSubFlow to AddItemDetails with rawText and null product`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        viewModel.onStartAddTextItem(initialText = "Tomate Seco")
+        testScheduler.advanceUntilIdle()
+
+        val subFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(subFlow)
+        assertNull(subFlow.product)
+        assertEquals("Tomate Seco", subFlow.rawText)
+        assertFalse(subFlow.isReplacement)
+        assertNull(subFlow.existingItemId)
+    }
+
+    @Test
+    fun `onConfirmItemDetails with free text should add item and update uiState`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-free-text"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Texto Livre",
+                type = ShoppingListType.ASSISTANT,
+                items = emptyList(),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onConfirmItemDetails(
+            product = null,
+            rawText = "Pão de Forma",
+            quantity = 2.0,
+            priceInCents = 850L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.activeSubFlow)
+        assertEquals(1, viewModel.uiState.value.items.size)
+        val addedItem = viewModel.uiState.value.items.first()
+        assertEquals("Pão de Forma", addedItem.displayName)
+        assertEquals(2.0, addedItem.quantity)
+        assertEquals(850L, addedItem.priceAtTime)
+        assertEquals(1700L, addedItem.subtotalInCents)
+    }
+
+    @Test
+    fun `onConfirmItemDetails with catalog product should add item and update uiState`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-catalog-add"
+        val product = CatalogProduct(id = "prod-arroz", name = "Arroz Branco", updatedAt = 1000L)
+        catalogRepository.insertProduct(product, null)
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Catálogo",
+                type = ShoppingListType.ASSISTANT,
+                items = emptyList(),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onConfirmItemDetails(
+            product = product,
+            rawText = null,
+            quantity = 3.0,
+            priceInCents = 2000L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.activeSubFlow)
+        assertEquals(1, viewModel.uiState.value.items.size)
+        val addedItem = viewModel.uiState.value.items.first()
+        assertEquals("Arroz Branco", addedItem.displayName)
+        assertEquals("prod-arroz", addedItem.productId)
+        assertEquals(3.0, addedItem.quantity)
+        assertEquals(2000L, addedItem.priceAtTime)
+        assertEquals(6000L, addedItem.subtotalInCents)
+    }
+
+    @Test
+    fun `adding item options should be disabled when list is completed`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-comp-add"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Concluída",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.COMPLETED,
+                items = emptyList(),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onOpenAddItemOptions()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        viewModel.onStartAddFromCatalog()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        viewModel.onStartAddTextItem()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+    }
 }
+
+

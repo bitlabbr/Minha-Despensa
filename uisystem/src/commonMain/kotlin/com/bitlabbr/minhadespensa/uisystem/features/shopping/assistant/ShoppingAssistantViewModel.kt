@@ -33,8 +33,11 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
 import com.bitlabbr.minhadespensa.core.domain.usecase.FinalizeShoppingSessionUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.RemoveCartItemUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.CartItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantSubFlow
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantUiState
@@ -57,6 +60,8 @@ class ShoppingAssistantViewModel(
     private val addOrUpdateCartItemUseCase: AddOrUpdateCartItemUseCase,
     private val finalizeShoppingSessionUseCase: FinalizeShoppingSessionUseCase,
     private val checkEanStatusUseCase: CheckEanStatusUseCase,
+    private val replaceCartItemUseCase: ReplaceCartItemUseCase,
+    private val removeCartItemUseCase: RemoveCartItemUseCase,
     private val shoppingListRepository: ShoppingListRepository,
     private val catalogRepository: CatalogRepository,
     private val logger: AppLogger,
@@ -115,6 +120,8 @@ class ShoppingAssistantViewModel(
                 isLoading = _currentListId.value != null,
                 errorMessage = control.errorMessage,
                 isDirectShopping = control.isDirectShopping,
+                activeSubFlow = control.subFlow,
+                availableProducts = catalogProducts,
             )
         }
 
@@ -163,7 +170,9 @@ class ShoppingAssistantViewModel(
         ShoppingAssistantUiState(
             listId = currentList.id,
             listTitle = currentList.name,
+            budgetInCents = currentList.budgetInCents,
             items = uiItems,
+            availableProducts = catalogProducts,
             totalCartValueInCents = totalCart,
             checkedCount = checkedCount,
             totalCount = uiItems.size,
@@ -195,7 +204,37 @@ class ShoppingAssistantViewModel(
         }
     }
 
+    fun onOpenAddItemOptions() {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemOptions
+    }
+
+    fun onStartAddFromCatalog() {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.SearchCatalogForNewItem
+    }
+
+    fun onProductSelectedForNewItem(product: CatalogProduct) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+            product = product,
+            initialQuantity = 1.0,
+            isReplacement = false,
+        )
+    }
+
+    fun onStartAddTextItem(initialText: String? = null) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+            product = null,
+            rawText = initialText,
+            initialQuantity = 1.0,
+            isReplacement = false,
+        )
+    }
+
     fun onScanBarcodeClicked() {
+        if (uiState.value.isCompleted) return
         _activeSubFlow.value = ShoppingAssistantSubFlow.BarcodeScanner
     }
 
@@ -204,6 +243,7 @@ class ShoppingAssistantViewModel(
     }
 
     fun onBarcodeScanned(ean: String) {
+        if (uiState.value.isCompleted) return
         val sanitizedEan = ean.filter { it.isDigit() }
         viewModelScope.launch {
             when (val status = checkEanStatusUseCase(sanitizedEan)) {
@@ -222,13 +262,25 @@ class ShoppingAssistantViewModel(
     }
 
     fun onProductCreatedFromCatalog(product: CatalogProduct) {
-        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
-            product = product,
-            initialQuantity = 1.0,
-        )
+        if (uiState.value.isCompleted) return
+        val currentSubFlow = _activeSubFlow.value
+        if (currentSubFlow is ShoppingAssistantSubFlow.CreateProduct && currentSubFlow.replacingItemId != null) {
+            _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+                product = product,
+                existingItemId = currentSubFlow.replacingItemId,
+                initialQuantity = 1.0,
+                isReplacement = true,
+            )
+        } else {
+            _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+                product = product,
+                initialQuantity = 1.0,
+            )
+        }
     }
 
     fun onEditItemClicked(item: CartItemUiModel) {
+        if (uiState.value.isCompleted) return
         viewModelScope.launch {
             val product = item.productId?.let { catalogRepository.getProductById(it).firstOrNull() }
             _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
@@ -237,8 +289,58 @@ class ShoppingAssistantViewModel(
                 existingItemId = item.id,
                 initialQuantity = item.quantity,
                 initialPriceInCents = item.priceAtTime,
+                isReplacement = false,
             )
         }
+    }
+
+    fun onReplaceItemClicked(item: CartItemUiModel) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.ReplaceItemOptions(item)
+    }
+
+    fun onStartReplaceBarcodeScan(item: CartItemUiModel) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.ReplaceItemBarcodeScanner(item)
+    }
+
+    fun onStartReplaceCatalogSearch(item: CartItemUiModel) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.SearchCatalogForReplacement(item)
+    }
+
+    fun onBarcodeScannedForReplacement(item: CartItemUiModel, ean: String) {
+        if (uiState.value.isCompleted) return
+        val sanitizedEan = ean.filter { it.isDigit() }
+        viewModelScope.launch {
+            when (val status = checkEanStatusUseCase(sanitizedEan)) {
+                is EanStatus.Found -> {
+                    _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+                        product = status.product,
+                        existingItemId = item.id,
+                        initialQuantity = item.quantity,
+                        isReplacement = true,
+                    )
+                }
+                is EanStatus.NotFound, is EanStatus.InvalidFormat -> {
+                    _activeSubFlow.value = ShoppingAssistantSubFlow.CreateProduct(
+                        initialEan = sanitizedEan,
+                        replacingItemId = item.id,
+                    )
+                }
+                EanStatus.Empty -> Unit
+            }
+        }
+    }
+
+    fun onReplacementProductSelected(item: CartItemUiModel, product: CatalogProduct) {
+        if (uiState.value.isCompleted) return
+        _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
+            product = product,
+            existingItemId = item.id,
+            initialQuantity = item.quantity,
+            isReplacement = true,
+        )
     }
 
     fun onConfirmItemDetails(
@@ -247,24 +349,58 @@ class ShoppingAssistantViewModel(
         quantity: Double,
         priceInCents: Long?,
         existingItemId: String?,
+        isReplacement: Boolean = false,
     ) {
+        if (uiState.value.isCompleted) return
         val listId = _currentListId.value ?: return
         viewModelScope.launch {
-            addOrUpdateCartItemUseCase(
-                listId = listId,
-                productId = product?.id,
-                rawText = rawText ?: product?.name,
-                quantity = quantity,
-                priceAtTimeInCents = priceInCents,
-                existingItemId = existingItemId,
-            )
+            if (isReplacement && existingItemId != null) {
+                val result = replaceCartItemUseCase(
+                    listId = listId,
+                    itemId = existingItemId,
+                    newProductId = product?.id,
+                    newRawText = rawText ?: product?.name ?: "Item",
+                    quantity = quantity,
+                    priceAtTimeInCents = priceInCents,
+                )
+                result.onFailure { error ->
+                    logger.e(TAG, "Erro ao substituir item: ${error.message}", error)
+                    _errorMessage.value = error.message
+                }
+            } else {
+                addOrUpdateCartItemUseCase(
+                    listId = listId,
+                    productId = product?.id,
+                    rawText = rawText ?: product?.name,
+                    quantity = quantity,
+                    priceAtTimeInCents = priceInCents,
+                    existingItemId = existingItemId,
+                )
+            }
             _activeSubFlow.value = null
         }
     }
 
     fun onToggleItemChecked(itemId: String, isChecked: Boolean) {
+        if (uiState.value.isCompleted) return
         viewModelScope.launch {
             shoppingListRepository.toggleItemCheck(itemId, isChecked)
+        }
+    }
+
+    fun onRemoveItem(itemId: String) {
+        if (uiState.value.isCompleted) return
+        val listId = _currentListId.value ?: return
+        val currentSubFlow = _activeSubFlow.value
+        if (currentSubFlow is ShoppingAssistantSubFlow.AddItemDetails && currentSubFlow.existingItemId == itemId) {
+            _activeSubFlow.value = null
+        }
+        viewModelScope.launch {
+            val result = removeCartItemUseCase(listId, itemId)
+            result.onFailure { error ->
+                logger.e(TAG, "Erro ao remover item do carrinho: ${error.message}", error)
+                _errorMessage.value = error.message
+            }
         }
     }
 
@@ -282,6 +418,28 @@ class ShoppingAssistantViewModel(
                 _errorMessage.value = error.message ?: "Erro ao finalizar compra"
             }
         }
+    }
+
+    fun onUpdateListDetails(newTitle: String, newBudgetInCents: Long?) {
+        if (uiState.value.isCompleted) return
+        val trimmed = newTitle.trim()
+        if (trimmed.isBlank()) return
+        val listId = _currentListId.value ?: return
+        viewModelScope.launch {
+            val currentList = shoppingListRepository.getShoppingListById(listId).firstOrNull() ?: return@launch
+            if (currentList.isDeleted || currentList.status == ShoppingListStatus.COMPLETED) return@launch
+            val updated = currentList.copy(
+                name = trimmed,
+                budgetInCents = newBudgetInCents,
+                updatedAt = getCurrentTime(),
+            )
+            shoppingListRepository.updateShoppingListIfNewer(updated)
+            logger.d(TAG, "Lista atualizada: nome='$trimmed', teto=$newBudgetInCents")
+        }
+    }
+
+    fun onUpdateListTitle(newTitle: String) {
+        onUpdateListDetails(newTitle, uiState.value.budgetInCents)
     }
 
     fun discardSession(onFinished: () -> Unit) {

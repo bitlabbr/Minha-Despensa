@@ -27,6 +27,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import kotlin.math.roundToLong
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,6 +52,12 @@ class QuickListViewModel(
         _uiState.update { it.copy(rawContent = newContent, errorMessage = null) }
     }
 
+    fun onBudgetChange(newBudget: String) {
+        _uiState.update {
+            it.copy(budgetInput = newBudget.filter { c -> c.isDigit() || c == ',' || c == '.' }.take(10))
+        }
+    }
+
     fun saveQuickList(onSuccess: (listId: String) -> Unit) {
         viewModelScope.launch {
             val currentState = _uiState.value
@@ -58,9 +65,15 @@ class QuickListViewModel(
 
             _uiState.update { it.copy(isSaving = true, errorMessage = null) }
 
+            val budgetInCents: Long? = currentState.budgetInput
+                .replace(',', '.')
+                .toDoubleOrNull()
+                ?.let { (it * 100).roundToLong() }
+
             val result = createQuickShoppingListUseCase(
                 rawContent = currentState.rawContent,
                 customTitle = currentState.title.takeIf { it.isNotBlank() },
+                budgetInCents = budgetInCents,
             )
 
             result.onSuccess { createdList ->

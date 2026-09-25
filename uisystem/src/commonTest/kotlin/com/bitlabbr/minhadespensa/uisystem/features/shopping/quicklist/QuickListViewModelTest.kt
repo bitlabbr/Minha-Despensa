@@ -122,4 +122,29 @@ class QuickListViewModelTest {
         assertFalse(called)
         assertFalse(viewModel.uiState.value.isSaving)
     }
+
+    @Test
+    fun `onBudgetChange should filter invalid characters`() {
+        viewModel.onBudgetChange("abc120,50xyz")
+        assertEquals("120,50", viewModel.uiState.value.budgetInput)
+    }
+
+    @Test
+    fun `saveQuickList with budget should persist budgetInCents`() = runTest(testDispatcher) {
+        viewModel.onTitleChange("Churrasco com Teto")
+        viewModel.onContentChange("Picanha 1kg\nCarvão 2un")
+        viewModel.onBudgetChange("250,00")
+
+        var returnedListId: String? = null
+        viewModel.saveQuickList { id ->
+            returnedListId = id
+        }
+
+        testScheduler.advanceUntilIdle()
+
+        assertNotNull(returnedListId)
+        val createdList = shoppingListRepository.getShoppingListById(returnedListId!!).first()
+        assertNotNull(createdList)
+        assertEquals(25000L, createdList.budgetInCents)
+    }
 }

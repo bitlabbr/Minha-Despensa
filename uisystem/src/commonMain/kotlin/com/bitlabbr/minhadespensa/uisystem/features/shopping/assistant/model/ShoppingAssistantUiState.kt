@@ -27,13 +27,28 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 
 sealed interface ShoppingAssistantSubFlow {
     data object BarcodeScanner : ShoppingAssistantSubFlow
-    data class CreateProduct(val initialEan: String? = null) : ShoppingAssistantSubFlow
+    data object AddItemOptions : ShoppingAssistantSubFlow
+    data object SearchCatalogForNewItem : ShoppingAssistantSubFlow
+    data class CreateProduct(
+        val initialEan: String? = null,
+        val replacingItemId: String? = null,
+    ) : ShoppingAssistantSubFlow
     data class AddItemDetails(
         val product: CatalogProduct? = null,
         val rawText: String? = null,
         val existingItemId: String? = null,
         val initialQuantity: Double = 1.0,
         val initialPriceInCents: Long? = null,
+        val isReplacement: Boolean = false,
+    ) : ShoppingAssistantSubFlow
+    data class ReplaceItemOptions(
+        val item: CartItemUiModel,
+    ) : ShoppingAssistantSubFlow
+    data class ReplaceItemBarcodeScanner(
+        val item: CartItemUiModel,
+    ) : ShoppingAssistantSubFlow
+    data class SearchCatalogForReplacement(
+        val item: CartItemUiModel,
     ) : ShoppingAssistantSubFlow
 }
 
@@ -50,7 +65,9 @@ data class CartItemUiModel(
 data class ShoppingAssistantUiState(
     val listId: String = "",
     val listTitle: String = "Compras",
+    val budgetInCents: Long? = null,
     val items: List<CartItemUiModel> = emptyList(),
+    val availableProducts: List<CatalogProduct> = emptyList(),
     val totalCartValueInCents: Long = 0,
     val checkedCount: Int = 0,
     val totalCount: Int = 0,
@@ -61,4 +78,17 @@ data class ShoppingAssistantUiState(
     val isDirectShopping: Boolean = false,
     val hasChanges: Boolean = false,
     val errorMessage: String? = null,
-)
+) {
+    val isOverBudget: Boolean
+        get() = budgetInCents != null && totalCartValueInCents > budgetInCents
+
+    val remainingBudgetInCents: Long?
+        get() = budgetInCents?.let { it - totalCartValueInCents }
+
+    val budgetProgress: Float?
+        get() {
+            val budget = budgetInCents ?: return null
+            if (budget <= 0L) return 1f
+            return (totalCartValueInCents.toFloat() / budget.toFloat()).coerceAtLeast(0f)
+        }
+}
