@@ -157,7 +157,7 @@
     <string name="shopping_lists_header_title_top">Minhas</string>
     <string name="shopping_lists_header_title_bottom">Listas de Compras</string>
     <string name="shopping_lists_header_description">Gerencie suas compras planejadas e anotações rápidas</string>
-    <string name="shopping_lists_direct_shopping_button">Ir ao Supermercado (Compra Direta)</string>
+    <string name="shopping_lists_direct_shopping_button">Compra Direta</string>
     <string name="shopping_lists_new_list_button">Nova Lista</string>
     <string name="shopping_lists_empty_title">Nenhuma lista criada ainda</string>
     <string name="shopping_lists_empty_description">Toque em 'Nova Lista' para anotar itens rapidamente</string>
