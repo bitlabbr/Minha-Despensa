@@ -42,7 +42,12 @@ class CreateQuickShoppingListUseCase(
     suspend operator fun invoke(
         rawContent: String,
         customTitle: String? = null,
+        budgetInCents: Long? = null,
     ): Result<ShoppingList> = runCatching {
+        budgetInCents?.let {
+            require(it >= 0L) { "O teto de gastos não pode ser negativo" }
+        }
+
         val lines = rawContent
             .lines()
             .map { it.trim() }
@@ -74,7 +79,7 @@ class CreateQuickShoppingListUseCase(
             type = ShoppingListType.SCRATCHPAD,
             status = ShoppingListStatus.DRAFT,
             items = items,
-            budgetInCents = null,
+            budgetInCents = budgetInCents,
             updatedAt = now,
             isDeleted = false,
         )

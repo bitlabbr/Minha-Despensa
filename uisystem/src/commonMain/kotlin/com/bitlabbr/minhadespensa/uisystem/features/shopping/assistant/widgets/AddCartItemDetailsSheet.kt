@@ -23,8 +23,12 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -35,7 +39,10 @@ import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -45,12 +52,16 @@ fun AddCartItemDetailsSheet(
     rawText: String?,
     initialQuantity: Double,
     initialPrice: Long?,
+    isReplacement: Boolean = false,
+    onReplaceItem: (() -> Unit)? = null,
+    onRemoveItem: (() -> Unit)? = null,
     onConfirm: (quantity: Double, price: Long?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
+    val colors = getAppColors()
 
     var quantityText by remember(product?.id, rawText, initialQuantity) {
         mutableStateOf(
@@ -73,6 +84,16 @@ fun AddCartItemDetailsSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             item {
+                if (isReplacement) {
+                    Text(
+                        text = stringResource(Res.string.shopping_assistant_replace_confirm_title),
+                        style = typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.primary,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+
                 Text(
                     text = product?.name ?: rawText ?: "Adicionar ao Carrinho",
                     style = typography.bodyLarge,
@@ -98,7 +119,7 @@ fun AddCartItemDetailsSheet(
                         onValueChange = { input ->
                             quantityText = input.filter { it.isDigit() || it == '.' || it == ',' }.take(6)
                         },
-                        label = "Quantidade *",
+                        label = "Quantidade",
                         placeholder = "1",
                         keyboardType = KeyboardType.Decimal,
                         isRequired = true,
@@ -114,6 +135,46 @@ fun AddCartItemDetailsSheet(
                         placeholder = "0,00",
                         keyboardType = KeyboardType.Decimal,
                     )
+                }
+
+                if (onReplaceItem != null) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onReplaceItem,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.SwapHoriz,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(Res.string.shopping_assistant_replace_item_action))
+                    }
+                }
+
+                if (onRemoveItem != null) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = onRemoveItem,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = colors.error,
+                        ),
+                        border = BorderStroke(1.dp, colors.error.copy(alpha = 0.5f)),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.DeleteOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = colors.error,
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(Res.string.shopping_assistant_remove_item_action),
+                            color = colors.error,
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(16.dp))

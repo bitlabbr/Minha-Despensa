@@ -47,6 +47,8 @@ class ShoppingUseCasesTest {
     private val startShoppingSessionUseCase = StartShoppingSessionUseCase(repository)
     private val finalizeShoppingSessionUseCase = FinalizeShoppingSessionUseCase(repository)
     private val addCatalogItemUseCase = AddCatalogItemToShoppingListUseCase(repository)
+    private val replaceCartItemUseCase = ReplaceCartItemUseCase(repository)
+    private val removeCartItemUseCase = RemoveCartItemUseCase(repository)
 
     @Test
     fun `CreateQuickShoppingListUseCase should create scratchpad list with parsed items`() = runTest {
@@ -84,6 +86,23 @@ class ShoppingUseCasesTest {
         val resultBlankTitle = createQuickListUseCase(rawContent = "Arroz\nFeijão", customTitle = "   ")
         assertTrue(resultBlankTitle.isSuccess)
         assertTrue(resultBlankTitle.getOrThrow().name.startsWith("Lista rápida de "))
+    }
+
+    @Test
+    fun `CreateQuickShoppingListUseCase should save budgetInCents and reject negative budget`() = runTest {
+        val result = createQuickListUseCase(
+            rawContent = "Arroz\nFeijão",
+            customTitle = "Feira com Teto",
+            budgetInCents = 15000L,
+        )
+        assertTrue(result.isSuccess)
+        assertEquals(15000L, result.getOrThrow().budgetInCents)
+
+        val negativeResult = createQuickListUseCase(
+            rawContent = "Arroz\nFeijão",
+            budgetInCents = -100L,
+        )
+        assertTrue(negativeResult.isFailure)
     }
 
     @Test
@@ -558,5 +577,290 @@ class ShoppingUseCasesTest {
         assertNotNull(activeItem)
         assertEquals(1.0, activeItem.quantity)
         assertEquals("prod-1", activeItem.productId)
+    }
+
+    @Test
+    fun `ReplaceCartItemUseCase should replace free-text item with catalog product and set price`() = runTest {
+        val initialItem = ShoppingItem(
+            id = "item-text-milk",
+            listId = "list-replace-1",
+            productId = null,
+            rawText = "milk",
+            quantity = 2.0,
+            priceAtTime = null,
+            isChecked = false,
+            updatedAt = 1000L,
+        )
+        val list = ShoppingList(
+            id = "list-replace-1",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(initialItem),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = replaceCartItemUseCase(
+            listId = "list-replace-1",
+            itemId = "item-text-milk",
+            newProductId = "prod-ninho",
+            newRawText = "Leite Ninho 1L",
+            quantity = 3.0,
+            priceAtTimeInCents = 550L,
+        )
+        assertTrue(result.isSuccess)
+
+        val updated = result.getOrThrow()
+        assertEquals("prod-ninho", updated.productId)
+        assertEquals("Leite Ninho 1L", updated.rawText)
+        assertEquals(3.0, updated.quantity)
+        assertEquals(550L, updated.priceAtTime)
+        assertTrue(updated.isChecked)
+
+        val listInRepo = repository.getShoppingListById("list-replace-1").first()
+        val itemInRepo = listInRepo?.items?.find { it.id == "item-text-milk" }
+        assertNotNull(itemInRepo)
+        assertEquals("prod-ninho", itemInRepo.productId)
+        assertEquals("Leite Ninho 1L", itemInRepo.rawText)
+        assertEquals(3.0, itemInRepo.quantity)
+        assertEquals(550L, itemInRepo.priceAtTime)
+    }
+
+    @Test
+    fun `ReplaceCartItemUseCase should substitute catalog product A with catalog product B preserving quantity if null`() = runTest {
+        val initialItem = ShoppingItem(
+            id = "item-prod-a",
+            listId = "list-replace-2",
+            productId = "prod-brand-A",
+            rawText = "Leite A",
+            quantity = 2.0,
+            priceAtTime = 400L,
+            isChecked = true,
+            updatedAt = 1000L,
+        )
+        val list = ShoppingList(
+            id = "list-replace-2",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(initialItem),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = replaceCartItemUseCase(
+            listId = "list-replace-2",
+            itemId = "item-prod-a",
+            newProductId = "prod-brand-B",
+            newRawText = "Leite B",
+            quantity = null, // preserves 2.0
+            priceAtTimeInCents = 480L,
+        )
+        assertTrue(result.isSuccess)
+
+        val updated = result.getOrThrow()
+        assertEquals("prod-brand-B", updated.productId)
+        assertEquals("Leite B", updated.rawText)
+        assertEquals(2.0, updated.quantity)
+        assertEquals(480L, updated.priceAtTime)
+
+        val listInRepo = repository.getShoppingListById("list-replace-2").first()
+        val itemInRepo = listInRepo?.items?.find { it.id == "item-prod-a" }
+        assertNotNull(itemInRepo)
+        assertEquals("prod-brand-B", itemInRepo.productId)
+        assertEquals(2.0, itemInRepo.quantity)
+        assertEquals(480L, itemInRepo.priceAtTime)
+    }
+
+    @Test
+    fun `ReplaceCartItemUseCase should fail when item does not exist or list is deleted`() = runTest {
+        val list = ShoppingList(
+            id = "list-replace-fail",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            isDeleted = false,
+            items = emptyList(),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val resultNonExistent = replaceCartItemUseCase(
+            listId = "list-replace-fail",
+            itemId = "ghost-item",
+            newProductId = "prod-x",
+        )
+        assertTrue(resultNonExistent.isFailure)
+
+        val deletedList = ShoppingList(
+            id = "list-replace-deleted",
+            name = "Lista Excluída",
+            type = ShoppingListType.ASSISTANT,
+            isDeleted = true,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-in-del",
+                    listId = "list-replace-deleted",
+                    rawText = "Item",
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(deletedList)
+
+        val resultOnDeletedList = replaceCartItemUseCase(
+            listId = "list-replace-deleted",
+            itemId = "item-in-del",
+            newProductId = "prod-x",
+        )
+        assertTrue(resultOnDeletedList.isFailure)
+    }
+
+    @Test
+    fun `ReplaceCartItemUseCase should fail when list is already completed`() = runTest {
+        val completedList = ShoppingList(
+            id = "list-replace-completed",
+            name = "Compras Finalizadas",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-comp-1",
+                    listId = "list-replace-completed",
+                    rawText = "Leite",
+                    updatedAt = 1000L,
+                )
+            ),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(completedList)
+
+        val result = replaceCartItemUseCase(
+            listId = "list-replace-completed",
+            itemId = "item-comp-1",
+            newProductId = "prod-new",
+        )
+        assertTrue(result.isFailure)
+        assertEquals("Não é possível substituir itens em uma lista já finalizada", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `RemoveCartItemUseCase should mark item as deleted successfully`() = runTest {
+        val list = ShoppingList(
+            id = "list-remove-1",
+            name = "Lista de Teste",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-rem-1",
+                    listId = "list-remove-1",
+                    rawText = "Sabonete",
+                    updatedAt = 1000L,
+                ),
+                ShoppingItem(
+                    id = "item-rem-2",
+                    listId = "list-remove-1",
+                    rawText = "Shampoo",
+                    updatedAt = 1000L,
+                ),
+            ),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = removeCartItemUseCase(
+            listId = "list-remove-1",
+            itemId = "item-rem-1",
+        )
+        assertTrue(result.isSuccess)
+
+        val updatedList = repository.getShoppingListById("list-remove-1").first()
+        assertNotNull(updatedList)
+        val removedItem = updatedList.items.find { it.id == "item-rem-1" }
+        assertNotNull(removedItem)
+        assertTrue(removedItem.isDeleted)
+
+        val activeItem = updatedList.items.find { it.id == "item-rem-2" }
+        assertNotNull(activeItem)
+        assertEquals(false, activeItem.isDeleted)
+    }
+
+    @Test
+    fun `RemoveCartItemUseCase should fail when list does not exist`() = runTest {
+        val result = removeCartItemUseCase(
+            listId = "non-existent-list",
+            itemId = "item-1",
+        )
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IllegalArgumentException)
+    }
+
+    @Test
+    fun `RemoveCartItemUseCase should fail when list is deleted or item not found`() = runTest {
+        val deletedList = ShoppingList(
+            id = "list-remove-del",
+            name = "Lista Deletada",
+            type = ShoppingListType.ASSISTANT,
+            isDeleted = true,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-in-del-list",
+                    listId = "list-remove-del",
+                    rawText = "Item",
+                    updatedAt = 1000L,
+                ),
+            ),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(deletedList)
+
+        val resultDeletedList = removeCartItemUseCase("list-remove-del", "item-in-del-list")
+        assertTrue(resultDeletedList.isFailure)
+
+        val activeList = ShoppingList(
+            id = "list-remove-item-not-found",
+            name = "Lista Ativa",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-already-del",
+                    listId = "list-remove-item-not-found",
+                    rawText = "Item Já Deletado",
+                    isDeleted = true,
+                    updatedAt = 1000L,
+                ),
+            ),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(activeList)
+
+        val resultAlreadyDeleted = removeCartItemUseCase("list-remove-item-not-found", "item-already-del")
+        assertTrue(resultAlreadyDeleted.isFailure)
+
+        val resultNotFound = removeCartItemUseCase("list-remove-item-not-found", "ghost-item")
+        assertTrue(resultNotFound.isFailure)
+    }
+
+    @Test
+    fun `RemoveCartItemUseCase should fail when list is already completed`() = runTest {
+        val completedList = ShoppingList(
+            id = "list-remove-comp",
+            name = "Lista Concluída",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            items = listOf(
+                ShoppingItem(
+                    id = "item-in-comp",
+                    listId = "list-remove-comp",
+                    rawText = "Item Finalizado",
+                    updatedAt = 1000L,
+                ),
+            ),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(completedList)
+
+        val result = removeCartItemUseCase("list-remove-comp", "item-in-comp")
+        assertTrue(result.isFailure)
+        assertEquals("Não é possível remover itens de uma lista já finalizada", result.exceptionOrNull()?.message)
     }
 }

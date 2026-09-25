@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist
 data class QuickListUiState(
     val title: String = "",
     val rawContent: String = "",
+    val budgetInput: String = "",
     val isSaving: Boolean = false,
     val isSuccess: Boolean = false,
     val errorMessage: String? = null,

@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
@@ -107,6 +108,14 @@ fun QuickListScreen(
                         onValueChange = viewModel::onTitleChange,
                         label = stringResource(Res.string.quick_list_name_label),
                         placeholder = stringResource(Res.string.quick_list_name_placeholder),
+                    )
+
+                    ProductTextField(
+                        value = uiState.budgetInput,
+                        onValueChange = viewModel::onBudgetChange,
+                        label = stringResource(Res.string.planned_list_budget_label),
+                        placeholder = stringResource(Res.string.planned_list_budget_placeholder),
+                        keyboardType = KeyboardType.Decimal,
                     )
 
                     ProductTextField(

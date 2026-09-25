@@ -152,7 +152,7 @@ fun AddPantryItemDetailsSheet(
                                 onValueChange = { input ->
                                     quantityText = input.filter { it.isDigit() || it == '.' || it == ',' }.take(6)
                                 },
-                                label = "Quantidade *",
+                                label = "Quantidade",
                                 placeholder = "1",
                                 keyboardType = KeyboardType.Decimal,
                                 isRequired = true,

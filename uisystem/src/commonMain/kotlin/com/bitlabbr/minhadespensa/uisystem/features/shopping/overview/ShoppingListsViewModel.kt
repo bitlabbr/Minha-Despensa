@@ -29,11 +29,13 @@ import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.model.ShoppingListSummaryUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.model.ShoppingListsUiState
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -70,6 +72,22 @@ class ShoppingListsViewModel(
     fun deleteList(listId: String) {
         viewModelScope.launch {
             shoppingListRepository.deleteShoppingListById(listId)
+        }
+    }
+
+    fun updateListDetails(listId: String, newName: String, newBudgetInCents: Long?) {
+        val trimmed = newName.trim()
+        if (trimmed.isBlank()) return
+        viewModelScope.launch {
+            val currentList = shoppingListRepository.getShoppingListById(listId).firstOrNull() ?: return@launch
+            if (currentList.isDeleted) return@launch
+            val updated = currentList.copy(
+                name = trimmed,
+                budgetInCents = newBudgetInCents,
+                updatedAt = getCurrentTime(),
+            )
+            shoppingListRepository.updateShoppingListIfNewer(updated)
+            logger.d(TAG, "Lista atualizada no overview: $listId, nome='$trimmed', teto=$newBudgetInCents")
         }
     }
 
