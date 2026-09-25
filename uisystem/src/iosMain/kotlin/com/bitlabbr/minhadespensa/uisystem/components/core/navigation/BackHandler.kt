@@ -21,7 +21,11 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant
+package com.bitlabbr.minhadespensa.uisystem.components.core.navigation
 
-class qaa {
+import androidx.compose.runtime.Composable
+
+@Composable
+actual fun BackHandler(enabled: Boolean, onBack: () -> Unit) {
+    // No-op on iOS
 }

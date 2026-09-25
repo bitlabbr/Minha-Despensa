@@ -27,10 +27,10 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.List
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Kitchen
+import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,22 +49,23 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainer
 import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.GlobalNotificationHost
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
+import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
+import com.bitlabbr.minhadespensa.uisystem.features.settings.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.ShoppingAssistantScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.planned.CreatePlannedListScreen
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist.QuickListScreen
 import com.bitlabbr.minhadespensa.uisystem.navigation.*
-import com.bitlabbr.minhadespensa.uisystem.screens.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.screens.SettingsScreen
 import com.bitlabbr.minhadespensa.uisystem.theme.AppBackground
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 
 private val bottomNavItems = listOf(
-    BottomNavItem("Início", Icons.Default.Home, HomeScreenRoute),
-    BottomNavItem("Despensa", Icons.AutoMirrored.Rounded.List, PantryScreenRoute),
+    BottomNavItem("Início", Icons.Rounded.Home, HomeScreenRoute),
+    BottomNavItem("Despensa", Icons.Rounded.Kitchen, PantryScreenRoute),
     //BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute),
-    BottomNavItem("Catálogo", Icons.Default.ShoppingCart, ProductCatalogRoute),
-    BottomNavItem("Listas", Icons.Default.List, ShoppingListsRoute),
+    BottomNavItem("Catálogo", Icons.Rounded.Category, ProductCatalogRoute),
+    BottomNavItem("Listas", Icons.Rounded.ShoppingCart, ShoppingListsRoute),
 )
 
 @Composable
@@ -171,6 +172,7 @@ fun App() {
                         ShoppingListsScreen(
                             bottomPadding = innerPadding.calculateBottomPadding(),
                             onNavigateToQuickList = {
+                                navController.navigate(QuickListRoute)
                             },
                             onNavigateToPlannedList = {
                                 navController.navigate(CreatePlannedListRoute)
@@ -178,7 +180,7 @@ fun App() {
                             onNavigateToAssistant = { listId ->
                                 navController.navigate(ShoppingAssistantRoute(listId = listId))
                             },
-                            onNavigateToListDetails = { listId ->}
+                            onNavigateToListDetails = { listId -> }
                         )
                     }
 
@@ -192,6 +194,15 @@ fun App() {
 
                     composable<CreatePlannedListRoute> {
                         CreatePlannedListScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onListSaved = { listId ->
+                                navController.popBackStack()
+                            },
+                        )
+                    }
+
+                    composable<QuickListRoute> {
+                        QuickListScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onListSaved = { listId ->
                                 navController.popBackStack()

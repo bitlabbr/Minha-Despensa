@@ -56,17 +56,18 @@ class AddOrUpdateCartItemUseCase(
 
         val now = getCurrentTime()
         
-        val itemToUpdate = existingItemId?.let { id ->
-            currentList.items.find { it.id == id && !it.isDeleted }
-        } ?: productId?.let { prodId ->
-            currentList.items.find { it.productId == prodId && !it.isDeleted }
+        val itemToUpdate = if (existingItemId != null) {
+            currentList.items.find { it.id == existingItemId && !it.isDeleted }
+                ?: throw IllegalArgumentException("Item não encontrado no carrinho: $existingItemId")
+        } else {
+            null
         }
 
         if (itemToUpdate != null) {
             val updated = itemToUpdate.copy(
                 productId = productId ?: itemToUpdate.productId,
                 rawText = rawText ?: itemToUpdate.rawText,
-                quantity = if (existingItemId != null) quantity else (itemToUpdate.quantity + quantity),
+                quantity = quantity,
                 priceAtTime = priceAtTimeInCents ?: itemToUpdate.priceAtTime,
                 isChecked = true,
                 updatedAt = now,

@@ -25,8 +25,10 @@ package com.bitlabbr.minhadespensa.uisystem.features.shopping.overview
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.ShoppingCart
@@ -39,11 +41,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListType
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
@@ -51,6 +57,8 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaT
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.model.ShoppingListSummaryUiModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,37 +79,31 @@ fun ShoppingListsScreen(
 
     MainScreenScaffold(
         bottomPadding = bottomPadding,
-        topBar = {MinhaDespensaTopBar()},
+        topBar = { MinhaDespensaTopBar() },
     ) {
         PrimaryContainerHeader(
-            textTop = "Minhas",
-            textBottom = "Listas de Compras",
-            description = "Gerencie suas compras planejadas e anotações rápidas",
+            textTop = stringResource(Res.string.shopping_lists_header_title_top),
+            textBottom = stringResource(Res.string.shopping_lists_header_title_bottom),
+            description = stringResource(Res.string.shopping_lists_header_description),
         )
 
-        Button(
+        MinhaDespensaPrimaryButton(
+            text = stringResource(Res.string.shopping_lists_direct_shopping_button),
             onClick = { onNavigateToAssistant(null) },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = dimens.paddingSmall),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-        ) {
-            Icon(Icons.Rounded.ShoppingCart, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Ir ao Supermercado (Compra Direta)")
-        }
+            leadingIcon = Icons.Rounded.ShoppingCart,
+        )
 
-        Button(
+        MinhaDespensaSecondaryButton(
+            text = stringResource(Res.string.shopping_lists_new_list_button),
             onClick = { showCreateListOptions = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = dimens.paddingSmall),
-            colors = ButtonDefaults.buttonColors(containerColor = colors.primary),
-        ) {
-            Icon(Icons.Rounded.ShoppingCart, contentDescription = null)
-            Spacer(Modifier.width(8.dp))
-            Text("Nova Lista")
-        }
+            leadingIcon = Icons.Rounded.Add,
+        )
 
         when {
             uiState.isLoading -> {
@@ -116,11 +118,10 @@ fun ShoppingListsScreen(
             }
 
             uiState.activeLists.isEmpty() && uiState.completedLists.isEmpty() -> {
-                Card(
+                ItemContainerGlassCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = dimens.paddingMedium),
-                    colors = CardDefaults.cardColors(containerColor = colors.surface.copy(alpha = 0.5f)),
+                        .padding(horizontal = dimens.paddingSmall, vertical = dimens.paddingMedium),
                 ) {
                     Column(
                         modifier = Modifier
@@ -136,12 +137,12 @@ fun ShoppingListsScreen(
                             tint = colors.primary.copy(alpha = 0.7f),
                         )
                         MinhaDespensaText(
-                            text = "Nenhuma lista criada ainda",
-                            fontStyle = typography.bodySmall,
+                            text = stringResource(Res.string.shopping_lists_empty_title),
+                            fontStyle = typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                         )
                         MinhaDespensaText(
-                            text = "Toque em 'Nova Lista' para anotar itens rapidamente",
+                            text = stringResource(Res.string.shopping_lists_empty_description),
                             fontStyle = typography.bodySmall,
                             color = colors.onSurface.copy(alpha = 0.6f),
                         )
@@ -151,53 +152,83 @@ fun ShoppingListsScreen(
 
             else -> {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = dimens.paddingSmall),
+                    verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                 ) {
-                    uiState.activeLists.forEach { item ->
-                        ShoppingListCard(
-                            list = item,
-                            onClick = { onNavigateToAssistant(item.id) },
-                            onDelete = { viewModel.deleteList(item.id) },
+                    if (uiState.activeLists.isNotEmpty()) {
+                        uiState.activeLists.forEach { item ->
+                            ShoppingListCard(
+                                list = item,
+                                onClick = { onNavigateToAssistant(item.id) },
+                                onDelete = { viewModel.deleteList(item.id) },
+                            )
+                        }
+                    }
+
+                    if (uiState.completedLists.isNotEmpty()) {
+                        if (uiState.activeLists.isNotEmpty()) {
+                            Spacer(Modifier.height(dimens.paddingSmall))
+                        }
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.shopping_lists_completed_section_title),
+                            fontStyle = typography.displayMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.onSurface.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(
+                                horizontal = dimens.paddingSmall,
+                                vertical = 4.dp,
+                            ),
                         )
+
+                        uiState.completedLists.forEach { item ->
+                            ShoppingListCard(
+                                list = item,
+                                onClick = { onNavigateToAssistant(item.id) },
+                                onDelete = { viewModel.deleteList(item.id) },
+                            )
+                        }
                     }
                 }
             }
         }
+
         if (showCreateListOptions) {
             ModalBottomSheet(onDismissRequest = { showCreateListOptions = false }) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(dimens.paddingMedium),
+                    verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                 ) {
-                    Text("Qual tipo de lista deseja criar?", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    MinhaDespensaText(
+                        text = stringResource(Res.string.shopping_lists_dialog_title),
+                        fontStyle = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface,
+                    )
 
-                    OutlinedButton(
+                    MinhaDespensaSecondaryButton(
+                        text = stringResource(Res.string.shopping_lists_dialog_quick_option),
                         onClick = {
                             showCreateListOptions = false
                             onNavigateToQuickList()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Rounded.EditNote, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Bloco de Notas (Texto Rápido)")
-                    }
+                        leadingIcon = Icons.Rounded.EditNote,
+                    )
 
-                    Button(
+                    MinhaDespensaPrimaryButton(
+                        text = stringResource(Res.string.shopping_lists_dialog_planned_option),
                         onClick = {
                             showCreateListOptions = false
                             onNavigateToPlannedList()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Icon(Icons.Rounded.ShoppingCart, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Lista Planejada (Do Catálogo)")
-                    }
+                        leadingIcon = Icons.Rounded.ShoppingCart,
+                    )
                 }
             }
         }
@@ -212,19 +243,19 @@ private fun ShoppingListCard(
 ) {
     val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
+    val isCompleted = list.status == ShoppingListStatus.COMPLETED
 
-    Card(
+    ItemContainerGlassCard(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(dimens.cardCorner * 0.6f))
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(
-            containerColor = colors.surface.copy(alpha = 0.7f),
-        ),
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(dimens.paddingMedium),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -234,7 +265,13 @@ private fun ShoppingListCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
-                        imageVector = if (list.type == ShoppingListType.SCRATCHPAD) Icons.Rounded.EditNote else Icons.Rounded.ShoppingCart,
+                        imageVector = if (isCompleted) {
+                            Icons.Rounded.CheckCircle
+                        } else if (list.type == ShoppingListType.SCRATCHPAD) {
+                            Icons.Rounded.EditNote
+                        } else {
+                            Icons.Rounded.ShoppingCart
+                        },
                         contentDescription = null,
                         tint = colors.primary,
                         modifier = Modifier.size(20.dp),
@@ -244,12 +281,31 @@ private fun ShoppingListCard(
                         fontStyle = typography.bodySmall,
                         fontWeight = FontWeight.Bold,
                     )
+                    if (isCompleted) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = colors.primary.copy(alpha = 0.12f),
+                            modifier = Modifier.padding(start = 4.dp),
+                        ) {
+                            MinhaDespensaText(
+                                text = stringResource(Res.string.shopping_lists_status_completed),
+                                fontStyle = typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.primary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(4.dp))
 
                 MinhaDespensaText(
-                    text = "${list.totalItems} itens • Criada em ${list.formattedDate}",
+                    text = stringResource(
+                        Res.string.shopping_lists_items_count,
+                        list.totalItems,
+                        list.formattedDate,
+                    ),
                     fontStyle = typography.bodySmall,
                     color = colors.onSurface.copy(alpha = 0.6f),
                 )
@@ -258,7 +314,7 @@ private fun ShoppingListCard(
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Rounded.DeleteOutline,
-                    contentDescription = "Excluir Lista",
+                    contentDescription = stringResource(Res.string.shopping_lists_delete_content_description),
                     tint = colors.error.copy(alpha = 0.8f),
                 )
             }

@@ -93,6 +93,35 @@ class CatalogAndPantryUseCasesTest {
     }
 
     @Test
+    fun `CheckEanStatusUseCase should match 12-digit UPC-A and 13-digit EAN variations`() = runTest {
+        val upcAProduct = CatalogProduct(
+            id = "prod-upca",
+            name = "Azeite Importado",
+            ean = "012345678905", // 12 digits
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(upcAProduct, null)
+
+        // Searching with 13-digit prefixed zero should find the 12-digit product
+        val foundFrom13 = checkEanStatusUseCase("0012345678905")
+        assertIs<EanStatus.Found>(foundFrom13)
+        assertEquals("Azeite Importado", foundFrom13.product.name)
+
+        val ean13Product = CatalogProduct(
+            id = "prod-ean13",
+            name = "Molho Especial",
+            ean = "0789123456789", // 13 digits with leading zero
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(ean13Product, null)
+
+        // Searching with 12-digit without leading zero should find the 13-digit product
+        val foundFrom12 = checkEanStatusUseCase("789123456789")
+        assertIs<EanStatus.Found>(foundFrom12)
+        assertEquals("Molho Especial", foundFrom12.product.name)
+    }
+
+    @Test
     fun `SaveCatalogProductUseCase should sanitize and persist product with default category`() = runTest {
         val result = saveCatalogProductUseCase(
             name = "  Arroz Branco Tipo 1  ",

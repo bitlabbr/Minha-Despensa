@@ -25,11 +25,12 @@ package com.bitlabbr.minhadespensa.uisystem.util
 
 import kotlin.math.abs
 
-fun Long.formatPrice(): String {
+fun Long.formatPrice(includeCurrencySymbol: Boolean = false): String {
     val isNegative = this < 0
-    val totalCents = (abs(this) * 100)
-    val reais = totalCents / 100
-    val centavos = (totalCents % 100).toString().padStart(2, '0')
+    val absCents = abs(this)
+    val reais = absCents / 100
+    val centavos = (absCents % 100).toString().padStart(2, '0')
     val sign = if (isNegative) "-" else ""
-    return "$sign$reais,$centavos"
+    val formatted = "$sign$reais,$centavos"
+    return if (includeCurrencySymbol) "R$ $formatted" else formatted
 }

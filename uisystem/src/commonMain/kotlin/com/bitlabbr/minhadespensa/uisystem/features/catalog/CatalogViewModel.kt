@@ -27,11 +27,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
-import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.*
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.checkEanValidity
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.validateFormFields
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import kotlinx.coroutines.Job
@@ -40,13 +43,13 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import minhadespensa.uisystem.generated.resources.*
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 class CatalogViewModel(
     private val catalogRepository: CatalogRepository,
+    private val saveProductUseCase: SaveCatalogProductUseCase,
     private val logger: AppLogger,
-    private val notificationManager: AppNotificationManager
+    private val notificationManager: AppNotificationManager,
+    private val checkEanStatusUseCase: CheckEanStatusUseCase = CheckEanStatusUseCase(catalogRepository),
 ) : ViewModel() {
 
     private val TAG = "CatalogViewModel"
@@ -146,28 +149,7 @@ class CatalogViewModel(
     fun onFormChange(updatedForm: ProductFormState) {
         val current = _formState.value
         val isEanChanged = updatedForm.ean != current.ean
-        val preservedEanError = if (isEanChanged) null else current.eanError
-        val preservedIsChecking = if (isEanChanged) false else current.isCheckingEan
-        val validatedState = updatedForm.copy(
-            nameError = when {
-                updatedForm.name.isBlank() && current.name.isNotEmpty() ->
-                    UiText.Resource(Res.string.error_name_required)
-
-                updatedForm.name.length > CoreConstants.Product.NAME_MAX_LENGTH ->
-                    UiText.Resource(Res.string.error_name_max_length, listOf(CoreConstants.Product.NAME_MAX_LENGTH))
-
-                else -> null
-            },
-            netWeightError = when {
-                updatedForm.netWeight.isNotBlank() &&
-                        updatedForm.netWeight.replace(',', '.').toDoubleOrNull() == null ->
-                    UiText.Resource(Res.string.error_invalid_number)
-
-                else -> null
-            },
-            eanError = preservedEanError,
-            isCheckingEan = preservedIsChecking,
-        )
+        val validatedState = validateFormFields(current, updatedForm)
 
         _formState.value = validatedState
 
@@ -179,12 +161,13 @@ class CatalogViewModel(
     private fun validateEanDebounced(ean: String) {
         eanValidationJob?.cancel()
 
-        if (ean.isBlank()) {
+        val trimmed = ean.trim()
+        if (trimmed.isBlank()) {
             _formState.update { it.copy(eanError = null, isCheckingEan = false) }
             return
         }
 
-        if (ean.length !in CoreConstants.Product.EAN_VALID_LENGTHS) {
+        if (trimmed.length !in CoreConstants.Product.EAN_VALID_LENGTHS) {
             _formState.update {
                 it.copy(
                     eanError = UiText.Resource(Res.string.error_ean_invalid_length),
@@ -198,23 +181,15 @@ class CatalogViewModel(
             _formState.update { it.copy(isCheckingEan = true, eanError = null) }
             delay(350.milliseconds)
 
-            logger.d(TAG, "Checking EAN uniqueness for: $ean")
-            val existingProduct = catalogRepository.getProductByEan(ean).firstOrNull()
+            logger.d(TAG, "Checking EAN uniqueness for: $trimmed")
+            val error = checkEanValidity(trimmed, checkEanStatusUseCase)
 
             _formState.update { state ->
-                if (state.ean.trim() == ean) {
-                    if (existingProduct != null && !existingProduct.isDeleted) {
-                        logger.d(TAG, "Duplicate EAN found: ${existingProduct.name}")
-                        state.copy(
-                            eanError = UiText.Resource(
-                                Res.string.error_ean_already_exists,
-                                listOf(existingProduct.name)
-                            ),
-                            isCheckingEan = false,
-                        )
-                    } else {
-                        state.copy(eanError = null, isCheckingEan = false)
-                    }
+                if (state.ean.trim() == trimmed) {
+                    state.copy(
+                        eanError = error,
+                        isCheckingEan = false,
+                    )
                 } else {
                     state
                 }
@@ -222,7 +197,6 @@ class CatalogViewModel(
         }
     }
 
-    @OptIn(ExperimentalUuidApi::class)
     fun saveProduct() {
         viewModelScope.launch {
             val currentForm = _formState.value
@@ -232,32 +206,27 @@ class CatalogViewModel(
             }
 
             _formState.update { it.copy(isSaving = true) }
-            try {
-                val netWeight = currentForm.netWeight.replace(',', '.').toDoubleOrNull() ?: 1.0
-                val unit = currentForm.measureUnit
-                val category = currentForm.category.ifBlank { CoreConstants.Product.DEFAULT_CATEGORY }
+            val netWeight = currentForm.netWeight.replace(',', '.').toDoubleOrNull() ?: 1.0
+            val result = saveProductUseCase(
+                name = currentForm.name,
+                brand = currentForm.brand.takeIf { it.isNotBlank() },
+                category = currentForm.category,
+                measureUnit = currentForm.measureUnit,
+                netWeight = netWeight,
+                ean = currentForm.ean.takeIf { it.isNotBlank() },
+                imageBytes = currentForm.imageBytes,
+            )
 
-                val newProduct = CatalogProduct(
-                    id = Uuid.random().toString(),
-                    name = currentForm.name.trim(),
-                    brand = currentForm.brand.trim().takeIf { it.isNotBlank() },
-                    category = category,
-                    measureUnit = unit,
-                    netWeight = netWeight,
-                    updatedAt = getCurrentTime(),
-                    isDeleted = false,
-                    manuallyAdded = true,
-                    ean = currentForm.ean.trim().takeIf { it.isNotBlank() },
-                )
-
-                catalogRepository.insertProduct(newProduct, currentForm.imageBytes)
-                _selectedCategory.value = currentForm.category
+            result.onSuccess { createdProduct ->
+                logger.d(TAG, "Product saved successfully: ${createdProduct.name}")
+                _selectedCategory.value = createdProduct.category
                 _searchQuery.value = ""
-
                 closeAddProductSheet()
-            } catch (e: Exception) {
-                logger.e(TAG, "Error while saving product: ${e.message}", e)
-                _formState.update { it.copy(isSaving = false) }
+                notificationManager.showSuccess(UiText.Resource(Res.string.catalog_product_saved_success))
+            }.onFailure { error ->
+                logger.e(TAG, "Error while saving product: ${error.message}", error)
+                _formState.update { it.copy(isSaving = false, errorMessage = error.message) }
+                notificationManager.showError(UiText.DynamicString("Erro ao salvar produto: ${error.message}"))
             }
         }
     }

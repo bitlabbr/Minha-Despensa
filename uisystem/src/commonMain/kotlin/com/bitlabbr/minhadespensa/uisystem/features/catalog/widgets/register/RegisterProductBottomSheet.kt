@@ -27,15 +27,43 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.register_bottom_sheet_invalid_quantity
-import minhadespensa.uisystem.generated.resources.register_bottom_sheet_name_is_required
+import minhadespensa.uisystem.generated.resources.*
 import org.koin.compose.koinInject
+import kotlin.time.Duration.Companion.milliseconds
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RegisterProductBottomSheet(
+    isOpen: Boolean,
+    formState: ProductFormState,
+    onFormChange: (ProductFormState) -> Unit,
+    onSave: () -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (!isOpen) return
+
+    MinhaDespensaBottomSheet(
+        onDismissRequest = onDismiss,
+        modifier = modifier,
+    ) {
+        RegisterProductFormContent(
+            state = formState,
+            onStateChange = onFormChange,
+            onSaveClick = onSave,
+            onCancelClick = onDismiss,
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,6 +75,7 @@ fun RegisterProductBottomSheet(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     saveProductUseCase: SaveCatalogProductUseCase = koinInject(),
+    checkEanStatusUseCase: CheckEanStatusUseCase = koinInject(),
 ) {
     if (!isOpen) return
 
@@ -59,29 +88,94 @@ fun RegisterProductBottomSheet(
             )
         )
     }
+    var eanValidationJob by remember { mutableStateOf<Job?>(null) }
+
+    fun validateEanDebounced(ean: String) {
+        eanValidationJob?.cancel()
+        val trimmed = ean.trim()
+        if (trimmed.isBlank()) {
+            formState = formState.copy(eanError = null, isCheckingEan = false)
+            return
+        }
+
+        if (trimmed.length !in CoreConstants.Product.EAN_VALID_LENGTHS) {
+            formState = formState.copy(
+                eanError = UiText.Resource(Res.string.error_ean_invalid_length),
+                isCheckingEan = false,
+            )
+            return
+        }
+
+        formState = formState.copy(isCheckingEan = true, eanError = null)
+        eanValidationJob = coroutineScope.launch {
+            delay(350.milliseconds)
+            val error = checkEanValidity(trimmed, checkEanStatusUseCase)
+            if (formState.ean.trim() == trimmed) {
+                formState = formState.copy(
+                    eanError = error,
+                    isCheckingEan = false,
+                )
+            }
+        }
+    }
+
+    LaunchedEffect(isOpen, prefilledEan) {
+        if (isOpen && !prefilledEan.isNullOrBlank()) {
+            validateEanDebounced(prefilledEan)
+        }
+    }
+
+    val handleFormChange: (ProductFormState) -> Unit = { updatedForm ->
+        val current = formState
+        val isEanChanged = updatedForm.ean != current.ean
+        val validatedState = validateFormFields(current, updatedForm)
+        formState = validatedState
+
+        if (isEanChanged) {
+            validateEanDebounced(updatedForm.ean)
+        }
+    }
+
+    val handleDismiss: () -> Unit = {
+        eanValidationJob?.cancel()
+        onDismiss()
+    }
 
     MinhaDespensaBottomSheet(
-        onDismissRequest = onDismiss,
+        onDismissRequest = handleDismiss,
         modifier = modifier,
     ) {
         RegisterProductFormContent(
             state = formState,
-            onStateChange = { formState = it },
-            onCancelClick = onDismiss,
+            onStateChange = handleFormChange,
+            onCancelClick = handleDismiss,
             onSaveClick = {
                 val weight = formState.netWeight.replace(',', '.').toDoubleOrNull()
                 if (formState.name.isBlank()) {
-                    formState =
-                        formState.copy(nameError = UiText.Resource(Res.string.register_bottom_sheet_name_is_required))
+                    formState = formState.copy(nameError = UiText.Resource(Res.string.error_name_required))
                     return@RegisterProductFormContent
                 }
                 if (weight == null || weight <= 0.0) {
-                    formState =
-                        formState.copy(netWeightError = UiText.Resource(Res.string.register_bottom_sheet_invalid_quantity))
+                    formState = formState.copy(netWeightError = UiText.Resource(Res.string.error_invalid_number))
+                    return@RegisterProductFormContent
+                }
+                if (formState.eanError != null || formState.isCheckingEan) {
                     return@RegisterProductFormContent
                 }
 
                 coroutineScope.launch {
+                    val candidateEan = formState.ean.filter { it.isDigit() }.takeIf { it.isNotBlank() }
+                    if (candidateEan != null) {
+                        when (val status = checkEanStatusUseCase(candidateEan)) {
+                            is EanStatus.Found -> {
+                                formState = formState.copy(isSaving = false)
+                                onProductCreated(status.product)
+                                return@launch
+                            }
+                            else -> Unit
+                        }
+                    }
+
                     formState = formState.copy(isSaving = true)
                     val result = saveProductUseCase(
                         name = formState.name,

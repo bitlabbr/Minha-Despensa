@@ -24,7 +24,7 @@
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
 import androidx.compose.runtime.Immutable
-import com.bitlabbr.minhadespensa.uisystem.model.ConsumptionTrendItemCard
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel
 
 sealed class HomeWidget {
     data class FinancialSummary(
@@ -41,7 +41,7 @@ sealed class HomeWidget {
 
     @Immutable
     data class ConsumptionTrend(
-        val items: List<ConsumptionTrendItemCard>
+        val items: List<ConsumptionTrendItemUiModel>
     ) : HomeWidget()
 
 }

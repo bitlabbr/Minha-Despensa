@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.shopping.planned
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
@@ -37,12 +38,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreatePlannedListScreen(
     onNavigateBack: () -> Unit,
@@ -50,51 +62,70 @@ fun CreatePlannedListScreen(
     viewModel: PlannedListViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val colors = getAppColors()
+    val typography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
 
     Scaffold(
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                title = { Text("Nova Lista Planejada") },
-                navigationIcon = {
+            MinhaDespensaTopBar(
+                backgroundColor = Color.Transparent,
+                leftContent = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(Res.string.register_product_form_back_button_desc),
+                            tint = colors.onPrimaryContainer,
+                        )
                     }
+                },
+                centerContent = {
+                    MinhaDespensaText(
+                        text = stringResource(Res.string.planned_list_title),
+                        fontStyle = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onPrimaryContainer,
+                    )
                 },
             )
         },
         bottomBar = {
-            Surface(
-                tonalElevation = 8.dp,
-                shadowElevation = 8.dp,
-                modifier = Modifier.fillMaxWidth().navigationBarsPadding(),
+            SecondaryContainerGlassCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = dimens.paddingSmall, vertical = dimens.paddingSmall),
             ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(dimens.paddingSmall),
+                    verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                 ) {
                     uiState.errorMessage?.let { error ->
-                        Text(
+                        MinhaDespensaText(
                             text = error,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
+                            color = colors.error,
+                            fontStyle = typography.bodySmall,
                         )
                     }
 
-                    Button(
+                    val count = uiState.selectedQuantities.size
+                    val saveButtonText = if (count > 0) {
+                        stringResource(Res.string.planned_list_save_button, count)
+                    } else {
+                        stringResource(Res.string.planned_list_select_products)
+                    }
+
+                    MinhaDespensaPrimaryButton(
+                        text = saveButtonText,
                         onClick = { viewModel.savePlannedList(onListSaved) },
                         enabled = uiState.canSave,
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                    ) {
-                        if (uiState.isSaving) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(24.dp),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        } else {
-                            val count = uiState.selectedQuantities.size
-                            Text(if (count > 0) "Salvar Lista ($count itens)" else "Selecione produtos")
-                        }
-                    }
+                        isLoading = uiState.isSaving,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         },
@@ -103,60 +134,62 @@ fun CreatePlannedListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            contentPadding = PaddingValues(vertical = 16.dp),
+                .padding(horizontal = dimens.paddingSmall),
+            verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+            contentPadding = PaddingValues(vertical = dimens.paddingSmall),
         ) {
             item {
-                OutlinedTextField(
+                ProductTextField(
                     value = uiState.title,
                     onValueChange = viewModel::onTitleChange,
-                    label = { Text("Nome da Lista *") },
-                    placeholder = { Text("Ex: Feira do Mês") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
+                    label = stringResource(Res.string.planned_list_name_label),
+                    placeholder = stringResource(Res.string.planned_list_name_placeholder),
+                    isRequired = true,
                 )
             }
 
             item {
-                OutlinedTextField(
+                ProductTextField(
                     value = uiState.budgetInput,
                     onValueChange = viewModel::onBudgetChange,
-                    label = { Text("Teto de Gastos (Opcional)") },
-                    placeholder = { Text("R$ 250,00") },
-                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
+                    label = stringResource(Res.string.planned_list_budget_label),
+                    placeholder = stringResource(Res.string.planned_list_budget_placeholder),
+                    keyboardType = KeyboardType.Decimal,
                 )
             }
 
             item {
-                Spacer(Modifier.height(4.dp))
-                OutlinedTextField(
+                ProductTextField(
                     value = uiState.searchQuery,
                     onValueChange = viewModel::onSearchQueryChange,
-                    label = { Text("Buscar no Catálogo") },
-                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
+                    label = stringResource(Res.string.planned_list_search_catalog),
+                    placeholder = stringResource(Res.string.catalog_searchbar_widget_placeholder),
+                    leadingContent = {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = null,
+                            tint = colors.onSecondaryContainer.copy(alpha = 0.6f),
+                        )
+                    },
                 )
             }
 
             item {
-                Text(
-                    text = "Produtos do Catálogo",
-                    style = MaterialTheme.typography.titleMedium,
+                MinhaDespensaText(
+                    text = stringResource(Res.string.planned_list_catalog_products),
+                    fontStyle = typography.bodyLarge,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(top = 8.dp),
+                    color = colors.onBackground,
+                    modifier = Modifier.padding(top = 4.dp),
                 )
             }
 
             if (uiState.availableProducts.isEmpty()) {
                 item {
-                    Text(
-                        text = "Nenhum produto encontrado no catálogo.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    MinhaDespensaText(
+                        text = stringResource(Res.string.planned_list_empty_products),
+                        fontStyle = typography.bodySmall,
+                        color = colors.onSurface.copy(alpha = 0.6f),
                         modifier = Modifier.padding(vertical = 16.dp),
                     )
                 }
@@ -164,33 +197,30 @@ fun CreatePlannedListScreen(
                 items(uiState.availableProducts, key = { it.id }) { product ->
                     val selectedQty = uiState.selectedQuantities[product.id] ?: 0.0
 
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (selectedQty > 0.0) {
-                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
-                            } else {
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                            },
-                        ),
+                    ItemContainerGlassCard(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(dimens.cardCorner * 0.6f)),
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(12.dp),
+                                .padding(dimens.paddingSmall),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
+                                MinhaDespensaText(
                                     text = product.name,
-                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontStyle = typography.bodyLarge,
                                     fontWeight = FontWeight.SemiBold,
+                                    color = colors.onSecondaryContainer,
                                 )
-                                Text(
-                                    text = "${product.brand ?: "Sem marca"} • ${product.category}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                val brandText = product.brand ?: stringResource(Res.string.planned_list_no_brand)
+                                MinhaDespensaText(
+                                    text = "$brandText • ${product.category}",
+                                    fontStyle = typography.bodySmall,
+                                    color = colors.onSecondaryContainer.copy(alpha = 0.65f),
                                 )
                             }
 
@@ -200,17 +230,26 @@ fun CreatePlannedListScreen(
                             ) {
                                 if (selectedQty > 0.0) {
                                     IconButton(onClick = { viewModel.onDecreaseQuantity(product.id) }) {
-                                        Icon(Icons.Rounded.Remove, contentDescription = "Diminuir")
+                                        Icon(
+                                            imageVector = Icons.Rounded.Remove,
+                                            contentDescription = "Diminuir",
+                                            tint = colors.onSecondaryContainer,
+                                        )
                                     }
-                                    Text(
+                                    MinhaDespensaText(
                                         text = if (selectedQty % 1.0 == 0.0) selectedQty.toLong().toString() else selectedQty.toString(),
-                                        style = MaterialTheme.typography.titleMedium,
+                                        fontStyle = typography.bodyLarge,
                                         fontWeight = FontWeight.Bold,
+                                        color = colors.primary,
                                     )
                                 }
 
                                 IconButton(onClick = { viewModel.onIncreaseQuantity(product.id) }) {
-                                    Icon(Icons.Rounded.Add, contentDescription = "Adicionar")
+                                    Icon(
+                                        imageVector = Icons.Rounded.Add,
+                                        contentDescription = "Adicionar",
+                                        tint = colors.primary,
+                                    )
                                 }
                             }
                         }

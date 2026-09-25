@@ -28,15 +28,26 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
+import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuickListScreen(
     onNavigateBack: () -> Unit,
@@ -44,15 +55,32 @@ fun QuickListScreen(
     viewModel: QuickListViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val colors = getAppColors()
+    val typography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
 
     Scaffold(
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         topBar = {
-            TopAppBar(
-                title = { Text("Lista Rápida (Bloco de Notas)") },
-                navigationIcon = {
+            MinhaDespensaTopBar(
+                backgroundColor = Color.Transparent,
+                leftContent = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Voltar")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = stringResource(Res.string.register_product_form_back_button_desc),
+                            tint = colors.onPrimaryContainer,
+                        )
                     }
+                },
+                centerContent = {
+                    MinhaDespensaText(
+                        text = stringResource(Res.string.quick_list_title),
+                        fontStyle = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onPrimaryContainer,
+                    )
                 },
             )
         },
@@ -61,57 +89,52 @@ fun QuickListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(horizontal = dimens.paddingSmall, vertical = dimens.paddingSmall)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
         ) {
-            OutlinedTextField(
-                value = uiState.title,
-                onValueChange = viewModel::onTitleChange,
-                label = { Text("Nome da Lista (Opcional)") },
-                placeholder = { Text("Ex: Lista rápida de hoje") },
+            SecondaryContainerGlassCard(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-            )
-
-            OutlinedTextField(
-                value = uiState.rawContent,
-                onValueChange = viewModel::onContentChange,
-                label = { Text("Itens (um por linha) *") },
-                placeholder = {
-                    Text("3 Pães\n1 Leite\n1 Café\n500g de presunto")
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(260.dp),
-                isError = uiState.errorMessage != null,
-                supportingText = {
-                    Text("Escreva livremente o que precisa comprar")
-                },
-            )
-
-            uiState.errorMessage?.let { error ->
-                Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-
-            Button(
-                onClick = { viewModel.saveQuickList(onListSaved) },
-                enabled = uiState.canSave,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
             ) {
-                if (uiState.isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(dimens.paddingSmall),
+                    verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                ) {
+                    ProductTextField(
+                        value = uiState.title,
+                        onValueChange = viewModel::onTitleChange,
+                        label = stringResource(Res.string.quick_list_name_label),
+                        placeholder = stringResource(Res.string.quick_list_name_placeholder),
                     )
-                } else {
-                    Text("Criar Lista Rápida")
+
+                    ProductTextField(
+                        value = uiState.rawContent,
+                        onValueChange = viewModel::onContentChange,
+                        label = stringResource(Res.string.quick_list_content_label),
+                        placeholder = stringResource(Res.string.quick_list_content_placeholder),
+                        minLines = 8,
+                        singleLine = false,
+                        isRequired = true,
+                        errorMessage = uiState.errorMessage,
+                    )
+
+                    MinhaDespensaText(
+                        text = stringResource(Res.string.quick_list_content_supporting),
+                        fontStyle = typography.bodySmall,
+                        color = colors.onSecondaryContainer.copy(alpha = 0.6f),
+                    )
+
+                    Spacer(Modifier.height(dimens.paddingSmall))
+
+                    MinhaDespensaPrimaryButton(
+                        text = stringResource(Res.string.quick_list_create_button),
+                        onClick = { viewModel.saveQuickList(onListSaved) },
+                        enabled = uiState.canSave,
+                        isLoading = uiState.isSaving,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }

@@ -48,11 +48,18 @@ class StartShoppingSessionUseCase(
 
             require(!existingList.isDeleted) { "Não é possível iniciar compras em uma lista excluída" }
 
-            val updatedList = existingList.copy(
-                status = ShoppingListStatus.SHOPPING,
-                updatedAt = now,
-            )
-            shoppingListRepository.updateShoppingListIfNewer(updatedList)
+            val shouldUpdateStatus = existingList.status != ShoppingListStatus.COMPLETED
+            val updatedList = if (shouldUpdateStatus) {
+                existingList.copy(
+                    status = ShoppingListStatus.SHOPPING,
+                    updatedAt = now,
+                )
+            } else {
+                existingList
+            }
+            if (shouldUpdateStatus) {
+                shoppingListRepository.updateShoppingListIfNewer(updatedList)
+            }
             updatedList
         } else {
             val newList = ShoppingList(

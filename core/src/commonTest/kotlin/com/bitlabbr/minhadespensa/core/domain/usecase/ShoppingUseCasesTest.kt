@@ -143,7 +143,7 @@ class ShoppingUseCasesTest {
     }
 
     @Test
-    fun `AddOrUpdateCartItemUseCase should accumulate quantity and accept price in cents`() = runTest {
+    fun `AddOrUpdateCartItemUseCase should insert new item when existingItemId is null`() = runTest {
         val list = ShoppingList(
             id = "list-1",
             name = "Compras de Teste",
@@ -161,7 +161,7 @@ class ShoppingUseCasesTest {
         )
         assertTrue(firstAddResult.isSuccess)
 
-        // 2. Scan the same product again, adding 1.0 unit with updated price
+        // 2. Scan the same product again, adding it as a new item into the cart
         val secondAddResult = addOrUpdateCartItemUseCase(
             listId = "list-1",
             productId = "prod-1",
@@ -172,11 +172,16 @@ class ShoppingUseCasesTest {
 
         val updatedList = repository.getShoppingListById("list-1").first()
         assertNotNull(updatedList)
-        assertEquals(1, updatedList.items.size)
-        val item = updatedList.items.first()
-        assertEquals(3.0, item.quantity)
-        assertEquals(800L, item.priceAtTime)
-        assertTrue(item.isChecked)
+        assertEquals(2, updatedList.items.size)
+        val item1 = updatedList.items[0]
+        assertEquals(2.0, item1.quantity)
+        assertEquals(750L, item1.priceAtTime)
+        assertTrue(item1.isChecked)
+
+        val item2 = updatedList.items[1]
+        assertEquals(1.0, item2.quantity)
+        assertEquals(800L, item2.priceAtTime)
+        assertTrue(item2.isChecked)
     }
 
     @Test
@@ -213,6 +218,41 @@ class ShoppingUseCasesTest {
         assertNotNull(item)
         assertEquals(4.0, item.quantity)
         assertEquals(600L, item.priceAtTime)
+    }
+
+    @Test
+    fun `AddOrUpdateCartItemUseCase should fail when existingItemId does not exist instead of duplicating other item`() = runTest {
+        val initialItem = ShoppingItem(
+            id = "item-1",
+            listId = "list-1",
+            productId = "prod-1",
+            quantity = 1.0,
+            priceAtTime = 500L,
+            isChecked = true,
+            updatedAt = 1000L,
+        )
+        val list = ShoppingList(
+            id = "list-1",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(initialItem),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = addOrUpdateCartItemUseCase(
+            listId = "list-1",
+            productId = "prod-1",
+            quantity = 10.0,
+            priceAtTimeInCents = 999L,
+            existingItemId = "invalid-or-ghost-id",
+        )
+        assertTrue(result.isFailure, "Must fail when existingItemId is not found")
+
+        val currentList = repository.getShoppingListById("list-1").first()
+        assertNotNull(currentList)
+        assertEquals(1, currentList.items.size, "Must not create a duplicate item")
+        assertEquals(1.0, currentList.items.first().quantity, "Must not corrupt existing item")
     }
 
     @Test
@@ -384,6 +424,25 @@ class ShoppingUseCasesTest {
         val updated = repository.getShoppingListById("list-draft").first()
         assertNotNull(updated)
         assertEquals(ShoppingListStatus.SHOPPING, updated.status)
+    }
+
+    @Test
+    fun `StartShoppingSessionUseCase should preserve COMPLETED status for already finished list`() = runTest {
+        val completedList = ShoppingList(
+            id = "list-finished",
+            name = "Compras Passadas",
+            type = ShoppingListType.ASSISTANT,
+            status = ShoppingListStatus.COMPLETED,
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(completedList)
+
+        val result = startShoppingSessionUseCase(existingListId = "list-finished")
+        assertTrue(result.isSuccess)
+
+        val retrieved = repository.getShoppingListById("list-finished").first()
+        assertNotNull(retrieved)
+        assertEquals(ShoppingListStatus.COMPLETED, retrieved.status)
     }
 
     @Test

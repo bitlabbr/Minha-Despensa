@@ -45,11 +45,28 @@ class CheckEanStatusUseCase(
         if (trimmed.length !in CoreConstants.Product.EAN_VALID_LENGTHS || !trimmed.all { it.isDigit() }) {
             return EanStatus.InvalidFormat
         }
-        val product = catalogRepository.getProductByEan(trimmed).firstOrNull()
-        return if (product != null && !product.isDeleted) {
-            EanStatus.Found(product)
-        } else {
-            EanStatus.NotFound
+
+        val candidates = buildList {
+            add(trimmed)
+            if (trimmed.length == 13 && trimmed.startsWith("0")) {
+                add(trimmed.removePrefix("0"))
+            } else if (trimmed.length == 12) {
+                add("0$trimmed")
+            } else if (trimmed.length == 14 && trimmed.startsWith("0")) {
+                add(trimmed.removePrefix("0"))
+                if (trimmed.startsWith("00")) {
+                    add(trimmed.removePrefix("00"))
+                }
+            }
+        }.distinct()
+
+        for (candidate in candidates) {
+            val product = catalogRepository.getProductByEan(candidate).firstOrNull()
+            if (product != null && !product.isDeleted) {
+                return EanStatus.Found(product)
+            }
         }
+
+        return EanStatus.NotFound
     }
 }

@@ -58,5 +58,7 @@ data class ShoppingAssistantUiState(
     val isLoading: Boolean = false,
     val isFinalizing: Boolean = false,
     val isCompleted: Boolean = false,
+    val isDirectShopping: Boolean = false,
+    val hasChanges: Boolean = false,
     val errorMessage: String? = null,
 )

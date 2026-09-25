@@ -57,9 +57,9 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaTex
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.back
 import minhadespensa.uisystem.generated.resources.no_itens_found
 import minhadespensa.uisystem.generated.resources.search
+import minhadespensa.uisystem.generated.resources.search_clear
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -133,7 +133,7 @@ fun MinhaDespensaSearchBar(
                     IconButton(onClick = { onQueryChange("") }) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = stringResource(Res.string.back),
+                            contentDescription = stringResource(Res.string.search_clear),
                             tint = appColors.onSurface.copy(alpha = 0.7f),
                         )
                     }

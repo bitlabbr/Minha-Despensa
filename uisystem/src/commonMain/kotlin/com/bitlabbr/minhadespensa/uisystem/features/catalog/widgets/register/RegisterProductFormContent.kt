@@ -23,15 +23,20 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.QrCodeScanner
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
@@ -44,8 +49,10 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContain
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImagePickerCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImageSourcePickerDialog
 import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePickerManager
+import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductDropdownField
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.mapper.toLabel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.*
@@ -63,6 +70,7 @@ fun RegisterProductFormContent(
     val dimens = MinhaDespensaTheme.dimens
     var isExpanded by remember { mutableStateOf(false) }
     var showImageSourcePicker by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
 
     val imagePickerManager = rememberImagePickerManager { bytes ->
         onStateChange(state.copy(imageBytes = bytes))
@@ -77,6 +85,8 @@ fun RegisterProductFormContent(
                 textTop = stringResource(Res.string.register_product_form_header_title_top),
                 textBottom = stringResource(Res.string.register_product_form_header_title_bottom),
                 description = stringResource(Res.string.register_product_form_header_title_desc),
+                actionIcon = Icons.Rounded.Close,
+                actionContentDescription = stringResource(Res.string.register_product_form_header_close_button_desc),
                 onActionClick = onCancelClick,
             )
 
@@ -121,6 +131,7 @@ fun RegisterProductFormContent(
                             placeholder = stringResource(Res.string.register_product_form_basic_info_netweight_placeholder),
                             keyboardType = KeyboardType.Decimal,
                             isRequired = true,
+                            maxCharacters = CoreConstants.Product.WEIGHT_MAX_LENGTH,
                             errorMessage = state.netWeightError?.asString(),
                         )
 
@@ -130,9 +141,12 @@ fun RegisterProductFormContent(
                             selectedOption = state.measureUnit,
                             placeholder = stringResource(Res.string.register_product_form_basic_info_unit_placeholder),
                             options = MeasureUnit.entries,
-                            optionLabel = { it.name },
+                            optionLabel = { it.toLabel() },
                             isRequired = true,
-                            onSelected = { unit -> onStateChange(state.copy(measureUnit = unit)) },
+                            errorMessage = state.measureUnitError?.asString(),
+                            onSelected = { unit ->
+                                onStateChange(state.copy(measureUnit = unit, measureUnitError = null))
+                            },
                         )
                     }
 
@@ -141,10 +155,16 @@ fun RegisterProductFormContent(
                         label = stringResource(Res.string.register_product_form_basic_info_product_category),
                         selectedOption = state.category.takeIf { it.isNotBlank() },
                         placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
-                        options = state.availableCategories,
+                        options = state.availableCategories.filter {
+                            !it.equals(
+                                stringResource(Res.string.category_filter_all),
+                                ignoreCase = true
+                            )
+                        },
                         optionLabel = { it },
                         isRequired = true,
-                        onSelected = { onStateChange(state.copy(category = it)) },
+                        errorMessage = state.categoryError?.asString(),
+                        onSelected = { onStateChange(state.copy(category = it, categoryError = null)) },
                     )
                 }
 
@@ -165,12 +185,33 @@ fun RegisterProductFormContent(
                             maxCharacters = 14,
                             errorMessage = state.eanError?.asString(),
                             trailingContent = {
-                                IconButton(onClick = {}) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.QrCodeScanner,
-                                        contentDescription = stringResource(Res.string.register_product_form_detail_info_ean_icon_description),
-                                        tint = colors.onSecondaryContainer.copy(alpha = 0.72f),
+                                if (state.isCheckingEan) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .padding(2.dp),
+                                        strokeWidth = 2.dp,
+                                        color = colors.onSecondaryContainer,
                                     )
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .padding(end = 4.dp)
+                                            .size(36.dp)
+                                            .clip(RoundedCornerShape(dimens.cardCorner * 0.35f))
+                                            .background(colors.primary.copy(alpha = 0.12f))
+                                            .clickable { showBarcodeScanner = true },
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.DocumentScanner,
+                                            contentDescription = stringResource(Res.string.register_product_form_detail_info_ean_icon_description),
+                                            tint = if (state.eanError != null) colors.error else colors.onSecondaryContainer.copy(
+                                                alpha = 0.75f
+                                            ),
+                                            modifier = Modifier.size(20.dp),
+                                        )
+                                    }
                                 }
                             },
                         )
@@ -224,7 +265,9 @@ fun RegisterProductFormContent(
                     )
 
                     MinhaDespensaPrimaryButton(
-                        text = stringResource(Res.string.register_product_form_button_save),
+                        text = if (state.isSaving) stringResource(Res.string.register_product_form_button_saving) else stringResource(
+                            Res.string.register_product_form_button_save
+                        ),
                         modifier = Modifier.weight(1.75f),
                         enabled = state.isFormValid,
                         isLoading = state.isSaving,
@@ -240,6 +283,17 @@ fun RegisterProductFormContent(
             onDismissRequest = { showImageSourcePicker = false },
             onCameraSelect = { imagePickerManager.launchCamera() },
             onGallerySelect = { imagePickerManager.launchGallery() },
+        )
+    }
+
+    if (showBarcodeScanner) {
+        BarcodeScannerModal(
+            onBarcodeScanned = { scannedCode ->
+                val numbersOnly = scannedCode.filter { it.isDigit() }.take(14)
+                onStateChange(state.copy(ean = numbersOnly, eanError = null))
+                showBarcodeScanner = false
+            },
+            onDismissRequest = { showBarcodeScanner = false },
         )
     }
 }
