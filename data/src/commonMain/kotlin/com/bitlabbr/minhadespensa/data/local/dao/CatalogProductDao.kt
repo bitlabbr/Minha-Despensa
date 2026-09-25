@@ -85,6 +85,16 @@ interface CatalogProductDao {
     @Query(
         """
         SELECT * FROM catalog_products 
+        WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name)) 
+          AND isDeleted = 0 
+        LIMIT 1
+    """
+    )
+    suspend fun findByName(name: String): CatalogProductEntity?
+
+    @Query(
+        """
+        SELECT * FROM catalog_products 
         WHERE (name LIKE '%' || :query || '%' OR brand LIKE '%' || :query || '%') 
         AND isDeleted = 0
         ORDER BY name ASC

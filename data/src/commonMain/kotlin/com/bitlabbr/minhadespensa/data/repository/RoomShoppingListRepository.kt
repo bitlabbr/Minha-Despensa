@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.data.repository
 
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
@@ -32,9 +33,11 @@ import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
+import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
@@ -168,13 +171,43 @@ class RoomShoppingListRepository(
                 val checkedItems = listWithItems.items.filter { it.isChecked && !it.isDeleted }
 
                 checkedItems.forEach { item ->
-                    val prodId = item.productId
-                    if (prodId != null) {
-                        // Only items associated with a product enter the pantry inventory
+                    val targetProductId: String? = if (item.productId != null) {
+                        item.productId
+                    } else if (!item.rawText.isNullOrBlank()) {
+                        val trimmedName = item.rawText.trim()
+                        val existingProduct = db.catalogDao().findByName(trimmedName)
+                        if (existingProduct != null) {
+                            itemDao.updateProductId(item.id, existingProduct.id, now)
+                            existingProduct.id
+                        } else {
+                            val newProductId = Uuid.random().toString()
+                            val newProduct = CatalogProductEntity(
+                                id = newProductId,
+                                ean = null,
+                                name = trimmedName,
+                                category = CoreConstants.Product.DEFAULT_CATEGORY,
+                                brand = null,
+                                measureUnit = MeasureUnit.UNIT.name,
+                                netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
+                                thumbnailUrl = null,
+                                updatedAt = now,
+                                isDeleted = false,
+                                manuallyAdded = true,
+                                notes = null,
+                            )
+                            db.catalogDao().insert(newProduct)
+                            itemDao.updateProductId(item.id, newProductId, now)
+                            newProductId
+                        }
+                    } else {
+                        null
+                    }
+
+                    if (targetProductId != null) {
                         db.pantryDao().insertPantryItem(
                             PantryItem(
                                 id = Uuid.random().toString(),
-                                productId = prodId,
+                                productId = targetProductId,
                                 quantity = item.quantity,
                                 updatedAt = now,
                                 isDeleted = false,
@@ -187,7 +220,7 @@ class RoomShoppingListRepository(
                             db.priceDao().insertPriceEntry(
                                 PriceEntry(
                                     id = Uuid.random().toString(),
-                                    productId = prodId,
+                                    productId = targetProductId,
                                     priceInCents = price,
                                     updatedAt = now,
                                     isDeleted = false,

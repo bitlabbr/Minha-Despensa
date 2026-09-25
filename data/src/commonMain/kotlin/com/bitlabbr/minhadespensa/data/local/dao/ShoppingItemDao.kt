@@ -73,6 +73,9 @@ interface ShoppingItemDao {
     @Query("UPDATE shopping_items SET is_checked = :checked, updated_at = :now WHERE id = :id")
     suspend fun updateCheckStatus(id: String, checked: Boolean, now: Long): Int
 
+    @Query("UPDATE shopping_items SET product_id = :productId, updated_at = :now WHERE id = :id")
+    suspend fun updateProductId(id: String, productId: String, now: Long): Int
+
     @Query("UPDATE shopping_items SET is_deleted = 1, updated_at = :updatedAt WHERE id = :id AND updated_at <= :updatedAt")
     suspend fun markAsDeleted(id: String, updatedAt: Long): Int
 

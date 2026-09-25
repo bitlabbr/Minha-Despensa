@@ -491,6 +491,83 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         }
     }
 
+    @Test
+    fun `finalizePurchase should auto-create catalog product and restock pantry for free-text items`() = runTest {
+        val listId = Uuid.random().toString()
+        val freeTextItem = createDummyShoppingItem(
+            productId = null,
+            rawText = "Banana Prata",
+            listId = listId,
+            quantity = 6.0,
+            isChecked = true,
+            priceAtTime = 499L,
+        )
+        shoppingListRepository.insertShoppingList(
+            createDummyShoppingList(id = listId, name = "Feira", items = listOf(freeTextItem))
+        )
+
+        shoppingListRepository.finalizePurchase(listId)
+
+        // 1. A new catalog product should have been created with name "Banana Prata"
+        val catalogProducts = catalogRepository.getAllActiveProducts().first()
+        val createdProduct = catalogProducts.find { it.name == "Banana Prata" }
+        assertNotNull(createdProduct, "Produto de catálogo deveria ter sido criado automaticamente")
+        assertEquals(MeasureUnit.UNIT, createdProduct.measureUnit)
+
+        // 2. The item should have been added to the pantry
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
+        assertEquals(1, pantryItems.size)
+        assertEquals(createdProduct.id, pantryItems[0].productId)
+        assertEquals(6.0, pantryItems[0].quantity)
+
+        // 3. Price history should have been recorded
+        val prices = db.priceDao().getPriceHistoryByProductId(createdProduct.id).first()
+        assertEquals(1, prices.size)
+        assertEquals(499L, prices[0].priceInCents)
+
+        // 4. Shopping item should be linked to the newly created product
+        val updatedList = shoppingListRepository.getShoppingListById(listId).first()
+        assertNotNull(updatedList)
+        assertEquals(createdProduct.id, updatedList.items.first().productId)
+    }
+
+    @Test
+    fun `finalizePurchase should match existing catalog product by name for free-text items`() = runTest {
+        val existingProduct = createDummyCatalogProduct(name = "Maçã Gala", measureUnit = MeasureUnit.KILOGRAM, netWeight = 1.0)
+        catalogRepository.insertProduct(existingProduct, null)
+
+        val listId = Uuid.random().toString()
+        val freeTextItem = createDummyShoppingItem(
+            productId = null,
+            rawText = "  maçã gala  ",
+            listId = listId,
+            quantity = 2.0,
+            isChecked = true,
+            priceAtTime = 1200L,
+        )
+        shoppingListRepository.insertShoppingList(
+            createDummyShoppingList(id = listId, name = "Compras", items = listOf(freeTextItem))
+        )
+
+        shoppingListRepository.finalizePurchase(listId)
+
+        // Should NOT create duplicate catalog product
+        val catalogProducts = catalogRepository.getAllActiveProducts().first()
+        assertEquals(1, catalogProducts.size)
+        assertEquals(existingProduct.id, catalogProducts[0].id)
+
+        // Should link to existing product in pantry
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
+        assertEquals(1, pantryItems.size)
+        assertEquals(existingProduct.id, pantryItems[0].productId)
+        assertEquals(2.0, pantryItems[0].quantity)
+
+        // Should record price history for existing product
+        val prices = db.priceDao().getPriceHistoryByProductId(existingProduct.id).first()
+        assertEquals(1, prices.size)
+        assertEquals(1200L, prices[0].priceInCents)
+    }
+
     private fun createDummyShoppingList(
         id: String = Uuid.random().toString(),
         name: String = "name",
@@ -509,7 +586,8 @@ class RoomShoppingListRepositoryTest : BaseTest() {
 
     private fun createDummyShoppingItem(
         id: String = Uuid.random().toString(),
-        productId: String,
+        productId: String? = null,
+        rawText: String? = null,
         listId: String,
         quantity: Double,
         isChecked: Boolean = false,
@@ -517,6 +595,7 @@ class RoomShoppingListRepositoryTest : BaseTest() {
     ) = ShoppingItem(
         id = id,
         productId = productId,
+        rawText = rawText,
         listId = listId,
         quantity = quantity,
         isChecked = isChecked,
