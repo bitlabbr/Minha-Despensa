@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist
 
 import app.cash.turbine.test
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUseCase
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeShoppingListRepository
 import kotlinx.coroutines.Dispatchers
@@ -87,6 +88,26 @@ class QuickListViewModelTest {
         assertEquals("Compras de Domingo", state.title)
         assertEquals("2kg Arroz\n1L Leite", state.rawContent)
         assertTrue(state.canSave)
+    }
+
+    @Test
+    fun `onTitleChange should truncate title exceeding NAME_MAX_LENGTH`() {
+        val longTitle = "A".repeat(CoreConstants.ShoppingList.NAME_MAX_LENGTH + 10)
+        viewModel.onTitleChange(longTitle)
+
+        val state = viewModel.uiState.value
+        assertEquals(CoreConstants.ShoppingList.NAME_MAX_LENGTH, state.title.length)
+        assertEquals("A".repeat(CoreConstants.ShoppingList.NAME_MAX_LENGTH), state.title)
+    }
+
+    @Test
+    fun `hasLongItems should be true when any line exceeds NAME_MAX_LENGTH`() {
+        viewModel.onContentChange("Arroz 5kg\nFeijão Preto")
+        assertFalse(viewModel.uiState.value.hasLongItems)
+
+        val longItem = "Refrigerante Coca-Cola 2L Zero Açúcar" // 37 chars
+        viewModel.onContentChange("Arroz 5kg\n$longItem")
+        assertTrue(viewModel.uiState.value.hasLongItems)
     }
 
     @Test

@@ -36,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
@@ -128,6 +129,7 @@ fun AddCartItemDetailsSheet(
                         onValueChange = { customNameText = it },
                         label = stringResource(Res.string.shopping_assistant_item_name_label),
                         placeholder = stringResource(Res.string.shopping_assistant_item_name_placeholder),
+                        maxCharacters = CoreConstants.Product.NAME_MAX_LENGTH,
                         isRequired = true,
                     )
                 }

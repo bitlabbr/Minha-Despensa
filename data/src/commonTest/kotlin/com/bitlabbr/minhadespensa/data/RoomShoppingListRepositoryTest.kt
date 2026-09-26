@@ -30,6 +30,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
@@ -566,6 +567,39 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         val prices = db.priceDao().getPriceHistoryByProductId(existingProduct.id).first()
         assertEquals(1, prices.size)
         assertEquals(1200L, prices[0].priceInCents)
+    }
+
+    @Test
+    fun `finalizePurchase should truncate product name exceeding NAME_MAX_LENGTH and save original in notes`() = runTest {
+        val listId = Uuid.random().toString()
+        val longRawText = "Refrigerante Coca-Cola 2L Zero Açúcar"
+        val freeTextItem = createDummyShoppingItem(
+            productId = null,
+            rawText = longRawText,
+            listId = listId,
+            quantity = 2.0,
+            isChecked = true,
+            priceAtTime = 899L,
+        )
+        shoppingListRepository.insertShoppingList(
+            createDummyShoppingList(id = listId, name = "Festa", items = listOf(freeTextItem))
+        )
+
+        shoppingListRepository.finalizePurchase(listId)
+
+        // 1. Catalog product should have name truncated to NAME_MAX_LENGTH (30 chars)
+        val catalogProducts = catalogRepository.getAllActiveProducts().first()
+        assertEquals(1, catalogProducts.size)
+        val createdProduct = catalogProducts.first()
+        assertTrue(createdProduct.name.length <= CoreConstants.Product.NAME_MAX_LENGTH)
+        assertEquals(longRawText.take(CoreConstants.Product.NAME_MAX_LENGTH).trim(), createdProduct.name)
+        assertEquals("Nome original: $longRawText", createdProduct.notes)
+
+        // 2. The item should have been added to the pantry
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
+        assertEquals(1, pantryItems.size)
+        assertEquals(createdProduct.id, pantryItems[0].productId)
+        assertEquals(2.0, pantryItems[0].quantity)
     }
 
     private fun createDummyShoppingList(
