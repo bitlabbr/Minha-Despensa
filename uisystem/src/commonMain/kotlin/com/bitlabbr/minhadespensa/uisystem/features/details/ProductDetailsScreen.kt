@@ -105,6 +105,7 @@ fun ProductDetailsScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .navigationBarsPadding()
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
@@ -159,6 +160,8 @@ fun ProductDetailsScreen(
                 highestPrice = uiState.highestPrice,
                 priceHistory = uiState.priceHistory,
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
         } else {
             Box(
                 modifier = Modifier.fillMaxWidth().padding(32.dp),
