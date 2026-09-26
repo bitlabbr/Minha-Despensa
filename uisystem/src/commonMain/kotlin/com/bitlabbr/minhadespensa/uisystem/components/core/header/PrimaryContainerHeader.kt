@@ -24,6 +24,8 @@
 package com.bitlabbr.minhadespensa.uisystem.components.core.header
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -45,6 +47,8 @@ fun PrimaryContainerHeader(
     description: String? = null,
     modifier: Modifier = Modifier,
     textColor: Color = getAppColors().onPrimaryContainer,
+    onBackClick: (() -> Unit)? = null,
+    backContentDescription: String? = null,
     actionIcon: ImageVector? = null,
     actionContentDescription: String? = null,
     onActionClick: (() -> Unit)? = null,
@@ -57,12 +61,28 @@ fun PrimaryContainerHeader(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                start = dimens.paddingMedium,
-                end = dimens.paddingSmall
+                start = if (onBackClick != null) dimens.paddingSmall else dimens.paddingMedium,
+                end = dimens.paddingSmall,
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
+        if (onBackClick != null) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .size(44.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = backContentDescription,
+                    tint = textColor,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+
         Column(
             modifier = Modifier.weight(1f),
         ) {

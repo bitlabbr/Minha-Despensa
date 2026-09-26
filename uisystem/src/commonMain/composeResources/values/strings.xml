@@ -250,6 +250,8 @@
 
     <!-- Product Details -->
     <string name="product_details_title">Detalhes do Produto</string>
+    <string name="product_details_header_top">Detalhes do</string>
+    <string name="product_details_header_bottom">Produto</string>
     <string name="product_details_section_basic_info">INFORMAÇÕES BÁSICAS</string>
     <string name="product_details_section_pantry">ESTOQUE NA DESPENSA</string>
     <string name="product_details_section_prices">HISTÓRICO DE PREÇOS</string>

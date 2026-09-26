@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.details
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -40,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -49,10 +51,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerSection
 import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaDialog
+import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
@@ -91,27 +93,7 @@ fun ProductDetailsScreen(
     MainScreenScaffold(
         bottomPadding = bottomPadding,
         topBar = {
-            MinhaDespensaTopBar(
-                leftContent = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                            contentDescription = stringResource(Res.string.back),
-                            tint = colors.onPrimaryContainer,
-                        )
-                    }
-                },
-                centerContent = {
-                    MinhaDespensaText(
-                        text = uiState.product?.name ?: stringResource(Res.string.product_details_title),
-                        fontWeight = FontWeight.Bold,
-                        fontStyle = typography.displayMedium,
-                        color = colors.onPrimaryContainer,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                },
-            )
+            MinhaDespensaTopBar()
         },
         bottomBar = {
             if (uiState.product != null) {
@@ -143,6 +125,12 @@ fun ProductDetailsScreen(
             }
         },
     ) {
+        PrimaryContainerHeader(
+            textTop = stringResource(Res.string.product_details_header_top),
+            textBottom = stringResource(Res.string.product_details_header_bottom),
+            onBackClick = onNavigateBack,
+        )
+
         if (uiState.isLoading) {
             Box(
                 modifier = Modifier.fillMaxWidth().height(300.dp),
@@ -156,16 +144,12 @@ fun ProductDetailsScreen(
             // --- HERO SECTION: Foto e Identificação do Produto ---
             ProductHeroSection(product = product)
 
-            Spacer(modifier = Modifier.height(16.dp))
-
             // --- SEÇÃO 1: ESTOQUE NA DESPENSA ---
             ProductPantrySection(
                 pantryStock = uiState.pantryStock,
                 onAddStock = viewModel::onOpenAddStockSheet,
                 onConsume = viewModel::onOpenConsumeDialog,
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             // --- SEÇÃO 2: HISTÓRICO DE PREÇOS ---
             ProductPriceHistorySection(
@@ -175,8 +159,6 @@ fun ProductDetailsScreen(
                 highestPrice = uiState.highestPrice,
                 priceHistory = uiState.priceHistory,
             )
-
-            Spacer(modifier = Modifier.height(32.dp))
         } else {
             Box(
                 modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -232,11 +214,12 @@ fun ProductDetailsScreen(
 // COMPONENTES DE SEÇÃO
 // -------------------------------------------------------------------------
 
-@OptIn(ExperimentalResourceApi::class)
+@OptIn(ExperimentalResourceApi::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ProductHeroSection(product: ProductDetailsInfoUiModel) {
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
+    val typography = MinhaDespensaTheme.typography
 
     val imageBitmap = remember(product.imageBytes) {
         product.imageBytes?.let { bytes ->
@@ -244,18 +227,28 @@ private fun ProductHeroSection(product: ProductDetailsInfoUiModel) {
         }
     }
 
-    ItemContainerGlassCard(
-        modifier = Modifier.fillMaxWidth(),
+    SecondaryContainerGlassCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = dimens.paddingSmall,
+                vertical = dimens.paddingSmall,
+            ),
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = dimens.paddingSmall / 2,
+                    vertical = dimens.paddingMedium,
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // Imagem do Produto
             Box(
                 modifier = Modifier
-                    .size(160.dp)
+                    .size(150.dp)
                     .clip(RoundedCornerShape(dimens.cardCorner * 0.75f))
                     .background(colors.surfaceContainerHigh.copy(alpha = 0.5f)),
                 contentAlignment = Alignment.Center,
@@ -281,93 +274,104 @@ private fun ProductHeroSection(product: ProductDetailsInfoUiModel) {
             MinhaDespensaText(
                 text = product.name,
                 fontWeight = FontWeight.Bold,
-                fontStyle = MinhaDespensaTheme.typography.displayMedium,
+                fontStyle = typography.displayMedium,
                 color = colors.onSurface,
                 alignment = TextAlign.Center,
             )
 
-            // Linha de Tags / Badges
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.wrapContentWidth(),
+            // Badges / Tags com Legendas
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 // Categoria
-                AssistChip(
-                    onClick = {},
-                    label = {
-                        Text(
-                            text = product.category,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = colors.primary.copy(alpha = 0.12f),
-                        labelColor = colors.primary,
-                    ),
-                    border = null,
+                ProductDetailBadge(
+                    label = stringResource(Res.string.product_details_category_label),
+                    value = product.category,
+                    icon = Icons.Rounded.Category,
                 )
 
                 // Marca (se houver)
                 if (!product.brand.isNullOrBlank()) {
-                    AssistChip(
-                        onClick = {},
-                        label = {
-                            Text(
-                                text = product.brand,
-                                style = MaterialTheme.typography.labelSmall,
-                            )
-                        },
-                        colors = AssistChipDefaults.assistChipColors(
-                            containerColor = colors.secondary.copy(alpha = 0.12f),
-                            labelColor = colors.onSurface,
-                        ),
-                        border = null,
+                    ProductDetailBadge(
+                        label = stringResource(Res.string.product_details_brand_label),
+                        value = product.brand,
+                        icon = Icons.Rounded.Sell,
                     )
                 }
 
                 // Conteúdo / Peso Líquido
-                AssistChip(
-                    onClick = {},
-                    label = {
-                        val formattedWeight = if (product.netWeight % 1.0 == 0.0) {
-                            product.netWeight.toLong().toString()
-                        } else {
-                            product.netWeight.toString().replace('.', ',')
-                        }
-                        Text(
-                            text = "$formattedWeight ${product.measureUnit.toAbbreviation()}",
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = colors.surfaceContainerHigh.copy(alpha = 0.6f),
-                        labelColor = colors.onSurfaceVariant,
-                    ),
-                    border = null,
+                val formattedWeight = if (product.netWeight % 1.0 == 0.0) {
+                    product.netWeight.toLong().toString()
+                } else {
+                    product.netWeight.toString().replace('.', ',')
+                }
+                ProductDetailBadge(
+                    label = stringResource(Res.string.product_details_netweight_label),
+                    value = "$formattedWeight ${product.measureUnit.toAbbreviation()}",
+                    icon = Icons.Rounded.Scale,
                 )
-            }
 
-            // Código de Barras (EAN)
-            if (!product.ean.isNullOrBlank()) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.QrCode,
-                        contentDescription = stringResource(Res.string.product_details_ean_label),
-                        tint = colors.onSurfaceVariant.copy(alpha = 0.7f),
-                        modifier = Modifier.size(16.dp),
-                    )
-                    MinhaDespensaText(
-                        text = product.ean,
-                        fontStyle = MinhaDespensaTheme.typography.bodySmall,
-                        color = colors.onSurfaceVariant.copy(alpha = 0.8f),
-                        fontWeight = FontWeight.Medium,
+                // Código de Barras (se houver)
+                if (!product.ean.isNullOrBlank()) {
+                    ProductDetailBadge(
+                        label = stringResource(Res.string.product_details_ean_label),
+                        value = product.ean,
+                        icon = Icons.Rounded.QrCode,
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProductDetailBadge(
+    label: String,
+    value: String,
+    icon: ImageVector? = null,
+    modifier: Modifier = Modifier,
+) {
+    val colors = getAppColors()
+    val dimens = MinhaDespensaTheme.dimens
+    val typography = MinhaDespensaTheme.typography
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(dimens.cardCorner * 0.45f),
+        color = colors.surface.copy(alpha = 0.45f),
+        border = BorderStroke(1.dp, colors.onSurface.copy(alpha = 0.10f)),
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = colors.primary,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                MinhaDespensaText(
+                    text = "$label:",
+                    fontStyle = typography.bodySmall,
+                    color = colors.onSurfaceVariant,
+                    fontWeight = FontWeight.Normal,
+                )
+                MinhaDespensaText(
+                    text = value,
+                    fontStyle = typography.bodySmall,
+                    color = colors.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                )
             }
         }
     }
