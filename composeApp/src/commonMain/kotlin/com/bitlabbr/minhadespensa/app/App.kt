@@ -152,7 +152,9 @@ fun App() {
                         PantryScreen(
                             bottomPadding = innerPadding.calculateBottomPadding(),
                             onProductClick = { product ->
-                                navController.navigate(ProductDetailsRoute(productId = product.id))
+                                navController.navigate(
+                                    ProductDetailsRoute(productId = product.id, fromPantry = true)
+                                )
                             },
                         )
                     }
@@ -169,7 +171,9 @@ fun App() {
                         CatalogScreen(
                             bottomPadding = innerPadding.calculateBottomPadding(),
                             onProductClick = { product ->
-                                navController.navigate(ProductDetailsRoute(productId = product.id))
+                                navController.navigate(
+                                    ProductDetailsRoute(productId = product.id, fromPantry = false)
+                                )
                             },
                         )
                     }
@@ -178,6 +182,7 @@ fun App() {
                         val route = backStackEntry.toRoute<ProductDetailsRoute>()
                         ProductDetailsScreen(
                             productId = route.productId,
+                            fromPantry = route.fromPantry,
                             onNavigateBack = { navController.popBackStack() },
                             bottomPadding = innerPadding.calculateBottomPadding(),
                         )

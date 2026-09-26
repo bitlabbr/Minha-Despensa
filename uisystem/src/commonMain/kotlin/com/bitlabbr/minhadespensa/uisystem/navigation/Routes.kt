@@ -51,4 +51,7 @@ data object CreatePlannedListRoute
 data object QuickListRoute
 
 @Serializable
-data class ProductDetailsRoute(val productId: String)
+data class ProductDetailsRoute(
+    val productId: String,
+    val fromPantry: Boolean = false,
+)

@@ -77,6 +77,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ProductDetailsScreen(
     productId: String,
+    fromPantry: Boolean = false,
     onNavigateBack: () -> Unit,
     bottomPadding: Dp = 0.dp,
     viewModel: ProductDetailsViewModel = koinViewModel(),
@@ -97,7 +98,6 @@ fun ProductDetailsScreen(
         },
         bottomBar = {
             if (uiState.product != null) {
-                val isInPantry = uiState.pantryStock?.hasStock == true
                 Surface(
                     color = colors.surface.copy(alpha = 0.95f),
                     tonalElevation = 6.dp,
@@ -110,7 +110,7 @@ fun ProductDetailsScreen(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        if (!isInPantry) {
+                        if (!fromPantry) {
                             MinhaDespensaSecondaryButton(
                                 text = stringResource(Res.string.product_details_action_add_to_pantry),
                                 onClick = viewModel::onOpenAddStockSheet,
