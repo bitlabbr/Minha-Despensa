@@ -92,7 +92,21 @@ class FakePantryRepository(
         items.value -= id
     }
 
-    override suspend fun consumePantryItem(pantryItemId: String, quantityToConsume: Double) {}
+    override suspend fun consumePantryItem(pantryItemId: String, quantityToConsume: Double) {
+        items.value[pantryItemId]?.let { current ->
+            val newQuantity = maxOf(0.0, current.quantity - quantityToConsume)
+            items.value += (pantryItemId to current.copy(quantity = newQuantity))
+        }
+    }
 
-    override suspend fun consumeBatch(consumptions: List<PantryItemConsumption>) {}
+    override suspend fun consumeBatch(consumptions: List<PantryItemConsumption>) {
+        val updatedMap = items.value.toMutableMap()
+        consumptions.forEach { c ->
+            updatedMap[c.pantryItemId]?.let { current ->
+                val newQty = maxOf(0.0, current.quantity - c.quantityToConsume)
+                updatedMap[c.pantryItemId] = current.copy(quantity = newQty)
+            }
+        }
+        items.value = updatedMap
+    }
 }
