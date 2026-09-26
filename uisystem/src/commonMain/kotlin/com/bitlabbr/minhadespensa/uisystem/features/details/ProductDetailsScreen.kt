@@ -97,6 +97,7 @@ fun ProductDetailsScreen(
         },
         bottomBar = {
             if (uiState.product != null) {
+                val isInPantry = uiState.pantryStock?.hasStock == true
                 Surface(
                     color = colors.surface.copy(alpha = 0.95f),
                     tonalElevation = 6.dp,
@@ -109,12 +110,14 @@ fun ProductDetailsScreen(
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        MinhaDespensaSecondaryButton(
-                            text = stringResource(Res.string.product_details_action_add_to_pantry),
-                            onClick = viewModel::onOpenAddStockSheet,
-                            modifier = Modifier.weight(1f),
-                            leadingIcon = Icons.Rounded.Kitchen,
-                        )
+                        if (!isInPantry) {
+                            MinhaDespensaSecondaryButton(
+                                text = stringResource(Res.string.product_details_action_add_to_pantry),
+                                onClick = viewModel::onOpenAddStockSheet,
+                                modifier = Modifier.weight(1f),
+                                leadingIcon = Icons.Rounded.Kitchen,
+                            )
+                        }
                         MinhaDespensaPrimaryButton(
                             text = stringResource(Res.string.product_details_action_add_to_list),
                             onClick = viewModel::onOpenAddToListDialog,
