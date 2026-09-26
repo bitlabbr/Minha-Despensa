@@ -305,5 +305,42 @@ class PantryViewModelTest {
         assertEquals(100L, aggregatedIogurte.expirationDate)
         assertTrue(aggregatedIogurte.isExpired)
     }
+
+    @Test
+    fun `items with zero or negative quantity should be excluded from pantry products`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val itemZero = PantryItemWithCategory(
+            pantryItem = PantryItem(
+                id = "p-zero",
+                productId = "prod-zero",
+                quantity = 0.0,
+                expirationDate = 3000000000000L,
+                updatedAt = 1000L,
+            ),
+            name = "Café Esgotado",
+            category = "Bebidas",
+        )
+        val itemPositive = PantryItemWithCategory(
+            pantryItem = PantryItem(
+                id = "p-active",
+                productId = "prod-active",
+                quantity = 2.0,
+                expirationDate = 3000000000000L,
+                updatedAt = 1000L,
+            ),
+            name = "Café Disponível",
+            category = "Bebidas",
+        )
+
+        pantryRepository.customItemsWithCategory.value = listOf(itemZero, itemPositive)
+        testScheduler.advanceUntilIdle()
+
+        val products = viewModel.uiState.value.listState.products
+        assertEquals(1, products.size)
+        assertEquals("prod-active", products.first().id)
+        assertEquals(2.0, products.first().quantity)
+        assertEquals(1, viewModel.uiState.value.allActivePantryItems.size)
+    }
 }
 

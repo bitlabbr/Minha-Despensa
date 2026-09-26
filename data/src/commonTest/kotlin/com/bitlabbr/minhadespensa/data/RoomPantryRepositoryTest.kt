@@ -304,6 +304,41 @@ class RoomPantryRepositoryTest : BaseTest() {
         assertEquals(0.0, result.quantity)
     }
 
+    @Test
+    fun `getAllActivePantryItemsWithCategory should filter out items with zero quantity`() = runTest {
+        val product = createDummyProduct(name = "Arroz Integral", category = "Grãos")
+        catalogRepository.insertProduct(product, null)
+
+        val zeroItem = createDummyPantryItem(productId = product.id, quantity = 0.0)
+        pantryRepository.insertPantryItem(zeroItem)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            val activeList = awaitItem()
+            assertTrue(activeList.isEmpty(), "Item com quantidade zero não deve aparecer na despensa ativa")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `getExpiringPantryItems should filter out items with zero quantity`() = runTest {
+        val product = createDummyProduct(name = "Iogurte", category = "Laticínios")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val zeroItem = createDummyPantryItem(
+            productId = product.id,
+            quantity = 0.0,
+            expirationDate = now + 1000L * 60 * 60 * 24 // amanhã
+        )
+        pantryRepository.insertPantryItem(zeroItem)
+
+        pantryRepository.getExpiringPantryItems(thresholdDays = 7).test {
+            val expiringList = awaitItem()
+            assertTrue(expiringList.isEmpty(), "Item com quantidade zero não deve aparecer nos itens prestes a vencer")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     // -------------------------------------------------------------------------
     // 3. LWW: EMPATE DE TIMESTAMPS E FORCE UPDATE
     // -------------------------------------------------------------------------

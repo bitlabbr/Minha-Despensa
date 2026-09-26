@@ -27,6 +27,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
@@ -141,18 +142,36 @@ class ProductDetailsViewModel(
 
     fun onConsumeStock(batchId: String? = null, quantity: Double = 1.0) {
         val currentBatches = uiState.value.pantryStock?.batches ?: return
-        if (currentBatches.isEmpty()) return
+        if (currentBatches.isEmpty() || quantity <= 0.0) return
 
         viewModelScope.launch {
-            val targetBatch = if (batchId != null) {
-                currentBatches.find { it.id == batchId }
-            } else {
-                currentBatches.firstOrNull()
-            } ?: return@launch
-
-            val actualQty = minOf(quantity, targetBatch.quantity)
             runCatching {
-                pantryRepository.consumePantryItem(targetBatch.id, actualQty)
+                if (batchId != null) {
+                    val targetBatch = currentBatches.find { it.id == batchId } ?: return@launch
+                    val actualQty = minOf(quantity, targetBatch.quantity)
+                    if (actualQty > 0.0) {
+                        pantryRepository.consumePantryItem(targetBatch.id, actualQty)
+                    }
+                } else {
+                    var remaining = quantity
+                    val consumptions = mutableListOf<PantryItemConsumption>()
+                    for (batch in currentBatches) {
+                        if (remaining <= 0.0) break
+                        val take = minOf(remaining, batch.quantity)
+                        if (take > 0.0) {
+                            consumptions.add(
+                                PantryItemConsumption(
+                                    pantryItemId = batch.id,
+                                    quantityToConsume = take,
+                                )
+                            )
+                            remaining -= take
+                        }
+                    }
+                    if (consumptions.isNotEmpty()) {
+                        pantryRepository.consumeBatch(consumptions)
+                    }
+                }
             }.onSuccess {
                 _activeSubFlow.value = null
                 notificationManager.showSuccess(UiText.Resource(Res.string.product_details_pantry_consume_success))

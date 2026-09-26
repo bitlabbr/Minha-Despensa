@@ -237,6 +237,47 @@ class ProductDetailsViewModelTest {
     }
 
     @Test
+    fun `onConsumeStock when quantity exceeds first batch should cascade consumption across multiple batches in FEFO order`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(id = "prod-cascade", name = "Arroz", category = "Grãos", updatedAt = 1000L)
+        catalogRepository.insertProduct(product, null)
+
+        val batch1 = PantryItem(
+            id = "batch-1",
+            productId = "prod-cascade",
+            quantity = 2.0,
+            expirationDate = 1100000L,
+            updatedAt = 1000L,
+        )
+        val batch2 = PantryItem(
+            id = "batch-2",
+            productId = "prod-cascade",
+            quantity = 3.0,
+            expirationDate = 1500000L,
+            updatedAt = 1000L,
+        )
+        pantryRepository.insertPantryItem(batch1)
+        pantryRepository.insertPantryItem(batch2)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-cascade")
+        testScheduler.advanceUntilIdle()
+
+        // Consume 3.5 units: 2.0 from batch-1 (draining it) and 1.5 from batch-2
+        viewModel.onConsumeStock(quantity = 3.5)
+        testScheduler.advanceUntilIdle()
+
+        val updatedBatch1 = pantryRepository.getPantryItemById("batch-1").first()
+        assertNotNull(updatedBatch1)
+        assertEquals(0.0, updatedBatch1.quantity)
+
+        val updatedBatch2 = pantryRepository.getPantryItemById("batch-2").first()
+        assertNotNull(updatedBatch2)
+        assertEquals(1.5, updatedBatch2.quantity)
+    }
+
+    @Test
     fun `onAddPantryStock should persist stock and dismiss subflow`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 

@@ -652,7 +652,8 @@ private fun ConsumeStockDialog(
     onConfirm: (Double) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var quantityToConsume by remember { mutableStateOf(1.0) }
+    val initialQty = if (maxQuantity in 0.0..1.0) maxQuantity else 1.0
+    var quantityToConsume by remember(maxQuantity) { mutableStateOf(initialQty) }
     val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
 
@@ -673,6 +674,7 @@ private fun ConsumeStockDialog(
                     text = stringResource(Res.string.product_details_pantry_consume_confirm),
                     onClick = { onConfirm(quantityToConsume) },
                     modifier = Modifier.weight(1f),
+                    enabled = quantityToConsume > 0.0 && quantityToConsume <= maxQuantity,
                 )
             }
         },
@@ -694,7 +696,10 @@ private fun ConsumeStockDialog(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     IconButton(
-                        onClick = { if (quantityToConsume > 1.0) quantityToConsume -= 1.0 },
+                        onClick = {
+                            val next = quantityToConsume - 1.0
+                            quantityToConsume = if (next < 1.0 && maxQuantity < 1.0) maxQuantity else maxOf(1.0, next)
+                        },
                         enabled = quantityToConsume > 1.0,
                     ) {
                         Icon(Icons.Rounded.Remove, contentDescription = "Diminuir")
@@ -713,7 +718,9 @@ private fun ConsumeStockDialog(
                     )
 
                     IconButton(
-                        onClick = { if (quantityToConsume < maxQuantity) quantityToConsume += 1.0 },
+                        onClick = {
+                            quantityToConsume = minOf(maxQuantity, quantityToConsume + 1.0)
+                        },
                         enabled = quantityToConsume < maxQuantity,
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = "Aumentar")

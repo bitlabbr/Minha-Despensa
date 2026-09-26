@@ -125,7 +125,7 @@ class RoomPantryRepository(
 
         db.useWriterConnection { connection ->
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val item = checkNotNull(dao.getPantryItemById(pantryItemId).first()) {
+                val item = checkNotNull(dao.findPantryItemById(pantryItemId)) {
                     "Pantry item not found with ID: $pantryItemId"
                 }
                 require(!item.isDeleted) { "Cannot consume a deleted pantry item: $pantryItemId" }
@@ -158,7 +158,7 @@ class RoomPantryRepository(
                         "Quantity to consume must be greater than zero for item ${consumption.pantryItemId}"
                     }
 
-                    val item = checkNotNull(dao.getPantryItemById(consumption.pantryItemId).first()) {
+                    val item = checkNotNull(dao.findPantryItemById(consumption.pantryItemId)) {
                         "Pantry item not found with ID: ${consumption.pantryItemId}"
                     }
                     require(!item.isDeleted) {
