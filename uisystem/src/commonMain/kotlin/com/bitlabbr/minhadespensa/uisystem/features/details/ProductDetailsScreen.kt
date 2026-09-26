@@ -206,7 +206,7 @@ fun ProductDetailsScreen(
         is ProductDetailsSubFlow.ConsumeStock -> {
             ConsumeStockDialog(
                 maxQuantity = uiState.pantryStock?.totalQuantity ?: 1.0,
-                unit = uiState.product?.measureUnit?.toAbbreviation() ?: "un",
+                unit = uiState.pantryStock?.measureUnit?.toAbbreviation() ?: "un",
                 onConfirm = { qty ->
                     viewModel.onConsumeStock(quantity = qty)
                 },

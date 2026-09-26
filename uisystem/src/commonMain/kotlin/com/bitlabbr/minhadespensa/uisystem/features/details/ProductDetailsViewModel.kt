@@ -270,7 +270,7 @@ class ProductDetailsViewModel(
 
         val pantryStock = ProductPantryStockUiModel(
             totalQuantity = totalQuantity,
-            measureUnit = product.measureUnit,
+            measureUnit = if (product.measureUnit == MeasureUnit.PACKAGE) MeasureUnit.PACKAGE else MeasureUnit.UNIT,
             closestExpirationDate = closestExpirationDate,
             isExpired = isExpired,
             batches = batches,

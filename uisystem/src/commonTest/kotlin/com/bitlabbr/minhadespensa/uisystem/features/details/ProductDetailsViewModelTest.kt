@@ -155,6 +155,7 @@ class ProductDetailsViewModelTest {
         assertNotNull(stock)
         assertTrue(stock.hasStock)
         assertEquals(5.0, stock.totalQuantity)
+        assertEquals(MeasureUnit.UNIT, stock.measureUnit)
         assertEquals(1500000L, stock.closestExpirationDate)
         assertFalse(stock.isExpired)
         assertEquals(2, stock.batches.size)
@@ -370,5 +371,33 @@ class ProductDetailsViewModelTest {
         viewModel.onOpenConsumeDialog()
         testScheduler.advanceUntilIdle()
         assertNull(viewModel.uiState.value.activeSubFlow)
+    }
+
+    @Test
+    fun `pantry stock should have measureUnit PACKAGE when product is PACKAGE and UNIT otherwise`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val productPackage = CatalogProduct(
+            id = "prod-pct",
+            name = "Fraldas",
+            measureUnit = MeasureUnit.PACKAGE,
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(productPackage, null)
+
+        val batch = PantryItem(
+            id = "batch-pct",
+            productId = "prod-pct",
+            quantity = 2.0,
+            expirationDate = null,
+            updatedAt = 1000L,
+        )
+        pantryRepository.insertPantryItem(batch)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-pct")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(MeasureUnit.PACKAGE, viewModel.uiState.value.pantryStock?.measureUnit)
     }
 }
