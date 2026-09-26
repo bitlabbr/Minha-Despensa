@@ -114,6 +114,7 @@ class ProductDetailsViewModel(
     }
 
     fun onOpenConsumeDialog() {
+        if (uiState.value.pantryStock?.hasStock != true) return
         _activeSubFlow.value = ProductDetailsSubFlow.ConsumeStock
     }
 
@@ -141,8 +142,10 @@ class ProductDetailsViewModel(
     }
 
     fun onConsumeStock(batchId: String? = null, quantity: Double = 1.0) {
-        val currentBatches = uiState.value.pantryStock?.batches ?: return
-        if (currentBatches.isEmpty() || quantity <= 0.0) return
+        val pantryStock = uiState.value.pantryStock ?: return
+        if (!pantryStock.hasStock || quantity <= 0.0) return
+        val currentBatches = pantryStock.batches
+        if (currentBatches.isEmpty()) return
 
         viewModelScope.launch {
             runCatching {

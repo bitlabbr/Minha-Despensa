@@ -334,4 +334,41 @@ class ProductDetailsViewModelTest {
         assertNotNull(item)
         assertEquals(2.0, item.quantity)
     }
+
+    @Test
+    fun `onConsumeStock consuming full stock should update hasStock to false and batches to empty`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(id = "prod-full", name = "Azeite", category = "Condimentos", updatedAt = 1000L)
+        catalogRepository.insertProduct(product, null)
+
+        val item = PantryItem(
+            id = "batch-full",
+            productId = "prod-full",
+            quantity = 2.0,
+            expirationDate = 1500000L,
+            updatedAt = 1000L,
+        )
+        pantryRepository.insertPantryItem(item)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-full")
+        testScheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value.pantryStock?.hasStock == true)
+
+        viewModel.onConsumeStock(quantity = 2.0)
+        testScheduler.advanceUntilIdle()
+
+        val stock = viewModel.uiState.value.pantryStock
+        assertNotNull(stock)
+        assertFalse(stock.hasStock)
+        assertEquals(0.0, stock.totalQuantity)
+        assertTrue(stock.batches.isEmpty())
+
+        // Ensure clicking consume dialog when hasStock is false does nothing
+        viewModel.onOpenConsumeDialog()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+    }
 }

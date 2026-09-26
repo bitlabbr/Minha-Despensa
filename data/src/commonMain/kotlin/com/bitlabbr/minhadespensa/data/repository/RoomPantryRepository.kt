@@ -23,8 +23,6 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
-import androidx.room.Transactor
-import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
@@ -123,60 +121,52 @@ class RoomPantryRepository(
         logger.d(TAG, "consumePantryItem id: $pantryItemId, quantity: $quantityToConsume")
         require(quantityToConsume > 0) { "Consumption quantity must be strictly greater than zero" }
 
-        db.useWriterConnection { connection ->
-            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val item = checkNotNull(dao.findPantryItemById(pantryItemId)) {
-                    "Pantry item not found with ID: $pantryItemId"
-                }
-                require(!item.isDeleted) { "Cannot consume a deleted pantry item: $pantryItemId" }
-                require(item.quantity >= quantityToConsume) {
-                    "Insufficient stock: requested $quantityToConsume, but only ${item.quantity} available"
-                }
-
-                val newQuantity = item.quantity - quantityToConsume
-                val now = getCurrentTime()
-
-                val updatedItem = item.copy(
-                    quantity = newQuantity,
-                    updatedAt = now
-                )
-                dao.forceUpdatePantryItem(updatedItem)
-            }
+        val item = checkNotNull(dao.findPantryItemById(pantryItemId)) {
+            "Pantry item not found with ID: $pantryItemId"
         }
+        require(!item.isDeleted) { "Cannot consume a deleted pantry item: $pantryItemId" }
+        require(item.quantity >= quantityToConsume) {
+            "Insufficient stock: requested $quantityToConsume, but only ${item.quantity} available"
+        }
+
+        val newQuantity = item.quantity - quantityToConsume
+        val now = getCurrentTime()
+
+        val updatedItem = item.copy(
+            quantity = newQuantity,
+            updatedAt = now
+        )
+        dao.forceUpdatePantryItem(updatedItem)
     }
 
     override suspend fun consumeBatch(consumptions: List<PantryItemConsumption>) {
         logger.d(TAG, "consumeBatch: ${consumptions.size} items")
         require(consumptions.isNotEmpty()) { "Consumption list cannot be empty" }
 
-        db.useWriterConnection { connection ->
-            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val now = getCurrentTime()
-
-                consumptions.forEach { consumption ->
-                    require(consumption.quantityToConsume > 0) {
-                        "Quantity to consume must be greater than zero for item ${consumption.pantryItemId}"
-                    }
-
-                    val item = checkNotNull(dao.findPantryItemById(consumption.pantryItemId)) {
-                        "Pantry item not found with ID: ${consumption.pantryItemId}"
-                    }
-                    require(!item.isDeleted) {
-                        "Cannot consume a deleted pantry item: ${consumption.pantryItemId}"
-                    }
-                    require(item.quantity >= consumption.quantityToConsume) {
-                        "Insufficient stock for item ${consumption.pantryItemId}: " +
-                                "available ${item.quantity}, required ${consumption.quantityToConsume}"
-                    }
-
-                    val updatedItem = item.copy(
-                        quantity = item.quantity - consumption.quantityToConsume,
-                        updatedAt = now
-                    )
-                    dao.forceUpdatePantryItem(updatedItem)
-                }
+        val now = getCurrentTime()
+        val itemsToUpdate = consumptions.map { consumption ->
+            require(consumption.quantityToConsume > 0) {
+                "Quantity to consume must be greater than zero for item ${consumption.pantryItemId}"
             }
+
+            val item = checkNotNull(dao.findPantryItemById(consumption.pantryItemId)) {
+                "Pantry item not found with ID: ${consumption.pantryItemId}"
+            }
+            require(!item.isDeleted) {
+                "Cannot consume a deleted pantry item: ${consumption.pantryItemId}"
+            }
+            require(item.quantity >= consumption.quantityToConsume) {
+                "Insufficient stock for item ${consumption.pantryItemId}: " +
+                        "available ${item.quantity}, required ${consumption.quantityToConsume}"
+            }
+
+            item.copy(
+                quantity = item.quantity - consumption.quantityToConsume,
+                updatedAt = now
+            )
         }
+
+        dao.forceUpdatePantryItems(itemsToUpdate)
     }
 
     override fun getPantryItemById(pantryItemId: String): Flow<PantryItem?> {

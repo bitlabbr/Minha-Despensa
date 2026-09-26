@@ -27,6 +27,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
@@ -57,6 +58,13 @@ interface PantryItemDao {
 
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun forceUpdatePantryItem(pantryItem: PantryItemEntity): Int
+
+    @Transaction
+    suspend fun forceUpdatePantryItems(items: List<PantryItemEntity>) {
+        for (item in items) {
+            forceUpdatePantryItem(item)
+        }
+    }
 
     @Query(
         """
