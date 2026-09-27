@@ -284,5 +284,18 @@
     <string name="product_details_select_list_desc">Selecione uma lista de compras para adicionar este produto:</string>
     <string name="product_details_add_to_list_success">Produto adicionado à lista com sucesso!</string>
     <string name="product_details_no_active_lists">Nenhuma lista de compras ativa no momento.</string>
+    <string name="product_details_action_edit">Editar Produto</string>
+    <string name="product_details_edit_header_top">Editar</string>
+    <string name="product_details_edit_header_bottom">Produto</string>
+    <string name="product_details_save_changes">Salvar Alterações</string>
+    <string name="product_details_cancel_edit">Cancelar</string>
+    <string name="product_details_save_success">Produto atualizado com sucesso!</string>
+    <string name="product_details_notes_label">Observações</string>
+    <string name="product_details_no_notes">Nenhuma observação informada</string>
+    <string name="product_details_price_variation_title">Variação de Preço</string>
+    <string name="product_details_price_variation_desc">%1$s%% de variação entre menor e maior</string>
+    <string name="product_details_price_difference">Diferença de %1$s</string>
+    <string name="product_details_price_single_recorded">Preço único registrado</string>
+    <string name="product_details_price_purchases_title">Compras Registradas</string>
 
 </resources>

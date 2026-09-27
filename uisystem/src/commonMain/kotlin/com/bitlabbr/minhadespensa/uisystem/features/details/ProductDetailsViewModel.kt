@@ -32,21 +32,24 @@ import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
-import com.bitlabbr.minhadespensa.core.domain.usecase.AddCatalogItemToShoppingListUseCase
-import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.*
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.toUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.validateFormFields
 import com.bitlabbr.minhadespensa.uisystem.features.details.model.*
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.product_details_add_to_list_success
-import minhadespensa.uisystem.generated.resources.product_details_pantry_consume_success
+import minhadespensa.uisystem.generated.resources.*
 import kotlin.math.roundToLong
+import kotlin.time.Duration.Companion.milliseconds
 
 class ProductDetailsViewModel(
     private val catalogRepository: CatalogRepository,
@@ -58,27 +61,46 @@ class ProductDetailsViewModel(
     private val logger: AppLogger,
     private val notificationManager: AppNotificationManager,
     private val clock: Clock = Clock.System,
+    private val saveCatalogProductUseCase: SaveCatalogProductUseCase = SaveCatalogProductUseCase(catalogRepository),
+    private val checkEanStatusUseCase: CheckEanStatusUseCase = CheckEanStatusUseCase(catalogRepository),
 ) : ViewModel() {
 
     private val TAG = "ProductDetailsViewModel"
+    private var eanValidationJob: Job? = null
 
     private val _productId = MutableStateFlow<String?>(null)
+    private val _isEditing = MutableStateFlow(false)
+    private val _editForm = MutableStateFlow(ProductFormState())
     private val _activeSubFlow = MutableStateFlow<ProductDetailsSubFlow?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<ProductDetailsUiState> = _productId
         .filterNotNull()
         .flatMapLatest { id ->
-            val productDataFlow = combine(
+            val baseProductFlow = combine(
                 catalogRepository.getProductById(id),
                 catalogRepository.getProductImage(id),
+                catalogRepository.getAllActiveProducts(),
+            ) { product, imageBytes, allProducts ->
+                Triple(product, imageBytes, allProducts)
+            }
+
+            val priceAndPantryFlow = combine(
                 pantryRepository.getPantryItemsByProductId(id),
                 priceRepository.getPriceHistoryByProductId(id),
                 priceRepository.getLatestPriceForProductId(id),
-            ) { product, imageBytes, pantryItems, priceHistory, latestPriceEntry ->
+            ) { pantryItems, priceHistory, latestPriceEntry ->
+                Triple(pantryItems, priceHistory, latestPriceEntry)
+            }
+
+            val productDataFlow = combine(
+                baseProductFlow,
+                priceAndPantryFlow,
+            ) { (product, imageBytes, allProducts), (pantryItems, priceHistory, latestPriceEntry) ->
                 ProductCombinedData(
                     product = product,
                     imageBytes = imageBytes,
+                    allProducts = allProducts,
                     pantryItems = pantryItems,
                     priceHistory = priceHistory,
                     latestPriceEntry = latestPriceEntry,
@@ -87,12 +109,17 @@ class ProductDetailsViewModel(
 
             combine(
                 productDataFlow,
+                _isEditing,
+                _editForm,
                 shoppingListRepository.getAllActiveShoppingLists(),
                 _activeSubFlow,
-            ) { productData, shoppingLists, subFlow ->
+            ) { productData, isEditing, editForm, shoppingLists, subFlow ->
                 buildUiState(
                     product = productData.product,
                     imageBytes = productData.imageBytes,
+                    allProducts = productData.allProducts,
+                    isEditing = isEditing,
+                    editForm = editForm,
                     pantryItems = productData.pantryItems,
                     priceHistory = productData.priceHistory,
                     latestPriceEntry = productData.latestPriceEntry,
@@ -110,6 +137,111 @@ class ProductDetailsViewModel(
     fun loadProduct(productId: String) {
         if (_productId.value != productId) {
             _productId.value = productId
+            _isEditing.value = false
+            _editForm.value = ProductFormState()
+        }
+    }
+
+    fun onStartEdit() {
+        val current = uiState.value.product ?: return
+        val available = uiState.value.availableCategories
+        val formattedWeight = if (current.netWeight % 1.0 == 0.0) {
+            current.netWeight.toLong().toString()
+        } else {
+            current.netWeight.toString().replace('.', ',')
+        }
+        _editForm.value = ProductFormState(
+            name = current.name,
+            brand = current.brand.orEmpty(),
+            category = current.category,
+            measureUnit = current.measureUnit,
+            netWeight = formattedWeight,
+            ean = current.ean.orEmpty(),
+            notes = current.notes.orEmpty(),
+            imageBytes = current.imageBytes,
+            availableCategories = available,
+        )
+        _isEditing.value = true
+    }
+
+    fun onCancelEdit() {
+        _isEditing.value = false
+        _editForm.value = ProductFormState()
+        eanValidationJob?.cancel()
+    }
+
+    fun onFormChange(updated: ProductFormState) {
+        val current = _editForm.value
+        val validated = validateFormFields(current, updated)
+        _editForm.value = validated
+
+        if (updated.ean != current.ean) {
+            eanValidationJob?.cancel()
+            val trimmedEan = updated.ean.trim()
+            if (trimmedEan.isBlank()) {
+                _editForm.value = _editForm.value.copy(eanError = null, isCheckingEan = false)
+            } else if (trimmedEan == uiState.value.product?.ean) {
+                _editForm.value = _editForm.value.copy(eanError = null, isCheckingEan = false)
+            } else {
+                _editForm.value = _editForm.value.copy(isCheckingEan = true)
+                eanValidationJob = viewModelScope.launch {
+                    delay(300.milliseconds)
+                    val status = checkEanStatusUseCase(trimmedEan)
+                    val currentId = _productId.value
+                    val error = when (status) {
+                        is EanStatus.Found -> {
+                            if (status.product.id == currentId) null
+                            else UiText.Resource(Res.string.error_ean_already_exists, listOf(status.product.name))
+                        }
+                        is EanStatus.InvalidFormat -> UiText.Resource(Res.string.error_ean_invalid_length)
+                        else -> null
+                    }
+                    _editForm.value = _editForm.value.copy(eanError = error, isCheckingEan = false)
+                }
+            }
+        }
+    }
+
+    fun onSaveProduct() {
+        val currentProduct = uiState.value.product ?: return
+        val form = _editForm.value
+        val weightNumber = form.netWeight.replace(',', '.').toDoubleOrNull()
+        if (form.name.isBlank()) {
+            _editForm.value = form.copy(nameError = UiText.Resource(Res.string.error_name_required))
+            return
+        }
+        if (weightNumber == null || weightNumber <= 0.0) {
+            _editForm.value = form.copy(netWeightError = UiText.Resource(Res.string.error_invalid_number))
+            return
+        }
+        if (form.eanError != null) return
+
+        _editForm.value = form.copy(isSaving = true)
+        viewModelScope.launch {
+            val result = saveCatalogProductUseCase(
+                id = currentProduct.id,
+                name = form.name,
+                brand = form.brand.takeIf { it.isNotBlank() },
+                category = form.category,
+                measureUnit = form.measureUnit,
+                netWeight = weightNumber,
+                ean = form.ean.takeIf { it.isNotBlank() },
+                imageBytes = form.imageBytes,
+                notes = form.notes.takeIf { it.isNotBlank() },
+                isEditing = true,
+            )
+            result.onSuccess {
+                _isEditing.value = false
+                _editForm.value = ProductFormState()
+                notificationManager.showSuccess(UiText.Resource(Res.string.product_details_save_success))
+            }.onFailure { error ->
+                logger.e(TAG, "Falha ao salvar produto editado: ${error.message}", error)
+                _editForm.value = _editForm.value.copy(
+                    isSaving = false,
+                    errorMessage = error.message,
+                )
+                notificationManager.showError(UiText.DynamicString(error.message ?: "Erro ao salvar produto"))
+            }
         }
     }
 
@@ -128,6 +260,7 @@ class ProductDetailsViewModel(
             ean = currentProduct.ean,
             measureUnit = currentProduct.measureUnit,
             netWeight = currentProduct.netWeight,
+            notes = currentProduct.notes,
             updatedAt = clock.now().toEpochMilliseconds(),
         ).toUiModel()
         _activeSubFlow.value = ProductDetailsSubFlow.AddPantryStock(catalogUiModel)
@@ -223,6 +356,9 @@ class ProductDetailsViewModel(
     private fun buildUiState(
         product: CatalogProduct?,
         imageBytes: ByteArray?,
+        allProducts: List<CatalogProduct>,
+        isEditing: Boolean,
+        editForm: ProductFormState,
         pantryItems: List<com.bitlabbr.minhadespensa.core.domain.model.PantryItem>,
         priceHistory: List<com.bitlabbr.minhadespensa.core.domain.model.PriceEntry>,
         latestPriceEntry: com.bitlabbr.minhadespensa.core.domain.model.PriceEntry?,
@@ -237,6 +373,11 @@ class ProductDetailsViewModel(
             )
         }
 
+        val dynamicCategories = (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allProducts.map { it.category.trim() })
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+
         val productInfo = ProductDetailsInfoUiModel(
             id = product.id,
             name = product.name,
@@ -245,6 +386,7 @@ class ProductDetailsViewModel(
             ean = product.ean,
             measureUnit = product.measureUnit,
             netWeight = product.netWeight,
+            notes = product.notes,
             imageBytes = imageBytes,
         )
 
@@ -297,6 +439,14 @@ class ProductDetailsViewModel(
         val lowestPrice = activePrices.minOfOrNull { it.priceInCents }
         val highestPrice = activePrices.maxOfOrNull { it.priceInCents }
 
+        val priceDifference = if (highestPrice != null && lowestPrice != null && highestPrice > lowestPrice) {
+            highestPrice - lowestPrice
+        } else null
+
+        val priceVariationPercentage = if (lowestPrice != null && highestPrice != null && lowestPrice > 0L) {
+            ((highestPrice - lowestPrice).toDouble() / lowestPrice.toDouble()) * 100.0
+        } else null
+
         val activeLists = shoppingLists.filter { !it.isDeleted }
             .map {
                 ShoppingListOptionUiModel(
@@ -306,15 +456,30 @@ class ProductDetailsViewModel(
                 )
             }
 
+        val effectiveForm = if (isEditing) {
+            if (editForm.availableCategories.isEmpty()) {
+                editForm.copy(availableCategories = dynamicCategories)
+            } else {
+                editForm
+            }
+        } else {
+            editForm
+        }
+
         return ProductDetailsUiState(
             isLoading = false,
+            isEditing = isEditing,
             product = productInfo,
+            editForm = effectiveForm,
+            availableCategories = dynamicCategories,
             pantryStock = pantryStock,
             priceHistory = activePrices,
             latestPrice = latestPrice,
             averagePrice = averagePrice,
             lowestPrice = lowestPrice,
             highestPrice = highestPrice,
+            priceVariationPercentage = priceVariationPercentage,
+            priceDifference = priceDifference,
             activeShoppingLists = activeLists,
             activeSubFlow = subFlow,
             error = null,
@@ -325,6 +490,7 @@ class ProductDetailsViewModel(
 private data class ProductCombinedData(
     val product: CatalogProduct?,
     val imageBytes: ByteArray?,
+    val allProducts: List<CatalogProduct>,
     val pantryItems: List<com.bitlabbr.minhadespensa.core.domain.model.PantryItem>,
     val priceHistory: List<com.bitlabbr.minhadespensa.core.domain.model.PriceEntry>,
     val latestPriceEntry: com.bitlabbr.minhadespensa.core.domain.model.PriceEntry?,

@@ -400,4 +400,134 @@ class ProductDetailsViewModelTest {
 
         assertEquals(MeasureUnit.PACKAGE, viewModel.uiState.value.pantryStock?.measureUnit)
     }
+
+    @Test
+    fun `entering edit mode should populate edit form with all current product fields`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-edit-1",
+            name = "Sabão em Pó",
+            brand = "Omo",
+            category = "Limpeza",
+            measureUnit = MeasureUnit.KILOGRAM,
+            netWeight = 1.6,
+            ean = "7891234567890",
+            notes = "Uso geral",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, byteArrayOf(1, 2, 3))
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-edit-1")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onStartEdit()
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isEditing)
+        assertEquals("Sabão em Pó", state.editForm.name)
+        assertEquals("Omo", state.editForm.brand)
+        assertEquals("Limpeza", state.editForm.category)
+        assertEquals(MeasureUnit.KILOGRAM, state.editForm.measureUnit)
+        assertEquals("1,6", state.editForm.netWeight)
+        assertEquals("7891234567890", state.editForm.ean)
+        assertEquals("Uso geral", state.editForm.notes)
+        assertNotNull(state.editForm.imageBytes)
+
+        viewModel.onCancelEdit()
+        testScheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isEditing)
+    }
+
+    @Test
+    fun `onSaveProduct should validate fields and persist updated product`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-save-1",
+            name = "Sabonete",
+            brand = "Dove",
+            category = "Higiene",
+            measureUnit = MeasureUnit.GRAM,
+            netWeight = 90.0,
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-save-1")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onStartEdit()
+        testScheduler.advanceUntilIdle()
+
+        // Modify fields
+        viewModel.onFormChange(
+            viewModel.uiState.value.editForm.copy(
+                name = "Sabonete Hidratante",
+                brand = "Dove Original",
+                netWeight = "100",
+                notes = "Pacote econômico",
+            )
+        )
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onSaveProduct()
+        testScheduler.advanceUntilIdle()
+
+        // Edit mode should be closed
+        val state = viewModel.uiState.value
+        assertFalse(state.isEditing)
+
+        // Repository should have updated product
+        val updatedProduct = catalogRepository.getProductById("prod-save-1").first()
+        assertNotNull(updatedProduct)
+        assertEquals("Sabonete Hidratante", updatedProduct.name)
+        assertEquals("Dove Original", updatedProduct.brand)
+        assertEquals(100.0, updatedProduct.netWeight)
+        assertEquals("Pacote econômico", updatedProduct.notes)
+    }
+
+    @Test
+    fun `price variation percentage and difference should be computed accurately`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-price-var",
+            name = "Leite Condensado",
+            category = "Doces",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+
+        val price1 = PriceEntry(
+            id = "price-low",
+            productId = "prod-price-var",
+            priceInCents = 500L,
+            storeName = "Mercado A",
+            updatedAt = 1000L,
+        )
+        val price2 = PriceEntry(
+            id = "price-high",
+            productId = "prod-price-var",
+            priceInCents = 750L,
+            storeName = "Mercado B",
+            updatedAt = 1100L,
+        )
+        priceRepository.insertPriceEntry(price1)
+        priceRepository.insertPriceEntry(price2)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-price-var")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(500L, state.lowestPrice)
+        assertEquals(750L, state.highestPrice)
+        assertEquals(250L, state.priceDifference)
+        // (750 - 500) / 500 * 100 = 50.0%
+        assertEquals(50.0, state.priceVariationPercentage)
+    }
 }

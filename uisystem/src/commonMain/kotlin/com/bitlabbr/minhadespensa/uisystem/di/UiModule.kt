@@ -110,6 +110,8 @@ val uiModule = module {
             addPantryItemUseCase = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
+            saveCatalogProductUseCase = get(),
+            checkEanStatusUseCase = get(),
         )
     }
 

@@ -28,12 +28,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,11 +40,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
@@ -56,11 +54,19 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContain
 import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaDialog
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
+import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImagePickerCard
+import com.bitlabbr.minhadespensa.uisystem.components.core.media.ImageSourcePickerDialog
+import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePickerManager
+import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductDropdownField
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.features.details.model.*
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemDetailsSheet
 import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
+import com.bitlabbr.minhadespensa.uisystem.mapper.toLabel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
@@ -84,8 +90,6 @@ fun ProductDetailsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val colors = getAppColors()
-    val dimens = MinhaDespensaTheme.dimens
-    val typography = MinhaDespensaTheme.typography
 
     LaunchedEffect(productId) {
         viewModel.loadProduct(productId)
@@ -96,44 +100,26 @@ fun ProductDetailsScreen(
         topBar = {
             MinhaDespensaTopBar()
         },
-        bottomBar = {
-            if (uiState.product != null) {
-                Surface(
-                    color = colors.surface.copy(alpha = 0.95f),
-                    tonalElevation = 6.dp,
-                    modifier = Modifier.fillMaxWidth().padding(bottom = bottomPadding),
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .navigationBarsPadding()
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        if (!fromPantry) {
-                            MinhaDespensaSecondaryButton(
-                                text = stringResource(Res.string.product_details_action_add_to_pantry),
-                                onClick = viewModel::onOpenAddStockSheet,
-                                modifier = Modifier.weight(1f),
-                                leadingIcon = Icons.Rounded.Kitchen,
-                            )
-                        }
-                        MinhaDespensaPrimaryButton(
-                            text = stringResource(Res.string.product_details_action_add_to_list),
-                            onClick = viewModel::onOpenAddToListDialog,
-                            modifier = Modifier.weight(1f),
-                            leadingIcon = Icons.Rounded.AddShoppingCart,
-                        )
-                    }
-                }
-            }
-        },
     ) {
-        PrimaryContainerHeader(
-            textTop = stringResource(Res.string.product_details_header_top),
-            textBottom = stringResource(Res.string.product_details_header_bottom),
-            onBackClick = onNavigateBack,
-        )
+        if (!uiState.isEditing) {
+            PrimaryContainerHeader(
+                textTop = stringResource(Res.string.product_details_header_top),
+                textBottom = stringResource(Res.string.product_details_header_bottom),
+                onBackClick = onNavigateBack,
+                actionIcon = Icons.Rounded.Edit,
+                actionContentDescription = stringResource(Res.string.product_details_action_edit),
+                onActionClick = viewModel::onStartEdit,
+            )
+        } else {
+            PrimaryContainerHeader(
+                textTop = stringResource(Res.string.product_details_edit_header_top),
+                textBottom = stringResource(Res.string.product_details_edit_header_bottom),
+                onBackClick = viewModel::onCancelEdit,
+                actionIcon = Icons.Rounded.Close,
+                actionContentDescription = stringResource(Res.string.product_details_cancel_edit),
+                onActionClick = viewModel::onCancelEdit,
+            )
+        }
 
         if (uiState.isLoading) {
             Box(
@@ -145,22 +131,30 @@ fun ProductDetailsScreen(
         } else if (uiState.product != null) {
             val product = uiState.product!!
 
-            // --- HERO SECTION: Foto e Identificação do Produto ---
-            ProductHeroSection(product = product)
+            if (uiState.isEditing) {
+                // --- MODO DE EDIÇÃO: Todos os campos editáveis ---
+                ProductEditSection(
+                    formState = uiState.editForm,
+                    onFormChange = viewModel::onFormChange,
+                    onSave = viewModel::onSaveProduct,
+                    onCancel = viewModel::onCancelEdit,
+                )
+            } else {
+                // --- MODO DE VISUALIZAÇÃO: Todos os campos do produto exibidos ---
+                ProductHeroSection(
+                    product = product,
+                    onEditClick = viewModel::onStartEdit,
+                )
+            }
 
-            // --- SEÇÃO 1: ESTOQUE NA DESPENSA ---
-            ProductPantrySection(
-                pantryStock = uiState.pantryStock,
-                onAddStock = viewModel::onOpenAddStockSheet,
-                onConsume = viewModel::onOpenConsumeDialog,
-            )
-
-            // --- SEÇÃO 2: HISTÓRICO DE PREÇOS ---
+            // --- SEÇÃO: HISTÓRICO E VARIAÇÃO DE PREÇOS ---
             ProductPriceHistorySection(
                 latestPrice = uiState.latestPrice,
                 averagePrice = uiState.averagePrice,
                 lowestPrice = uiState.lowestPrice,
                 highestPrice = uiState.highestPrice,
+                priceVariationPercentage = uiState.priceVariationPercentage,
+                priceDifference = uiState.priceDifference,
                 priceHistory = uiState.priceHistory,
             )
 
@@ -179,7 +173,7 @@ fun ProductDetailsScreen(
         }
     }
 
-    // --- SUBFLUXOS E MODAIS ---
+    // --- SUBFLUXOS E MODAIS (se acionados) ---
     when (val subFlow = uiState.activeSubFlow) {
         is ProductDetailsSubFlow.AddPantryStock -> {
             AddPantryItemDetailsSheet(
@@ -217,12 +211,15 @@ fun ProductDetailsScreen(
 }
 
 // -------------------------------------------------------------------------
-// COMPONENTES DE SEÇÃO
+// COMPONENTES DE VISUALIZAÇÃO E EDIÇÃO DO PRODUTO
 // -------------------------------------------------------------------------
 
 @OptIn(ExperimentalResourceApi::class, ExperimentalLayoutApi::class)
 @Composable
-private fun ProductHeroSection(product: ProductDetailsInfoUiModel) {
+private fun ProductHeroSection(
+    product: ProductDetailsInfoUiModel,
+    onEditClick: () -> Unit,
+) {
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
@@ -285,7 +282,7 @@ private fun ProductHeroSection(product: ProductDetailsInfoUiModel) {
                 alignment = TextAlign.Center,
             )
 
-            // Badges / Tags com Legendas
+            // Exibição de TODOS os campos do produto
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
@@ -298,14 +295,17 @@ private fun ProductHeroSection(product: ProductDetailsInfoUiModel) {
                     icon = Icons.Rounded.Category,
                 )
 
-                // Marca (se houver)
-                if (!product.brand.isNullOrBlank()) {
-                    ProductDetailBadge(
-                        label = stringResource(Res.string.product_details_brand_label),
-                        value = product.brand,
-                        icon = Icons.Rounded.Sell,
-                    )
+                // Marca
+                val brandText = if (!product.brand.isNullOrBlank()) {
+                    product.brand
+                } else {
+                    stringResource(Res.string.product_details_no_brand)
                 }
+                ProductDetailBadge(
+                    label = stringResource(Res.string.product_details_brand_label),
+                    value = brandText,
+                    icon = Icons.Rounded.Sell,
+                )
 
                 // Conteúdo / Peso Líquido
                 val formattedWeight = if (product.netWeight % 1.0 == 0.0) {
@@ -319,16 +319,259 @@ private fun ProductHeroSection(product: ProductDetailsInfoUiModel) {
                     icon = Icons.Rounded.Scale,
                 )
 
-                // Código de Barras (se houver)
-                if (!product.ean.isNullOrBlank()) {
+                // Unidade de Medida Completa
+                ProductDetailBadge(
+                    label = stringResource(Res.string.register_product_form_basic_info_unit_label),
+                    value = product.measureUnit.toLabel(),
+                    icon = Icons.Rounded.Straighten,
+                )
+
+                // Código de Barras (EAN)
+                val eanText = if (!product.ean.isNullOrBlank()) {
+                    product.ean
+                } else {
+                    stringResource(Res.string.product_details_no_ean)
+                }
+                ProductDetailBadge(
+                    label = stringResource(Res.string.product_details_ean_label),
+                    value = eanText,
+                    icon = Icons.Rounded.QrCode,
+                )
+
+                // Observações (se houver)
+                if (!product.notes.isNullOrBlank()) {
                     ProductDetailBadge(
-                        label = stringResource(Res.string.product_details_ean_label),
-                        value = product.ean,
-                        icon = Icons.Rounded.QrCode,
+                        label = stringResource(Res.string.product_details_notes_label),
+                        value = product.notes,
+                        icon = Icons.Rounded.Notes,
                     )
                 }
             }
+
+            // Botão de Ação para Iniciar Edição
+            MinhaDespensaSecondaryButton(
+                text = stringResource(Res.string.product_details_action_edit),
+                onClick = onEditClick,
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                leadingIcon = Icons.Rounded.Edit,
+            )
         }
+    }
+}
+
+@Composable
+private fun ProductEditSection(
+    formState: ProductFormState,
+    onFormChange: (ProductFormState) -> Unit,
+    onSave: () -> Unit,
+    onCancel: () -> Unit,
+) {
+    val colors = getAppColors()
+    val dimens = MinhaDespensaTheme.dimens
+
+    var showImageSourcePicker by remember { mutableStateOf(false) }
+    var showBarcodeScanner by remember { mutableStateOf(false) }
+
+    val imagePickerManager = rememberImagePickerManager { bytes ->
+        onFormChange(formState.copy(imageBytes = bytes))
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = dimens.paddingSmall),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        // 1. Foto do Produto
+        SecondaryContainerSection(
+            title = stringResource(Res.string.register_product_form_image_title),
+        ) {
+            ImagePickerCard(
+                imageBytes = formState.imageBytes,
+                onClick = { showImageSourcePicker = true },
+                onClearImage = { onFormChange(formState.copy(imageBytes = null)) },
+            )
+        }
+
+        // 2. Informações Básicas
+        SecondaryContainerSection(
+            title = stringResource(Res.string.register_product_form_basic_info_section_title),
+        ) {
+            // Nome
+            ProductTextField(
+                value = formState.name,
+                onValueChange = { onFormChange(formState.copy(name = it, nameError = null)) },
+                label = stringResource(Res.string.register_product_form_basic_info_product_label),
+                placeholder = stringResource(Res.string.register_product_form_basic_info_product_placeholder),
+                isRequired = true,
+                maxCharacters = CoreConstants.Product.NAME_MAX_LENGTH,
+                errorMessage = formState.nameError?.asString(),
+            )
+
+            // Peso Líquido e Unidade
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+            ) {
+                ProductTextField(
+                    modifier = Modifier.weight(1f),
+                    value = formState.netWeight,
+                    onValueChange = { input ->
+                        val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }.take(8)
+                        onFormChange(formState.copy(netWeight = filtered, netWeightError = null))
+                    },
+                    label = stringResource(Res.string.register_product_form_basic_info_netweight_label),
+                    placeholder = stringResource(Res.string.register_product_form_basic_info_netweight_placeholder),
+                    keyboardType = KeyboardType.Decimal,
+                    isRequired = true,
+                    maxCharacters = CoreConstants.Product.WEIGHT_MAX_LENGTH,
+                    errorMessage = formState.netWeightError?.asString(),
+                )
+
+                ProductDropdownField(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(Res.string.register_product_form_basic_info_unit_label),
+                    selectedOption = formState.measureUnit,
+                    placeholder = stringResource(Res.string.register_product_form_basic_info_unit_placeholder),
+                    options = MeasureUnit.entries,
+                    optionLabel = { it.toLabel() },
+                    isRequired = true,
+                    errorMessage = formState.measureUnitError?.asString(),
+                    onSelected = { unit ->
+                        onFormChange(formState.copy(measureUnit = unit, measureUnitError = null))
+                    },
+                )
+            }
+
+            // Categoria
+            ProductDropdownField(
+                modifier = Modifier.fillMaxWidth(),
+                label = stringResource(Res.string.register_product_form_basic_info_product_category),
+                selectedOption = formState.category.takeIf { it.isNotBlank() },
+                placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
+                options = formState.availableCategories.filter {
+                    !it.equals(stringResource(Res.string.category_filter_all), ignoreCase = true)
+                },
+                optionLabel = { it },
+                isRequired = true,
+                errorMessage = formState.categoryError?.asString(),
+                onSelected = { onFormChange(formState.copy(category = it, categoryError = null)) },
+            )
+        }
+
+        // 3. Detalhes Adicionais
+        SecondaryContainerSection(
+            title = stringResource(Res.string.register_product_form_detail_info_section_title),
+        ) {
+            // Marca
+            ProductTextField(
+                value = formState.brand,
+                onValueChange = { onFormChange(formState.copy(brand = it)) },
+                label = stringResource(Res.string.register_product_form_detail_info_brand_label),
+                placeholder = stringResource(Res.string.register_product_form_detail_info_brand_placeholder),
+                maxCharacters = CoreConstants.Product.BRAND_MAX_LENGTH,
+            )
+
+            // EAN com Scanner
+            ProductTextField(
+                value = formState.ean,
+                onValueChange = { input ->
+                    val digits = input.filter { it.isDigit() }.take(14)
+                    onFormChange(formState.copy(ean = digits, eanError = null))
+                },
+                label = stringResource(Res.string.register_product_form_detail_info_ean_label),
+                placeholder = stringResource(Res.string.register_product_form_detail_info_ean_placeholder),
+                keyboardType = KeyboardType.Number,
+                maxCharacters = 14,
+                errorMessage = formState.eanError?.asString(),
+                trailingContent = {
+                    if (formState.isCheckingEan) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp).padding(2.dp),
+                            strokeWidth = 2.dp,
+                            color = colors.primary,
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .padding(end = 4.dp)
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(dimens.cardCorner * 0.35f))
+                                .background(colors.primary.copy(alpha = 0.12f))
+                                .clickable { showBarcodeScanner = true },
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.DocumentScanner,
+                                contentDescription = stringResource(Res.string.register_product_form_detail_info_ean_icon_description),
+                                tint = if (formState.eanError != null) colors.error else colors.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                },
+            )
+
+            // Observações
+            ProductTextField(
+                value = formState.notes,
+                onValueChange = { onFormChange(formState.copy(notes = it)) },
+                label = stringResource(Res.string.register_product_form_detail_info_notes_label),
+                placeholder = stringResource(Res.string.register_product_form_detail_info_notes_placeholder),
+                minLines = 3,
+                singleLine = false,
+                maxCharacters = CoreConstants.Product.NOTES_MAX_LENGTH,
+            )
+        }
+
+        // 4. Botões de Ação
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            MinhaDespensaSecondaryButton(
+                text = stringResource(Res.string.product_details_cancel_edit),
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                enabled = !formState.isSaving,
+            )
+            MinhaDespensaPrimaryButton(
+                text = if (formState.isSaving) {
+                    stringResource(Res.string.register_product_form_button_saving)
+                } else {
+                    stringResource(Res.string.product_details_save_changes)
+                },
+                onClick = onSave,
+                modifier = Modifier.weight(1f),
+                enabled = formState.isFormValid && !formState.isSaving,
+                leadingIcon = if (!formState.isSaving) Icons.Rounded.Check else null,
+            )
+        }
+    }
+
+    if (showImageSourcePicker) {
+        ImageSourcePickerDialog(
+            onDismissRequest = { showImageSourcePicker = false },
+            onCameraSelect = {
+                showImageSourcePicker = false
+                imagePickerManager.launchCamera()
+            },
+            onGallerySelect = {
+                showImageSourcePicker = false
+                imagePickerManager.launchGallery()
+            },
+        )
+    }
+
+    if (showBarcodeScanner) {
+        BarcodeScannerModal(
+            onBarcodeScanned = { ean ->
+                showBarcodeScanner = false
+                val digits = ean.filter { it.isDigit() }.take(14)
+                onFormChange(formState.copy(ean = digits, eanError = null))
+            },
+            onDismissRequest = { showBarcodeScanner = false },
+        )
     }
 }
 
@@ -377,175 +620,17 @@ private fun ProductDetailBadge(
                     fontStyle = typography.bodySmall,
                     color = colors.onSurface,
                     fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }
     }
 }
 
-@Composable
-private fun ProductPantrySection(
-    pantryStock: ProductPantryStockUiModel?,
-    onAddStock: () -> Unit,
-    onConsume: () -> Unit,
-) {
-    val colors = getAppColors()
-    val typography = MinhaDespensaTheme.typography
-    SecondaryContainerSection(
-        title = stringResource(Res.string.product_details_section_pantry),
-    ) {
-        if (pantryStock != null && pantryStock.hasStock) {
-            // Destaque de Estoque e Validade Mais Próxima
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    MinhaDespensaText(
-                        text = stringResource(Res.string.product_details_pantry_total_stock),
-                        fontStyle = typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                    val formattedQty = if (pantryStock.totalQuantity % 1.0 == 0.0) {
-                        pantryStock.totalQuantity.toLong().toString()
-                    } else {
-                        pantryStock.totalQuantity.toString().replace('.', ',')
-                    }
-                    MinhaDespensaText(
-                        text = "$formattedQty ${pantryStock.measureUnit.toAbbreviation()}",
-                        fontStyle = typography.displayLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.primary,
-                    )
-                }
-
-                // Badge de Status de Validade
-                if (pantryStock.closestExpirationDate != null) {
-                    val formattedDate = formatEpochDate(pantryStock.closestExpirationDate)
-                    val badgeBg = if (pantryStock.isExpired) {
-                        colors.error.copy(alpha = 0.15f)
-                    } else {
-                        colors.primary.copy(alpha = 0.15f)
-                    }
-                    val badgeColor = if (pantryStock.isExpired) colors.error else colors.primary
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(badgeBg)
-                            .padding(horizontal = 10.dp, vertical = 6.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        ) {
-                            Icon(
-                                imageVector = if (pantryStock.isExpired) Icons.Rounded.WarningAmber else Icons.Rounded.Event,
-                                contentDescription = null,
-                                tint = badgeColor,
-                                modifier = Modifier.size(14.dp),
-                            )
-                            MinhaDespensaText(
-                                text = formattedDate,
-                                fontStyle = typography.bodySmall,
-                                fontWeight = FontWeight.Bold,
-                                color = badgeColor,
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Lista dos lotes cadastrados
-            if (pantryStock.batches.isNotEmpty()) {
-                HorizontalDivider(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    color = colors.onSurface.copy(alpha = 0.08f),
-                )
-
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    pantryStock.batches.forEach { batch ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Column {
-                                val batchQty = if (batch.quantity % 1.0 == 0.0) {
-                                    batch.quantity.toLong().toString()
-                                } else {
-                                    batch.quantity.toString().replace('.', ',')
-                                }
-                                MinhaDespensaText(
-                                    text = "$batchQty ${pantryStock.measureUnit.toAbbreviation()}",
-                                    fontStyle = typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = colors.onSurface,
-                                )
-                                if (batch.batchNumber != null) {
-                                    MinhaDespensaText(
-                                        text = stringResource(Res.string.product_details_pantry_batch_label, batch.batchNumber),
-                                        fontStyle = typography.bodySmall,
-                                        color = colors.onSurfaceVariant,
-                                    )
-                                }
-                            }
-
-                            if (batch.expirationDate != null) {
-                                MinhaDespensaText(
-                                    text = formatEpochDate(batch.expirationDate),
-                                    fontStyle = typography.bodySmall,
-                                    color = if (batch.isExpired) colors.error else colors.onSurfaceVariant,
-                                    fontWeight = if (batch.isExpired) FontWeight.Bold else FontWeight.Normal,
-                                )
-                            } else {
-                                MinhaDespensaText(
-                                    text = stringResource(Res.string.product_details_pantry_no_expiration),
-                                    fontStyle = typography.bodySmall,
-                                    color = colors.onSurfaceVariant.copy(alpha = 0.6f),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Botão de Consumo
-            MinhaDespensaSecondaryButton(
-                text = stringResource(Res.string.product_details_pantry_consume_button),
-                onClick = onConsume,
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                leadingIcon = Icons.Rounded.RemoveCircleOutline,
-            )
-        } else {
-            // Sem estoque
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                MinhaDespensaText(
-                    text = stringResource(Res.string.product_details_pantry_out_of_stock),
-                    fontWeight = FontWeight.SemiBold,
-                    fontStyle = typography.bodyLarge,
-                    color = colors.onSurface,
-                )
-                MinhaDespensaText(
-                    text = stringResource(Res.string.product_details_pantry_out_of_stock_desc),
-                    fontStyle = typography.bodySmall,
-                    color = colors.onSurfaceVariant,
-                    alignment = TextAlign.Center,
-                )
-                MinhaDespensaSecondaryButton(
-                    text = stringResource(Res.string.product_details_action_add_to_pantry),
-                    onClick = onAddStock,
-                    leadingIcon = Icons.Rounded.Add,
-                )
-            }
-        }
-    }
-}
+// -------------------------------------------------------------------------
+// SEÇÃO DE HISTÓRICO E VARIAÇÃO DE PREÇOS
+// -------------------------------------------------------------------------
 
 @Composable
 private fun ProductPriceHistorySection(
@@ -553,6 +638,8 @@ private fun ProductPriceHistorySection(
     averagePrice: Long?,
     lowestPrice: Long?,
     highestPrice: Long?,
+    priceVariationPercentage: Double?,
+    priceDifference: Long?,
     priceHistory: List<ProductPriceEntryUiModel>,
 ) {
     val colors = getAppColors()
@@ -562,82 +649,206 @@ private fun ProductPriceHistorySection(
         title = stringResource(Res.string.product_details_section_prices),
     ) {
         if (priceHistory.isNotEmpty() && latestPrice != null) {
-            // Resumo Financeiro (Último, Médio, Menor)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    MinhaDespensaText(
-                        text = stringResource(Res.string.product_details_price_latest),
-                        fontStyle = typography.bodySmall,
-                        color = colors.onSurfaceVariant,
-                    )
-                    MinhaDespensaText(
-                        text = latestPrice.formatPrice(includeCurrencySymbol = true),
-                        fontStyle = typography.priceLabel,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.primary,
-                    )
-                }
+            // --- CARD DE DESTAQUE: VARIAÇÃO DE PREÇO ---
+            if (lowestPrice != null && highestPrice != null && highestPrice > lowestPrice) {
+                val formattedPct = priceVariationPercentage?.let {
+                    val rounded = (it * 10).toLong() / 10.0
+                    if (rounded % 1.0 == 0.0) rounded.toLong().toString() else rounded.toString().replace('.', ',')
+                } ?: "0"
+                val formattedDiff = priceDifference?.formatPrice(includeCurrencySymbol = true) ?: ""
 
-                if (averagePrice != null) {
-                    Column(horizontalAlignment = Alignment.End) {
-                        MinhaDespensaText(
-                            text = stringResource(Res.string.product_details_price_average),
-                            fontStyle = typography.bodySmall,
-                            color = colors.onSurfaceVariant,
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = colors.primary.copy(alpha = 0.10f),
+                    border = BorderStroke(1.dp, colors.primary.copy(alpha = 0.25f)),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(colors.primary.copy(alpha = 0.20f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.TrendingUp,
+                                contentDescription = null,
+                                tint = colors.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            MinhaDespensaText(
+                                text = stringResource(Res.string.product_details_price_variation_title),
+                                fontStyle = typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                color = colors.primary,
+                            )
+                            MinhaDespensaText(
+                                text = stringResource(Res.string.product_details_price_variation_desc, formattedPct),
+                                fontStyle = typography.bodyLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.onSurface,
+                            )
+                            if (formattedDiff.isNotBlank()) {
+                                MinhaDespensaText(
+                                    text = stringResource(Res.string.product_details_price_difference, formattedDiff),
+                                    fontStyle = typography.bodySmall,
+                                    color = colors.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+            } else if (priceHistory.size == 1) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = colors.surfaceContainerHigh.copy(alpha = 0.4f),
+                    border = BorderStroke(1.dp, colors.onSurface.copy(alpha = 0.08f)),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Info,
+                            contentDescription = null,
+                            tint = colors.primary,
+                            modifier = Modifier.size(20.dp),
                         )
                         MinhaDespensaText(
-                            text = averagePrice.formatPrice(includeCurrencySymbol = true),
+                            text = stringResource(Res.string.product_details_price_single_recorded),
                             fontStyle = typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colors.onSurface,
+                            color = colors.onSurfaceVariant,
                         )
                     }
                 }
             }
 
+            // --- GRID DE MÉTRICAS FINANCEIRAS ---
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Menor Preço
+                if (lowestPrice != null) {
+                    PriceMetricCard(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(Res.string.product_details_price_lowest),
+                        value = lowestPrice.formatPrice(includeCurrencySymbol = true),
+                        indicatorColor = Color(0xFF4CAF50),
+                    )
+                }
+
+                // Maior Preço
+                if (highestPrice != null) {
+                    PriceMetricCard(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(Res.string.product_details_price_highest),
+                        value = highestPrice.formatPrice(includeCurrencySymbol = true),
+                        indicatorColor = if (highestPrice > (lowestPrice ?: 0L)) colors.error else colors.primary,
+                    )
+                }
+
+                // Preço Médio
+                if (averagePrice != null) {
+                    PriceMetricCard(
+                        modifier = Modifier.weight(1f),
+                        label = stringResource(Res.string.product_details_price_average),
+                        value = averagePrice.formatPrice(includeCurrencySymbol = true),
+                        indicatorColor = colors.onSurfaceVariant,
+                    )
+                }
+
+                // Último Preço
+                PriceMetricCard(
+                    modifier = Modifier.weight(1f),
+                    label = stringResource(Res.string.product_details_price_latest),
+                    value = latestPrice.formatPrice(includeCurrencySymbol = true),
+                    indicatorColor = colors.primary,
+                )
+            }
+
             HorizontalDivider(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 color = colors.onSurface.copy(alpha = 0.08f),
             )
 
-            // Lista de Compras Anteriores
+            // --- LISTA DE COMPRAS REGISTRADAS ---
+            MinhaDespensaText(
+                text = stringResource(Res.string.product_details_price_purchases_title),
+                fontStyle = typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                color = colors.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                priceHistory.take(5).forEach { entry ->
-                    Row(
+                priceHistory.take(10).forEach { entry ->
+                    val isLowest = lowestPrice != null && entry.priceInCents == lowestPrice && priceHistory.size > 1
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                        shape = RoundedCornerShape(8.dp),
+                        color = colors.surfaceContainerHigh.copy(alpha = 0.35f),
                     ) {
-                        Column {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                ) {
+                                    MinhaDespensaText(
+                                        text = entry.storeName,
+                                        fontStyle = typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium,
+                                        color = colors.onSurface,
+                                    )
+                                    if (isLowest) {
+                                        Surface(
+                                            shape = RoundedCornerShape(4.dp),
+                                            color = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                                        ) {
+                                            MinhaDespensaText(
+                                                text = stringResource(Res.string.product_details_price_lowest),
+                                                fontStyle = typography.bodySmall,
+                                                color = Color(0xFF4CAF50),
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+                                            )
+                                        }
+                                    }
+                                }
+                                MinhaDespensaText(
+                                    text = formatEpochDate(entry.date),
+                                    fontStyle = typography.bodySmall,
+                                    color = colors.onSurfaceVariant,
+                                )
+                            }
+
                             MinhaDespensaText(
-                                text = entry.storeName,
+                                text = entry.priceInCents.formatPrice(includeCurrencySymbol = true),
                                 fontStyle = typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = colors.onSurface,
-                            )
-                            MinhaDespensaText(
-                                text = formatEpochDate(entry.date),
-                                fontStyle = typography.bodySmall,
-                                color = colors.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isLowest) Color(0xFF4CAF50) else colors.primary,
                             )
                         }
-
-                        MinhaDespensaText(
-                            text = entry.priceInCents.formatPrice(includeCurrencySymbol = true),
-                            fontStyle = typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.primary,
-                        )
                     }
                 }
             }
         } else {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 MinhaDespensaText(
@@ -651,8 +862,48 @@ private fun ProductPriceHistorySection(
     }
 }
 
+@Composable
+private fun PriceMetricCard(
+    label: String,
+    value: String,
+    indicatorColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    val colors = getAppColors()
+    val typography = MinhaDespensaTheme.typography
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = colors.surfaceContainerHigh.copy(alpha = 0.45f),
+        border = BorderStroke(1.dp, colors.onSurface.copy(alpha = 0.08f)),
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            MinhaDespensaText(
+                text = label,
+                fontStyle = typography.bodySmall,
+                color = colors.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            MinhaDespensaText(
+                text = value,
+                fontStyle = typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = indicatorColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
 // -------------------------------------------------------------------------
-// DIÁLOGOS E MODAIS
+// DIÁLOGOS E MODAIS ADICIONAIS
 // -------------------------------------------------------------------------
 
 @Composable

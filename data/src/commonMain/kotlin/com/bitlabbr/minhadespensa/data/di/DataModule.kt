@@ -47,6 +47,7 @@ import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 
+import com.bitlabbr.minhadespensa.data.local.migration.ALL_MIGRATIONS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import org.koin.core.qualifier.named
@@ -56,6 +57,7 @@ val dataModule = module {
     single<AppDatabase> {
         val builder = get<RoomDatabase.Builder<AppDatabase>>()
         builder
+            .addMigrations(*ALL_MIGRATIONS)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
             .build()

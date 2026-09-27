@@ -24,17 +24,23 @@
 package com.bitlabbr.minhadespensa.uisystem.features.details.model
 
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
 
 data class ProductDetailsUiState(
     val isLoading: Boolean = true,
+    val isEditing: Boolean = false,
     val product: ProductDetailsInfoUiModel? = null,
+    val editForm: ProductFormState = ProductFormState(),
+    val availableCategories: List<String> = emptyList(),
     val pantryStock: ProductPantryStockUiModel? = null,
     val priceHistory: List<ProductPriceEntryUiModel> = emptyList(),
     val latestPrice: Long? = null,
     val averagePrice: Long? = null,
     val lowestPrice: Long? = null,
     val highestPrice: Long? = null,
+    val priceVariationPercentage: Double? = null,
+    val priceDifference: Long? = null,
     val activeShoppingLists: List<ShoppingListOptionUiModel> = emptyList(),
     val activeSubFlow: ProductDetailsSubFlow? = null,
     val error: UiText? = null,
@@ -48,6 +54,7 @@ data class ProductDetailsInfoUiModel(
     val ean: String? = null,
     val measureUnit: MeasureUnit = MeasureUnit.UNIT,
     val netWeight: Double = 1.0,
+    val notes: String? = null,
     val imageBytes: ByteArray? = null,
 )
 
