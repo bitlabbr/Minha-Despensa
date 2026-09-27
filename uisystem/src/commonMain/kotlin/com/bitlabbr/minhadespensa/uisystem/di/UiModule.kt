@@ -27,6 +27,7 @@ import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.details.ProductDetailsViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.ShoppingAssistantViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsViewModel
@@ -96,6 +97,21 @@ val uiModule = module {
             createPlannedShoppingListUseCase = get(),
             catalogRepository = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        ProductDetailsViewModel(
+            catalogRepository = get(),
+            pantryRepository = get(),
+            priceRepository = get(),
+            shoppingListRepository = get(),
+            addCatalogItemToShoppingListUseCase = get(),
+            addPantryItemUseCase = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+            notificationManager = get(),
+            saveCatalogProductUseCase = get(),
+            checkEanStatusUseCase = get(),
         )
     }
 

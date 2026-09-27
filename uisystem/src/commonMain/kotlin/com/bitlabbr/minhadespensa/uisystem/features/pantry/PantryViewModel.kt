@@ -207,6 +207,7 @@ class PantryViewModel(
     private fun aggregatePantryItems(items: List<PantryItemWithCategory>): List<PantryItemUiModel> {
         val now = Clock.System.now().toEpochMilliseconds()
         return items
+            .filter { it.pantryItem.quantity > 0.0 }
             .groupBy { it.pantryItem.productId }
             .map { (productId, groupedItems) ->
                 val firstItem = groupedItems.first()
@@ -230,6 +231,7 @@ class PantryViewModel(
                     isExpired = isExpired,
                 )
             }
+            .filter { it.quantity > 0.0 }
     }
 
     companion object {

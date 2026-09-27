@@ -21,37 +21,12 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.uisystem.navigation
+package com.bitlabbr.minhadespensa.uisystem.features.details.model
 
-import kotlinx.serialization.Serializable
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
 
-@Serializable
-data object HomeScreenRoute
-
-@Serializable
-data object PantryScreenRoute
-
-@Serializable
-data object SettingsRoute
-
-
-@Serializable
-data object ProductCatalogRoute
-
-@Serializable
-data object ShoppingListsRoute
-
-@Serializable
-data class ShoppingAssistantRoute(val listId: String? = null)
-
-@Serializable
-data object CreatePlannedListRoute
-
-@Serializable
-data object QuickListRoute
-
-@Serializable
-data class ProductDetailsRoute(
-    val productId: String,
-    val fromPantry: Boolean = false,
-)
+sealed interface ProductDetailsSubFlow {
+    data object ConsumeStock : ProductDetailsSubFlow
+    data class AddPantryStock(val product: CatalogProductUiModel) : ProductDetailsSubFlow
+    data object SelectShoppingList : ProductDetailsSubFlow
+}

@@ -29,6 +29,7 @@ import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.AddCatalogItemToShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
@@ -46,6 +47,7 @@ import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 
+import com.bitlabbr.minhadespensa.data.local.migration.ALL_MIGRATIONS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import org.koin.core.qualifier.named
@@ -55,6 +57,7 @@ val dataModule = module {
     single<AppDatabase> {
         val builder = get<RoomDatabase.Builder<AppDatabase>>()
         builder
+            .addMigrations(*ALL_MIGRATIONS)
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.IO)
             .build()
@@ -91,4 +94,5 @@ val dataModule = module {
     factory { RemoveCartItemUseCase(shoppingListRepository = get()) }
     factory { FinalizeShoppingSessionUseCase(shoppingListRepository = get()) }
     factory { CreatePlannedShoppingListUseCase(shoppingListRepository = get()) }
+    factory { AddCatalogItemToShoppingListUseCase(shoppingListRepository = get()) }
 }

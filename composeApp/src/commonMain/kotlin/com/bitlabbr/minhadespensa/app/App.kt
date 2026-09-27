@@ -48,6 +48,7 @@ import androidx.navigation.toRoute
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.GlobalNotificationHost
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
+import com.bitlabbr.minhadespensa.uisystem.features.details.ProductDetailsScreen
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
 import com.bitlabbr.minhadespensa.uisystem.features.settings.SettingsScreen
@@ -148,7 +149,14 @@ fun App() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     composable<PantryScreenRoute> {
-                        PantryScreen(bottomPadding = innerPadding.calculateBottomPadding())
+                        PantryScreen(
+                            bottomPadding = innerPadding.calculateBottomPadding(),
+                            onProductClick = { product ->
+                                navController.navigate(
+                                    ProductDetailsRoute(productId = product.id, fromPantry = true)
+                                )
+                            },
+                        )
                     }
 
                     composable<SettingsRoute> {
@@ -163,8 +171,20 @@ fun App() {
                         CatalogScreen(
                             bottomPadding = innerPadding.calculateBottomPadding(),
                             onProductClick = { product ->
-                                // Ação ao selecionar um produto (ex: navegar para detalhes, edição ou selecionar para despensa)
+                                navController.navigate(
+                                    ProductDetailsRoute(productId = product.id, fromPantry = false)
+                                )
                             },
+                        )
+                    }
+
+                    composable<ProductDetailsRoute> { backStackEntry ->
+                        val route = backStackEntry.toRoute<ProductDetailsRoute>()
+                        ProductDetailsScreen(
+                            productId = route.productId,
+                            fromPantry = route.fromPantry,
+                            onNavigateBack = { navController.popBackStack() },
+                            bottomPadding = innerPadding.calculateBottomPadding(),
                         )
                     }
 

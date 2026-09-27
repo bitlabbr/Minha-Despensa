@@ -45,11 +45,13 @@ class SaveCatalogProductUseCase(
         ean: String? = null,
         imageBytes: ByteArray? = null,
         isEditing: Boolean = false,
+        notes: String? = null,
     ): Result<CatalogProduct> = runCatching {
         val trimmedName = name.trim()
         val trimmedBrand = brand?.trim()?.takeIf { it.isNotBlank() }
         val trimmedCategory = category.trim().ifBlank { CoreConstants.Product.DEFAULT_CATEGORY }
         val trimmedEan = ean?.trim()?.takeIf { it.isNotBlank() }
+        val trimmedNotes = notes?.trim()?.takeIf { it.isNotBlank() }
 
         require(trimmedName.isNotBlank()) { CoreConstants.Validation.ERROR_PRODUCT_NAME_BLANK }
         require(trimmedName.length <= CoreConstants.Product.NAME_MAX_LENGTH) { "${CoreConstants.Validation.ERROR_PRODUCT_NAME_TOO_LONG}:${CoreConstants.Product.NAME_MAX_LENGTH}" }
@@ -74,6 +76,7 @@ class SaveCatalogProductUseCase(
             updatedAt = getCurrentTime(),
             isDeleted = false,
             manuallyAdded = true,
+            notes = trimmedNotes,
         )
 
         if (isEditing) {

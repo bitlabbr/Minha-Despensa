@@ -70,7 +70,7 @@ fun MainScreenScaffold(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 top = paddingValues.calculateTopPadding(),
-                bottom = bottomPadding + 16.dp,
+                bottom = paddingValues.calculateBottomPadding() + bottomPadding + 24.dp,
             ),
         ) {
             item {

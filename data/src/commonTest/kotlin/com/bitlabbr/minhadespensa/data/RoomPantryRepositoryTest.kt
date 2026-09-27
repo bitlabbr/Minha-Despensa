@@ -304,6 +304,41 @@ class RoomPantryRepositoryTest : BaseTest() {
         assertEquals(0.0, result.quantity)
     }
 
+    @Test
+    fun `getAllActivePantryItemsWithCategory should filter out items with zero quantity`() = runTest {
+        val product = createDummyProduct(name = "Arroz Integral", category = "Grãos")
+        catalogRepository.insertProduct(product, null)
+
+        val zeroItem = createDummyPantryItem(productId = product.id, quantity = 0.0)
+        pantryRepository.insertPantryItem(zeroItem)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            val activeList = awaitItem()
+            assertTrue(activeList.isEmpty(), "Item com quantidade zero não deve aparecer na despensa ativa")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `getExpiringPantryItems should filter out items with zero quantity`() = runTest {
+        val product = createDummyProduct(name = "Iogurte", category = "Laticínios")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val zeroItem = createDummyPantryItem(
+            productId = product.id,
+            quantity = 0.0,
+            expirationDate = now + 1000L * 60 * 60 * 24 // amanhã
+        )
+        pantryRepository.insertPantryItem(zeroItem)
+
+        pantryRepository.getExpiringPantryItems(thresholdDays = 7).test {
+            val expiringList = awaitItem()
+            assertTrue(expiringList.isEmpty(), "Item com quantidade zero não deve aparecer nos itens prestes a vencer")
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     // -------------------------------------------------------------------------
     // 3. LWW: EMPATE DE TIMESTAMPS E FORCE UPDATE
     // -------------------------------------------------------------------------
@@ -403,6 +438,53 @@ class RoomPantryRepositoryTest : BaseTest() {
         assertNotNull(updated)
         assertEquals(3.5, updated.quantity, 0.001)
         assertTrue(updated.updatedAt > initialTime, "updatedAt must be updated after consumption")
+    }
+
+    @Test
+    fun `test Flow emission after consumePantryItem`() = runTest {
+        val product = createDummyProduct(name = "Arroz")
+        catalogRepository.insertProduct(product, null)
+        val item = createDummyPantryItem(productId = product.id, quantity = 5.0)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.getPantryItemsByProductId(product.id).test {
+            val initial = awaitItem()
+            assertEquals(5.0, initial.first().quantity)
+
+            pantryRepository.consumePantryItem(item.id, 2.0)
+
+            val updated = awaitItem()
+            assertEquals(3.0, updated.first().quantity)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `consumeBatch should trigger Flow emission on getPantryItemsByProductId`() = runTest {
+        val product = createDummyProduct(name = "Feijão")
+        catalogRepository.insertProduct(product, null)
+        val batch1 = createDummyPantryItem(productId = product.id, quantity = 2.0)
+        val batch2 = createDummyPantryItem(productId = product.id, quantity = 3.0)
+        pantryRepository.insertPantryItem(batch1)
+        pantryRepository.insertPantryItem(batch2)
+
+        pantryRepository.getPantryItemsByProductId(product.id).test {
+            val initial = awaitItem()
+            assertEquals(2, initial.size)
+            assertEquals(5.0, initial.sumOf { it.quantity })
+
+            pantryRepository.consumeBatch(
+                listOf(
+                    PantryItemConsumption(pantryItemId = batch1.id, quantityToConsume = 2.0),
+                    PantryItemConsumption(pantryItemId = batch2.id, quantityToConsume = 1.0)
+                )
+            )
+
+            val updated = awaitItem()
+            assertEquals(2, updated.size)
+            assertEquals(2.0, updated.sumOf { it.quantity })
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test

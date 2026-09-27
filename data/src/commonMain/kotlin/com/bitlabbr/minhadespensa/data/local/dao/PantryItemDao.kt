@@ -27,6 +27,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
@@ -58,6 +59,13 @@ interface PantryItemDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     suspend fun forceUpdatePantryItem(pantryItem: PantryItemEntity): Int
 
+    @Transaction
+    suspend fun forceUpdatePantryItems(items: List<PantryItemEntity>) {
+        for (item in items) {
+            forceUpdatePantryItem(item)
+        }
+    }
+
     @Query(
         """
     UPDATE pantry_items 
@@ -81,12 +89,15 @@ interface PantryItemDao {
     @Query("DELETE FROM pantry_items WHERE id = :id")
     suspend fun deletePantryItemById(id: String): Int
 
+    @Query("SELECT * FROM pantry_items WHERE id = :pantryItemId")
+    suspend fun findPantryItemById(pantryItemId: String): PantryItemEntity?
+
     @Query(
         """
         SELECT p.*, c.category, c.name 
         FROM pantry_items p 
         INNER JOIN catalog_products c ON p.productId = c.id 
-        WHERE p.isDeleted = 0 AND c.isDeleted = 0
+        WHERE p.isDeleted = 0 AND c.isDeleted = 0 AND p.quantity > 0
     """
     )
     fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategoryDaoResult>>
@@ -108,6 +119,7 @@ interface PantryItemDao {
         INNER JOIN catalog_products c ON p.productId = c.id 
         WHERE p.isDeleted = 0
           AND c.isDeleted = 0
+          AND p.quantity > 0
           AND p.expirationDate IS NOT NULL
           AND p.expirationDate >= :now
           AND p.expirationDate <= :expirationThreshold
