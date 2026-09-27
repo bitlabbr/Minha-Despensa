@@ -313,7 +313,7 @@ class ProductDetailsViewModel(
                 notificationManager.showSuccess(UiText.Resource(Res.string.product_details_pantry_consume_success))
             }.onFailure { error ->
                 logger.e(TAG, "Falha ao consumir item: ${error.message}", error)
-                notificationManager.showError(UiText.DynamicString("Erro ao consumir: ${error.message}"))
+                notificationManager.showError(UiText.Resource(Res.string.product_details_pantry_consume_error, listOf(error.message ?: "")))
             }
         }
     }
@@ -328,10 +328,10 @@ class ProductDetailsViewModel(
                 batchNumber = batchNumber,
             ).onSuccess {
                 _activeSubFlow.value = null
-                notificationManager.showSuccess(UiText.DynamicString("Estoque adicionado com sucesso!"))
+                notificationManager.showSuccess(UiText.Resource(Res.string.product_details_add_pantry_success))
             }.onFailure { error ->
                 logger.e(TAG, "Falha ao adicionar estoque: ${error.message}", error)
-                notificationManager.showError(UiText.DynamicString("Erro ao salvar estoque: ${error.message}"))
+                notificationManager.showError(UiText.Resource(Res.string.product_details_add_pantry_error, listOf(error.message ?: "")))
             }
         }
     }
@@ -348,7 +348,7 @@ class ProductDetailsViewModel(
                 notificationManager.showSuccess(UiText.Resource(Res.string.product_details_add_to_list_success))
             }.onFailure { error ->
                 logger.e(TAG, "Falha ao adicionar à lista: ${error.message}", error)
-                notificationManager.showError(UiText.DynamicString("Erro ao adicionar à lista: ${error.message}"))
+                notificationManager.showError(UiText.Resource(Res.string.product_details_add_to_list_error, listOf(error.message ?: "")))
             }
         }
     }
@@ -369,7 +369,7 @@ class ProductDetailsViewModel(
             return ProductDetailsUiState(
                 isLoading = false,
                 product = null,
-                error = UiText.DynamicString("Produto não encontrado"),
+                error = UiText.Resource(Res.string.product_details_not_found),
             )
         }
 
@@ -424,7 +424,7 @@ class ProductDetailsViewModel(
                 ProductPriceEntryUiModel(
                     id = it.id,
                     priceInCents = it.priceInCents,
-                    storeName = it.storeName ?: "Compra",
+                    storeName = it.storeName.orEmpty(),
                     date = it.updatedAt,
                 )
             }
