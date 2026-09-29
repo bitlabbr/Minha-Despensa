@@ -87,15 +87,15 @@ Shopping lists are modeled as persistent entities supporting diverse household s
 
 Current data/domain capabilities include:
 
-- **List Types**: Planned lists (`PLANNED`), quick lists (`QUICK`), and scratchpad free-text lists (`SCRATCHPAD`)
-- **Lifecycle Statuses**: `ACTIVE`, `IN_PROGRESS`, `COMPLETED`, and `ARCHIVED`
-- **Budget Tracking**: Optional budget per list (`budgetInCents`) with live cart total comparison
+- **List Types**: Scratchpad notes (`SCRATCHPAD`), structured planned lists (`PLANNED`), and active shopping assistant sessions (`ASSISTANT`)
+- **Lifecycle Statuses**: `DRAFT`, `SHOPPING`, `COMPLETED`, and `CANCELLED`
+- **Budget Tracking**: Optional budget per list (`budgetInCents`) with live cart total comparison and `isOverBudget` guard
 - **Flexible Items**: Supports both catalog-linked items (`productId`) and scratchpad notes (`rawText`)
 - **Dynamic Computed Metrics**:
   - `totalActiveItems`: non-deleted item count
   - `totalCheckedItems`: items checked during shopping
   - `totalCartInCents`: total monetary value of checked items
-  - `progress`: dynamic completion ratio (`0.0f` to `1.0f`)
+  - `subtotalInCents`: price-per-quantity calculation per item
 - **Soft Deletion & LWW Synchronization**: Retains versioning for synchronization
 - **Retrieval**: Reactive `Flow` queries fetching lists together with their items
 
@@ -143,6 +143,17 @@ Current capabilities include:
 
 ---
 
+## 🔍 Product Details & Price Evolution
+
+MinhaDespensa features a dedicated product details experience accessible from both the catalog and pantry flows:
+
+- **Product Summary**: Brand, category, measurement unit, net weight, notes, and barcode
+- **Price History Visualizer**: Interactive chart plotting price changes across shopping sessions over time
+- **Pantry Batches**: Visual list of all lots in stock with respective expiration dates
+- **Action Shortcuts**: Quick buttons to add to an active shopping list, increment pantry stock, or edit product details
+
+---
+
 ## ⏳ Expiration Tracking
 
 The project already models expiration dates for pantry items and contains repository/UI support for retrieving products close to expiration.
@@ -153,7 +164,7 @@ The Pantry ViewModel maintains separate state for:
 - products close to expiration;
 - the currently selected pantry item.
 
-The complete expiration experience — including alerts and final user-facing behavior — is still under development.
+The complete expiration experience — including push notifications — is still under development.
 
 ---
 
@@ -170,47 +181,38 @@ Implemented operations include:
 - Soft deletion
 - Timestamp-based updates
 
-When a purchase is finalized, the price recorded in the shopping list can automatically become a new historical price entry.
+When a purchase is finalized, the price recorded in the shopping list automatically becomes a new historical price entry.
 
 ---
 
 ## ➕ Product Registration UI
 
-A Compose Multiplatform product registration flow is currently under development.
+A Compose Multiplatform unified product registration sheet (`RegisterProductBottomSheet`) is integrated across the app:
 
-The current UI already includes:
-
-- Product photo area
-- Product name
-- Category
-- Measurement unit
-- Barcode field
-- Barcode scanner action
-- Average price
-- Average shelf life
-- Notes
-- Expiration reminder configuration
-- Configurable reminder interval
-- Loading state during save
-- Expandable advanced information section
-
-Camera/gallery integration, barcode scanning, reminders, and final persistence wiring are still being completed.
+- Product photo capture and thumbnail preview
+- Product name, brand, and category selection
+- Measurement unit and numeric net weight validation
+- Barcode field with live CameraX + Google ML Kit barcode scanner
+- Inline form validation via `ProductFormValidator` and debounced EAN verification
+- Notes and additional metadata
 
 ---
 
 ## ⚡ Domain Use Cases
 
-The `:core` domain layer defines 9 use cases that orchestrate application logic independently of UI and database frameworks:
+The `:core` domain layer defines 11 use cases that orchestrate application logic independently of UI and database frameworks:
 
 1. **`SaveCatalogProductUseCase`**: Validates constraints (name, category, EAN lengths/digits, positive weight) and saves catalog products with image blobs.
 2. **`CheckEanStatusUseCase`**: Validates barcode formatting and verifies product existence by EAN.
 3. **`AddPantryItemUseCase`**: Enforces inventory preconditions and stores active pantry stock.
-4. **`CreatePlannedShoppingListUseCase`**: Builds structured shopping lists with budget thresholds and planned items.
-5. **`CreateQuickShoppingListUseCase`**: Creates quick market trip lists and scratchpad notes.
+4. **`CreatePlannedShoppingListUseCase`**: Builds structured shopping lists with budget thresholds and planned items (`ShoppingListType.PLANNED`).
+5. **`CreateQuickShoppingListUseCase`**: Creates quick scratchpad shopping lists (`ShoppingListType.SCRATCHPAD`) parsing unformatted line items.
 6. **`AddCatalogItemToShoppingListUseCase`**: Attaches catalog products to shopping lists with pre-filled defaults.
 7. **`AddOrUpdateCartItemUseCase`**: Manages dynamic adjustments (quantity, price, checked state) during shopping trips.
-8. **`StartShoppingSessionUseCase`**: Transitions shopping lists into the active `IN_PROGRESS` shopping state.
-9. **`FinalizeShoppingSessionUseCase`**: Atomically orchestrates purchase finalization across pantry, price history, and shopping lists.
+8. **`ReplaceCartItemUseCase`**: Swaps items in the cart with alternative catalog products or custom items during active shopping.
+9. **`RemoveCartItemUseCase`**: Soft-deletes items from active shopping lists.
+10. **`StartShoppingSessionUseCase`**: Transitions shopping lists into the active `ShoppingListStatus.SHOPPING` state.
+11. **`FinalizeShoppingSessionUseCase`**: Atomically orchestrates purchase finalization across pantry, price history, and shopping lists.
 
 ---
 
@@ -222,26 +224,25 @@ The `:core` domain layer defines 9 use cases that orchestrate application logic 
 | Compose Multiplatform UI | ✅ Implemented |
 | Clean Architecture + MVVM | ✅ Implemented |
 | Koin dependency injection | ✅ Implemented |
-| Room KMP persistence (v3) | ✅ Implemented |
+| Room KMP persistence (v4 + migrations) | ✅ Implemented |
 | Local product catalog | ✅ Implemented |
 | Search by EAN | ✅ Implemented (Domain / Data / Usecase) |
 | Search by name / brand | ✅ Implemented (Domain / Data) |
-| Shopping list persistence & types | ✅ Implemented (Planned, Quick, Scratchpad) |
+| Shopping list persistence & types | ✅ Implemented (Planned, Scratchpad, Assistant) |
 | Shopping list budget & cart analytics | ✅ Implemented |
-| Shopping checklist state & progress | ✅ Implemented |
+| Shopping checklist state & assistant | ✅ Implemented |
 | Purchase finalization (atomic transaction) | ✅ Implemented |
 | Automatic pantry entry after purchase | ✅ Implemented |
-| Price history tracking | ✅ Implemented |
+| Price history tracking & charts | ✅ Implemented |
+| Product Details screen & batch view | ✅ Implemented |
 | Pantry domain and persistence | ✅ Implemented |
 | Pantry single & batch consumption | ✅ Implemented |
 | Pantry reactive ViewModel | ✅ Implemented |
-| Automated CI & Unit Tests (158+ tests) | ✅ Implemented |
-| Pantry full UI experience | 🚧 In development |
-| Expiration tracking | 🚧 In development |
-| Product registration form | 🚧 In development |
-| Product image capture/gallery | 🚧 In development |
-| Barcode scanner integration | 🚧 In development |
-| Expiration notifications | 🚧 In development |
+| Automated CI & Unit Tests (279 tests) | ✅ Implemented |
+| Barcode scanner integration (CameraX/ML Kit) | ✅ Implemented |
+| Unified product registration sheet | ✅ Implemented |
+| Expiration tracking & thresholds | 🚧 In development |
+| Expiration system notifications | 🚧 In development |
 | Automatic shopping suggestions | 🗺️ Roadmap |
 | Consumption intelligence | 🗺️ Roadmap |
 | Recipe suggestions | 🗺️ Roadmap |
@@ -336,7 +337,9 @@ For example, the pantry ViewModel combines the stream of all active pantry items
 
 # 🗃️ Local Persistence
 
-MinhaDespensa uses **Room KMP** as its local persistence layer.
+MinhaDespensa uses **Room KMP (Schema Version 4)** backed by SQLite (`BundledSQLiteDriver`) as its local persistence layer.
+
+The project features a defensive SQLite migration pipeline (`MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`, `MIGRATION_1_4`, `MIGRATION_2_4`) ensuring seamless schema evolution across versions.
 
 The current database model includes entities for:
 
@@ -522,11 +525,12 @@ MinhaDespensa/
 
 # 🧪 Testing & Continuous Integration
 
-MinhaDespensa maintains a comprehensive automated testing suite:
+MinhaDespensa maintains a comprehensive automated testing suite with **279 unit tests**:
 
-- **`:core` (39 tests)**: Multiplatform tests verifying use case business rules, barcode validation, domain metrics, clock-drift tolerances, and model serialization.
-- **`:data` (119 tests)**: In-memory Room SQLite tests validating DAOs, Last-Write-Wins (LWW) conflict handling, entity-domain mappers, cascade deletes, and multi-table transactions (`finalizePurchase`, `consumeBatch`).
-- **`:composeApp`**: Multiplatform application integration tests.
+- **`:core` (52 tests)**: Multiplatform tests verifying 11 use case business rules, barcode validation, domain metrics, clock-drift tolerances, and model serialization.
+- **`:data` (132 tests)**: In-memory Room SQLite tests validating DAOs, Last-Write-Wins (LWW) conflict handling, entity-domain mappers, cascade deletes, Room v1-v4 schema migrations, and multi-table transactions (`finalizePurchase`, `consumeBatch`).
+- **`:uisystem` (94 tests)**: ViewModel state machines, form validation rules, currency formatting (`R$ 1.234,56`), and notification bus events.
+- **`:composeApp` (1 test)**: Multiplatform application integration tests.
 
 The entire test suite is executed continuously on every Pull Request and branch push to `main`, `dev`, and `epic/**` via **GitHub Actions** ([`ci.yml`](.github/workflows/ci.yml)).
 
