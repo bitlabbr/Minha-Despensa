@@ -1,0 +1,307 @@
+<!--
+  ~   Copyright (c) 2026 Willian Santos
+  ~  
+  ~   This work is licensed under the Creative Commons
+  ~   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+  ~  
+  ~   You are free to:
+  ~     - Share  — copy and redistribute the material in any medium or format
+  ~     - Adapt  — remix, transform, and build upon the material
+  ~  
+  ~   Under the following terms:
+  ~     - Attribution    — You must give appropriate credit, provide a link to
+  ~                        the license, and indicate if changes were made.
+  ~     - NonCommercial  — You may not use the material for commercial purposes.
+  ~  
+  ~   Owner rights:
+  ~     - Willian Santos retains all commercial rights.
+  ~    - The copyright holder may use, sell, sublicense, or relicense this
+  ~       work under different terms at any time.
+  ~  
+  ~   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+  -->
+
+<resources>
+
+    <!-- Unidades de Medida -->
+    <string name="measure_unit_kilogram">Quilograma (kg)</string>
+    <string name="measure_unit_gram">Grama (g)</string>
+    <string name="measure_unit_liter">Litro (L)</string>
+    <string name="measure_unit_milliliter">Mililitro (ml)</string>
+    <string name="measure_unit_unit">Unidade (un)</string>
+    <string name="measure_unit_package">Pacote (pct)</string>
+
+    <string name="financial_card_title">VALOR GASTO NO MÊS</string>
+    <string name="financial_card_current_consumption_label">Gasto Atual:</string>
+    <string name="financial_card_budget">Orçamento:</string>
+    <string name="inventory_card_title">INVENTÁRIO COMPLETO</string>
+    <string name="back">voltar</string>
+    <string name="search">Buscar</string>
+    <string name="no_itens_found">Nenhum item encontrado</string>
+    <string name="open_options">Abrir opções</string>
+    <string name="vision">Visão</string>
+    <string name="general">Geral</string>
+    <string name="maine">Minha</string>
+    <string name="Pantry">Despensa</string>
+    <string name="product_searchbar_widget_placeholder">Buscar na despensa...</string>
+    <string name="catetory_others">Outros</string>
+    <string name="register_product_widget_title">Registrar Produto</string>
+    <string name="register_product_widget_desc">Adicione um item ao catálogo de produtos</string>
+    <string name="chevron_right_icon_desc">seta para direita</string>
+    <string name="plus_icon_desc">Adicionar</string>
+    <string name="image_picker_desc">Tire uma foto ou escolha da galeria</string>
+    <string name="image_picker_icon_desc">ícone de uma câmera fotográfica</string>
+    <string name="image_picker_remove_picture">Remover Foto</string>
+    <string name="image_picker_picture_desc">Preview da Foto</string>
+    <string name="image_preview_desc">Imagem do produto</string>
+    <string name="register_product_form_image_title">FOTO DO PRODUTO</string>
+    <string name="register_product_form_basic_info_section_title">INFORMAÇÕES BÁSICAS</string>
+    <string name="register_product_form_basic_info_product_label">Nome do produto</string>
+    <string name="register_product_form_basic_info_product_placeholder">Ex.: Arroz Parboilizado</string>
+    <string name="register_product_form_basic_info_product_category">Categoria</string>
+    <string name="register_product_form_basic_info_category_placeholder">Selecione</string>
+    <string name="register_product_form_basic_info_netweight_label">Conteúdo</string>
+    <string name="register_product_form_basic_info_netweight_placeholder">Ex: 1</string>
+    <string name="register_product_form_basic_info_unit_label">Unidade</string>
+    <string name="register_product_form_basic_info_unit_placeholder">Selecione</string>
+    <string name="register_product_form_detail_info_brand_label">Marca</string>
+    <string name="register_product_form_detail_info_brand_placeholder">Ex: Tio João</string>
+    <string name="register_product_form_detail_info_notes_label">Observações</string>
+    <string name="register_product_form_detail_info_notes_placeholder">Anotações sobre o produto...</string>
+    <string name="register_product_form_expand_button_see_less">Ver Menos</string>
+    <string name="register_product_form_expand_button_see_more">Adicionar mais Campos</string>
+    <string name="register_product_form_detail_info_section_title">DETALHES ADICIONAIS</string>
+    <string name="register_product_form_detail_info_ean_label">Código de barras</string>
+    <string name="register_product_form_detail_info_ean_placeholder">ex: 7896336010066</string>
+    <string name="register_product_form_detail_info_ean_icon_description">Escanear código de barras</string>
+    <string name="register_product_form_button_cancel">Cancelar</string>
+    <string name="register_product_form_button_save">Salvar Produto</string>
+    <string name="register_product_form_button_saving">Salvando...</string>
+    <string name="register_product_form_back_button_desc">Voltar</string>
+    <string name="register_product_form_header_title_top">REGISTRAR</string>
+    <string name="register_product_form_header_title_bottom">PRODUTO</string>
+    <string name="register_product_form_header_title_desc">Adicione um produto ao catálogo</string>
+    <string name="register_product_form_header_close_button_desc">Fechar formulário</string>
+    <string name="settins_section_tile_top">Outras</string>
+    <string name="settins_section_tile_bottom">Opções</string>
+    <string name="product_catalog_title_top">Catálogo de</string>
+    <string name="product_catalog_title_bottom">Produtos</string>
+    <string name="product_catalog_item_not_found">Nenhum produto cadastrado.</string>
+    <string name="product_catalog_item_cta_add_product">Adicione um produto clicando abaixo</string>
+    <string name="catalog_searchbar_widget_placeholder">Buscar no catálogo</string>
+    <string name="category_filter_all">Todas</string>
+    <string name="error_ocurred">Um erro ocorreu</string>
+    <string name="product_catalog_item_not_found_in_category_search">Nenhum produto para os filtros selecionados.</string>
+    <string name="error_product_image_load">Erro ao carregar imagem do produto</string>
+
+    <string name="error_name_required">Nome é obrigatório</string>
+    <string name="error_name_max_length">Máximo de %1$d caracteres</string>
+    <string name="error_invalid_number">Valor numérico inválido</string>
+    <string name="error_ean_invalid_length">EAN deve ter 8, 12, 13 ou 14 dígitos</string>
+    <string name="error_ean_already_exists">Código já cadastrado: %1$s</string>
+    <string name="catalog_product_saved_success">Produto adicionado ao catálogo com sucesso!</string>
+    <string name="catalog_product_saved_error">Erro ao salvar no catálogo</string>
+    <string name="snackbar_dismiss_text">Fechar notificação</string>
+    <string name="pantry_search_bar_no_info">Sem informação</string>
+    <string name="pantry_search_bar_expired_product_warn">Atenção: Produto Vencido</string>
+    <string name="pantry_search_bar_sock_quantity">Estoque</string>
+    <string name="add_pantry_item_cta_title">Adicionar à Despensa</string>
+    <string name="add_pantry_item_cta_subtitle">Escanear código de barras ou cadastrar item</string>
+    <string name="action_scan_barcode">Clique aqui para escanear</string>
+    <string name="action_search_catalog">Clique para digitar</string>
+    <string name="action_manual_register">Cadastrar manualmente</string>
+    <string name="register_bottom_sheet_name_is_required">Nome é obrigatório</string>
+    <string name="register_bottom_sheet_invalid_quantity">Peso/Qtd inválido</string>
+    <string name="category_others">Outros</string>
+    <string name="search_clear">Limpar busca</string>
+    <string name="minha">Minha</string>
+    <string name="settings_section_title_top">Outras</string>
+    <string name="settings_section_title_bottom">Opções</string>
+    <string name="pantry_search_bar_stock_quantity">Estoque</string>
+    <string name="pantry_categories_empty_message">Sua despensa está vazia\nAdicione produtos no botão abaixo!</string>
+    <string name="pantry_categories_not_found">Nenhum item nesta categoria da despensa.</string>
+
+    <!-- Shopping Assistant -->
+    <string name="shopping_assistant_title">Assistente de Compras</string>
+    <string name="shopping_assistant_cart_count">Carrinho (%1$d/%2$d)</string>
+    <string name="shopping_assistant_total">Total: %1$s</string>
+    <string name="shopping_assistant_scan_barcode">Escanear</string>
+    <string name="shopping_assistant_add_item_action">Adicionar</string>
+    <string name="shopping_assistant_add_item_title">Adicionar Item</string>
+    <string name="shopping_assistant_add_item_subtitle">Como deseja adicionar o item à sua lista?</string>
+    <string name="shopping_assistant_add_option_scan">Escanear Código de Barras</string>
+    <string name="shopping_assistant_add_option_scan_desc">Ler código de barras da embalagem física com a câmera</string>
+    <string name="shopping_assistant_add_option_catalog">Buscar no Catálogo</string>
+    <string name="shopping_assistant_add_option_catalog_desc">Pesquisar e selecionar produtos já cadastrados</string>
+    <string name="shopping_assistant_add_option_text">Item em Texto Livre</string>
+    <string name="shopping_assistant_add_option_text_desc">Digitar o nome do item avulso manualmente</string>
+    <string name="shopping_assistant_add_catalog_title">Selecionar do Catálogo</string>
+    <string name="shopping_assistant_add_catalog_search_placeholder">Buscar produto no catálogo...</string>
+    <string name="shopping_assistant_add_text_item_title">Novo Item em Texto</string>
+    <string name="shopping_assistant_edit_text_item_title">Editar Item</string>
+    <string name="shopping_assistant_item_name_label">Nome do Item</string>
+    <string name="shopping_assistant_item_name_placeholder">Ex: Frutas, Detergente, Pão...</string>
+    <string name="shopping_assistant_add_as_text">Adicionar '%1$s' como texto livre</string>
+    <string name="shopping_assistant_finalize_stock">Finalizar</string>
+    <string name="shopping_assistant_finalize_dialog_title">Finalizar Compra?</string>
+    <string name="shopping_assistant_finalize_dialog_desc">Ao finalizar, todos os itens marcados no carrinho serão adicionados diretamente ao estoque da sua despensa e esta lista será concluída.</string>
+    <string name="shopping_assistant_finalize_dialog_confirm">Sim, Finalizar</string>
+    <string name="shopping_assistant_finalize_dialog_cancel">Continuar Comprando</string>
+    <string name="shopping_assistant_empty_cart">Nenhum item na lista.\nToque em Adicionar para incluir produtos!</string>
+    <string name="shopping_assistant_no_price">Sem preço</string>
+    <string name="shopping_assistant_item_summary">%1$sx • %2$s</string>
+    <string name="shopping_assistant_replace_item_action">Substituir Produto</string>
+    <string name="shopping_assistant_replace_item_title">Substituir Produto</string>
+    <string name="shopping_assistant_replace_item_subtitle">Como deseja selecionar o substituto para '%1$s'?</string>
+    <string name="shopping_assistant_replace_option_scan">Escanear Código de Barras</string>
+    <string name="shopping_assistant_replace_option_scan_desc">Leia o código de barras da embalagem física</string>
+    <string name="shopping_assistant_replace_option_search">Buscar no Catálogo</string>
+    <string name="shopping_assistant_replace_option_search_desc">Pesquise por nome ou marca no catálogo</string>
+    <string name="shopping_assistant_replace_picker_title">Selecionar do Catálogo</string>
+    <string name="shopping_assistant_replace_picker_search_placeholder">Buscar produto para substituir...</string>
+    <string name="shopping_assistant_replace_picker_empty">Nenhum produto encontrado no catálogo.</string>
+    <string name="shopping_assistant_replace_confirm_title">Confirmar Substituição</string>
+    <string name="shopping_assistant_remove_item_action">Remover da lista</string>
+    <string name="shopping_assistant_remove_item_dialog_title">Remover Item?</string>
+    <string name="shopping_assistant_remove_item_dialog_desc">Tem certeza de que deseja remover '%1$s' da lista de compras?</string>
+    <string name="shopping_assistant_remove_item_dialog_confirm">Sim, Remover</string>
+    <string name="shopping_assistant_edit_title">Editar lista</string>
+    <string name="shopping_assistant_edit_title_dialog_title">Editar Lista</string>
+    <string name="shopping_assistant_edit_title_label">Nome da Lista</string>
+    <string name="shopping_assistant_edit_title_placeholder">Ex: Compras da Semana</string>
+    <string name="shopping_assistant_edit_budget_label">Teto de Gastos (Opcional)</string>
+    <string name="shopping_assistant_edit_budget_placeholder">Ex: 250,00</string>
+    <string name="shopping_assistant_edit_title_save">Salvar</string>
+    <string name="shopping_assistant_budget_label">Teto: %1$s</string>
+    <string name="shopping_assistant_over_budget">Excedeu o teto de %1$s</string>
+    <string name="shopping_assistant_dashboard_cart">No Carrinho</string>
+    <string name="shopping_assistant_dashboard_budget">Teto</string>
+    <string name="shopping_assistant_dashboard_balance">Saldo</string>
+    <string name="shopping_assistant_dashboard_exceeded">Excedeu</string>
+    <string name="shopping_assistant_dashboard_set_budget">+ Definir</string>
+    <string name="shopping_assistant_dashboard_no_budget">Livre</string>
+    <string name="shopping_assistant_dashboard_items_count">%1$d de %2$d itens</string>
+    <string name="shopping_assistant_dashboard_edit_hint">Toque p/ editar</string>
+    <string name="shopping_assistant_dashboard_no_limit">Sem limite</string>
+    <string name="shopping_assistant_dashboard_unlimited">Ilimitado</string>
+    <string name="shopping_assistant_dashboard_available">Disponível</string>
+    <string name="shopping_assistant_dashboard_over_status">Estourado</string>
+    <string name="shopping_assistant_dashboard_budget_used">%1$d%% utilizado</string>
+    <string name="shopping_assistant_dashboard_over_budget_alert">Atenção: teto ultrapassado!</string>
+    <string name="shopping_assistant_dashboard_remaining">Restam %1$s</string>
+    <string name="shopping_assistant_dashboard_set_budget_hint">Defina um teto para acompanhar seus gastos</string>
+    <string name="shopping_assistant_edit_budget_dialog_title">Teto de Gastos</string>
+    <string name="shopping_assistant_edit_budget_dialog_desc">Defina o valor máximo planejado para esta compra.</string>
+    <string name="shopping_assistant_edit_budget_clear">Remover Teto</string>
+
+    <!-- Planned List -->
+    <string name="planned_list_title">Nova Lista Planejada</string>
+    <string name="planned_list_name_label">Nome da Lista</string>
+    <string name="planned_list_name_placeholder">Ex: Feira do Mês</string>
+    <string name="planned_list_budget_label">Teto de Gastos (Opcional)</string>
+    <string name="planned_list_budget_placeholder">R$ 250,00</string>
+    <string name="planned_list_search_catalog">Buscar no Catálogo</string>
+    <string name="planned_list_catalog_products">Produtos do Catálogo</string>
+    <string name="planned_list_empty_products">Nenhum produto encontrado no catálogo.</string>
+    <string name="planned_list_save_button">Salvar Lista (%1$d itens)</string>
+    <string name="planned_list_select_products">Selecione produtos</string>
+    <string name="planned_list_no_brand">Sem marca</string>
+
+    <!-- Quick List -->
+    <string name="quick_list_title">Lista Rápida (Bloco de Notas)</string>
+    <string name="quick_list_name_label">Nome da Lista (Opcional)</string>
+    <string name="quick_list_name_placeholder">Ex: Lista rápida de hoje</string>
+    <string name="quick_list_content_label">Itens (um por linha) </string>
+    <string name="quick_list_content_placeholder">3 Pães\n1 Leite\n1 Café\n500g de presunto</string>
+    <string name="quick_list_content_supporting">Escreva livremente o que precisa comprar</string>
+    <string name="quick_list_long_items_warning">Atenção: itens com mais de 30 caracteres serão encurtados ao entrar no catálogo</string>
+    <string name="quick_list_create_button">Criar Lista Rápida</string>
+
+    <!-- Shopping Overview -->
+    <string name="shopping_lists_header_title_top">Minhas</string>
+    <string name="shopping_lists_header_title_bottom">Listas de Compras</string>
+    <string name="shopping_lists_header_description">Gerencie suas compras planejadas e anotações rápidas</string>
+    <string name="shopping_lists_direct_shopping_button">Compra Direta</string>
+    <string name="shopping_lists_new_list_button">Nova Lista</string>
+    <string name="shopping_lists_empty_title">Nenhuma lista criada ainda</string>
+    <string name="shopping_lists_empty_description">Toque em 'Nova Lista' para anotar itens rapidamente</string>
+    <string name="shopping_lists_dialog_title">Qual tipo de lista deseja criar?</string>
+    <string name="shopping_lists_dialog_quick_option">Bloco de Notas</string>
+    <string name="shopping_lists_dialog_planned_option">Lista Planejada</string>
+    <string name="shopping_lists_delete_content_description">Excluir Lista</string>
+    <string name="shopping_lists_delete_dialog_title">Excluir Lista?</string>
+    <string name="shopping_lists_delete_dialog_desc">Tem certeza de que deseja excluir a lista '%1$s'? Esta ação não pode ser desfeita e todos os itens desta lista serão removidos.</string>
+    <string name="shopping_lists_delete_dialog_confirm">Sim, Excluir</string>
+    <string name="shopping_lists_delete_dialog_cancel">Cancelar</string>
+    <string name="shopping_lists_items_count">%1$d itens • Criada em %2$s</string>
+    <string name="shopping_lists_budget_label">Teto: %1$s</string>
+    <string name="shopping_lists_no_budget">Sem teto</string>
+    <string name="shopping_lists_edit_content_description">Editar Lista</string>
+    <string name="shopping_lists_edit_dialog_title">Editar Lista</string>
+    <string name="shopping_lists_completed_section_title">Listas Finalizadas</string>
+    <string name="shopping_lists_status_completed">Finalizada</string>
+
+    <!-- Shopping Assistant Exit Confirmation -->
+    <string name="shopping_assistant_exit_dialog_title">Sair das compras</string>
+    <string name="shopping_assistant_exit_dialog_desc">Deseja salvar esta lista em andamento para continuar depois ou prefere descartá-la?</string>
+    <string name="shopping_assistant_exit_dialog_save">Salvar Lista</string>
+    <string name="shopping_assistant_exit_dialog_discard">Descartar Lista</string>
+    <string name="shopping_assistant_exit_dialog_cancel">Continuar Comprando</string>
+
+    <!-- Product Details -->
+    <string name="product_details_title">Detalhes do Produto</string>
+    <string name="product_details_header_top">Detalhes do</string>
+    <string name="product_details_header_bottom">Produto</string>
+    <string name="product_details_section_basic_info">INFORMAÇÕES BÁSICAS</string>
+    <string name="product_details_section_pantry">ESTOQUE NA DESPENSA</string>
+    <string name="product_details_section_prices">HISTÓRICO DE PREÇOS</string>
+    <string name="product_details_brand_label">Marca</string>
+    <string name="product_details_category_label">Categoria</string>
+    <string name="product_details_ean_label">Código de barras</string>
+    <string name="product_details_netweight_label">Conteúdo</string>
+    <string name="product_details_no_brand">Sem marca</string>
+    <string name="product_details_no_ean">Sem código</string>
+    <string name="product_details_pantry_in_stock">Em estoque</string>
+    <string name="product_details_pantry_out_of_stock">Sem estoque</string>
+    <string name="product_details_pantry_out_of_stock_desc">Este produto não possui unidades ativas na sua despensa.</string>
+    <string name="product_details_pantry_total_stock">Total na Despensa</string>
+    <string name="product_details_pantry_closest_expiration">Validade mais próxima: %1$s</string>
+    <string name="product_details_pantry_batch_label">Lote: %1$s</string>
+    <string name="product_details_pantry_no_expiration">Sem validade informada</string>
+    <string name="product_details_pantry_consume_button">Consumir</string>
+    <string name="product_details_pantry_consume_success">Item consumido da despensa com sucesso!</string>
+    <string name="product_details_pantry_consume_dialog_title">Consumir da Despensa</string>
+    <string name="product_details_pantry_consume_dialog_desc">Informe a quantidade que deseja consumir:</string>
+    <string name="product_details_pantry_consume_confirm">Confirmar Consumo</string>
+    <string name="product_details_price_latest">Último preço pago</string>
+    <string name="product_details_price_average">Média</string>
+    <string name="product_details_price_lowest">Menor</string>
+    <string name="product_details_price_highest">Maior</string>
+    <string name="product_details_price_empty">Nenhum registro de preço encontrado para este produto.</string>
+    <string name="product_details_action_add_to_pantry">Adicionar à Despensa</string>
+    <string name="product_details_action_add_to_list">Adicionar à Lista</string>
+    <string name="product_details_select_list_title">Adicionar à Lista de Compras</string>
+    <string name="product_details_select_list_desc">Selecione uma lista de compras para adicionar este produto:</string>
+    <string name="product_details_add_to_list_success">Produto adicionado à lista com sucesso!</string>
+    <string name="product_details_no_active_lists">Nenhuma lista de compras ativa no momento.</string>
+    <string name="product_details_action_edit">Editar Produto</string>
+    <string name="product_details_edit_header_top">Editar</string>
+    <string name="product_details_edit_header_bottom">Produto</string>
+    <string name="product_details_save_changes">Salvar Alterações</string>
+    <string name="product_details_cancel_edit">Cancelar</string>
+    <string name="product_details_save_success">Produto atualizado com sucesso!</string>
+    <string name="product_details_notes_label">Observações</string>
+    <string name="product_details_no_notes">Nenhuma observação informada</string>
+    <string name="product_details_price_variation_title">Variação de Preço</string>
+    <string name="product_details_price_variation_desc">%1$s%% de variação entre menor e maior</string>
+    <string name="product_details_price_difference">Diferença de %1$s</string>
+    <string name="product_details_price_single_recorded">Preço único registrado</string>
+    <string name="product_details_price_purchases_title">Compras Registradas</string>
+    <string name="product_details_add_pantry_success">Estoque adicionado com sucesso!</string>
+    <string name="product_details_add_pantry_error">Erro ao adicionar estoque: %1$s</string>
+    <string name="product_details_pantry_consume_error">Erro ao consumir: %1$s</string>
+    <string name="product_details_add_to_list_error">Erro ao adicionar à lista: %1$s</string>
+    <string name="product_details_not_found">Produto não encontrado</string>
+    <string name="product_details_store_fallback">Compra</string>
+
+</resources>

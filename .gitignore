@@ -23,3 +23,8 @@ node_modules/
 **/DerivedData/
 **/xcuserdata/
 *.xcuserstate
+
+# Reports & Antigravity
+reports/
+.agents/
+

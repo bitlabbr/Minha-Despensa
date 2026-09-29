@@ -1,0 +1,132 @@
+/*
+ *   Copyright (c) 2026 Willian Santos
+ *
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+ *
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
+ *
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
+ *
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+ */
+
+package com.bitlabbr.minhadespensa.data.local.dao
+
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Transaction
+import androidx.room.Update
+import com.bitlabbr.minhadespensa.data.local.dto.PantryItemWithCategoryDaoResult
+import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface PantryItemDao {
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertPantryItem(item: PantryItemEntity): Long
+
+    @Query("SELECT * FROM pantry_items WHERE productId = :productId AND isDeleted = 0")
+    fun getPantryItemsByProductId(productId: String): Flow<List<PantryItemEntity>>
+
+    @Query("SELECT * FROM pantry_items WHERE isDeleted = 0")
+    fun getAllActivePantryItems(): Flow<List<PantryItemEntity>>
+
+    @Query("SELECT * FROM pantry_items WHERE id = :pantryItemId")
+    fun getPantryItemById(pantryItemId: String): Flow<PantryItemEntity?>
+
+    @Query(
+        """
+        UPDATE pantry_items 
+        SET isDeleted = 1, updatedAt = :updatedAt 
+        WHERE id = :id AND updatedAt <= :updatedAt
+    """
+    )
+    suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long): Int
+
+    @Update(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun forceUpdatePantryItem(pantryItem: PantryItemEntity): Int
+
+    @Transaction
+    suspend fun forceUpdatePantryItems(items: List<PantryItemEntity>) {
+        for (item in items) {
+            forceUpdatePantryItem(item)
+        }
+    }
+
+    @Query(
+        """
+    UPDATE pantry_items 
+    SET productId = :productId, quantity = :quantity, updatedAt = :updatedAt, isDeleted = :isDeleted, expirationDate = :expirationDate, batchNumber = :batchNumber
+    WHERE id = :id AND (
+        updatedAt < :updatedAt
+        OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
+    )
+"""
+    )
+    suspend fun updatePantryItemIfNewer(
+        id: String,
+        productId: String,
+        quantity: Double,
+        updatedAt: Long,
+        isDeleted: Boolean,
+        expirationDate: Long?,
+        batchNumber: String?
+    ): Int
+
+    @Query("DELETE FROM pantry_items WHERE id = :id")
+    suspend fun deletePantryItemById(id: String): Int
+
+    @Query("SELECT * FROM pantry_items WHERE id = :pantryItemId")
+    suspend fun findPantryItemById(pantryItemId: String): PantryItemEntity?
+
+    @Query(
+        """
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.isDeleted = 0 AND c.isDeleted = 0 AND p.quantity > 0
+    """
+    )
+    fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategoryDaoResult>>
+
+    @Query(
+        """
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.id = :pantryItemId AND p.isDeleted = 0 AND c.isDeleted = 0
+    """
+    )
+    fun getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategoryDaoResult?>
+
+    @Query(
+        """
+        SELECT p.*, c.category, c.name 
+        FROM pantry_items p 
+        INNER JOIN catalog_products c ON p.productId = c.id 
+        WHERE p.isDeleted = 0
+          AND c.isDeleted = 0
+          AND p.quantity > 0
+          AND p.expirationDate IS NOT NULL
+          AND p.expirationDate >= :now
+          AND p.expirationDate <= :expirationThreshold
+        ORDER BY p.expirationDate ASC
+    """
+    )
+    fun getExpiringPantryItems(now: Long, expirationThreshold: Long): Flow<List<PantryItemWithCategoryDaoResult>>
+}
+
+typealias PantryRepositoryDao = PantryItemDao

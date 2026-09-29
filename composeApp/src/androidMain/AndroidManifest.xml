@@ -1,23 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  ~   Copyright (c) 2026 Willian Santos
+  ~
+  ~   This work is licensed under the Creative Commons
+  ~   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+  ~
+  ~   You are free to:
+  ~     - Share  — copy and redistribute the material in any medium or format
+  ~     - Adapt  — remix, transform, and build upon the material
+  ~
+  ~   Under the following terms:
+  ~     - Attribution    — You must give appropriate credit, provide a link to
+  ~                        the license, and indicate if changes were made.
+  ~     - NonCommercial  — You may not use the material for commercial purposes.
+  ~
+  ~   Owner rights:
+  ~     - Willian Santos retains all commercial rights.
+  ~    - The copyright holder may use, sell, sublicense, or relicense this
+  ~       work under different terms at any time.
+  ~
+  ~   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+  -->
+
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
             android:name="com.bitlabbr.minhadespensa.app.MinhaDespensaApplication"
             android:allowBackup="true"
-            android:icon="@mipmap/ic_launcher"
-            android:label="@string/app_name"
+            android:icon="@drawable/ic_launcher_background"
             android:roundIcon="@mipmap/ic_launcher_round"
+            android:label="@string/app_name"
             android:supportsRtl="true"
             android:theme="@android:style/Theme.Material.Light.NoActionBar">
-        <activity
-                android:exported="true"
-                android:name="com.bitlabbr.minhadespensa.app.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
 
-                <category android:name="android.intent.category.LAUNCHER"/>
+        <activity
+                android:name="com.bitlabbr.minhadespensa.app.MainActivity"
+                android:exported="true"
+                android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|mnc|colorMode|density"
+                android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <provider
+                android:name="androidx.core.content.FileProvider"
+                android:authorities="${applicationId}.fileprovider"
+                android:exported="false"
+                android:grantUriPermissions="true">
+            <meta-data
+                    android:name="android.support.FILE_PROVIDER_PATHS"
+                    android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 
 </manifest>

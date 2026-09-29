@@ -1,3 +1,26 @@
+/*
+ *   Copyright (c) 2026 Willian Santos
+ *
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+ *
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
+ *
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
+ *
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+ */
+
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -5,6 +28,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -33,9 +57,12 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":core"))
             implementation(project(":uisystem"))
+            implementation(project(":data"))
 
             implementation(compose.runtime)
             implementation(compose.ui)
+            implementation(compose.material3)
+            implementation(compose.materialIconsExtended)
 
             implementation(libs.androidx.navigation.compose)
             implementation(libs.koin.compose)
@@ -56,7 +83,7 @@ android {
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0-alpha"
     }
     packaging {
         resources {
@@ -66,6 +93,7 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

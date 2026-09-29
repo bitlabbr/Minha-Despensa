@@ -1,17 +1,24 @@
 /*
- * Copyright (c) 2026 Willian Santos
+ *   Copyright (c) 2026 Willian Santos
  *
- * Licensed under the Creative Commons Attribution-NonCommercial 4.0
- * International License (CC BY-NC 4.0).
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
  *
- * You may use, copy, modify, and distribute this file for non-commercial
- * purposes only, provided that proper attribution is given.
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
  *
- * The copyright holder retains all commercial rights and may
- * license this work under different terms.
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
  *
- * License: https://creativecommons.org/licenses/by-nc/4.0/
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
  *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
 package com.bitlabbr.minhadespensa.core.domain.util
@@ -28,19 +35,28 @@ class ConsoleLogger(private val moduleName: String) : AppLogger {
         println(buildLogLine("D", tag, message))
     }
 
+    override fun i(tag: String, message: String) {
+        println(buildLogLine("I", tag, message))
+    }
+
+    override fun w(tag: String, message: String, error: Throwable?) {
+        val fullMessage = message + (error?.let { "\n${it.stackTraceToString()}" } ?: "")
+        println(buildLogLine("W", tag, fullMessage))
+    }
+
     override fun e(tag: String, message: String, error: Throwable?) {
         val fullMessage = message + (error?.let { "\n${it.stackTraceToString()}" } ?: "")
         println(buildLogLine("E", tag, fullMessage))
     }
 
     private fun buildLogLine(type: String, tag: String, message: String): String {
-        val time = getCurrentTime()
+        val time = getFormattedTimestamp()
         return "$time [$type] [$appName] [$moduleName] [$tag]: $message"
     }
 
-    private fun getCurrentTime(): String {
+    private fun getFormattedTimestamp(): String {
         val now = Clock.System.now()
-        val local = now.toLocalDateTime(TimeZone.Companion.currentSystemDefault())
+        val local = now.toLocalDateTime(TimeZone.currentSystemDefault())
 
         val year = local.year
         val month = local.monthNumber.pad()

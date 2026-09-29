@@ -1,24 +1,39 @@
 /*
- * Copyright (c) 2026 Willian Santos
+ *   Copyright (c) 2026 Willian Santos
  *
- * Licensed under the Creative Commons Attribution-NonCommercial 4.0
- * International License (CC BY-NC 4.0).
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
  *
- * You may use, copy, modify, and distribute this file for non-commercial
- * purposes only, provided that proper attribution is given.
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
  *
- * The copyright holder retains all commercial rights and may
- * license this work under different terms.
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
  *
- * License: https://creativecommons.org/licenses/by-nc/4.0/
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
  *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
 package com.bitlabbr.minhadespensa.uisystem.di
 
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
-import com.bitlabbr.minhadespensa.uisystem.features.list.ProductsListViewModel
+import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.details.ProductDetailsViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.ShoppingAssistantViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.planned.PlannedListViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist.QuickListViewModel
+import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
@@ -27,10 +42,78 @@ val uiModule = module {
     factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
         ConsoleLogger(moduleName = "UISystem")
     }
+
     viewModel {
-        ProductsListViewModel(
-            repository = get(),
-            logger = get(named(DiQualifiers.UI_LOGGER))
+        PantryViewModel(
+            pantryRepository = get(),
+            catalogRepository = get(),
+            checkEanStatusUseCase = get(),
+            addPantryItemUseCase = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+            notificationManager = get(),
         )
     }
+
+    viewModel {
+        CatalogViewModel(
+            catalogRepository = get(),
+            saveProductUseCase = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+            notificationManager = get(),
+            checkEanStatusUseCase = get(),
+        )
+    }
+
+    viewModel {
+        QuickListViewModel(
+            createQuickShoppingListUseCase = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        ShoppingListsViewModel(
+            shoppingListRepository = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        ShoppingAssistantViewModel(
+            startShoppingSessionUseCase = get(),
+            addOrUpdateCartItemUseCase = get(),
+            finalizeShoppingSessionUseCase = get(),
+            checkEanStatusUseCase = get(),
+            replaceCartItemUseCase = get(),
+            removeCartItemUseCase = get(),
+            shoppingListRepository = get(),
+            catalogRepository = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        PlannedListViewModel(
+            createPlannedShoppingListUseCase = get(),
+            catalogRepository = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+        )
+    }
+
+    viewModel {
+        ProductDetailsViewModel(
+            catalogRepository = get(),
+            pantryRepository = get(),
+            priceRepository = get(),
+            shoppingListRepository = get(),
+            addCatalogItemToShoppingListUseCase = get(),
+            addPantryItemUseCase = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+            notificationManager = get(),
+            saveCatalogProductUseCase = get(),
+            checkEanStatusUseCase = get(),
+        )
+    }
+
+    single { AppNotificationManager() }
 }

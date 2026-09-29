@@ -1,30 +1,42 @@
 /*
- * Copyright (c) 2026 Willian Santos
+ *   Copyright (c) 2026 Willian Santos
  *
- * Licensed under the Creative Commons Attribution-NonCommercial 4.0
- * International License (CC BY-NC 4.0).
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
  *
- * You may use, copy, modify, and distribute this file for non-commercial
- * purposes only, provided that proper attribution is given.
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
  *
- * The copyright holder retains all commercial rights and may
- * license this work under different terms.
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
  *
- * License: https://creativecommons.org/licenses/by-nc/4.0/
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
 package com.bitlabbr.minhadespensa.app
 
 import androidx.compose.ui.window.ComposeUIViewController
+import com.bitlabbr.minhadespensa.app.di.appModule
 import com.bitlabbr.minhadespensa.app.di.initKoin
-import com.bitlabbr.minhadespensa.app.App
+import com.bitlabbr.minhadespensa.app.di.iosDatabaseModule
+import com.bitlabbr.minhadespensa.uisystem.di.uiModule
 import platform.UIKit.UIViewController
 
 fun MainViewController(): UIViewController {
     try {
-        initKoin()
+        initKoin{
+            modules(iosDatabaseModule)
+        }
     } catch (e: Exception) {
-        println("Koin já iniciado ou erro: ${e.message}")
+        println("Koin already initiated: ${e.message}")
     }
 
     return ComposeUIViewController {

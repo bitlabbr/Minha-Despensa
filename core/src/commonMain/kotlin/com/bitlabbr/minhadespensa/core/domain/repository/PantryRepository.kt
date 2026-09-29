@@ -1,0 +1,49 @@
+/*
+ *   Copyright (c) 2026 Willian Santos
+ *
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+ *
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
+ *
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
+ *
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+ */
+
+package com.bitlabbr.minhadespensa.core.domain.repository
+
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
+import kotlinx.coroutines.flow.Flow
+
+interface PantryRepository {
+    fun getPantryItemById(pantryItemId: String): Flow<PantryItem?>
+    fun getPantryItemsByProductId(productId: String): Flow<List<PantryItem>>
+    fun getAllActivePantryItems(): Flow<List<PantryItem>>
+    fun getAllActivePantryItemsWithCategory(): Flow<List<PantryItemWithCategory>>
+    fun getPantryItemWithCategoryById(pantryItemId: String): Flow<PantryItemWithCategory?>
+    fun getExpiringPantryItems(thresholdDays: Int): Flow<List<PantryItemWithCategory>>
+
+    // Persistency e synchronization LWW
+    suspend fun insertPantryItem(item: PantryItem)
+    suspend fun forceUpdatePantryItem(item: PantryItem)
+    suspend fun updatePantryItemIfNewer(item: PantryItem)
+    suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long)
+    suspend fun deletePantryItemById(id: String)
+
+    // consumption operations
+    suspend fun consumePantryItem(pantryItemId: String, quantityToConsume: Double)
+    suspend fun consumeBatch(consumptions: List<PantryItemConsumption>)
+}
