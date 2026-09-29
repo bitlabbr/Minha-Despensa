@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minha Despensa — Gestão Inteligente de Despensa e Compras</title>
+  <meta name="description" content="Minha Despensa é um app Local-First em Kotlin Multiplatform (Android & iOS) para controle integrado de despensa, listas de compras, histórico de preços e orçamento doméstico.">
+  
+  <!-- Open Graph / Social Media -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://bitlabbr.github.io/Minha-Despensa/">
+  <meta property="og:title" content="Minha Despensa — Gestão Inteligente de Despensa e Compras">
+  <meta property="og:description" content="Controle de estoque doméstico, listas de compras e histórico de preços em um fluxo unificado e 100% offline.">
+  <meta property="og:image" content="assets/icon.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="assets/icon.png">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #080B0F;
+      --bg-card: rgba(18, 24, 33, 0.75);
+      --bg-card-hover: rgba(26, 35, 48, 0.85);
+      --border-glass: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(0, 230, 118, 0.3);
+      --primary: #00E676;
+      --primary-dark: #00B359;
+      --primary-glow: rgba(0, 230, 118, 0.25);
+      --accent-cyan: #00E5FF;
+      --accent-amber: #FFB300;
+      --text-main: #F0F4F8;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+      --font-heading: 'Outfit', sans-serif;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Ambient Glow Backgrounds */
+    .glow-bg {
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      filter: blur(140px);
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.35;
+    }
+    .glow-1 {
+      top: -150px;
+      left: 15%;
+      background: radial-gradient(circle, var(--primary) 0%, transparent 70%);
+    }
+    .glow-2 {
+      top: 450px;
+      right: 5%;
+      background: radial-gradient(circle, var(--accent-cyan) 0%, transparent 70%);
+      opacity: 0.25;
+    }
+
+    /* Containers */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header / Navbar */
+    header {
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(8, 11, 15, 0.8);
+      border-bottom: 1px solid var(--border-glass);
+      z-index: 100;
+      padding: 16px 0;
+    }
+    .nav-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px var(--primary-glow);
+    }
+    .brand-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.25rem;
+      letter-spacing: -0.5px;
+    }
+    .brand-badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(0, 230, 118, 0.3);
+      border-radius: 100px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+    }
+    .nav-link {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #041409;
+      box-shadow: 0 4px 20px var(--primary-glow);
+      border: none;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 26px rgba(0, 230, 118, 0.4);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(10px);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 90px 0 60px;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .hero-content {
+      max-width: 620px;
+    }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-glass);
+      border-radius: 100px;
+      font-size: 0.85rem;
+      color: var(--primary);
+      margin-bottom: 24px;
+      font-weight: 500;
+    }
+    .hero-title {
+      font-family: var(--font-heading);
+      font-size: 3.4rem;
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+    }
+    .hero-title span {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent-cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero-subtitle {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 36px;
+    }
+    .hero-cta {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    /* Phone Mockup */
+    .mockup-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .mockup-glow {
+      position: absolute;
+      width: 320px;
+      height: 480px;
+      background: radial-gradient(circle, var(--primary-glow) 0%, transparent 70%);
+      filter: blur(50px);
+      z-index: 0;
+    }
+    .mockup-phone {
+      position: relative;
+      z-index: 1;
+      width: 310px;
+      height: 610px;
+      background: #0E141B;
+      border: 8px solid #1E2836;
+      border-radius: 44px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .mockup-notch {
+      width: 110px;
+      height: 20px;
+      background: #1E2836;
+      border-radius: 0 0 14px 14px;
+      margin: 0 auto 12px;
+    }
+    .mockup-header {
+      padding: 0 18px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mockup-header-title {
+      font-family: var(--font-heading);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .mockup-body {
+      padding: 0 14px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .mockup-stat-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mockup-stat-num {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+    .mockup-stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .mockup-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .mockup-item-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(0, 230, 118, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    .mockup-item-info {
+      flex: 1;
+    }
+    .mockup-item-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .mockup-item-sub {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+    .mockup-item-badge {
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .badge-ok {
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--primary);
+    }
+    .badge-warn {
+      background: rgba(255, 179, 0, 0.15);
+      color: var(--accent-amber);
+    }
+    .mockup-nav {
+      height: 52px;
+      background: rgba(14, 20, 27, 0.95);
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      font-size: 1.1rem;
+      color: var(--text-dim);
+    }
+    .mockup-nav-active {
+      color: var(--primary);
+    }
+
+    /* Section Styles */
+    section {
+      padding: 80px 0;
+    }
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 60px;
+    }
+    .section-pill {
+      display: inline-block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 2.4rem;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      margin-bottom: 16px;
+    }
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    /* Feature Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      border-radius: 20px;
+      padding: 32px 28px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, transparent);
+      transition: background 0.3s ease;
+    }
+    .feature-card:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--border-accent);
+      transform: translateY(-4px);
+    }
+    .feature-card:hover::before {
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+    .feature-icon-wrapper {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      background: rgba(0, 230, 118, 0.1);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 22px;
+    }
+    .feature-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .feature-text {
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      line-height: 1.6;
+    }
+
+    /* Workflow Diagram Section */
+    .workflow-box {
+      background: linear-gradient(180deg, rgba(18, 24, 33, 0.9) 0%, rgba(10, 15, 22, 0.95) 100%);
+      border: 1px solid var(--border-glass);
+      border-radius: 24px;
+      padding: 44px;
+      margin-top: 40px;
+      position: relative;
+      overflow: hidden;
+    }
+    .workflow-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      position: relative;
+    }
+    .workflow-step {
+      text-align: center;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+    }
+    .workflow-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #041409;
+      font-weight: 800;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
+    .workflow-step-title {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+    }
+    .workflow-step-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Tech Stack Pills */
+    .tech-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 30px;
+    }
+    .tech-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-glass);
+      padding: 10px 18px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tech-pill span {
+      color: var(--primary);
+    }
+
+    /* CTA Download Box */
+    .cta-banner {
+      background: linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(0, 229, 255, 0.05) 100%);
+      border: 1px solid var(--border-accent);
+      border-radius: 28px;
+      padding: 60px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin: 40px 0 80px;
+    }
+    .cta-banner-title {
+      font-family: var(--font-heading);
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+    .cta-banner-text {
+      max-width: 580px;
+      margin: 0 auto 32px;
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .cta-meta {
+      margin-top: 20px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-glass);
+      padding: 48px 0;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .footer-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+    .footer-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 960px) {
+      .hero {
+        grid-template-columns: 1fr;
+        text-align: center;
+        padding-top: 50px;
+      }
+      .hero-content {
+        margin: 0 auto;
+      }
+      .hero-cta {
+        justify-content: center;
+      }
+      .hero-title {
+        font-size: 2.6rem;
+      }
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .workflow-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 640px) {
+      .features-grid, .workflow-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-links {
+        display: none;
+      }
+      .hero-title {
+        font-size: 2.1rem;
+      }
+      .cta-banner {
+        padding: 40px 20px;
+      }
+      .footer-content {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient Glows -->
+  <div class="glow-bg glow-1"></div>
+  <div class="glow-bg glow-2"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav-wrapper">
+      <a href="#" class="brand">
+        <img src="assets/icon.png" alt="Minha Despensa Icon" class="brand-icon">
+        <span class="brand-title">Minha Despensa</span>
+        <span class="brand-badge">Alpha v1.0.0</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#features" class="nav-link">Recursos</a>
+        <a href="#fluxo" class="nav-link">Como Funciona</a>
+        <a href="https://github.com/bitlabbr/Minha-Despensa/wiki" target="_blank" class="nav-link">Wiki / Docs ↗</a>
+        <a href="https://github.com/bitlabbr/Minha-Despensa" target="_blank" class="nav-link">GitHub ↗</a>
+      </nav>
+
+      <a href="https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.0.0-alpha" target="_blank" class="btn btn-primary">
+        <span>Baixar APK</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero container">
+    <div class="hero-content">
+      <div class="hero-pill">
+        <span>🚀</span> Lançamento Alpha Disponível para Testes
+      </div>
+      <h1 class="hero-title">
+        Sua despensa e compras em <span>perfeita harmonia</span>.
+      </h1>
+      <p class="hero-subtitle">
+        Controle de estoque doméstico, histórico de preços e listas de compras inteligentes reunidos em um único aplicativo <strong>Local-First</strong> construído com Kotlin Multiplatform.
+      </p>
+
+      <div class="hero-cta">
+        <a href="https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.0.0-alpha" target="_blank" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Download v1.0.0-alpha (APK)</span>
+        </a>
+        <a href="https://github.com/bitlabbr/Minha-Despensa/wiki/Alpha-Testing-Guide" target="_blank" class="btn btn-secondary">
+          <span>Guia do Testador</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Phone Mockup Preview -->
+    <div class="mockup-wrapper">
+      <div class="mockup-glow"></div>
+      <div class="mockup-phone">
+        <div class="mockup-notch"></div>
+        <div class="mockup-header">
+          <span class="mockup-header-title">Minha Despensa</span>
+          <span style="font-size: 0.8rem; color: var(--primary);">● Online</span>
+        </div>
+        
+        <div class="mockup-body">
+          <!-- Summary Cards -->
+          <div class="mockup-stat-card">
+            <div>
+              <div class="mockup-stat-label">Total em Estoque</div>
+              <div class="mockup-stat-num">24 itens</div>
+            </div>
+            <div style="text-align: right;">
+              <div class="mockup-stat-label">Atenção Validade</div>
+              <div style="font-size: 1.1rem; font-weight: 700; color: var(--accent-amber);">3 itens</div>
+            </div>
+          </div>
+
+          <!-- Items list simulation -->
+          <div class="mockup-item">
+            <div class="mockup-item-icon">🥛</div>
+            <div class="mockup-item-info">
+              <div class="mockup-item-name">Leite Integral Piracanjuba</div>
+              <div class="mockup-item-sub">1L • Despensa</div>
+            </div>
+            <span class="mockup-item-badge badge-warn">Vence em 2d</span>
+          </div>
+
+          <div class="mockup-item">
+            <div class="mockup-item-icon">🍚</div>
+            <div class="mockup-item-info">
+              <div class="mockup-item-name">Arroz Parboilizado Tio João</div>
+              <div class="mockup-item-sub">5kg • Despensa</div>
+            </div>
+            <span class="mockup-item-badge badge-ok">Qtd: 2</span>
+          </div>
+
+          <div class="mockup-item">
+            <div class="mockup-item-icon">☕</div>
+            <div class="mockup-item-info">
+              <div class="mockup-item-name">Café Torrado e Moído</div>
+              <div class="mockup-item-sub">500g • Despensa</div>
+            </div>
+            <span class="mockup-item-badge badge-ok">Qtd: 1</span>
+          </div>
+
+          <div class="mockup-item">
+            <div class="mockup-item-icon">🫒</div>
+            <div class="mockup-item-info">
+              <div class="mockup-item-name">Azeite de Oliva Extra Virgem</div>
+              <div class="mockup-item-sub">500ml • Despensa</div>
+            </div>
+            <span class="mockup-item-badge badge-ok">Qtd: 1</span>
+          </div>
+        </div>
+
+        <!-- Simulated Bottom Navigation -->
+        <div class="mockup-nav">
+          <span class="mockup-nav-active">📦</span>
+          <span>🛒</span>
+          <span>🏷️</span>
+          <span>⚙️</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="container">
+    <div class="section-header">
+      <div class="section-pill">Recursos Essenciais</div>
+      <h2 class="section-title">Construído para o mundo real</h2>
+      <p class="section-desc">Acabe com o desperdício de alimentos e compras duplicadas através de um fluxo intuitivo e automatizado.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">🛒</div>
+        <h3 class="feature-title">Checkout Inteligente</h3>
+        <p class="feature-text">Ao finalizar a lista de compras no mercado, os itens são automaticamente transferidos para a despensa e o histórico de preços é gravado em uma única transação atômica.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">📦</div>
+        <h3 class="feature-title">Baixa de Estoque Rápida</h3>
+        <p class="feature-text">Consuma ou descarte produtos da despensa com gestos simplificados. O sistema avisa visualmente quais itens estão prestes a vencer para evitar desperdício.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">📷</div>
+        <h3 class="feature-title">Scanner por Câmera</h3>
+        <p class="feature-text">Leitor integrado com Google ML Kit e CameraX para bipar códigos de barras (EAN-13) instantaneamente durante o cadastro de produtos ou no supermercado.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">🔒</div>
+        <h3 class="feature-title">100% Local-First & Privado</h3>
+        <p class="feature-text">Seus dados pertencem exclusivamente a você. O app funciona de forma autônoma offline com persistência Room KMP (SQLite) sem necessidade de login na nuvem.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">📈</div>
+        <h3 class="feature-title">Histórico de Preços</h3>
+        <p class="feature-text">Monitore a evolução dos preços que você pagou em cada produto e identifique quais supermercados oferecem o melhor custo-benefício ao longo dos meses.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon-wrapper">🎨</div>
+        <h3 class="feature-title">Design Glassmorphism</h3>
+        <p class="feature-text">Interface moderna em Compose Multiplatform com efeitos translúcidos, tipografia lapidada e paleta escura projetada para excelente contraste e conforto visual.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Flow Section -->
+  <section id="fluxo" class="container">
+    <div class="section-header">
+      <div class="section-pill">Fluxo Unificado</div>
+      <h2 class="section-title">O ciclo fechado de compras</h2>
+      <p class="section-desc">Entenda como a despensa se comunica com as compras para simplificar sua rotina.</p>
+    </div>
+
+    <div class="workflow-box">
+      <div class="workflow-grid">
+        <div class="workflow-step">
+          <div class="workflow-number">1</div>
+          <h4 class="workflow-step-title">Catálogo</h4>
+          <p class="workflow-step-desc">Cadastre produtos com foto, marca, EAN e unidade de medida.</p>
+        </div>
+
+        <div class="workflow-step">
+          <div class="workflow-number">2</div>
+          <h4 class="workflow-step-title">Lista de Compras</h4>
+          <p class="workflow-step-desc">Adicione itens necessários e marque conforme encontra nas prateleiras.</p>
+        </div>
+
+        <div class="workflow-step">
+          <div class="workflow-number">3</div>
+          <h4 class="workflow-step-title">Checkout</h4>
+          <p class="workflow-step-desc">Finalize com 1 toque: registra o valor pago e alimenta a despensa.</p>
+        </div>
+
+        <div class="workflow-step">
+          <div class="workflow-number">4</div>
+          <h4 class="workflow-step-title">Despensa Ativa</h4>
+          <p class="workflow-step-desc">Acompanhe validade, consumo diário e receba sugestões de reposição.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="container" style="padding-top: 20px;">
+    <div class="section-header" style="margin-bottom: 30px;">
+      <div class="section-pill">Arquitetura de Engenharia</div>
+      <h2 class="section-title">Tecnologia de ponta</h2>
+      <p class="section-desc">Desenvolvido seguindo os mais altos padrões de Clean Architecture e Kotlin Multiplatform.</p>
+    </div>
+
+    <div class="tech-grid">
+      <div class="tech-pill"><span>⚡</span> Kotlin 2.x</div>
+      <div class="tech-pill"><span>📱</span> Compose Multiplatform</div>
+      <div class="tech-pill"><span>💾</span> Room KMP v4 (SQLite)</div>
+      <div class="tech-pill"><span>💉</span> Koin Multiplatform</div>
+      <div class="tech-pill"><span>🔄</span> Kotlin Coroutines & Flow</div>
+      <div class="tech-pill"><span>📷</span> CameraX + Google ML Kit</div>
+      <div class="tech-pill"><span>🧪</span> 279 Testes Automatizados</div>
+    </div>
+  </section>
+
+  <!-- CTA Box -->
+  <section class="container">
+    <div class="cta-banner">
+      <h2 class="cta-banner-title">Pronto para testar a versão Alpha?</h2>
+      <p class="cta-banner-text">
+        O APK da versão <strong>v1.0.0-alpha</strong> já está disponível com assinatura oficial para Android 8.0+. Baixe e ajude a lapidar o futuro do app!
+      </p>
+
+      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <a href="https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.0.0-alpha" target="_blank" class="btn btn-primary" style="padding: 14px 32px; font-size: 1.05rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Baixar APK v1.0.0-alpha</span>
+        </a>
+        <a href="https://github.com/bitlabbr/Minha-Despensa/wiki" target="_blank" class="btn btn-secondary" style="padding: 14px 28px; font-size: 1.05rem;">
+          <span>Explorar Documentação Wiki</span>
+        </a>
+      </div>
+
+      <div class="cta-meta">
+        APK Assinado • Tamanho: ~69 MB • Compatível com Android 8.0 (API 26) ou superior
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container footer-content">
+      <div>
+        <p><strong>Minha Despensa</strong> — Desenvolvido por <a href="https://github.com/bitlabbr" target="_blank" style="color: var(--primary); text-decoration: none;">BitLabBR</a></p>
+        <p style="font-size: 0.8rem; margin-top: 4px; color: var(--text-dim);">Código aberto sob a licença MIT.</p>
+      </div>
+
+      <div class="footer-links">
+        <a href="https://github.com/bitlabbr/Minha-Despensa/wiki" target="_blank">Wiki</a>
+        <a href="https://github.com/bitlabbr/Minha-Despensa/releases" target="_blank">Releases</a>
+        <a href="https://github.com/bitlabbr/Minha-Despensa/issues" target="_blank">Issues / Bugs</a>
+        <a href="https://github.com/bitlabbr/Minha-Despensa" target="_blank">Código Fonte</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
