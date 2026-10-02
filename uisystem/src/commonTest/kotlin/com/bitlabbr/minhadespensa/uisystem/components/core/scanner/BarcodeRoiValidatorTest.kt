@@ -117,6 +117,12 @@ class BarcodeRoiValidatorTest {
 
         val zeroSizeBarcode = BarcodeRect(left = 500f, top = 1000f, right = 500f, bottom = 1000f)
         assertFalse(validator.isInsideRoi(zeroSizeBarcode, imageWidth = 1000, imageHeight = 2000))
+
+        val zeroWidthBarcode = BarcodeRect(left = 500f, top = 950f, right = 500f, bottom = 1050f)
+        assertFalse(validator.isInsideRoi(zeroWidthBarcode, imageWidth = 1000, imageHeight = 2000))
+
+        val zeroHeightBarcode = BarcodeRect(left = 450f, top = 1000f, right = 550f, bottom = 1000f)
+        assertFalse(validator.isInsideRoi(zeroHeightBarcode, imageWidth = 1000, imageHeight = 2000))
     }
 
     @Test

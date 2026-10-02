@@ -55,6 +55,7 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.action_manual_register
+import minhadespensa.uisystem.generated.resources.scanner_instruction_center_barcode
 import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -116,7 +117,7 @@ fun BarcodeScannerModal(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 MinhaDespensaText(
-                    text = "Centralize o código de barras dentro da moldura",
+                    text = stringResource(Res.string.scanner_instruction_center_barcode),
                     color = Color.White,
                     fontStyle = MinhaDespensaTheme.typography.bodySmall,
                 )

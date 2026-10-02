@@ -87,7 +87,7 @@ class BarcodeRoiValidator(
      */
     fun isInsideRoi(barcodeBox: BarcodeRect?, imageWidth: Int, imageHeight: Int): Boolean {
         if (barcodeBox == null || imageWidth <= 0 || imageHeight <= 0) return false
-        if (barcodeBox.width <= 0f && barcodeBox.height <= 0f) return false
+        if (barcodeBox.width <= 0f || barcodeBox.height <= 0f) return false
 
         val roi = calculateRoi(imageWidth, imageHeight)
         return roi.contains(barcodeBox.centerX, barcodeBox.centerY)

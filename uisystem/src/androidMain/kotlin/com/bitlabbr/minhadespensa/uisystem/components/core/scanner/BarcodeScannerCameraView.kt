@@ -39,6 +39,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -94,14 +95,21 @@ actual fun BarcodeScannerCameraView(
     val isScanned = remember { AtomicBoolean(false) }
     val stabilizer = remember { BarcodeScanStabilizer(requiredConsecutiveMatches = 2, maxIntervalBetweenFramesMs = 400L) }
     val roiValidator = remember { BarcodeRoiValidator(horizontalFraction = 0.70f, verticalFraction = 0.45f) }
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val scanner = remember { BarcodeScanning.getClient() }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            cameraExecutor.shutdown()
+            scanner.close()
+        }
+    }
 
     AndroidView(
         modifier = modifier.fillMaxSize(),
         factory = { ctx ->
             val previewView = PreviewView(ctx)
             val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-            val cameraExecutor = Executors.newSingleThreadExecutor()
-            val scanner = BarcodeScanning.getClient()
 
             cameraProviderFuture.addListener({
                 val cameraProvider = cameraProviderFuture.get()
@@ -124,29 +132,27 @@ actual fun BarcodeScannerCameraView(
 
                         scanner.process(inputImage)
                             .addOnSuccessListener { barcodes ->
-                                for (barcode in barcodes) {
+                                val validBarcode = barcodes.firstOrNull { barcode ->
                                     val rawValue = barcode.rawValue
-                                    if (rawValue.isNullOrBlank()) continue
-
                                     val box = barcode.boundingBox
-                                    if (box != null) {
-                                        val barcodeRect = BarcodeRect(
-                                            left = box.left.toFloat(),
-                                            top = box.top.toFloat(),
-                                            right = box.right.toFloat(),
-                                            bottom = box.bottom.toFloat(),
-                                        )
-                                        if (!roiValidator.isInsideRoi(barcodeRect, uprightWidth, uprightHeight)) {
-                                            continue
-                                        }
-                                    }
+                                    if (rawValue.isNullOrBlank() || box == null) return@firstOrNull false
 
+                                    val barcodeRect = BarcodeRect(
+                                        left = box.left.toFloat(),
+                                        top = box.top.toFloat(),
+                                        right = box.right.toFloat(),
+                                        bottom = box.bottom.toFloat(),
+                                    )
+                                    roiValidator.isInsideRoi(barcodeRect, uprightWidth, uprightHeight)
+                                }
+
+                                if (validBarcode != null) {
+                                    val rawValue = validBarcode.rawValue ?: return@addOnSuccessListener
                                     val result = stabilizer.process(rawValue, System.currentTimeMillis())
                                     if (result is BarcodeStabilizationResult.Confirmed && isScanned.compareAndSet(false, true)) {
                                         ContextCompat.getMainExecutor(ctx).execute {
                                             onBarcodeScanned(result.barcode)
                                         }
-                                        break
                                     }
                                 }
                             }
