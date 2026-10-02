@@ -116,7 +116,7 @@ fun BarcodeScannerModal(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 MinhaDespensaText(
-                    text = "Aponte a câmera para o código de barras",
+                    text = "Centralize o código de barras dentro da moldura",
                     color = Color.White,
                     fontStyle = MinhaDespensaTheme.typography.bodySmall,
                 )
