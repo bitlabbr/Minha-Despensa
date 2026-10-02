@@ -92,6 +92,8 @@ actual fun BarcodeScannerCameraView(
     }
 
     val isScanned = remember { AtomicBoolean(false) }
+    val stabilizer = remember { BarcodeScanStabilizer(requiredConsecutiveMatches = 2, maxIntervalBetweenFramesMs = 400L) }
+    val roiValidator = remember { BarcodeRoiValidator(horizontalFraction = 0.70f, verticalFraction = 0.45f) }
 
     AndroidView(
         modifier = modifier.fillMaxSize(),
@@ -114,13 +116,36 @@ actual fun BarcodeScannerCameraView(
                 imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
                     val mediaImage = imageProxy.image
                     if (mediaImage != null && !isScanned.get()) {
-                        val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                        val rotation = imageProxy.imageInfo.rotationDegrees
+                        val inputImage = InputImage.fromMediaImage(mediaImage, rotation)
+
+                        val uprightWidth = if (rotation == 90 || rotation == 270) imageProxy.height else imageProxy.width
+                        val uprightHeight = if (rotation == 90 || rotation == 270) imageProxy.width else imageProxy.height
+
                         scanner.process(inputImage)
                             .addOnSuccessListener { barcodes ->
                                 for (barcode in barcodes) {
                                     val rawValue = barcode.rawValue
-                                    if (!rawValue.isNullOrBlank() && isScanned.compareAndSet(false, true)) {
-                                        onBarcodeScanned(rawValue)
+                                    if (rawValue.isNullOrBlank()) continue
+
+                                    val box = barcode.boundingBox
+                                    if (box != null) {
+                                        val barcodeRect = BarcodeRect(
+                                            left = box.left.toFloat(),
+                                            top = box.top.toFloat(),
+                                            right = box.right.toFloat(),
+                                            bottom = box.bottom.toFloat(),
+                                        )
+                                        if (!roiValidator.isInsideRoi(barcodeRect, uprightWidth, uprightHeight)) {
+                                            continue
+                                        }
+                                    }
+
+                                    val result = stabilizer.process(rawValue, System.currentTimeMillis())
+                                    if (result is BarcodeStabilizationResult.Confirmed && isScanned.compareAndSet(false, true)) {
+                                        ContextCompat.getMainExecutor(ctx).execute {
+                                            onBarcodeScanned(result.barcode)
+                                        }
                                         break
                                     }
                                 }
