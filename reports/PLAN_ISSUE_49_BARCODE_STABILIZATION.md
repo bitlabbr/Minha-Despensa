@@ -82,8 +82,8 @@ Cada etapa é estritamente isolada, compilável, testável e acompanhada de seu 
 
 ## 📊 Critérios de Aceite (Definition of Done)
 
-- [ ] Nenhum código fora da mira central da tela é aceito ou processado.
-- [ ] O leitor exige ao menos 2 frames consecutivos idênticos antes de emitir a confirmação.
-- [ ] Leituras transitórias/borradas em movimento rápido não causam captura de dados truncados.
-- [ ] 100% dos novos testes unitários passam de forma determinística em `uisystem`.
-- [ ] Nenhuma regressão na suíte de testes existente do projeto.
+- [x] Nenhum código fora da mira central da tela é aceito ou processado.
+- [x] O leitor exige ao menos 2 frames consecutivos idênticos antes de emitir a confirmação.
+- [x] Leituras transitórias/borradas em movimento rápido não causam captura de dados truncados.
+- [x] 100% dos novos testes unitários passam de forma determinística em `uisystem` (16 novos testes).
+- [x] Nenhuma regressão na suíte de testes existente do projeto (101 tarefas bem-sucedidas no Gradle).
