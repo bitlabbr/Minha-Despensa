@@ -132,6 +132,7 @@
     <string name="pantry_catalog_picker_title">Selecionar Produto do Catálogo</string>
     <string name="pantry_catalog_picker_search_placeholder">Buscar por nome, marca ou categoria...</string>
     <string name="pantry_catalog_picker_empty">Nenhum produto encontrado no catálogo.</string>
+    <string name="pantry_item_added_success">Item adicionado à despensa com sucesso!</string>
 
     <!-- Shopping Assistant -->
     <string name="shopping_assistant_title">Assistente de Compras</string>

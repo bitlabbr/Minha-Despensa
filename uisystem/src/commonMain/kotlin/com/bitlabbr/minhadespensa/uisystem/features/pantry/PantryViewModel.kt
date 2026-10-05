@@ -41,6 +41,8 @@ import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.pantry_item_added_success
 
 class PantryViewModel(
     private val pantryRepository: PantryRepository,
@@ -209,7 +211,7 @@ class PantryViewModel(
 
             result.onSuccess {
                 _activeSubFlow.value = null
-                notificationManager.showSuccess(UiText.DynamicString("Item adicionado à despensa com sucesso!"))
+                notificationManager.showSuccess(UiText.Resource(Res.string.pantry_item_added_success))
             }.onFailure { error ->
                 logger.e(TAG, "Falha ao adicionar item: ${error.message}", error)
                 notificationManager.showError(UiText.DynamicString("Erro ao salvar na despensa: ${error.message}"))
