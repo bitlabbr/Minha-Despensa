@@ -35,10 +35,12 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContain
 import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.CatalogProductPickerSheet
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.RegisterProductBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantryItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantrySubFlow
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemDetailsSheet
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemOptionsSheet
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.categories.PantryCategoriesWidget
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.search.PantrySearchBarWidget
@@ -98,6 +100,7 @@ fun PantryScreen(
                 },
                 onDismissRequest = viewModel::onDismissSubFlow,
                 onManualEntryClick = { viewModel.onStartManualRegisterFlow() },
+                onSearchCatalogClick = viewModel::onStartSearchCatalogFlow,
             )
         }
 
@@ -123,9 +126,24 @@ fun PantryScreen(
             )
         }
 
-        is PantrySubFlow.AddItemOptions -> Unit
+        is PantrySubFlow.AddItemOptions -> {
+            AddPantryItemOptionsSheet(
+                onScanBarcode = viewModel::onStartScanFlow,
+                onSearchCatalog = viewModel::onStartSearchCatalogFlow,
+                onCreateProduct = { viewModel.onStartManualRegisterFlow() },
+                onDismiss = viewModel::onDismissSubFlow,
+            )
+        }
 
-        is PantrySubFlow.SearchCatalog -> Unit
+        is PantrySubFlow.SearchCatalog -> {
+            CatalogProductPickerSheet(
+                products = uiState.availableCatalogProducts,
+                onProductSelected = { product ->
+                    viewModel.onCatalogProductSelected(product)
+                },
+                onDismiss = viewModel::onDismissSubFlow,
+            )
+        }
 
         null -> Unit
     }
