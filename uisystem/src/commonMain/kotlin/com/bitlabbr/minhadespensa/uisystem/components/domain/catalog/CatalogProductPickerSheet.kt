@@ -56,6 +56,7 @@ fun CatalogProductPickerSheet(
     searchPlaceholder: String = stringResource(Res.string.pantry_catalog_picker_search_placeholder),
     emptyMessage: String = stringResource(Res.string.pantry_catalog_picker_empty),
     onAddAsText: ((String) -> Unit)? = null,
+    onCreateProductClick: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val dimens = MinhaDespensaTheme.dimens
@@ -97,7 +98,7 @@ fun CatalogProductPickerSheet(
             ProductTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = title,
+                label = searchPlaceholder,
                 placeholder = searchPlaceholder,
                 leadingContent = {
                     Icon(
@@ -124,6 +125,18 @@ fun CatalogProductPickerSheet(
                             fontStyle = typography.bodySmall,
                             color = colors.onSecondaryContainer.copy(alpha = 0.6f),
                         )
+                        if (onCreateProductClick != null) {
+                            TextButton(
+                                onClick = { onCreateProductClick(searchQuery.trim()) },
+                            ) {
+                                MinhaDespensaText(
+                                    text = stringResource(Res.string.catalog_picker_create_new),
+                                    fontStyle = typography.button,
+                                    color = colors.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
                         if (onAddAsText != null && searchQuery.isNotBlank()) {
                             TextButton(
                                 onClick = { onAddAsText(searchQuery.trim()) },
@@ -179,9 +192,9 @@ fun CatalogProductPickerSheet(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text = stringResource(Res.string.pantry_add_option_cancel),
-                    style = typography.button,
+                MinhaDespensaText(
+                    text = stringResource(Res.string.action_cancel),
+                    fontStyle = typography.button,
                 )
             }
         }

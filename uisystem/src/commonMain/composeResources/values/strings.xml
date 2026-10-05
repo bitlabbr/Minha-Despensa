@@ -108,8 +108,10 @@
     <string name="add_pantry_item_cta_title">Adicionar à Despensa</string>
     <string name="add_pantry_item_cta_subtitle">Escanear código de barras ou cadastrar item</string>
     <string name="action_scan_barcode">Clique aqui para escanear</string>
-    <string name="action_search_catalog">Clique para digitar</string>
+    <string name="action_search_catalog">Buscar no Catálogo</string>
     <string name="action_manual_register">Cadastrar manualmente</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="catalog_picker_create_new">Cadastrar novo produto</string>
     <string name="register_bottom_sheet_name_is_required">Nome é obrigatório</string>
     <string name="register_bottom_sheet_invalid_quantity">Peso/Qtd inválido</string>
     <string name="category_others">Outros</string>

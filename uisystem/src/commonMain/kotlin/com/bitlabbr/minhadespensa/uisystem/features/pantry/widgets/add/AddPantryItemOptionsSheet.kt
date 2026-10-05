@@ -194,9 +194,9 @@ fun AddPantryItemOptionsSheet(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text = stringResource(Res.string.pantry_add_option_cancel),
-                    style = typography.button,
+                MinhaDespensaText(
+                    text = stringResource(Res.string.action_cancel),
+                    fontStyle = typography.button,
                 )
             }
         }

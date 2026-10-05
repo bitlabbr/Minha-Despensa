@@ -141,6 +141,9 @@ fun PantryScreen(
                 onProductSelected = { product ->
                     viewModel.onCatalogProductSelected(product)
                 },
+                onCreateProductClick = {
+                    viewModel.onStartManualRegisterFlow()
+                },
                 onDismiss = viewModel::onDismissSubFlow,
             )
         }
