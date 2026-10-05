@@ -62,10 +62,10 @@ class PantryViewModel(
     val uiState: StateFlow<PantryUiState> = combine(
         pantryRepository.getAllActivePantryItemsWithCategory(),
         pantryRepository.getExpiringPantryItems(EXPIRATION_THRESHOLD_DAYS),
-        _searchQuery,
-        _selectedCategory,
+        catalogRepository.getAllActiveProducts(),
+        combine(_searchQuery, _selectedCategory) { query, category -> query to category },
         _activeSubFlow,
-    ) { allItems, expiringItems, query, selectedCategory, subFlow ->
+    ) { allItems, expiringItems, catalogProducts, (query, selectedCategory), subFlow ->
 
         val allUiItems = aggregatePantryItems(allItems)
         val isPantryEmpty = allUiItems.isEmpty()
@@ -105,6 +105,7 @@ class PantryViewModel(
             allActivePantryItems = allUiItems,
             expiringPantryItems = aggregatePantryItems(expiringItems).sortedBy { it.expirationDate ?: Long.MAX_VALUE },
             searchResults = searchResults,
+            availableCatalogProducts = catalogProducts,
             activeSubFlow = subFlow,
             isLoading = false,
             error = null,
@@ -139,6 +140,18 @@ class PantryViewModel(
     }
 
     // --- MÁQUINA DE ESTADOS DOS SUBFLUXOS ---
+
+    fun onStartAddItemFlow() {
+        _activeSubFlow.value = PantrySubFlow.AddItemOptions
+    }
+
+    fun onStartSearchCatalogFlow() {
+        _activeSubFlow.value = PantrySubFlow.SearchCatalog
+    }
+
+    fun onCatalogProductSelected(product: CatalogProduct) {
+        _activeSubFlow.value = PantrySubFlow.AddItemDetails(product.toUiModel())
+    }
 
     fun onStartScanFlow() {
         _activeSubFlow.value = PantrySubFlow.BarcodeScanner
