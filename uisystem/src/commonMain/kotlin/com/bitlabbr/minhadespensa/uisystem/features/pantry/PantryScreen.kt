@@ -123,6 +123,10 @@ fun PantryScreen(
             )
         }
 
+        is PantrySubFlow.AddItemOptions -> Unit
+
+        is PantrySubFlow.SearchCatalog -> Unit
+
         null -> Unit
     }
 }

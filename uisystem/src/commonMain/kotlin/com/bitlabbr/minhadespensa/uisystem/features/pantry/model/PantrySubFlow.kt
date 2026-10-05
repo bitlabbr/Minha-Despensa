@@ -26,6 +26,8 @@ package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
 
 sealed interface PantrySubFlow {
+    data object AddItemOptions : PantrySubFlow
+    data object SearchCatalog : PantrySubFlow
     data object BarcodeScanner : PantrySubFlow
     data class CreateCatalogProduct(val initialEan: String? = null) : PantrySubFlow
     data class AddItemDetails(val product: CatalogProductUiModel) : PantrySubFlow
