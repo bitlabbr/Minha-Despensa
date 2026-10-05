@@ -342,5 +342,47 @@ class PantryViewModelTest {
         assertEquals(2.0, products.first().quantity)
         assertEquals(1, viewModel.uiState.value.allActivePantryItems.size)
     }
+
+    @Test
+    fun `catalog products should be exposed in uiState and support subflow selection`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod1 = CatalogProduct(id = "c-1", name = "Maçã Gala", category = "Hortifrúti", updatedAt = 1000L)
+        val prod2 = CatalogProduct(id = "c-2", name = "Banana Prata", category = "Hortifrúti", updatedAt = 2000L)
+        catalogRepository.insertProduct(prod1, null)
+        catalogRepository.insertProduct(prod2, null)
+        testScheduler.advanceUntilIdle()
+
+        // 1. Verify catalog products in uiState
+        val catalogProducts = viewModel.uiState.value.availableCatalogProducts
+        assertEquals(2, catalogProducts.size)
+        assertTrue(catalogProducts.any { it.name == "Maçã Gala" })
+        assertTrue(catalogProducts.any { it.name == "Banana Prata" })
+
+        // 2. Open AddItemOptions
+        viewModel.onStartAddItemFlow()
+        testScheduler.advanceUntilIdle()
+        assertEquals(PantrySubFlow.AddItemOptions, viewModel.uiState.value.activeSubFlow)
+
+        // 3. Open SearchCatalog
+        viewModel.onStartSearchCatalogFlow()
+        testScheduler.advanceUntilIdle()
+        assertEquals(PantrySubFlow.SearchCatalog, viewModel.uiState.value.activeSubFlow)
+
+        // 4. Select catalog product -> AddItemDetails
+        viewModel.onCatalogProductSelected(prod1)
+        testScheduler.advanceUntilIdle()
+
+        val detailsSubflow = viewModel.uiState.value.activeSubFlow
+        assertIs<PantrySubFlow.AddItemDetails>(detailsSubflow)
+        assertEquals("c-1", detailsSubflow.product.id)
+        assertEquals("Maçã Gala", detailsSubflow.product.name)
+
+        // 5. Dismiss subflow
+        viewModel.onDismissSubFlow()
+        testScheduler.advanceUntilIdle()
+        assertNull(viewModel.uiState.value.activeSubFlow)
+    }
 }
+
 
