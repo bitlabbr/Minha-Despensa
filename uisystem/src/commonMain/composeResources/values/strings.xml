@@ -120,6 +120,18 @@
     <string name="pantry_search_bar_stock_quantity">Estoque</string>
     <string name="pantry_categories_empty_message">Sua despensa está vazia\nAdicione produtos no botão abaixo!</string>
     <string name="pantry_categories_not_found">Nenhum item nesta categoria da despensa.</string>
+    <string name="pantry_add_item_options_title">Adicionar à Despensa</string>
+    <string name="pantry_add_item_options_subtitle">Como deseja dar entrada no produto?</string>
+    <string name="pantry_add_option_scan">Escanear Código de Barras</string>
+    <string name="pantry_add_option_scan_desc">Ler código de barras da embalagem física com a câmera</string>
+    <string name="pantry_add_option_catalog">Buscar no Catálogo</string>
+    <string name="pantry_add_option_catalog_desc">Pesquisar e selecionar produtos já cadastrados</string>
+    <string name="pantry_add_option_create">Cadastrar Novo Produto</string>
+    <string name="pantry_add_option_create_desc">Cadastrar novo item com nome, categoria e dados completos</string>
+    <string name="pantry_add_option_cancel">Cancelar</string>
+    <string name="pantry_catalog_picker_title">Selecionar Produto do Catálogo</string>
+    <string name="pantry_catalog_picker_search_placeholder">Buscar por nome, marca ou categoria...</string>
+    <string name="pantry_catalog_picker_empty">Nenhum produto encontrado no catálogo.</string>
 
     <!-- Shopping Assistant -->
     <string name="shopping_assistant_title">Assistente de Compras</string>

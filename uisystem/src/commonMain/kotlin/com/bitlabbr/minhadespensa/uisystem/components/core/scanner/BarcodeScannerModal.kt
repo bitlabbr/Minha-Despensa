@@ -55,6 +55,7 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.action_manual_register
+import minhadespensa.uisystem.generated.resources.pantry_add_option_catalog
 import minhadespensa.uisystem.generated.resources.scanner_instruction_center_barcode
 import org.jetbrains.compose.resources.stringResource
 
@@ -64,6 +65,7 @@ fun BarcodeScannerModal(
     onBarcodeScanned: (String) -> Unit,
     onDismissRequest: () -> Unit,
     onManualEntryClick: (() -> Unit)? = null,
+    onSearchCatalogClick: (() -> Unit)? = null,
 ) {
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
@@ -121,8 +123,24 @@ fun BarcodeScannerModal(
                     color = Color.White,
                     fontStyle = MinhaDespensaTheme.typography.bodySmall,
                 )
-                if (onManualEntryClick != null) {
+                if (onSearchCatalogClick != null) {
                     Spacer(Modifier.height(8.dp))
+                    TextButton(
+                        onClick = {
+                            onDismissRequest()
+                            onSearchCatalogClick()
+                        },
+                    ) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.pantry_add_option_catalog),
+                            color = colors.primary,
+                            fontStyle = MinhaDespensaTheme.typography.button,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+                if (onManualEntryClick != null) {
+                    Spacer(Modifier.height(4.dp))
                     TextButton(
                         onClick = {
                             onDismissRequest()

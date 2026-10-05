@@ -42,7 +42,7 @@ uisystem/src/
 │   │   │   ├── text/              # MinhaDespensaText with design tokens
 │   │   │   └── topbar/            # MinhaDespensaTopBar with back navigation & actions
 │   │   └── domain/                # Level 2: Domain Molecules & Composite Cards
-│   │       ├── catalog/           # CatalogProductCard, CategoryChip
+│   │       ├── catalog/           # CatalogProductCard, CategoryChip, CatalogProductPickerSheet
 │   │       ├── pantry/            # PantryItemCard, ExpiringItemTile, ConsumptionTrendTile
 │   │       └── shopping/          # ShoppingItemRow, CartTotalSummary
 │   ├── features/                  # Level 3 & 4: Feature Screens & ViewModels
@@ -57,7 +57,7 @@ uisystem/src/
 │   │   │   └── widgets/           # Price history charts, batch listings, edit sheets
 │   │   ├── pantry/                # PantryScreen, PantryViewModel
 │   │   │   ├── model/             # PantryUiState, PantrySubFlow state machine
-│   │   │   └── widgets/           # Subflow sheets (AddPantryItemDetailsSheet, BarcodeScanner)
+│   │   │   └── widgets/           # Subflow sheets (AddPantryItemOptionsSheet, AddPantryItemDetailsSheet, BarcodeScanner)
 │   │   ├── shopping/              # Shopping suite
 │   │   │   ├── overview/          # ShoppingListsScreen, ShoppingListsViewModel
 │   │   │   ├── assistant/         # ShoppingAssistantScreen, ShoppingAssistantViewModel
