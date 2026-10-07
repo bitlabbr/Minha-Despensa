@@ -63,16 +63,20 @@ class FakeCatalogRepository : CatalogRepository {
         }
     }
 
-    override suspend fun forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?) {
+    override suspend fun forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean) {
         products.value += (product.id to product)
-        if (imageBytes != null) {
+        if (removeImage) {
+            productImages.value -= product.id
+        } else if (imageBytes != null) {
             productImages.value += (product.id to imageBytes)
         }
     }
 
-    override suspend fun updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?) {
+    override suspend fun updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean) {
         products.value += (product.id to product)
-        if (imageBytes != null) {
+        if (removeImage) {
+            productImages.value -= product.id
+        } else if (imageBytes != null) {
             productImages.value += (product.id to imageBytes)
         }
     }

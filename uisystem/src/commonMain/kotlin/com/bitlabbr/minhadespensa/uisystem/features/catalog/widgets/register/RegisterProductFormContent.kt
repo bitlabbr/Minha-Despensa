@@ -73,7 +73,7 @@ fun RegisterProductFormContent(
     var showBarcodeScanner by remember { mutableStateOf(false) }
 
     val imagePickerManager = rememberImagePickerManager { bytes ->
-        onStateChange(state.copy(imageBytes = bytes))
+        onStateChange(state.copy(imageBytes = bytes, hasImageRemoved = false))
     }
 
     LazyColumn(
@@ -98,7 +98,7 @@ fun RegisterProductFormContent(
                     ImagePickerCard(
                         imageBytes = state.imageBytes,
                         onClick = { showImageSourcePicker = true },
-                        onClearImage = { onStateChange(state.copy(imageBytes = null)) },
+                        onClearImage = { onStateChange(state.copy(imageBytes = null, hasImageRemoved = true)) },
                     )
                 }
 

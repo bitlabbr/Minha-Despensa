@@ -569,7 +569,7 @@ private fun ProductEditSection(
     var showBarcodeScanner by remember { mutableStateOf(false) }
 
     val imagePickerManager = rememberImagePickerManager { bytes ->
-        onFormChange(formState.copy(imageBytes = bytes))
+        onFormChange(formState.copy(imageBytes = bytes, hasImageRemoved = false))
     }
 
     Column(
@@ -585,7 +585,7 @@ private fun ProductEditSection(
             ImagePickerCard(
                 imageBytes = formState.imageBytes,
                 onClick = { showImageSourcePicker = true },
-                onClearImage = { onFormChange(formState.copy(imageBytes = null)) },
+                onClearImage = { onFormChange(formState.copy(imageBytes = null, hasImageRemoved = true)) },
             )
         }
 
