@@ -134,6 +134,56 @@ class PantryViewModelTest {
     }
 
     @Test
+    fun `search should find pantry items ignoring accents and diacritics`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val item1 = PantryItemWithCategory(
+            pantryItem = PantryItem(id = "p-1", productId = "prod-1", quantity = 2.0, expirationDate = null, updatedAt = 1000L),
+            name = "Pão de Açúcar",
+            category = "Padaria",
+        )
+        val item2 = PantryItemWithCategory(
+            pantryItem = PantryItem(id = "p-2", productId = "prod-2", quantity = 1.0, expirationDate = null, updatedAt = 1000L),
+            name = "Maçã Fuji",
+            category = "Hortifruti",
+        )
+        val item3 = PantryItemWithCategory(
+            pantryItem = PantryItem(id = "p-3", productId = "prod-3", quantity = 5.0, expirationDate = null, updatedAt = 1000L),
+            name = "Café Orgânico",
+            category = "Bebidas",
+        )
+
+        pantryRepository.customItemsWithCategory.value = listOf(item1, item2, item3)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(3, viewModel.uiState.value.listState.products.size)
+
+        // Query "pao" should match "Pão de Açúcar"
+        viewModel.onSearchQueryChanged("pao")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("prod-1", viewModel.uiState.value.listState.products.first().id)
+
+        // Query "acucar" should match "Pão de Açúcar"
+        viewModel.onSearchQueryChanged("acucar")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("prod-1", viewModel.uiState.value.listState.products.first().id)
+
+        // Query "maca" should match "Maçã Fuji"
+        viewModel.onSearchQueryChanged("maca")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("prod-2", viewModel.uiState.value.listState.products.first().id)
+
+        // Query "cafe" should match "Café Orgânico"
+        viewModel.onSearchQueryChanged("cafe")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("prod-3", viewModel.uiState.value.listState.products.first().id)
+    }
+
+    @Test
     fun `subflow state transitions should handle scanner manual register and barcode recognition`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 

@@ -38,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
@@ -69,11 +70,12 @@ fun CatalogProductPickerSheet(
         if (searchQuery.isBlank()) {
             products
         } else {
-            val query = searchQuery.trim().lowercase()
+            val query = searchQuery.trim()
             products.filter { product ->
-                product.name.lowercase().contains(query) ||
-                    (product.brand?.lowercase()?.contains(query) == true) ||
-                    product.category.lowercase().contains(query)
+                product.name.matchesSearchQuery(query) ||
+                    (product.brand?.matchesSearchQuery(query) == true) ||
+                    product.category.matchesSearchQuery(query) ||
+                    "${product.name} ${product.brand.orEmpty()}".matchesSearchQuery(query)
             }
         }
     }

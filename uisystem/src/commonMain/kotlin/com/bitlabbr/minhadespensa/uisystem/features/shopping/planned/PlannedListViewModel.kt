@@ -29,6 +29,7 @@ import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreatePlannedShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.PlannedItemDraft
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.planned.model.PlannedListUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -64,8 +65,9 @@ class PlannedListViewModel(
             catalogProducts
         } else {
             catalogProducts.filter {
-                it.name.contains(query, ignoreCase = true) ||
-                        (it.brand?.contains(query, ignoreCase = true) == true)
+                it.name.matchesSearchQuery(query) ||
+                        (it.brand?.matchesSearchQuery(query) == true) ||
+                        "${it.name} ${it.brand.orEmpty()}".matchesSearchQuery(query)
             }
         }
 
