@@ -1254,6 +1254,198 @@ class ShoppingAssistantViewModelTest {
         testScheduler.advanceUntilIdle()
         assertNull(viewModel.uiState.value.activeSubFlow)
     }
+
+    @Test
+    fun `search query should filter items by display name without accents`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-search-1"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Busca",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.SHOPPING,
+                items = listOf(
+                    ShoppingItem(
+                        id = "item-1",
+                        listId = listId,
+                        productId = null,
+                        rawText = "Café Torrado",
+                        quantity = 1.0,
+                        priceAtTime = 1500L,
+                        isChecked = true,
+                        updatedAt = 1000L,
+                    ),
+                    ShoppingItem(
+                        id = "item-2",
+                        listId = listId,
+                        productId = null,
+                        rawText = "Feijão Preto",
+                        quantity = 2.0,
+                        priceAtTime = 800L,
+                        isChecked = false,
+                        updatedAt = 1000L,
+                    ),
+                ),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.items.size)
+        assertEquals(2, viewModel.uiState.value.filteredItems.size)
+
+        // Busca sem acento para Café
+        viewModel.onSearchQueryChange("cafe")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("cafe", viewModel.uiState.value.searchQuery)
+        assertEquals(1, viewModel.uiState.value.filteredItems.size)
+        assertEquals("Café Torrado", viewModel.uiState.value.filteredItems.first().displayName)
+        assertEquals(2, viewModel.uiState.value.items.size)
+
+        // Busca sem acento para Feijão
+        viewModel.onSearchQueryChange("feijao")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.filteredItems.size)
+        assertEquals("Feijão Preto", viewModel.uiState.value.filteredItems.first().displayName)
+
+        // Busca sem correspondência
+        viewModel.onSearchQueryChange("inexistente")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(0, viewModel.uiState.value.filteredItems.size)
+        assertEquals(2, viewModel.uiState.value.items.size)
+
+        // Limpeza de busca
+        viewModel.onSearchQueryChange("")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.filteredItems.size)
+    }
+
+    @Test
+    fun `search query should filter items by category and brand`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-leite",
+            name = "Leite Integral",
+            category = "Laticínios",
+            brand = "Piracanjuba",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+
+        val listId = "list-search-cat"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Categoria",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.SHOPPING,
+                items = listOf(
+                    ShoppingItem(
+                        id = "item-leite",
+                        listId = listId,
+                        productId = product.id,
+                        quantity = 1.0,
+                        priceAtTime = 500L,
+                        isChecked = false,
+                        updatedAt = 1000L,
+                    ),
+                    ShoppingItem(
+                        id = "item-arroz",
+                        listId = listId,
+                        productId = null,
+                        rawText = "Arroz Branco",
+                        quantity = 1.0,
+                        priceAtTime = 600L,
+                        isChecked = false,
+                        updatedAt = 1000L,
+                    ),
+                ),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        // Filtrar por categoria (sem acento: laticinios)
+        viewModel.onSearchQueryChange("laticinios")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.filteredItems.size)
+        assertEquals("Leite Integral", viewModel.uiState.value.filteredItems.first().displayName)
+        assertEquals("Laticínios", viewModel.uiState.value.filteredItems.first().category)
+
+        // Filtrar por marca
+        viewModel.onSearchQueryChange("piracanjuba")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.filteredItems.size)
+        assertEquals("Leite Integral", viewModel.uiState.value.filteredItems.first().displayName)
+        assertEquals("Piracanjuba", viewModel.uiState.value.filteredItems.first().brand)
+    }
+
+    @Test
+    fun `search query filtering does not alter cart total calculations`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val listId = "list-totals"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista Totais",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.SHOPPING,
+                items = listOf(
+                    ShoppingItem(
+                        id = "item-1",
+                        listId = listId,
+                        productId = null,
+                        rawText = "Item 1",
+                        quantity = 1.0,
+                        priceAtTime = 1000L,
+                        isChecked = true,
+                        updatedAt = 1000L,
+                    ),
+                    ShoppingItem(
+                        id = "item-2",
+                        listId = listId,
+                        productId = null,
+                        rawText = "Item 2",
+                        quantity = 2.0,
+                        priceAtTime = 2000L,
+                        isChecked = true,
+                        updatedAt = 1000L,
+                    ),
+                ),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        // Total esperado: 1000 + 4000 = 5000L, 2 checados, 2 total
+        assertEquals(5000L, viewModel.uiState.value.totalCartValueInCents)
+        assertEquals(2, viewModel.uiState.value.checkedCount)
+        assertEquals(2, viewModel.uiState.value.totalCount)
+
+        // Filtra para exibir apenas "Item 1"
+        viewModel.onSearchQueryChange("Item 1")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.filteredItems.size)
+        // Os totais e contagens gerais permanecem inalterados
+        assertEquals(5000L, viewModel.uiState.value.totalCartValueInCents)
+        assertEquals(2, viewModel.uiState.value.checkedCount)
+        assertEquals(2, viewModel.uiState.value.totalCount)
+    }
 }
-
-
