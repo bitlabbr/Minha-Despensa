@@ -149,6 +149,7 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 
 *   **`RoomCatalogRepository`**:
     *   Encapsulates DAOs (`productDao`, `mediaDao`).
+    *   `searchProductsByNameOrBrand`: Executes accent- and case-insensitive search by filtering active products with `matchesSearchQuery`, supporting unaccented and multi-word token queries.
     *   Executes `insertProduct`, `forceUpdateProduct`, and `updateProductIfNewer`. Handles image addition/update via `ProductMediaEntity` or physical deletion via `mediaDao.deleteByProductId` when `removeImage = true`.
     *   Aligns media timestamps directly with `product.updatedAt`.
 *   **`RoomPantryRepository`**:
