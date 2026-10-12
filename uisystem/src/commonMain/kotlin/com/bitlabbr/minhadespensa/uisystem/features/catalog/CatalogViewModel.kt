@@ -31,6 +31,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.*
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.checkEanValidity
@@ -82,8 +83,9 @@ class CatalogViewModel(
                     item.category.equals(selectedCategory, ignoreCase = true)
 
             val matchesQuery = query.isBlank() ||
-                    item.name.contains(query, ignoreCase = true) ||
-                    (item.brand?.contains(query, ignoreCase = true) == true)
+                    item.name.matchesSearchQuery(query) ||
+                    (item.brand?.matchesSearchQuery(query) == true) ||
+                    "${item.name} ${item.brand.orEmpty()}".matchesSearchQuery(query)
 
             matchesCategory && matchesQuery
         }
@@ -92,8 +94,9 @@ class CatalogViewModel(
             emptyList()
         } else {
             uiProducts.filter {
-                it.name.contains(query, ignoreCase = true) ||
-                        (it.brand?.contains(query, ignoreCase = true) == true)
+                it.name.matchesSearchQuery(query) ||
+                        (it.brand?.matchesSearchQuery(query) == true) ||
+                        "${it.name} ${it.brand.orEmpty()}".matchesSearchQuery(query)
             }
         }
 

@@ -34,6 +34,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.toUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.*
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
@@ -82,7 +83,7 @@ class PantryViewModel(
             val matchesCategory = selectedCategory == null ||
                     item.category.equals(selectedCategory, ignoreCase = true)
             val matchesQuery = query.isBlank() ||
-                    item.name.contains(query, ignoreCase = true)
+                    item.name.matchesSearchQuery(query)
 
             matchesCategory && matchesQuery
         }
@@ -90,7 +91,7 @@ class PantryViewModel(
         val searchResults = if (query.isBlank()) {
             emptyList()
         } else {
-            allUiItems.filter { it.name.contains(query, ignoreCase = true) }
+            allUiItems.filter { it.name.matchesSearchQuery(query) }
         }
 
         PantryUiState(

@@ -28,6 +28,7 @@ import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
@@ -68,8 +69,15 @@ class RoomCatalogRepository(
     override fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>> {
         logger.d(TAG, "searchProductsByNameOrBrand: query: $query")
         require(query.isNotBlank() && query.length <= 50) { "the term should have between 1 and 50 characters" }
-        return productDao.searchByNameOrBrand(query).map { entities ->
-            entities.map { it.toDomain() }
+        val trimmed = query.trim()
+        return productDao.getAllActive().map { entities ->
+            entities
+                .map { it.toDomain() }
+                .filter { product ->
+                    product.name.matchesSearchQuery(trimmed) ||
+                        (product.brand?.matchesSearchQuery(trimmed) == true) ||
+                        "${product.name} ${product.brand.orEmpty()}".matchesSearchQuery(trimmed)
+                }
         }
     }
 

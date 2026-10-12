@@ -759,6 +759,55 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
     @OptIn(ExperimentalUuidApi::class)
     @Test
+    fun `should find products ignoring accents in name and brand when query is unaccented`() = runTest {
+        val product1 = createDummyProduct(name = "Pão de Forma", brand = "Visconti")
+        val product2 = createDummyProduct(name = "Maçã Fuji", brand = "Pomar")
+        val product3 = createDummyProduct(name = "Café Solúvel", brand = "Três Corações")
+        val product4 = createDummyProduct(name = "Chocolate em Pó", brand = "Nestlé")
+
+        catalogRepository.insertProduct(product1, null)
+        catalogRepository.insertProduct(product2, null)
+        catalogRepository.insertProduct(product3, null)
+        catalogRepository.insertProduct(product4, null)
+
+        catalogRepository.searchProductsByNameOrBrand("pao").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product1.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("maca").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product2.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("tres coracoes").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product3.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("nestle").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product4.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("cafe tres coracoes").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product3.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
     fun `tests if user exists`() = runTest {
         val id = Uuid.random().toString()
         val product1 = createDummyProduct(id = id)

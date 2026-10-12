@@ -111,6 +111,52 @@ class CatalogViewModelTest {
     }
 
     @Test
+    fun `search should find products ignoring accents and diacritics`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod1 = CatalogProduct(id = "p1", name = "Pão de Forma", brand = "Visconti", category = "Padaria", updatedAt = 1000L)
+        val prod2 = CatalogProduct(id = "p2", name = "Maçã Gala", brand = "Pomar", category = "Hortifrúti", updatedAt = 1000L)
+        val prod3 = CatalogProduct(id = "p3", name = "Açúcar Cristal", brand = "União", category = "Mercearia", updatedAt = 1000L)
+        val prod4 = CatalogProduct(id = "p4", name = "Café Torrado", brand = "Três Corações", category = "Bebidas", updatedAt = 1000L)
+
+        catalogRepository.insertProduct(prod1, null)
+        catalogRepository.insertProduct(prod2, null)
+        catalogRepository.insertProduct(prod3, null)
+        catalogRepository.insertProduct(prod4, null)
+        testScheduler.advanceUntilIdle()
+
+        // "pao" encontra "Pão de Forma"
+        viewModel.onSearchQueryChanged("pao")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("p1", viewModel.uiState.value.listState.products.first().id)
+
+        // "maca" encontra "Maçã Gala"
+        viewModel.onSearchQueryChanged("maca")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("p2", viewModel.uiState.value.listState.products.first().id)
+
+        // "acucar" encontra "Açúcar Cristal"
+        viewModel.onSearchQueryChanged("acucar")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("p3", viewModel.uiState.value.listState.products.first().id)
+
+        // "tres coracoes" encontra por marca
+        viewModel.onSearchQueryChanged("tres coracoes")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("p4", viewModel.uiState.value.listState.products.first().id)
+
+        // "cafe tres coracoes" encontra por combinação nome e marca
+        viewModel.onSearchQueryChanged("cafe tres coracoes")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("p4", viewModel.uiState.value.listState.products.first().id)
+    }
+
+    @Test
     fun `form opening and closing should toggle isFormOpen and reset formState`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 

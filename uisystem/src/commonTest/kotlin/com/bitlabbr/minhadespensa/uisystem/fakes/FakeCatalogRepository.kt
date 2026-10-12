@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.fakes
 
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -44,7 +45,11 @@ class FakeCatalogRepository : CatalogRepository {
     override fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>> =
         products.map { map ->
             map.values.filter {
-                !it.isDeleted && (it.name.contains(query, ignoreCase = true) || it.brand?.contains(query, ignoreCase = true) == true)
+                !it.isDeleted && (
+                    it.name.matchesSearchQuery(query) ||
+                        it.brand?.matchesSearchQuery(query) == true ||
+                        "${it.name} ${it.brand.orEmpty()}".matchesSearchQuery(query)
+                )
             }
         }
 
