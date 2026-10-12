@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
@@ -171,6 +172,17 @@ fun CreatePlannedListScreen(
                             tint = colors.onSecondaryContainer.copy(alpha = 0.6f),
                         )
                     },
+                    trailingContent = if (uiState.searchQuery.isNotEmpty()) {
+                        {
+                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = stringResource(Res.string.search_clear),
+                                    tint = colors.onSecondaryContainer.copy(alpha = 0.7f),
+                                )
+                            }
+                        }
+                    } else null,
                 )
             }
 
