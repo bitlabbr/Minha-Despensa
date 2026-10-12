@@ -186,6 +186,7 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `getCurrentTime()`: Epoch milliseconds using `Clock.System.now().toEpochMilliseconds()`.
     *   `isValidTimestamp(timestamp: Long, toleranceMillis: Long)`: Timestamp boundary validation preventing negative values and distant future anomalies, accounting for clock skew.
 *   **`ImageProcessor`**: Multiplatform `expect` interface for scaling and compressing raw image bytes to WebP thumbnails.
+*   **`TextNormalizer.kt`**: Multiplatform text normalization extensions (`unaccent()`, `normalizeForSearch()`, `matchesSearchQuery()`) for accent- and case-insensitive search queries across products, brands, and categories.
 
 ---
 
