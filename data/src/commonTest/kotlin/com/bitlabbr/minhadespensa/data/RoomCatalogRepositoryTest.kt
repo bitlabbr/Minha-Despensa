@@ -538,6 +538,65 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
     @OptIn(ExperimentalUuidApi::class)
     @Test
+    fun `should DELETE product media when updateProductIfNewer is called with removeImage = true`() = runTest {
+        val productId = Uuid.random().toString()
+        val product = CatalogProduct(
+            id = productId,
+            name = "Café Especial",
+            measureUnit = MeasureUnit.GRAM,
+            netWeight = 250.0,
+            updatedAt = getCurrentTime(),
+            isDeleted = false,
+            manuallyAdded = true
+        )
+
+        val imageBytes = byteArrayOf(10, 20, 30)
+        catalogRepository.insertProduct(product, imageBytes)
+
+        val mediaBefore = db.productMediaDao().getByProductId(productId)
+        assertNotNull(mediaBefore, "Media should exist before deletion")
+
+        val updatedProduct = product.copy(
+            name = "Café Especial Moído",
+            updatedAt = getCurrentTime() + 1
+        )
+        catalogRepository.updateProductIfNewer(updatedProduct, null, removeImage = true)
+
+        val mediaAfter = db.productMediaDao().getByProductId(productId)
+        assertNull(mediaAfter, "Media should be deleted when removeImage is true")
+
+        val flowImage = catalogRepository.getProductImage(productId).first()
+        assertNull(flowImage, "getProductImage flow should emit null after removal")
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `should DELETE product media when forceUpdateProduct is called with removeImage = true`() = runTest {
+        val productId = Uuid.random().toString()
+        val product = CatalogProduct(
+            id = productId,
+            name = "Biscoito",
+            measureUnit = MeasureUnit.PACKAGE,
+            netWeight = 150.0,
+            updatedAt = getCurrentTime(),
+            isDeleted = false,
+            manuallyAdded = true
+        )
+
+        val imageBytes = byteArrayOf(5, 6, 7)
+        catalogRepository.insertProduct(product, imageBytes)
+
+        val mediaBefore = db.productMediaDao().getByProductId(productId)
+        assertNotNull(mediaBefore, "Media should exist before force update")
+
+        catalogRepository.forceUpdateProduct(product, null, removeImage = true)
+
+        val mediaAfter = db.productMediaDao().getByProductId(productId)
+        assertNull(mediaAfter, "Media should be deleted when forceUpdateProduct has removeImage = true")
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
     fun `should mark product as DELETED but keep it in database`() = runTest {
         val productId = Uuid.random().toString()
         val product = CatalogProduct(

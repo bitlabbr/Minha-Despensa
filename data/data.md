@@ -149,7 +149,7 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 
 *   **`RoomCatalogRepository`**:
     *   Encapsulates DAOs (`productDao`, `mediaDao`).
-    *   Executes `insertProduct`, `forceUpdateProduct`, and `updateProductIfNewer` within immediate write transactions (`db.useWriterConnection { conn -> conn.withTransaction(IMMEDIATE) { ... } }`), guaranteeing atomicity between product catalog rows and binary media blobs.
+    *   Executes `insertProduct`, `forceUpdateProduct`, and `updateProductIfNewer`. Handles image addition/update via `ProductMediaEntity` or physical deletion via `mediaDao.deleteByProductId` when `removeImage = true`.
     *   Aligns media timestamps directly with `product.updatedAt`.
 *   **`RoomPantryRepository`**:
     *   Encapsulates database and DAO as private members.

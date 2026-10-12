@@ -108,6 +108,7 @@ Accessible from both the Catalog and Pantry flows:
 - **Price History:** Dynamic chart visualizing price evolution over time and latest recorded prices.
 - **Pantry Batches:** Lists all active batches in the pantry with quantity and expiration dates.
 - **Quick Actions:** Direct shortcuts to add to an active shopping list, increment pantry stock, or edit product catalog metadata.
+- **Catalog Product Editing:** Supports full inline editing of catalog metadata and photo. Tracks `hasImageRemoved` in `ProductFormState` to explicitly delete media blobs from the database when the user clears an existing photo.
 
 ### 4.4. Shopping Suite & Assistant
 - **Quick Lists (`QuickListScreen`):** Fast text parsing of unformatted item lines into a draft scratchpad shopping list.

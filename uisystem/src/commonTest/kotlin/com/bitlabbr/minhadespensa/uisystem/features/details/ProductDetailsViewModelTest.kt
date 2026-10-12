@@ -491,6 +491,50 @@ class ProductDetailsViewModelTest {
     }
 
     @Test
+    fun `editing product and clearing image should remove image from repository on save`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-img-del",
+            name = "Café Especial",
+            brand = "Gourmet",
+            category = "Bebidas",
+            measureUnit = MeasureUnit.GRAM,
+            netWeight = 500.0,
+            updatedAt = 1000L,
+        )
+        val imageBytes = byteArrayOf(1, 2, 3)
+        catalogRepository.insertProduct(product, imageBytes)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-img-del")
+        testScheduler.advanceUntilIdle()
+
+        assertNotNull(catalogRepository.getProductImage("prod-img-del").first())
+
+        viewModel.onStartEdit()
+        testScheduler.advanceUntilIdle()
+
+        // Clear image: set imageBytes to null and hasImageRemoved to true
+        viewModel.onFormChange(
+            viewModel.uiState.value.editForm.copy(
+                imageBytes = null,
+                hasImageRemoved = true,
+            )
+        )
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onSaveProduct()
+        testScheduler.advanceUntilIdle()
+
+        // Edit mode should be closed
+        assertFalse(viewModel.uiState.value.isEditing)
+
+        // Image in repository should be null
+        assertNull(catalogRepository.getProductImage("prod-img-del").first())
+    }
+
+    @Test
     fun `price variation percentage and difference should be computed accurately`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 

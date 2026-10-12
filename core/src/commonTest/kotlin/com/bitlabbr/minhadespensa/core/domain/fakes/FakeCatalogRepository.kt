@@ -31,6 +31,9 @@ import kotlinx.coroutines.flow.map
 
 class FakeCatalogRepository : CatalogRepository {
     val products = MutableStateFlow<Map<String, CatalogProduct>>(emptyMap())
+    val productImages = MutableStateFlow<Map<String, ByteArray?>>(emptyMap())
+    var lastRemoveImage: Boolean = false
+        private set
 
     override fun getProductById(id: String): Flow<CatalogProduct?> = products.map { it[id] }
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> =
@@ -50,18 +53,34 @@ class FakeCatalogRepository : CatalogRepository {
     override fun getCategories(): Flow<List<String>> =
         products.map { it.values.map { p -> p.category }.distinct() }
 
-    override fun getProductImage(productId: String): Flow<ByteArray?> = MutableStateFlow(null)
+    override fun getProductImage(productId: String): Flow<ByteArray?> =
+        productImages.map { it[productId] }
 
     override suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?) {
         products.value += (product.id to product)
+        if (imageBytes != null) {
+            productImages.value += (product.id to imageBytes)
+        }
     }
 
-    override suspend fun forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?) {
+    override suspend fun forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean) {
+        lastRemoveImage = removeImage
         products.value += (product.id to product)
+        if (removeImage) {
+            productImages.value -= product.id
+        } else if (imageBytes != null) {
+            productImages.value += (product.id to imageBytes)
+        }
     }
 
-    override suspend fun updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?) {
+    override suspend fun updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean) {
+        lastRemoveImage = removeImage
         products.value += (product.id to product)
+        if (removeImage) {
+            productImages.value -= product.id
+        } else if (imageBytes != null) {
+            productImages.value += (product.id to imageBytes)
+        }
     }
 
     override suspend fun markProductAsDeleted(id: String, updatedAt: Long) {
@@ -72,5 +91,6 @@ class FakeCatalogRepository : CatalogRepository {
 
     override suspend fun deleteProductById(id: String) {
         products.value -= id
+        productImages.value -= id
     }
 }

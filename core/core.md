@@ -90,7 +90,7 @@ The `:core` module defines 11 use cases encapsulating discrete application busin
 
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
-    *   Saves the product via `CatalogRepository` with optional image thumbnail bytes.
+    *   Saves or updates the product via `CatalogRepository` with optional image thumbnail bytes and explicit `removeImage: Boolean` flag when editing.
 *   **`CheckEanStatusUseCase`**:
     *   Validates EAN barcode format and checks if a product with this EAN already exists in `CatalogRepository`.
 *   **`AddPantryItemUseCase`**:
@@ -124,8 +124,8 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `getAllActiveProducts(): Flow<List<CatalogProduct>>`
     *   `searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>`
     *   `insertProduct(product: CatalogProduct, imageBytes: ByteArray?)`
-    *   `forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?)`
-    *   `updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)`
+    *   `forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean = false)`
+    *   `updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean = false)`
     *   `markProductAsDeleted(id: String, updatedAt: Long)`
     *   `deleteProductById(id: String)`
     *   `existsById(id: String): Flow<Boolean>`

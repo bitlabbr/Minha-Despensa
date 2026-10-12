@@ -91,13 +91,16 @@ class RoomCatalogRepository(
 
     override suspend fun forceUpdateProduct(
         product: CatalogProduct,
-        imageBytes: ByteArray?
+        imageBytes: ByteArray?,
+        removeImage: Boolean,
     ) {
-        logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null})")
+        logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
         productDao.forceUpdateForProduct(product.toEntity())
-        if (imageBytes != null) {
+        if (removeImage) {
+            mediaDao.deleteByProductId(product.id)
+        } else if (imageBytes != null) {
             mediaDao.insertOrUpdate(
                 ProductMediaEntity(
                     productId = product.id,
@@ -114,9 +117,10 @@ class RoomCatalogRepository(
 
     override suspend fun updateProductIfNewer(
         product: CatalogProduct,
-        imageBytes: ByteArray?
+        imageBytes: ByteArray?,
+        removeImage: Boolean,
     ) {
-        logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null})")
+        logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
         val rowsAffected = productDao.updateProductIfNewer(
@@ -133,14 +137,18 @@ class RoomCatalogRepository(
             manuallyAdded = product.manuallyAdded,
             notes = product.notes
         )
-        if (rowsAffected > 0 && imageBytes != null) {
-            mediaDao.insertOrUpdate(
-                ProductMediaEntity(
-                    productId = product.id,
-                    blob = imageBytes,
-                    updatedAt = product.updatedAt
+        if (rowsAffected > 0) {
+            if (removeImage) {
+                mediaDao.deleteByProductId(product.id)
+            } else if (imageBytes != null) {
+                mediaDao.insertOrUpdate(
+                    ProductMediaEntity(
+                        productId = product.id,
+                        blob = imageBytes,
+                        updatedAt = product.updatedAt
+                    )
                 )
-            )
+            }
         }
     }
 
