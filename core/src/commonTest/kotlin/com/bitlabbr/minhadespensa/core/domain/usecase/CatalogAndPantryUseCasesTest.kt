@@ -34,6 +34,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CatalogAndPantryUseCasesTest {
@@ -253,6 +254,31 @@ class CatalogAndPantryUseCasesTest {
 
         val inRepo = catalogRepository.getProductById(initial.id).first()
         assertEquals("Sabão em Pó Concentrado", inRepo?.name)
+    }
+
+    @Test
+    fun `SaveCatalogProductUseCase should pass removeImage flag when updating product`() = runTest {
+        val initial = saveCatalogProductUseCase(
+            name = "Café Gourmet",
+            measureUnit = MeasureUnit.GRAM,
+            netWeight = 250.0,
+            imageBytes = byteArrayOf(1, 2, 3),
+        ).getOrThrow()
+
+        assertEquals(byteArrayOf(1, 2, 3).toList(), catalogRepository.getProductImage(initial.id).first()?.toList())
+
+        val updated = saveCatalogProductUseCase(
+            id = initial.id,
+            name = "Café Gourmet Moído",
+            measureUnit = MeasureUnit.GRAM,
+            netWeight = 250.0,
+            isEditing = true,
+            removeImage = true,
+        ).getOrThrow()
+
+        assertEquals(initial.id, updated.id)
+        assertTrue(catalogRepository.lastRemoveImage)
+        assertNull(catalogRepository.getProductImage(initial.id).first())
     }
 
     @Test

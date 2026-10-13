@@ -126,6 +126,29 @@ class PlannedListViewModelTest {
     }
 
     @Test
+    fun `search query should filter available products ignoring accents and diacritics`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod1 = CatalogProduct(id = "p1", name = "Pão Francês", brand = "Pullman", updatedAt = 1000L)
+        val prod2 = CatalogProduct(id = "p2", name = "Açúcar Cristal", brand = "União", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod1, null)
+        catalogRepository.insertProduct(prod2, null)
+
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.availableProducts.size)
+
+        viewModel.onSearchQueryChange("pao")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.availableProducts.size)
+        assertEquals("p1", viewModel.uiState.value.availableProducts.first().id)
+
+        viewModel.onSearchQueryChange("uniao")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.availableProducts.size)
+        assertEquals("p2", viewModel.uiState.value.availableProducts.first().id)
+    }
+
+    @Test
     fun `savePlannedList should create shopping list with items and budget`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 
@@ -182,5 +205,24 @@ class PlannedListViewModelTest {
         viewModel.savePlannedList { called = true }
         testScheduler.advanceUntilIdle()
         assertFalse(called)
+    }
+
+    @Test
+    fun `search query should filter available products by category`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod1 = CatalogProduct(id = "p1", name = "Queijo Minas", category = "Laticínios", updatedAt = 1000L)
+        val prod2 = CatalogProduct(id = "p2", name = "Arroz Branco", category = "Grãos", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod1, null)
+        catalogRepository.insertProduct(prod2, null)
+
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.availableProducts.size)
+
+        viewModel.onSearchQueryChange("laticinios")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.availableProducts.size)
+        assertEquals("p1", viewModel.uiState.value.availableProducts.first().id)
     }
 }

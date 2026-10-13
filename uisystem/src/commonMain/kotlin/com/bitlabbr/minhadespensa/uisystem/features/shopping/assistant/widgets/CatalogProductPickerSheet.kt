@@ -23,27 +23,11 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
-import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
-import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
-import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
-import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.CatalogProductPickerSheet as SharedCatalogProductPickerSheet
 import minhadespensa.uisystem.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -55,135 +39,18 @@ fun CatalogProductPickerSheet(
     onDismiss: () -> Unit,
     title: String = stringResource(Res.string.shopping_assistant_replace_picker_title),
     searchPlaceholder: String = stringResource(Res.string.shopping_assistant_replace_picker_search_placeholder),
+    emptyMessage: String = stringResource(Res.string.shopping_assistant_replace_picker_empty),
     onAddAsText: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val dimens = MinhaDespensaTheme.dimens
-    val colors = getAppColors()
-    val typography = MinhaDespensaTheme.typography
-
-    var searchQuery by remember { mutableStateOf("") }
-
-    val filteredProducts = remember(products, searchQuery) {
-        if (searchQuery.isBlank()) {
-            products
-        } else {
-            val query = searchQuery.trim().lowercase()
-            products.filter { product ->
-                product.name.lowercase().contains(query) ||
-                    (product.brand?.lowercase()?.contains(query) == true) ||
-                    product.category.lowercase().contains(query)
-            }
-        }
-    }
-
-    MinhaDespensaBottomSheet(
-        onDismissRequest = onDismiss,
+    SharedCatalogProductPickerSheet(
+        products = products,
+        onProductSelected = onProductSelected,
+        onDismiss = onDismiss,
+        title = title,
+        searchPlaceholder = searchPlaceholder,
+        emptyMessage = emptyMessage,
+        onAddAsText = onAddAsText,
         modifier = modifier,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimens.paddingMedium),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            MinhaDespensaText(
-                text = title,
-                fontStyle = typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                color = colors.onPrimaryContainer,
-            )
-
-            ProductTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = title,
-                placeholder = searchPlaceholder,
-                leadingContent = {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = null,
-                        tint = colors.onSecondaryContainer.copy(alpha = 0.6f),
-                    )
-                },
-            )
-
-            if (filteredProducts.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
-                    ) {
-                        MinhaDespensaText(
-                            text = stringResource(Res.string.shopping_assistant_replace_picker_empty),
-                            fontStyle = typography.bodySmall,
-                            color = colors.onSecondaryContainer.copy(alpha = 0.6f),
-                        )
-                        if (onAddAsText != null && searchQuery.isNotBlank()) {
-                            TextButton(
-                                onClick = { onAddAsText(searchQuery.trim()) },
-                            ) {
-                                MinhaDespensaText(
-                                    text = stringResource(Res.string.shopping_assistant_add_as_text, searchQuery.trim()),
-                                    fontStyle = typography.button,
-                                    color = colors.primary,
-                                    fontWeight = FontWeight.SemiBold,
-                                )
-                            }
-                        }
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 360.dp),
-                    verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
-                ) {
-                    items(filteredProducts, key = { it.id }) { product ->
-                        ItemContainerGlassCard(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(dimens.cardCorner * 0.6f))
-                                .clickable { onProductSelected(product) },
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(dimens.paddingSmall),
-                            ) {
-                                MinhaDespensaText(
-                                    text = product.name,
-                                    fontStyle = typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = colors.onSecondaryContainer,
-                                )
-                                val brandText = product.brand ?: stringResource(Res.string.planned_list_no_brand)
-                                MinhaDespensaText(
-                                    text = "$brandText • ${product.category}",
-                                    fontStyle = typography.bodySmall,
-                                    color = colors.onSecondaryContainer.copy(alpha = 0.65f),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            OutlinedButton(
-                onClick = onDismiss,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = "Cancelar",
-                    style = typography.button,
-                )
-            }
-        }
-    }
+    )
 }

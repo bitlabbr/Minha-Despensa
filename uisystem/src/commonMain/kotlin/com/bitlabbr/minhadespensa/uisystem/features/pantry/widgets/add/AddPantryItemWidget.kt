@@ -55,7 +55,7 @@ fun AddPantryItemWidget(
     viewModel: PantryViewModel = koinViewModel(),
 ) {
     AddPantryItemContent(
-        onClickScan = viewModel::onStartScanFlow,
+        onClickScan = viewModel::onStartAddItemFlow,
         onClickManual = { viewModel.onStartManualRegisterFlow() },
         modifier = modifier,
     )

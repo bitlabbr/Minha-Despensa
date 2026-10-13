@@ -6,10 +6,16 @@ O **Minha Despensa** está sendo desenvolvido de forma iterativa. O objetivo da 
 
 ## 📅 Próximas Fases
 
-### 1. Estabilização Alpha (`v1.0.0-alpha.x`)
-- [ ] Correção dos 6 bugs identificados na issue mãe (normalização de acentos, remoção de fotos, debounce do scanner, etc.).
-- [ ] Otimização do leitor de código de barras para foco e região central.
-- [ ] Opção de busca rápida dentro de listas de compras.
+### 1. Estabilização Alpha (`v1.0.1-alpha`) ✅ Concluída
+- [x] Correção dos 6 bugs e melhorias de UX da issue mãe (#47):
+  - [x] Busca e ordenação com normalização de acentos (#48).
+  - [x] Remoção física e lógica de imagens no formulário de edição de produtos (#48).
+  - [x] Estabilização do leitor de código de barras: filtro de ROI central e debounce temporal (#49).
+  - [x] Inclusão direta de produtos do catálogo na despensa e opções contextuais (#50).
+  - [x] Alerta visual de itens duplicados e consolidação de quantidades nas listas e carrinho (#51).
+  - [x] Busca textual expandível e filtro no Assistente de Compras e Listas Planejadas (#52).
+  - [x] Busca e filtragem de itens na Despensa por marca do produto (#58).
+- [x] Fechamento automático de modais/sheets e fluidez na navegação de entrada de estoque.
 
 ### 2. Notificações Nativas de Validade (`v1.1.0`)
 - [ ] Notificações push locais avisando sobre itens que estão a X dias de vencer.

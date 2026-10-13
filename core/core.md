@@ -90,19 +90,19 @@ The `:core` module defines 11 use cases encapsulating discrete application busin
 
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
-    *   Saves the product via `CatalogRepository` with optional image thumbnail bytes.
+    *   Saves or updates the product via `CatalogRepository` with optional image thumbnail bytes and explicit `removeImage: Boolean` flag when editing.
 *   **`CheckEanStatusUseCase`**:
     *   Validates EAN barcode format and checks if a product with this EAN already exists in `CatalogRepository`.
 *   **`AddPantryItemUseCase`**:
     *   Validates pantry item fields (positive quantity, valid IDs) and persists the item via `PantryRepository`.
 *   **`CreatePlannedShoppingListUseCase`**:
-    *   Creates a planned shopping list (`ShoppingListType.PLANNED`, `ShoppingListStatus.DRAFT`) with specified items and budget constraints.
+    *   Creates a planned shopping list (`ShoppingListType.PLANNED`, `ShoppingListStatus.DRAFT`) with specified items and budget constraints, automatically consolidating duplicate product drafts by summing quantities.
 *   **`CreateQuickShoppingListUseCase`**:
     *   Generates a quick scratchpad shopping list (`ShoppingListType.SCRATCHPAD`, `ShoppingListStatus.DRAFT`) parsing unformatted line items.
 *   **`AddCatalogItemToShoppingListUseCase`**:
-    *   Attaches a catalog product to an active shopping list as a `ShoppingItem`, capturing current catalog or price estimates.
+    *   Attaches a catalog product to an active shopping list as a `ShoppingItem`, accumulating quantity if the product is already present in the list.
 *   **`AddOrUpdateCartItemUseCase`**:
-    *   Handles in-cart item adjustments (quantity updates, price overrides, check/uncheck status) during a shopping trip.
+    *   Handles in-cart item adjustments (quantity updates, price overrides, check/uncheck status) during a shopping trip. Automatically consolidates product quantity if the product is already present in the active cart when adding without an explicit `existingItemId`.
 *   **`ReplaceCartItemUseCase`**:
     *   Replaces a shopping item in the cart during an active session with an alternative product or custom description, preserving quantity and overriding price.
 *   **`RemoveCartItemUseCase`**:
@@ -124,8 +124,8 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `getAllActiveProducts(): Flow<List<CatalogProduct>>`
     *   `searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>>`
     *   `insertProduct(product: CatalogProduct, imageBytes: ByteArray?)`
-    *   `forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?)`
-    *   `updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)`
+    *   `forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean = false)`
+    *   `updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean = false)`
     *   `markProductAsDeleted(id: String, updatedAt: Long)`
     *   `deleteProductById(id: String)`
     *   `existsById(id: String): Flow<Boolean>`
@@ -186,6 +186,7 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `getCurrentTime()`: Epoch milliseconds using `Clock.System.now().toEpochMilliseconds()`.
     *   `isValidTimestamp(timestamp: Long, toleranceMillis: Long)`: Timestamp boundary validation preventing negative values and distant future anomalies, accounting for clock skew.
 *   **`ImageProcessor`**: Multiplatform `expect` interface for scaling and compressing raw image bytes to WebP thumbnails.
+*   **`TextNormalizer.kt`**: Multiplatform text normalization extensions (`unaccent()`, `normalizeForSearch()`, `matchesSearchQuery()`) for accent- and case-insensitive search queries across products, brands, and categories.
 
 ---
 

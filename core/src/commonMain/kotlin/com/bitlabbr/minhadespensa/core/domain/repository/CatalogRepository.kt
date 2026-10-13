@@ -37,8 +37,8 @@ interface CatalogRepository {
 
     // Persistence & synchronization LWW
     suspend fun insertProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?)
-    suspend fun updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?)
+    suspend fun forceUpdateProduct(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean = false)
+    suspend fun updateProductIfNewer(product: CatalogProduct, imageBytes: ByteArray?, removeImage: Boolean = false)
     suspend fun markProductAsDeleted(id: String, updatedAt: Long)
     suspend fun deleteProductById(id: String)
 }

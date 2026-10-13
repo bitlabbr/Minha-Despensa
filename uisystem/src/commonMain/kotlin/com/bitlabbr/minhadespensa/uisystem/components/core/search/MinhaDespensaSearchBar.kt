@@ -66,13 +66,14 @@ import org.jetbrains.compose.resources.stringResource
 fun MinhaDespensaSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    onSearch: (String) -> Unit,
-    searchResults: List<String>,
-    onResultClick: (String) -> Unit,
+    onSearch: (String) -> Unit = {},
+    searchResults: List<String> = emptyList(),
+    onResultClick: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     placeholder: String = "",
     supportingContent: (@Composable (String) -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
+    showDropdown: Boolean = true,
 ) {
     val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
@@ -141,43 +142,45 @@ fun MinhaDespensaSearchBar(
             },
         )
 
-        AnimatedVisibility(visible = query.isNotEmpty()) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 220.dp)
-                    .padding(top = 8.dp),
-            ) {
-                if (searchResults.isEmpty()) {
-                    item {
-                        MinhaDespensaText(
-                            text = stringResource(Res.string.no_itens_found),
-                            color = appColors.onSurface.copy(alpha = 0.5f),
-                            fontStyle = appTypography.bodySmall,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
-                } else {
-                    items(searchResults) { resultText ->
-                        ListItem(
-                            headlineContent = {
-                                MinhaDespensaText(
-                                    text = resultText,
-                                    fontStyle = appTypography.bodySmall,
-                                    color = appColors.onSurface,
-                                )
-                            },
-                            supportingContent = supportingContent?.let { { it(resultText) } },
-                            leadingContent = leadingContent,
-                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onResultClick(resultText)
-                                    keyboardController?.hide()
-                                    focusManager.clearFocus()
+        if (showDropdown) {
+            AnimatedVisibility(visible = query.isNotEmpty()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 220.dp)
+                        .padding(top = 8.dp),
+                ) {
+                    if (searchResults.isEmpty()) {
+                        item {
+                            MinhaDespensaText(
+                                text = stringResource(Res.string.no_itens_found),
+                                color = appColors.onSurface.copy(alpha = 0.5f),
+                                fontStyle = appTypography.bodySmall,
+                                modifier = Modifier.padding(16.dp),
+                            )
+                        }
+                    } else {
+                        items(searchResults) { resultText ->
+                            ListItem(
+                                headlineContent = {
+                                    MinhaDespensaText(
+                                        text = resultText,
+                                        fontStyle = appTypography.bodySmall,
+                                        color = appColors.onSurface,
+                                    )
                                 },
-                        )
+                                supportingContent = supportingContent?.let { { it(resultText) } },
+                                leadingContent = leadingContent,
+                                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        onResultClick(resultText)
+                                        keyboardController?.hide()
+                                        focusManager.clearFocus()
+                                    },
+                            )
+                        }
                     }
                 }
             }

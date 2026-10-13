@@ -538,6 +538,65 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
     @OptIn(ExperimentalUuidApi::class)
     @Test
+    fun `should DELETE product media when updateProductIfNewer is called with removeImage = true`() = runTest {
+        val productId = Uuid.random().toString()
+        val product = CatalogProduct(
+            id = productId,
+            name = "Café Especial",
+            measureUnit = MeasureUnit.GRAM,
+            netWeight = 250.0,
+            updatedAt = getCurrentTime(),
+            isDeleted = false,
+            manuallyAdded = true
+        )
+
+        val imageBytes = byteArrayOf(10, 20, 30)
+        catalogRepository.insertProduct(product, imageBytes)
+
+        val mediaBefore = db.productMediaDao().getByProductId(productId)
+        assertNotNull(mediaBefore, "Media should exist before deletion")
+
+        val updatedProduct = product.copy(
+            name = "Café Especial Moído",
+            updatedAt = getCurrentTime() + 1
+        )
+        catalogRepository.updateProductIfNewer(updatedProduct, null, removeImage = true)
+
+        val mediaAfter = db.productMediaDao().getByProductId(productId)
+        assertNull(mediaAfter, "Media should be deleted when removeImage is true")
+
+        val flowImage = catalogRepository.getProductImage(productId).first()
+        assertNull(flowImage, "getProductImage flow should emit null after removal")
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `should DELETE product media when forceUpdateProduct is called with removeImage = true`() = runTest {
+        val productId = Uuid.random().toString()
+        val product = CatalogProduct(
+            id = productId,
+            name = "Biscoito",
+            measureUnit = MeasureUnit.PACKAGE,
+            netWeight = 150.0,
+            updatedAt = getCurrentTime(),
+            isDeleted = false,
+            manuallyAdded = true
+        )
+
+        val imageBytes = byteArrayOf(5, 6, 7)
+        catalogRepository.insertProduct(product, imageBytes)
+
+        val mediaBefore = db.productMediaDao().getByProductId(productId)
+        assertNotNull(mediaBefore, "Media should exist before force update")
+
+        catalogRepository.forceUpdateProduct(product, null, removeImage = true)
+
+        val mediaAfter = db.productMediaDao().getByProductId(productId)
+        assertNull(mediaAfter, "Media should be deleted when forceUpdateProduct has removeImage = true")
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
     fun `should mark product as DELETED but keep it in database`() = runTest {
         val productId = Uuid.random().toString()
         val product = CatalogProduct(
@@ -694,6 +753,55 @@ class RoomCatalogRepositoryTest : BaseTest() {
             assertTrue(foundBrands.all { it == brandToSearch }, "All results should be from the searched brand")
             assertFalse(foundBrands.contains("Três Corações"), "It should not return products form other brands")
 
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `should find products ignoring accents in name and brand when query is unaccented`() = runTest {
+        val product1 = createDummyProduct(name = "Pão de Forma", brand = "Visconti")
+        val product2 = createDummyProduct(name = "Maçã Fuji", brand = "Pomar")
+        val product3 = createDummyProduct(name = "Café Solúvel", brand = "Três Corações")
+        val product4 = createDummyProduct(name = "Chocolate em Pó", brand = "Nestlé")
+
+        catalogRepository.insertProduct(product1, null)
+        catalogRepository.insertProduct(product2, null)
+        catalogRepository.insertProduct(product3, null)
+        catalogRepository.insertProduct(product4, null)
+
+        catalogRepository.searchProductsByNameOrBrand("pao").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product1.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("maca").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product2.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("tres coracoes").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product3.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("nestle").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product4.id, results[0].id)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        catalogRepository.searchProductsByNameOrBrand("cafe tres coracoes").test {
+            val results = awaitItem()
+            assertEquals(1, results.size)
+            assertEquals(product3.id, results[0].id)
             cancelAndIgnoreRemainingEvents()
         }
     }

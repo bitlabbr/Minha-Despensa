@@ -28,6 +28,7 @@ import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
@@ -68,8 +69,15 @@ class RoomCatalogRepository(
     override fun searchProductsByNameOrBrand(query: String): Flow<List<CatalogProduct>> {
         logger.d(TAG, "searchProductsByNameOrBrand: query: $query")
         require(query.isNotBlank() && query.length <= 50) { "the term should have between 1 and 50 characters" }
-        return productDao.searchByNameOrBrand(query).map { entities ->
-            entities.map { it.toDomain() }
+        val trimmed = query.trim()
+        return productDao.getAllActive().map { entities ->
+            entities
+                .map { it.toDomain() }
+                .filter { product ->
+                    product.name.matchesSearchQuery(trimmed) ||
+                        (product.brand?.matchesSearchQuery(trimmed) == true) ||
+                        "${product.name} ${product.brand.orEmpty()}".matchesSearchQuery(trimmed)
+                }
         }
     }
 
@@ -91,13 +99,16 @@ class RoomCatalogRepository(
 
     override suspend fun forceUpdateProduct(
         product: CatalogProduct,
-        imageBytes: ByteArray?
+        imageBytes: ByteArray?,
+        removeImage: Boolean,
     ) {
-        logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null})")
+        logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
         productDao.forceUpdateForProduct(product.toEntity())
-        if (imageBytes != null) {
+        if (removeImage) {
+            mediaDao.deleteByProductId(product.id)
+        } else if (imageBytes != null) {
             mediaDao.insertOrUpdate(
                 ProductMediaEntity(
                     productId = product.id,
@@ -114,9 +125,10 @@ class RoomCatalogRepository(
 
     override suspend fun updateProductIfNewer(
         product: CatalogProduct,
-        imageBytes: ByteArray?
+        imageBytes: ByteArray?,
+        removeImage: Boolean,
     ) {
-        logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null})")
+        logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
         val rowsAffected = productDao.updateProductIfNewer(
@@ -133,14 +145,18 @@ class RoomCatalogRepository(
             manuallyAdded = product.manuallyAdded,
             notes = product.notes
         )
-        if (rowsAffected > 0 && imageBytes != null) {
-            mediaDao.insertOrUpdate(
-                ProductMediaEntity(
-                    productId = product.id,
-                    blob = imageBytes,
-                    updatedAt = product.updatedAt
+        if (rowsAffected > 0) {
+            if (removeImage) {
+                mediaDao.deleteByProductId(product.id)
+            } else if (imageBytes != null) {
+                mediaDao.insertOrUpdate(
+                    ProductMediaEntity(
+                        productId = product.id,
+                        blob = imageBytes,
+                        updatedAt = product.updatedAt
+                    )
                 )
-            )
+            }
         }
     }
 

@@ -71,6 +71,8 @@ import platform.AVFoundation.isFocusModeSupported
 import platform.AVFoundation.requestAccessForMediaType
 import platform.CoreGraphics.CGRectMake
 import platform.UIKit.UIView
+import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
 import platform.darwin.NSObject
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
@@ -135,6 +137,7 @@ private class IosBarcodeScannerController(
 
     val session = AVCaptureSession()
     private var isScanned = false
+    private val stabilizer = BarcodeScanStabilizer(requiredConsecutiveMatches = 2, maxIntervalBetweenFramesMs = 400L)
     private val scannerQueue = dispatch_queue_create("com.bitlabbr.minhadespensa.barcodescanner.queue", null)
 
     init {
@@ -214,22 +217,25 @@ private class IosBarcodeScannerController(
     ) {
         if (isScanned) return
 
-        for (item in didOutputMetadataObjects) {
-            val readableObject = item as? AVMetadataMachineReadableCodeObject ?: continue
-            val barcode = readableObject.stringValue
+        val validBarcode = didOutputMetadataObjects.firstNotNullOfOrNull { item ->
+            (item as? AVMetadataMachineReadableCodeObject)?.stringValue?.takeIf { it.isNotBlank() }
+        } ?: return
 
-            if (!barcode.isNullOrBlank()) {
-                isScanned = true
-                dispatch_async(dispatch_get_main_queue()) {
-                    session.stopRunning()
-                    onBarcodeScanned(barcode)
-                }
-                break
+        val nowMs = (NSDate().timeIntervalSince1970 * 1000.0).toLong()
+        val result = stabilizer.process(validBarcode, nowMs)
+
+        if (result is BarcodeStabilizationResult.Confirmed && !isScanned) {
+            isScanned = true
+            dispatch_async(dispatch_get_main_queue()) {
+                session.stopRunning()
+                onBarcodeScanned(result.barcode)
             }
         }
     }
 
     fun start() {
+        isScanned = false
+        stabilizer.reset()
         if (!session.isRunning()) {
             dispatch_async(scannerQueue) {
                 this@IosBarcodeScannerController.session.startRunning()
@@ -241,6 +247,7 @@ private class IosBarcodeScannerController(
         if (session.isRunning()) {
             dispatch_async(scannerQueue) {
                 this@IosBarcodeScannerController.session.stopRunning()
+                this@IosBarcodeScannerController.stabilizer.reset()
             }
         }
     }

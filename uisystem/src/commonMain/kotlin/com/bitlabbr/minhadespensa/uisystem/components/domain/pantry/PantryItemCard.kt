@@ -164,9 +164,14 @@ fun PantryItemCard(
                 overflow = TextOverflow.Ellipsis,
             )
 
-            // Categoria
+            // Categoria e Marca
+            val subtitle = if (!product.brand.isNullOrBlank()) {
+                "${product.brand} • ${product.category}"
+            } else {
+                product.category
+            }
             MinhaDespensaText(
-                text = product.category,
+                text = subtitle,
                 fontStyle = typography.bodySmall,
                 fontWeight = FontWeight.Light,
                 color = colors.onSecondaryContainer.copy(alpha = 0.65f),

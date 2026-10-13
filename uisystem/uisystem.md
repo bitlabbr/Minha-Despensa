@@ -42,7 +42,7 @@ uisystem/src/
 │   │   │   ├── text/              # MinhaDespensaText with design tokens
 │   │   │   └── topbar/            # MinhaDespensaTopBar with back navigation & actions
 │   │   └── domain/                # Level 2: Domain Molecules & Composite Cards
-│   │       ├── catalog/           # CatalogProductCard, CategoryChip
+│   │       ├── catalog/           # CatalogProductCard, CategoryChip, CatalogProductPickerSheet
 │   │       ├── pantry/            # PantryItemCard, ExpiringItemTile, ConsumptionTrendTile
 │   │       └── shopping/          # ShoppingItemRow, CartTotalSummary
 │   ├── features/                  # Level 3 & 4: Feature Screens & ViewModels
@@ -57,7 +57,7 @@ uisystem/src/
 │   │   │   └── widgets/           # Price history charts, batch listings, edit sheets
 │   │   ├── pantry/                # PantryScreen, PantryViewModel
 │   │   │   ├── model/             # PantryUiState, PantrySubFlow state machine
-│   │   │   └── widgets/           # Subflow sheets (AddPantryItemDetailsSheet, BarcodeScanner)
+│   │   │   └── widgets/           # Subflow sheets (AddPantryItemOptionsSheet, AddPantryItemDetailsSheet, BarcodeScanner)
 │   │   ├── shopping/              # Shopping suite
 │   │   │   ├── overview/          # ShoppingListsScreen, ShoppingListsViewModel
 │   │   │   ├── assistant/         # ShoppingAssistantScreen, ShoppingAssistantViewModel
@@ -108,19 +108,30 @@ Accessible from both the Catalog and Pantry flows:
 - **Price History:** Dynamic chart visualizing price evolution over time and latest recorded prices.
 - **Pantry Batches:** Lists all active batches in the pantry with quantity and expiration dates.
 - **Quick Actions:** Direct shortcuts to add to an active shopping list, increment pantry stock, or edit product catalog metadata.
+- **Catalog Product Editing:** Supports full inline editing of catalog metadata and photo. Tracks `hasImageRemoved` in `ProductFormState` to explicitly delete media blobs from the database when the user clears an existing photo.
 
 ### 4.4. Shopping Suite & Assistant
 - **Quick Lists (`QuickListScreen`):** Fast text parsing of unformatted item lines into a draft scratchpad shopping list.
-- **Planned Lists (`CreatePlannedListScreen`):** Catalog-backed item selection with interactive quantity modifiers and budget validation.
+- **Planned Lists (`CreatePlannedListScreen`):** Catalog-backed item selection with interactive quantity modifiers, quick search clear button, category/brand/name filtering, and budget validation.
 - **Shopping Assistant (`ShoppingAssistantScreen`):** In-store companion with:
+  - Real-time expandable search bar (`MinhaDespensaSearchBar`) filtering cart items by name, category, and brand without altering financial totals (`totalCartValueInCents`, `checkedCount`, `totalCount`).
   - Dynamic cart total calculations (cents-accurate).
   - One-tap check/uncheck toggling.
   - Barcode scanning integration (camera ML Kit on Android) that matches scanned items against the local catalog.
+  - Duplicate item detection and warning banner in `AddCartItemDetailsSheet` showing current quantity in cart and consolidating quantities automatically on confirmation.
   - Dynamic item replacement (`ReplaceItemOptionsSheet`), manual item addition (`AddCartItemDetailsSheet`), catalog search picker (`CatalogProductPickerSheet`), and budget gauge (`ShoppingFinancialDashboard`).
 
 ### 4.5. State Machine Subflows
 In `PantryViewModel`, `ShoppingAssistantViewModel`, and `ProductDetailsViewModel`, modal subflows are managed via sealed class state machines (e.g., `PantrySubFlow`, `ProductDetailsSubFlow`).
 This guarantees only one sub-flow modal (camera scanner, registration form, item quantity picker) is active at any time, eliminating UI race conditions.
+
+### 4.6. Accent-Insensitive Search & Normalization
+To provide a smooth search experience for Brazilian Portuguese diacritics and special characters (`pao` -> `pão`, `maca` -> `maçã`, `acucar` -> `açúcar`), all reactive list filters in `:uisystem` utilize `TextNormalizer.matchesSearchQuery(query)`:
+- **`CatalogViewModel`:** Filters catalog items reactive stream matching against product name and brand.
+- **`PantryViewModel`:** Filters pantry inventory items reactive stream matching against item name, brand, or combined name and brand tokens.
+- **`PlannedListViewModel`:** Filters available catalog products matching against name, brand, and category.
+- **`ShoppingAssistantViewModel`:** Filters active cart items reactive stream matching against product name, category, and brand.
+- **`CatalogProductPickerSheet`:** Filters catalog products matching against name and brand within the bottom sheet picker.
 
 ---
 
@@ -142,7 +153,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 94 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 126 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -152,13 +163,15 @@ All 94 unit tests reside in `uisystem/src/commonTest` and execute across multipl
 | `CatalogProductUiModelTest` | Formats unit weights, packaging info, and handles missing brands. |
 | `ProductFormStateTest` | Form validation: required name, length restrictions, numeric weight parsing. |
 | `ProductFormValidatorTest` | Tests standalone form validation logic across name, brand, weight, category, and notes. |
+| `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
+| `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
-| `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering, save delegation. |
-| `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, barcode scanner subflows, item replacement, purchase finalization. |
-| `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, search suggestions, form saving with use case. |
-| `PantryViewModelTest` | Category filtering, search query filtering, barcode scanned transitions, pantry item persistence, notification dispatch. |
+| `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
+| `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, duplicate item detection and consolidation, barcode scanner subflows, item replacement, purchase finalization. |
+| `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
+| `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
 | `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, add to shopping list. |
 
 ### Running the Tests

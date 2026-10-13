@@ -40,6 +40,7 @@ sealed interface ShoppingAssistantSubFlow {
         val initialQuantity: Double = 1.0,
         val initialPriceInCents: Long? = null,
         val isReplacement: Boolean = false,
+        val existingQuantityInCart: Double? = null,
     ) : ShoppingAssistantSubFlow
     data class ReplaceItemOptions(
         val item: CartItemUiModel,
@@ -60,6 +61,8 @@ data class CartItemUiModel(
     val priceAtTime: Long?,
     val isChecked: Boolean,
     val subtotalInCents: Long,
+    val category: String? = null,
+    val brand: String? = null,
 )
 
 data class ShoppingAssistantUiState(
@@ -67,6 +70,8 @@ data class ShoppingAssistantUiState(
     val listTitle: String = "Compras",
     val budgetInCents: Long? = null,
     val items: List<CartItemUiModel> = emptyList(),
+    val filteredItems: List<CartItemUiModel> = emptyList(),
+    val searchQuery: String = "",
     val availableProducts: List<CatalogProduct> = emptyList(),
     val totalCartValueInCents: Long = 0,
     val checkedCount: Int = 0,

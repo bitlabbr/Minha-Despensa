@@ -159,6 +159,7 @@ class ProductDetailsViewModel(
             ean = current.ean.orEmpty(),
             notes = current.notes.orEmpty(),
             imageBytes = current.imageBytes,
+            hasImageRemoved = false,
             availableCategories = available,
         )
         _isEditing.value = true
@@ -229,6 +230,7 @@ class ProductDetailsViewModel(
                 imageBytes = form.imageBytes,
                 notes = form.notes.takeIf { it.isNotBlank() },
                 isEditing = true,
+                removeImage = form.hasImageRemoved,
             )
             result.onSuccess {
                 _isEditing.value = false

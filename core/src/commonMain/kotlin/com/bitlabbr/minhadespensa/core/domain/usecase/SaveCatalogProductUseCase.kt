@@ -46,6 +46,7 @@ class SaveCatalogProductUseCase(
         imageBytes: ByteArray? = null,
         isEditing: Boolean = false,
         notes: String? = null,
+        removeImage: Boolean = false,
     ): Result<CatalogProduct> = runCatching {
         val trimmedName = name.trim()
         val trimmedBrand = brand?.trim()?.takeIf { it.isNotBlank() }
@@ -80,7 +81,7 @@ class SaveCatalogProductUseCase(
         )
 
         if (isEditing) {
-            catalogRepository.updateProductIfNewer(product, imageBytes)
+            catalogRepository.updateProductIfNewer(product, imageBytes, removeImage)
         } else {
             catalogRepository.insertProduct(product, imageBytes)
         }

@@ -36,6 +36,7 @@ data class ProductFormState(
     val ean: String = "",
     val notes: String = "",
     val imageBytes: ByteArray? = null,
+    val hasImageRemoved: Boolean = false,
     val availableCategories: List<String> = emptyList(),
     val isSaving: Boolean = false,
     val isCheckingEan: Boolean = false,
@@ -68,6 +69,7 @@ data class ProductFormState(
         if (netWeight != other.netWeight) return false
         if (ean != other.ean) return false
         if (notes != other.notes) return false
+        if (hasImageRemoved != other.hasImageRemoved) return false
         if (isSaving != other.isSaving) return false
         if (isCheckingEan != other.isCheckingEan) return false
         if (errorMessage != other.errorMessage) return false
@@ -92,6 +94,7 @@ data class ProductFormState(
         result = 31 * result + ean.hashCode()
         result = 31 * result + notes.hashCode()
         result = 31 * result + (imageBytes?.contentHashCode() ?: 0)
+        result = 31 * result + hasImageRemoved.hashCode()
         result = 31 * result + isSaving.hashCode()
         result = 31 * result + isCheckingEan.hashCode()
         result = 31 * result + (errorMessage?.hashCode() ?: 0)
