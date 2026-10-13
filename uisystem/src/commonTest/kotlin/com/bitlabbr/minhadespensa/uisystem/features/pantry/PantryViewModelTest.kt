@@ -241,6 +241,7 @@ class PantryViewModelTest {
                 quantity = 3.0,
                 expirationDate = 1800000000000L,
                 batchNumber = "LOTE-123",
+                unitPriceInCents = 1599L,
             )
             testScheduler.advanceUntilIdle()
 
@@ -253,6 +254,7 @@ class PantryViewModelTest {
             assertNotNull(savedItem)
             assertEquals(3.0, savedItem.quantity)
             assertEquals("LOTE-123", savedItem.batchNumber)
+            assertEquals(1599L, savedItem.unitPriceInCents)
 
             // Notification received
             val notification = awaitItem()

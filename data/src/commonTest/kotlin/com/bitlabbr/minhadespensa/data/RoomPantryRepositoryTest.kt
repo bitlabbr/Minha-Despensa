@@ -82,6 +82,47 @@ class RoomPantryRepositoryTest : BaseTest() {
     }
 
     @Test
+    fun `insertPantryItem should reactively emit new list in getAllActivePantryItemsWithCategory`() = runTest {
+        val product = createDummyProduct(name = "Café")
+        catalogRepository.insertProduct(product, null)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            assertEquals(0, awaitItem().size)
+
+            val pantryItem = createDummyPantryItem(productId = product.id, quantity = 3.0)
+            pantryRepository.insertPantryItem(pantryItem)
+
+            val updated = awaitItem()
+            assertEquals(1, updated.size)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `updatePantryItemIfNewer should reactively emit updated item in getAllActivePantryItemsWithCategory`() = runTest {
+        val product = createDummyProduct(name = "Macarrão")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val item = createDummyPantryItem(productId = product.id, quantity = 2.0, updatedAt = now)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            val initialList = awaitItem()
+            assertEquals(1, initialList.size)
+            assertEquals(2.0, initialList[0].pantryItem.quantity)
+
+            val updatedItem = item.copy(quantity = 5.0, updatedAt = now + 100)
+            pantryRepository.updatePantryItemIfNewer(updatedItem)
+
+            val updatedList = awaitItem()
+            assertEquals(1, updatedList.size)
+            assertEquals(5.0, updatedList[0].pantryItem.quantity)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `should persist unitPriceInCents and create PriceEntry on insertion`() = runTest {
         val product = createDummyProduct(name = "Feijão Preto")
         catalogRepository.insertProduct(product, null)
@@ -103,6 +144,66 @@ class RoomPantryRepositoryTest : BaseTest() {
         assertEquals(1, priceEntries.size)
         assertEquals(899L, priceEntries[0].priceInCents)
         assertEquals("Entrada na Despensa", priceEntries[0].storeName)
+    }
+
+    @Test
+    fun `should persist unitPriceInCents and create PriceEntry on updatePantryItemIfNewer`() = runTest {
+        val product = createDummyProduct(name = "Arroz Integral")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val initialItem = createDummyPantryItem(
+            productId = product.id,
+            quantity = 1.0,
+            unitPriceInCents = null,
+            updatedAt = now,
+        )
+        pantryRepository.insertPantryItem(initialItem)
+
+        // Verify initial item has null price and priceDao has 0 entries
+        val initialPrices = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(0, initialPrices.size)
+
+        // Update item with price
+        val updatedItem = initialItem.copy(
+            quantity = 2.0,
+            unitPriceInCents = 1250L,
+            batchNumber = "LOTE-XYZ",
+            updatedAt = now + 100,
+        )
+        pantryRepository.updatePantryItemIfNewer(updatedItem)
+
+        // 1. Retrieve pantry item and verify updated fields
+        val retrieved = pantryRepository.getPantryItemById(initialItem.id).first()
+        assertNotNull(retrieved)
+        assertEquals(2.0, retrieved.quantity)
+        assertEquals(1250L, retrieved.unitPriceInCents)
+        assertEquals("LOTE-XYZ", retrieved.batchNumber)
+
+        // 2. Verify PriceEntry was automatically inserted in db.priceDao()
+        val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, priceEntries.size)
+        assertEquals(1250L, priceEntries[0].priceInCents)
+        assertEquals("Atualização de Lote", priceEntries[0].storeName)
+
+        // 3. Update item again with same price: should NOT duplicate PriceEntry
+        val samePriceUpdate = updatedItem.copy(
+            batchNumber = "LOTE-ABC",
+            updatedAt = now + 200,
+        )
+        pantryRepository.updatePantryItemIfNewer(samePriceUpdate)
+        val pricesAfterSamePrice = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, pricesAfterSamePrice.size, "Price history should not contain duplicate entry for unchanged price")
+
+        // 4. Update item with different price: SHOULD insert new PriceEntry
+        val differentPriceUpdate = updatedItem.copy(
+            unitPriceInCents = 1500L,
+            updatedAt = now + 300,
+        )
+        pantryRepository.updatePantryItemIfNewer(differentPriceUpdate)
+        val pricesAfterDiffPrice = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(2, pricesAfterDiffPrice.size, "Price history should record new entry when price changes")
+        assertEquals(1500L, pricesAfterDiffPrice[0].priceInCents)
     }
 
     @Test

@@ -40,6 +40,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.RemoveCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.UpdatePantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
@@ -87,6 +88,7 @@ val dataModule = module {
     factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }
     factory { AddPantryItemUseCase(pantryRepository = get()) }
+    factory { UpdatePantryItemUseCase(pantryRepository = get()) }
     factory { CreateQuickShoppingListUseCase(shoppingListRepository = get()) }
     factory { StartShoppingSessionUseCase(shoppingListRepository = get()) }
     factory { AddOrUpdateCartItemUseCase(shoppingListRepository = get()) }

@@ -320,7 +320,31 @@
     <string name="product_details_add_to_list_error">Erro ao adicionar à lista: %1$s</string>
     <string name="product_details_not_found">Produto não encontrado</string>
     <string name="product_details_store_fallback">Compra</string>
+    <string name="product_details_batch_edit_success">Lote atualizado com sucesso!</string>
+    <string name="product_details_batch_edit_error">Erro ao atualizar lote: %1$s</string>
+    <string name="product_details_pantry_batch_unit_price">Unitário: %1$s</string>
+    <string name="product_details_pantry_batch_total_price">Total: %1$s</string>
+    <string name="product_details_pantry_batch_no_price">Sem valor informado • Toque p/ definir</string>
     <string name="scanner_instruction_center_barcode">Centralize o código de barras dentro da moldura</string>
+
+    <!-- Edit Pantry Batch Sheet -->
+    <string name="edit_pantry_batch_header_top">Editar</string>
+    <string name="edit_pantry_batch_header_bottom">Lote da Despensa</string>
+    <string name="edit_pantry_batch_header_desc">Ajuste a quantidade, validade, lote e preço unitário</string>
+    <string name="edit_pantry_batch_section_stock_price">Estoque e Valor</string>
+    <string name="edit_pantry_batch_quantity_label">Quantidade (%1$s)</string>
+    <string name="edit_pantry_batch_unit_price_label">Preço Unitário (R$)</string>
+    <string name="edit_pantry_batch_section_expiration">Data de Validade</string>
+    <string name="edit_pantry_batch_expiration_current">Validade atual: %1$s</string>
+    <string name="edit_pantry_batch_expiration_none">Sem validade definida</string>
+    <string name="edit_pantry_batch_expiration_clear">Limpar</string>
+    <string name="edit_pantry_batch_section_batch_info">Identificação do Lote</string>
+    <string name="edit_pantry_batch_number_label">Número do Lote</string>
+    <string name="edit_pantry_batch_number_placeholder">Ex: LOTE123</string>
+    <string name="edit_pantry_batch_action_cancel">Cancelar</string>
+    <string name="edit_pantry_batch_action_save">Salvar Lote</string>
+    <string name="edit_pantry_batch_quantity_decrease">Diminuir</string>
+    <string name="edit_pantry_batch_quantity_increase">Aumentar</string>
 
     <!-- Shopping Assistant Search & Filter -->
     <string name="shopping_assistant_search_placeholder">Buscar por nome, marca ou categoria...</string>

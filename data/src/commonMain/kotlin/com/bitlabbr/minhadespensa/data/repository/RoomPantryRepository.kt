@@ -23,8 +23,6 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
-import androidx.room.Transactor
-import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
@@ -85,21 +83,22 @@ class RoomPantryRepository(
     override suspend fun insertPantryItem(item: PantryItem) {
         logger.d(TAG, "insertPantryItem item: $item")
         validatePantryItem(item)
-        db.useWriterConnection { connection ->
-            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                dao.insertPantryItem(item.toEntity())
-                item.unitPriceInCents?.let { price ->
-                    db.priceDao().insertPriceEntry(
-                        PriceEntry(
-                            id = Uuid.random().toString(),
-                            productId = item.productId,
-                            priceInCents = price,
-                            storeName = "Entrada na Despensa",
-                            updatedAt = item.updatedAt,
-                            isDeleted = false,
-                        ).toEntity()
-                    )
-                }
+        dao.insertPantryItem(item.toEntity())
+        logger.d(TAG, "insertPantryItem: Successfully inserted pantry item id=${item.id}, productId=${item.productId}")
+        item.unitPriceInCents?.let { price ->
+            val latestPrice = db.priceDao().findLatestPriceForProductId(item.productId)
+            if (latestPrice == null || latestPrice.priceInCents != price) {
+                db.priceDao().insertPriceEntry(
+                    PriceEntry(
+                        id = Uuid.random().toString(),
+                        productId = item.productId,
+                        priceInCents = price,
+                        storeName = "Entrada na Despensa",
+                        updatedAt = item.updatedAt,
+                        isDeleted = false,
+                    ).toEntity()
+                )
+                logger.d(TAG, "insertPantryItem: Created price entry for productId=${item.productId}, priceInCents=$price")
             }
         }
     }
@@ -110,6 +109,7 @@ class RoomPantryRepository(
         dao.forceUpdatePantryItem(item.toEntity())
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun updatePantryItemIfNewer(item: PantryItem) {
         logger.d(TAG, "updatePantryItemIfNewer item:$item")
         validatePantryItem(item)
@@ -125,6 +125,24 @@ class RoomPantryRepository(
         )
         if (rowsAffected == 0) {
             logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
+        } else {
+            logger.d(TAG, "updatePantryItemIfNewer: Successfully updated pantry item ${item.id}")
+            item.unitPriceInCents?.let { price ->
+                val latestPrice = db.priceDao().findLatestPriceForProductId(item.productId)
+                if (latestPrice == null || latestPrice.priceInCents != price) {
+                    db.priceDao().insertPriceEntry(
+                        PriceEntry(
+                            id = Uuid.random().toString(),
+                            productId = item.productId,
+                            priceInCents = price,
+                            storeName = "Atualização de Lote",
+                            updatedAt = item.updatedAt,
+                            isDeleted = false,
+                        ).toEntity()
+                    )
+                    logger.d(TAG, "updatePantryItemIfNewer: Created price entry for productId=${item.productId}, priceInCents=$price")
+                }
+            }
         }
     }
 

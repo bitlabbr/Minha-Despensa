@@ -112,6 +112,7 @@ val uiModule = module {
             notificationManager = get(),
             saveCatalogProductUseCase = get(),
             checkEanStatusUseCase = get(),
+            updatePantryItemUseCase = get(),
         )
     }
 

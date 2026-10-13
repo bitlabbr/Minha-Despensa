@@ -86,7 +86,7 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
 
 ### 4.2. Domain Use Cases (`domain/usecase`)
 
-The `:core` module defines 11 use cases encapsulating discrete application business rules and orchestration:
+The `:core` module defines 12 use cases encapsulating discrete application business rules and orchestration:
 
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
@@ -95,6 +95,8 @@ The `:core` module defines 11 use cases encapsulating discrete application busin
     *   Validates EAN barcode format and checks if a product with this EAN already exists in `CatalogRepository`.
 *   **`AddPantryItemUseCase`**:
     *   Validates pantry item fields (positive quantity, valid IDs, non-negative unit price if specified) and persists the item via `PantryRepository`.
+*   **`UpdatePantryItemUseCase`**:
+    *   Validates existing pantry item modifications (ID presence, non-negative quantity, non-negative unit price if specified) and updates the item via `PantryRepository.updatePantryItemIfNewer()`, marking `isDeleted = true` if quantity reaches zero.
 *   **`CreatePlannedShoppingListUseCase`**:
     *   Creates a planned shopping list (`ShoppingListType.PLANNED`, `ShoppingListStatus.DRAFT`) with specified items and budget constraints, automatically consolidating duplicate product drafts by summing quantities.
 *   **`CreateQuickShoppingListUseCase`**:
@@ -193,7 +195,7 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
 ## 5. Testing & Verification
 
 The `:core` module contains comprehensive unit tests located in `core/src/commonTest/`:
-*   `CatalogAndPantryUseCasesTest`: Validates `SaveCatalogProductUseCase` and `AddPantryItemUseCase` business rules, constraints, and error handling.
+*   `CatalogAndPantryUseCasesTest`: Validates `SaveCatalogProductUseCase`, `AddPantryItemUseCase`, and `UpdatePantryItemUseCase` business rules, constraints, and error handling.
 *   `ShoppingUseCasesTest`: Validates shopping session lifecycles, list creations, cart transitions, item replacements, and deletions.
 *   `CheckEanStatusUseCaseTest`: Tests barcode validation, digit checking, and repository lookup.
 *   `DomainModelsTest`: Tests model serialization, copy operations, and computed properties (`totalCartInCents`, `isOverBudget`, `subtotalInCents`).
