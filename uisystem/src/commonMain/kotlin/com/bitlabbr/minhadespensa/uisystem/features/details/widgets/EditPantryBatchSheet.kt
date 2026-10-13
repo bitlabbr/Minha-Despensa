@@ -51,6 +51,8 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
 import kotlinx.datetime.*
+import minhadespensa.uisystem.generated.resources.*
+import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,9 +98,9 @@ fun EditPantryBatchSheet(
         ) {
             item {
                 PrimaryContainerHeader(
-                    textTop = "Editar",
-                    textBottom = "Lote da Despensa",
-                    description = "Ajuste a quantidade, validade, lote e preço unitário",
+                    textTop = stringResource(Res.string.edit_pantry_batch_header_top),
+                    textBottom = stringResource(Res.string.edit_pantry_batch_header_bottom),
+                    description = stringResource(Res.string.edit_pantry_batch_header_desc),
                     actionIcon = Icons.Rounded.Close,
                     onActionClick = onDismiss,
                 )
@@ -110,7 +112,7 @@ fun EditPantryBatchSheet(
                     verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                 ) {
                     // Seção de Quantidade e Preço
-                    SecondaryContainerSection(title = "Estoque e Valor") {
+                    SecondaryContainerSection(title = stringResource(Res.string.edit_pantry_batch_section_stock_price)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
@@ -125,7 +127,10 @@ fun EditPantryBatchSheet(
                                     }
                                 },
                             ) {
-                                Icon(Icons.Rounded.Remove, contentDescription = "Diminuir")
+                                Icon(
+                                    Icons.Rounded.Remove,
+                                    contentDescription = stringResource(Res.string.edit_pantry_batch_quantity_decrease),
+                                )
                             }
 
                             ProductTextField(
@@ -134,7 +139,7 @@ fun EditPantryBatchSheet(
                                 onValueChange = { input ->
                                     quantityText = input.filter { it.isDigit() || it == '.' || it == ',' }.take(6)
                                 },
-                                label = "Quantidade (${measureUnit.toAbbreviation()})",
+                                label = stringResource(Res.string.edit_pantry_batch_quantity_label, measureUnit.toAbbreviation()),
                                 placeholder = "1",
                                 keyboardType = KeyboardType.Decimal,
                                 isRequired = true,
@@ -147,7 +152,10 @@ fun EditPantryBatchSheet(
                                     quantityText = if (next % 1.0 == 0.0) next.toLong().toString() else next.toString()
                                 },
                             ) {
-                                Icon(Icons.Rounded.Add, contentDescription = "Aumentar")
+                                Icon(
+                                    Icons.Rounded.Add,
+                                    contentDescription = stringResource(Res.string.edit_pantry_batch_quantity_increase),
+                                )
                             }
                         }
 
@@ -157,14 +165,14 @@ fun EditPantryBatchSheet(
                             onValueChange = { input ->
                                 priceText = input.filter { it.isDigit() || it == '.' || it == ',' }.take(8)
                             },
-                            label = "Preço Unitário (R$)",
+                            label = stringResource(Res.string.edit_pantry_batch_unit_price_label),
                             placeholder = "0,00",
                             keyboardType = KeyboardType.Decimal,
                         )
                     }
 
                     // Seção de Validade
-                    SecondaryContainerSection(title = "Data de Validade") {
+                    SecondaryContainerSection(title = stringResource(Res.string.edit_pantry_batch_section_expiration)) {
                         val timeZone = TimeZone.currentSystemDefault()
                         val now = Clock.System.now()
 
@@ -176,7 +184,11 @@ fun EditPantryBatchSheet(
                         }
 
                         MinhaDespensaText(
-                            text = if (currentFormatted != null) "Validade atual: $currentFormatted" else "Sem validade definida",
+                            text = if (currentFormatted != null) {
+                                stringResource(Res.string.edit_pantry_batch_expiration_current, currentFormatted)
+                            } else {
+                                stringResource(Res.string.edit_pantry_batch_expiration_none)
+                            },
                             fontStyle = typography.bodySmall,
                             fontWeight = FontWeight.Medium,
                             color = if (currentFormatted != null) colors.primary else colors.onSurface.copy(alpha = 0.6f),
@@ -207,19 +219,19 @@ fun EditPantryBatchSheet(
                                 MinhaDespensaFilterChip(
                                     selected = false,
                                     onClick = { expirationDate = null },
-                                    label = "Limpar",
+                                    label = stringResource(Res.string.edit_pantry_batch_expiration_clear),
                                 )
                             }
                         }
                     }
 
                     // Seção de Identificação do Lote
-                    SecondaryContainerSection(title = "Identificação do Lote") {
+                    SecondaryContainerSection(title = stringResource(Res.string.edit_pantry_batch_section_batch_info)) {
                         ProductTextField(
                             value = batchNumber,
                             onValueChange = { batchNumber = it.take(20) },
-                            label = "Número do Lote",
-                            placeholder = "Ex: LOTE123",
+                            label = stringResource(Res.string.edit_pantry_batch_number_label),
+                            placeholder = stringResource(Res.string.edit_pantry_batch_number_placeholder),
                         )
                     }
 
@@ -231,18 +243,19 @@ fun EditPantryBatchSheet(
                         horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                     ) {
                         MinhaDespensaSecondaryButton(
-                            text = "Cancelar",
+                            text = stringResource(Res.string.edit_pantry_batch_action_cancel),
                             modifier = Modifier.weight(1f),
                             onClick = onDismiss,
                         )
 
+                        val parsedQty = quantityText.replace(',', '.').toDoubleOrNull()
                         MinhaDespensaPrimaryButton(
-                            text = "Salvar Lote",
+                            text = stringResource(Res.string.edit_pantry_batch_action_save),
                             modifier = Modifier.weight(1.8f),
                             isLoading = isSaving,
-                            enabled = !isSaving && (quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0) >= 0.0,
+                            enabled = !isSaving && parsedQty != null && parsedQty >= 0.0,
                             onClick = {
-                                val qty = quantityText.replace(',', '.').toDoubleOrNull() ?: 1.0
+                                val qty = parsedQty ?: return@MinhaDespensaPrimaryButton
                                 val price = priceText.replace(',', '.').toDoubleOrNull()?.let { (it * 100).roundToLong() }
                                 isSaving = true
                                 onConfirm(
