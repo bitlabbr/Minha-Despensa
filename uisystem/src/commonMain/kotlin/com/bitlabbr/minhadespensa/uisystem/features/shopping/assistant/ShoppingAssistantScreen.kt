@@ -23,6 +23,11 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,11 +37,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.DocumentScanner
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material.icons.rounded.Save
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -56,6 +63,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContain
 import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaDialog
 import com.bitlabbr.minhadespensa.uisystem.components.core.navigation.BackHandler
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
+import com.bitlabbr.minhadespensa.uisystem.components.core.search.MinhaDespensaSearchBar
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
@@ -92,6 +100,7 @@ fun ShoppingAssistantScreen(
     var itemPendingDelete by remember { mutableStateOf<CartItemUiModel?>(null) }
     var editingTitleText by remember { mutableStateOf("") }
     var editingBudgetText by remember { mutableStateOf("") }
+    var isSearchVisible by remember { mutableStateOf(false) }
 
     val handleBackPress: () -> Unit = {
         if (uiState.activeSubFlow != null) {
@@ -157,6 +166,24 @@ fun ShoppingAssistantScreen(
                                 contentDescription = stringResource(Res.string.shopping_assistant_edit_title),
                                 tint = colors.onPrimaryContainer.copy(alpha = 0.7f),
                                 modifier = Modifier.size(16.dp),
+                            )
+                        }
+                    }
+                },
+                rightContent = {
+                    if (uiState.items.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                isSearchVisible = !isSearchVisible
+                                if (!isSearchVisible) {
+                                    viewModel.onSearchQueryChange("")
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = if (isSearchVisible) Icons.Rounded.Close else Icons.Rounded.Search,
+                                contentDescription = stringResource(Res.string.shopping_assistant_search_action),
+                                tint = colors.onPrimaryContainer,
                             )
                         }
                     }
@@ -249,6 +276,22 @@ fun ShoppingAssistantScreen(
                     .padding(horizontal = dimens.paddingSmall, vertical = 6.dp),
             )
 
+            AnimatedVisibility(
+                visible = isSearchVisible || uiState.searchQuery.isNotEmpty(),
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                MinhaDespensaSearchBar(
+                    query = uiState.searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChange,
+                    placeholder = stringResource(Res.string.shopping_assistant_search_placeholder),
+                    showDropdown = false,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = dimens.paddingSmall, vertical = 4.dp),
+                )
+            }
+
             if (uiState.items.isEmpty()) {
                 Box(
                     modifier = Modifier
@@ -275,6 +318,29 @@ fun ShoppingAssistantScreen(
                         }
                     }
                 }
+            } else if (uiState.filteredItems.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(dimens.paddingMedium),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(dimens.paddingMedium),
+                    ) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.shopping_assistant_search_no_results, uiState.searchQuery),
+                            fontStyle = typography.bodyLarge,
+                            color = colors.onBackground.copy(alpha = 0.7f),
+                            alignment = TextAlign.Center,
+                        )
+                        MinhaDespensaSecondaryButton(
+                            text = stringResource(Res.string.shopping_assistant_search_clear),
+                            onClick = { viewModel.onSearchQueryChange("") },
+                        )
+                    }
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -283,7 +349,7 @@ fun ShoppingAssistantScreen(
                     verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
                     contentPadding = PaddingValues(vertical = 4.dp),
                 ) {
-                    items(uiState.items, key = { it.id }) { item ->
+                    items(uiState.filteredItems, key = { it.id }) { item ->
                     ItemContainerGlassCard(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -323,8 +389,16 @@ fun ShoppingAssistantScreen(
                                     val priceText = item.priceAtTime?.let { it.formatPrice(includeCurrencySymbol = true) }
                                         ?: stringResource(Res.string.shopping_assistant_no_price)
                                     val qtyText = if (item.quantity % 1.0 == 0.0) item.quantity.toLong().toString() else item.quantity.toString()
+                                    val extraInfo = listOfNotNull(item.category, item.brand).filter { it.isNotBlank() }.joinToString(" • ")
+                                    val summaryText = buildString {
+                                        append(stringResource(Res.string.shopping_assistant_item_summary, qtyText, priceText))
+                                        if (extraInfo.isNotBlank()) {
+                                            append(" • ")
+                                            append(extraInfo)
+                                        }
+                                    }
                                     MinhaDespensaText(
-                                        text = stringResource(Res.string.shopping_assistant_item_summary, qtyText, priceText),
+                                        text = summaryText,
                                         fontStyle = typography.bodySmall,
                                         color = colors.onSecondaryContainer.copy(alpha = 0.7f),
                                     )

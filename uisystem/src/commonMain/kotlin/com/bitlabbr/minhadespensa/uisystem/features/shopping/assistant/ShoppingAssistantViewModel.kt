@@ -38,6 +38,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
+import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.CartItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantSubFlow
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.model.ShoppingAssistantUiState
@@ -75,6 +76,7 @@ class ShoppingAssistantViewModel(
     private val _isCompleted = MutableStateFlow(false)
     private val _isDirectShopping = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
+    private val _searchQuery = MutableStateFlow("")
 
     private var initialSnapshot: List<ItemSnapshot>? = null
     private var startSessionJob: Job? = null
@@ -109,12 +111,13 @@ class ShoppingAssistantViewModel(
         if (id == null) flowOf(null) else shoppingListRepository.getShoppingListById(id)
     }
 
-    // Combine principal reduzido para apenas 3 fluxos
+    // Combine principal com busca reativa
     val uiState: StateFlow<ShoppingAssistantUiState> = combine(
         currentListFlow,
         catalogRepository.getAllActiveProducts(),
         sessionControlFlow,
-    ) { currentList, catalogProducts, control ->
+        _searchQuery,
+    ) { currentList, catalogProducts, control, searchQuery ->
         if (currentList == null) {
             return@combine ShoppingAssistantUiState(
                 isLoading = _currentListId.value != null,
@@ -122,6 +125,7 @@ class ShoppingAssistantViewModel(
                 isDirectShopping = control.isDirectShopping,
                 activeSubFlow = control.subFlow,
                 availableProducts = catalogProducts,
+                searchQuery = searchQuery,
             )
         }
 
@@ -161,17 +165,31 @@ class ShoppingAssistantViewModel(
                 priceAtTime = item.priceAtTime,
                 isChecked = item.isChecked,
                 subtotalInCents = subtotal,
+                category = product?.category,
+                brand = product?.brand,
             )
         }
 
         val totalCart: Long = uiItems.filter { it.isChecked }.sumOf { it.subtotalInCents }
         val checkedCount = uiItems.count { it.isChecked }
 
+        val filteredItems = if (searchQuery.isBlank()) {
+            uiItems
+        } else {
+            uiItems.filter { item ->
+                item.displayName.matchesSearchQuery(searchQuery) ||
+                    item.category?.matchesSearchQuery(searchQuery) == true ||
+                    item.brand?.matchesSearchQuery(searchQuery) == true
+            }
+        }
+
         ShoppingAssistantUiState(
             listId = currentList.id,
             listTitle = currentList.name,
             budgetInCents = currentList.budgetInCents,
             items = uiItems,
+            filteredItems = filteredItems,
+            searchQuery = searchQuery,
             availableProducts = catalogProducts,
             totalCartValueInCents = totalCart,
             checkedCount = checkedCount,
@@ -191,6 +209,7 @@ class ShoppingAssistantViewModel(
 
     fun startSession(existingListId: String? = null) {
         _isDirectShopping.value = existingListId == null
+        _searchQuery.value = ""
         initialSnapshot = null
         startSessionJob?.cancel()
         startSessionJob = viewModelScope.launch {
@@ -202,6 +221,10 @@ class ShoppingAssistantViewModel(
                 _errorMessage.value = error.message
             }
         }
+    }
+
+    fun onSearchQueryChange(newQuery: String) {
+        _searchQuery.value = newQuery
     }
 
     fun onOpenAddItemOptions() {

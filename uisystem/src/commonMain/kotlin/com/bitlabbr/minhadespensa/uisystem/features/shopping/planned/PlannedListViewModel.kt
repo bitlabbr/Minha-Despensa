@@ -67,6 +67,7 @@ class PlannedListViewModel(
             catalogProducts.filter {
                 it.name.matchesSearchQuery(query) ||
                         (it.brand?.matchesSearchQuery(query) == true) ||
+                        it.category.matchesSearchQuery(query) ||
                         "${it.name} ${it.brand.orEmpty()}".matchesSearchQuery(query)
             }
         }

@@ -60,6 +60,8 @@ data class CartItemUiModel(
     val priceAtTime: Long?,
     val isChecked: Boolean,
     val subtotalInCents: Long,
+    val category: String? = null,
+    val brand: String? = null,
 )
 
 data class ShoppingAssistantUiState(
@@ -67,6 +69,8 @@ data class ShoppingAssistantUiState(
     val listTitle: String = "Compras",
     val budgetInCents: Long? = null,
     val items: List<CartItemUiModel> = emptyList(),
+    val filteredItems: List<CartItemUiModel> = emptyList(),
+    val searchQuery: String = "",
     val availableProducts: List<CatalogProduct> = emptyList(),
     val totalCartValueInCents: Long = 0,
     val checkedCount: Int = 0,

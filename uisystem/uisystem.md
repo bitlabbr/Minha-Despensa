@@ -112,8 +112,9 @@ Accessible from both the Catalog and Pantry flows:
 
 ### 4.4. Shopping Suite & Assistant
 - **Quick Lists (`QuickListScreen`):** Fast text parsing of unformatted item lines into a draft scratchpad shopping list.
-- **Planned Lists (`CreatePlannedListScreen`):** Catalog-backed item selection with interactive quantity modifiers and budget validation.
+- **Planned Lists (`CreatePlannedListScreen`):** Catalog-backed item selection with interactive quantity modifiers, quick search clear button, category/brand/name filtering, and budget validation.
 - **Shopping Assistant (`ShoppingAssistantScreen`):** In-store companion with:
+  - Real-time expandable search bar (`MinhaDespensaSearchBar`) filtering cart items by name, category, and brand without altering financial totals (`totalCartValueInCents`, `checkedCount`, `totalCount`).
   - Dynamic cart total calculations (cents-accurate).
   - One-tap check/uncheck toggling.
   - Barcode scanning integration (camera ML Kit on Android) that matches scanned items against the local catalog.
@@ -127,7 +128,8 @@ This guarantees only one sub-flow modal (camera scanner, registration form, item
 To provide a smooth search experience for Brazilian Portuguese diacritics and special characters (`pao` -> `pão`, `maca` -> `maçã`, `acucar` -> `açúcar`), all reactive list filters in `:uisystem` utilize `TextNormalizer.matchesSearchQuery(query)`:
 - **`CatalogViewModel`:** Filters catalog items reactive stream matching against product name and brand.
 - **`PantryViewModel`:** Filters pantry inventory items reactive stream matching against item name.
-- **`PlannedListViewModel`:** Filters available catalog products matching against name and brand.
+- **`PlannedListViewModel`:** Filters available catalog products matching against name, brand, and category.
+- **`ShoppingAssistantViewModel`:** Filters active cart items reactive stream matching against product name, category, and brand.
 - **`CatalogProductPickerSheet`:** Filters catalog products matching against name and brand within the bottom sheet picker.
 
 ---
@@ -150,7 +152,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 94 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 98 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -163,8 +165,8 @@ All 94 unit tests reside in `uisystem/src/commonTest` and execute across multipl
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
-| `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering (with accent insensitivity), save delegation. |
-| `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, barcode scanner subflows, item replacement, purchase finalization. |
+| `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
+| `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, barcode scanner subflows, item replacement, purchase finalization. |
 | `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
 | `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering, barcode scanned transitions, pantry item persistence, notification dispatch. |
 | `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, add to shopping list. |

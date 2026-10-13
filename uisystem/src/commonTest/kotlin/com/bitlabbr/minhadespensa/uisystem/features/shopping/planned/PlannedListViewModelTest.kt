@@ -206,4 +206,23 @@ class PlannedListViewModelTest {
         testScheduler.advanceUntilIdle()
         assertFalse(called)
     }
+
+    @Test
+    fun `search query should filter available products by category`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod1 = CatalogProduct(id = "p1", name = "Queijo Minas", category = "Laticínios", updatedAt = 1000L)
+        val prod2 = CatalogProduct(id = "p2", name = "Arroz Branco", category = "Grãos", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod1, null)
+        catalogRepository.insertProduct(prod2, null)
+
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.availableProducts.size)
+
+        viewModel.onSearchQueryChange("laticinios")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.availableProducts.size)
+        assertEquals("p1", viewModel.uiState.value.availableProducts.first().id)
+    }
 }
