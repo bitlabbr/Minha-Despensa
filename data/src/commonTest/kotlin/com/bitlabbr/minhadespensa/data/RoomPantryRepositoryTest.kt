@@ -82,6 +82,30 @@ class RoomPantryRepositoryTest : BaseTest() {
     }
 
     @Test
+    fun `should persist unitPriceInCents and create PriceEntry on insertion`() = runTest {
+        val product = createDummyProduct(name = "Feijão Preto")
+        catalogRepository.insertProduct(product, null)
+
+        val pantryItem = createDummyPantryItem(
+            productId = product.id,
+            quantity = 2.0,
+            unitPriceInCents = 899L,
+        )
+        pantryRepository.insertPantryItem(pantryItem)
+
+        // 1. Retrieve pantry item and verify unitPriceInCents
+        val retrieved = pantryRepository.getPantryItemById(pantryItem.id).first()
+        assertNotNull(retrieved)
+        assertEquals(899L, retrieved.unitPriceInCents)
+
+        // 2. Verify PriceEntry was automatically inserted in db.priceDao()
+        val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, priceEntries.size)
+        assertEquals(899L, priceEntries[0].priceInCents)
+        assertEquals("Entrada na Despensa", priceEntries[0].storeName)
+    }
+
+    @Test
     fun `should ignore older sync updates for pantry items following LWW`() = runTest {
         val product = createDummyProduct()
         catalogRepository.insertProduct(product, null)
@@ -631,7 +655,8 @@ class RoomPantryRepositoryTest : BaseTest() {
         productId: String = Uuid.random().toString(),
         quantity: Double = 1.0,
         expirationDate: Long? = null,
-        updatedAt: Long = getCurrentTime()
+        updatedAt: Long = getCurrentTime(),
+        unitPriceInCents: Long? = null,
     ) = PantryItem(
         id = id,
         productId = productId,
@@ -639,7 +664,8 @@ class RoomPantryRepositoryTest : BaseTest() {
         updatedAt = updatedAt,
         isDeleted = false,
         expirationDate = expirationDate,
-        batchNumber = null
+        batchNumber = null,
+        unitPriceInCents = unitPriceInCents,
     )
 
     @OptIn(ExperimentalUuidApi::class)

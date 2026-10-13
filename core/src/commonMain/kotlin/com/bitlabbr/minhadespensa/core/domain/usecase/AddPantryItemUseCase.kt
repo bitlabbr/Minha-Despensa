@@ -39,9 +39,13 @@ class AddPantryItemUseCase(
         quantity: Double,
         expirationDate: Long? = null,
         batchNumber: String? = null,
+        unitPriceInCents: Long? = null,
     ): Result<PantryItem> = runCatching {
         require(productId.isNotBlank()) { CoreConstants.Validation.ERROR_PRODUCT_ID_REQUIRED }
         require(quantity > 0.0) { CoreConstants.Validation.ERROR_PANTRY_QUANTITY_POSITIVE }
+        if (unitPriceInCents != null) {
+            require(unitPriceInCents >= 0L) { CoreConstants.Validation.ERROR_PANTRY_UNIT_PRICE_NON_NEGATIVE }
+        }
 
         val trimmedBatch = batchNumber?.trim()?.takeIf { it.isNotBlank() }
 
@@ -51,6 +55,7 @@ class AddPantryItemUseCase(
             quantity = quantity,
             expirationDate = expirationDate,
             batchNumber = trimmedBatch,
+            unitPriceInCents = unitPriceInCents,
             updatedAt = getCurrentTime(),
             isDeleted = false,
         )

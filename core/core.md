@@ -64,7 +64,7 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
     *   *Fields*: `id`, `name`, `brand`, `measureUnit`, `netWeight`, `thumbnailUrl`, `updatedAt`, `isDeleted`, `manuallyAdded`, `ean`, `category`, `notes`.
 *   **`MeasureUnit`**: Supported physical measurement units: `UNIT`, `KILOGRAM`, `GRAM`, `LITER`, `MILLILITER`, `PACKAGE`. Provides `toLabel()` extensions in UI.
 *   **`PantryItem`**: Represents product stock in the user's pantry.
-    *   *Fields*: `id`, `productId`, `quantity`, `expirationDate`, `batchNumber`, `updatedAt`, `isDeleted`.
+    *   *Fields*: `id`, `productId`, `quantity`, `expirationDate`, `batchNumber`, `unitPriceInCents`, `updatedAt`, `isDeleted`.
 *   **`PantryItemConsumption`**: Data class representing a consumption entry for batch pantry deduction (`pantryItemId`, `quantityToConsume`).
 *   **`PantryItemWithCategory`**: Composite read model combining `PantryItem` with product catalog details (`name`, `category`, `measureUnit`, `netWeight`).
 *   **`PriceEntry`**: Historical price recording for a catalog product.
@@ -94,7 +94,7 @@ The `:core` module defines 11 use cases encapsulating discrete application busin
 *   **`CheckEanStatusUseCase`**:
     *   Validates EAN barcode format and checks if a product with this EAN already exists in `CatalogRepository`.
 *   **`AddPantryItemUseCase`**:
-    *   Validates pantry item fields (positive quantity, valid IDs) and persists the item via `PantryRepository`.
+    *   Validates pantry item fields (positive quantity, valid IDs, non-negative unit price if specified) and persists the item via `PantryRepository`.
 *   **`CreatePlannedShoppingListUseCase`**:
     *   Creates a planned shopping list (`ShoppingListType.PLANNED`, `ShoppingListStatus.DRAFT`) with specified items and budget constraints, automatically consolidating duplicate product drafts by summing quantities.
 *   **`CreateQuickShoppingListUseCase`**:

@@ -69,7 +69,7 @@ interface PantryItemDao {
     @Query(
         """
     UPDATE pantry_items 
-    SET productId = :productId, quantity = :quantity, updatedAt = :updatedAt, isDeleted = :isDeleted, expirationDate = :expirationDate, batchNumber = :batchNumber
+    SET productId = :productId, quantity = :quantity, updatedAt = :updatedAt, isDeleted = :isDeleted, expirationDate = :expirationDate, batchNumber = :batchNumber, unit_price_in_cents = :unitPriceInCents
     WHERE id = :id AND (
         updatedAt < :updatedAt
         OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
@@ -83,7 +83,8 @@ interface PantryItemDao {
         updatedAt: Long,
         isDeleted: Boolean,
         expirationDate: Long?,
-        batchNumber: String?
+        batchNumber: String?,
+        unitPriceInCents: Long? = null
     ): Int
 
     @Query("DELETE FROM pantry_items WHERE id = :id")

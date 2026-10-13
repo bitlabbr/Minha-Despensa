@@ -527,6 +527,55 @@ class AppDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun migration_4_to_5_adds_unit_price_in_cents_column_and_preserves_pantry_data() {
+        createV2Schema(connection)
+        MIGRATION_2_4.migrate(connection)
+
+        // Insert pantry item in v4
+        connection.execSQL(
+            """
+            INSERT INTO `catalog_products` (`id`, `name`, `measureUnit`, `netWeight`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`)
+            VALUES ('prod-v4', 'Arroz', 'KILOGRAM', 1.0, 1000, 0, 0, 'Grãos')
+            """.trimIndent()
+        )
+        connection.execSQL(
+            """
+            INSERT INTO `pantry_items` (`id`, `productId`, `quantity`, `expirationDate`, `batchNumber`, `updatedAt`, `isDeleted`)
+            VALUES ('pantry-v4', 'prod-v4', 2.0, 2000000, 'LOTE-123', 1000, 0)
+            """.trimIndent()
+        )
+
+        // Run Migration 4 -> 5
+        MIGRATION_4_5.migrate(connection)
+
+        // Verify column exists and data is preserved
+        connection.prepare("SELECT id, productId, quantity, expirationDate, batchNumber, unit_price_in_cents, updatedAt, isDeleted FROM pantry_items WHERE id = 'pantry-v4'").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals("pantry-v4", stmt.getText(0))
+            assertEquals("prod-v4", stmt.getText(1))
+            assertEquals(2.0, stmt.getDouble(2), 0.001)
+            assertEquals(2000000L, stmt.getLong(3))
+            assertEquals("LOTE-123", stmt.getText(4))
+            assertTrue(stmt.isNull(5))
+            assertEquals(1000L, stmt.getLong(6))
+            assertEquals(0L, stmt.getLong(7))
+        }
+
+        // Verify we can insert new item with unit_price_in_cents in v5
+        connection.execSQL(
+            """
+            INSERT INTO `pantry_items` (`id`, `productId`, `quantity`, `expirationDate`, `batchNumber`, `unit_price_in_cents`, `updatedAt`, `isDeleted`)
+            VALUES ('pantry-v5', 'prod-v4', 3.0, 2000000, 'LOTE-456', 2990, 1000, 0)
+            """.trimIndent()
+        )
+
+        connection.prepare("SELECT unit_price_in_cents FROM pantry_items WHERE id = 'pantry-v5'").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(2990L, stmt.getLong(0))
+        }
+    }
+
     private fun createV2Schema(connection: SQLiteConnection) {
         connection.execSQL(
             """

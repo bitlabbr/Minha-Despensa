@@ -61,6 +61,7 @@ object CoreConstants {
         const val ERROR_PRODUCT_NAME_TOO_LONG = "O nome do produto excede o limite máximo de caracteres"
         const val ERROR_PRODUCT_NET_WEIGHT_POSITIVE = "O peso ou quantidade líquida deve ser maior que zero"
         const val ERROR_EAN_INVALID_FORMAT = "Código de barras inválido. Deve conter 8, 12, 13 ou 14 dígitos numéricos"
+        const val ERROR_PANTRY_UNIT_PRICE_NON_NEGATIVE = "O preço unitário não pode ser negativo"
     }
 
     object CatalogCategories {

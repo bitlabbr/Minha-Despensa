@@ -293,5 +293,36 @@ class CatalogAndPantryUseCasesTest {
         // Blank product ID
         val blankProduct = addPantryItemUseCase(productId = "   ", quantity = 1.0)
         assertTrue(blankProduct.isFailure)
+
+        // Negative unit price
+        val negativePrice = addPantryItemUseCase(
+            productId = "prod-1",
+            quantity = 1.0,
+            unitPriceInCents = -50L,
+        )
+        assertTrue(negativePrice.isFailure)
+        assertEquals(CoreConstants.Validation.ERROR_PANTRY_UNIT_PRICE_NON_NEGATIVE, negativePrice.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `AddPantryItemUseCase should persist unitPriceInCents and trim batchNumber`() = runTest {
+        val result = addPantryItemUseCase(
+            productId = "prod-10",
+            quantity = 2.5,
+            expirationDate = 2000000000L,
+            batchNumber = "  LOTE-99  ",
+            unitPriceInCents = 1599L,
+        ).getOrThrow()
+
+        assertEquals("prod-10", result.productId)
+        assertEquals(2.5, result.quantity)
+        assertEquals(2000000000L, result.expirationDate)
+        assertEquals("LOTE-99", result.batchNumber)
+        assertEquals(1599L, result.unitPriceInCents)
+
+        val stored = pantryRepository.getPantryItemById(result.id).first()
+        assertNotNull(stored)
+        assertEquals(1599L, stored.unitPriceInCents)
+        assertEquals("LOTE-99", stored.batchNumber)
     }
 }

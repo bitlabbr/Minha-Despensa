@@ -7,8 +7,8 @@ This document provides an in-depth analysis of the `:data` module, outlining its
 The `:data` module in **Minha Despensa** is a Kotlin Multiplatform (KMP) library responsible for data persistence and local storage. It acts as the single source of truth for all local data, implementing the repository interfaces declared in `:core:domain`.
 
 Key capabilities:
-*   **Offline-First Local Storage**: Uses Google Room Multiplatform (Version 4) backed by SQLite (`BundledSQLiteDriver`).
-*   **Migration Pipeline**: Full schema evolution and migration strategy supporting incremental and multi-version jumps (`1->2`, `2->3`, `3->4`, `1->4`, `2->4`).
+*   **Offline-First Local Storage**: Uses Google Room Multiplatform (Version 5) backed by SQLite (`BundledSQLiteDriver`).
+*   **Migration Pipeline**: Full schema evolution and migration strategy supporting incremental and multi-version jumps (`1->2`, `2->3`, `3->4`, `4->5`, direct `1->5`, `2->5`, `3->5`).
 *   **Conflict Resolution**: Enforces Last-Write-Wins (LWW) conflict resolution on updates via SQL timestamp comparison (`updated_at < :updatedAt`).
 *   **Atomic Transactions**: Protects multi-table operations (such as product creation with media, pantry consumption batches, and shopping checkout) using Room's `useWriterConnection { conn -> conn.withTransaction(IMMEDIATE) { ... } }`.
 *   **Clean Architecture Separation**: Pure separation between Room database entities and core domain models via dedicated mappers in `com.bitlabbr.minhadespensa.data.local.mapper`.
@@ -21,13 +21,13 @@ Key capabilities:
 data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/
 ├── di/                     # Koin DataModule dependency injection
 ├── local/
-│   ├── AppDatabase.kt      # Main Room database declaration (Version 4)
+│   ├── AppDatabase.kt      # Main Room database declaration (Version 5)
 │   ├── converter/          # Room TypeConverters (Instant, MeasureUnit)
 │   ├── dao/                # Room Data Access Objects (DAOs)
 │   ├── dto/                # Room query projection DTOs (e.g. joins)
 │   ├── entity/             # Room SQLite table entities
 │   ├── mapper/             # Bidirectional Entity <-> Domain mappers
-│   └── migration/          # Room Migration definitions (1->2, 2->3, 3->4, direct 1->4/2->4)
+│   └── migration/          # Room Migration definitions (1->2, 2->3, 3->4, 4->5, direct 1->5, 2->5, 3->5)
 ├── repository/             # Room repository implementations
 └── util/                   # Common utilities (ImageProcessor expect interface)
 ```
@@ -58,7 +58,7 @@ Platform-specific source sets:
 
 ### 4.1. Room Database (`local/AppDatabase.kt`)
 *   **Entities**: `CatalogProductEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`.
-*   **Version**: `4`.
+*   **Version**: `5`.
 *   **Driver**: `BundledSQLiteDriver()`.
 *   **Platform Initialization**: Uses `expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>` to instantiate platform SQLite drivers.
 
@@ -68,7 +68,7 @@ Platform-specific source sets:
 *   **`CatalogProductEntity`** (`catalog_products`):
     *   *Columns*: `id` (PK), `ean` (Unique Index), `name`, `brand`, `measure_unit`, `net_weight`, `thumbnail_url`, `updated_at`, `is_deleted`, `manually_added`, `category`, `notes`.
 *   **`PantryItemEntity`** (`pantry_items`):
-    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `quantity`, `expiration_date`, `batch_number`, `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `quantity`, `expiration_date`, `batch_number`, `unit_price_in_cents`, `updated_at`, `is_deleted`.
 *   **`PriceEntryEntity`** (`price_entries`):
     *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `price_in_cents`, `store_name`, `updated_at`, `is_deleted`.
 *   **`ProductMediaEntity`** (`product_media`):
@@ -89,7 +89,9 @@ Platform-specific source sets:
     *   Standardizes column casing and names (e.g. `budget_in_cents`, `list_id`, `product_id`, `raw_text`, `price_at_time`, `is_checked`, `updated_at`, `is_deleted`).
     *   Configures FK on `shopping_items.product_id` as `ON DELETE SET NULL` to support scratchpad items and preserve shopping logs if a product is physically deleted.
     *   Adds unique index on `catalog_products.ean`.
-*   **`MIGRATION_1_4` & `MIGRATION_2_4`**: Direct upgrade paths to schema v4.
+*   **`MIGRATION_4_5` (`migrateToSchemaV5`)**:
+    *   Adds `unit_price_in_cents INTEGER DEFAULT NULL` column to `pantry_items`.
+*   **`MIGRATION_1_5`, `MIGRATION_2_5` & `MIGRATION_3_5`**: Direct upgrade paths to schema v5.
 *   **`ALL_MIGRATIONS`**: Exported migration array consumed by Koin's database builder.
 
 ---
@@ -154,6 +156,7 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   Aligns media timestamps directly with `product.updatedAt`.
 *   **`RoomPantryRepository`**:
     *   Encapsulates database and DAO as private members.
+    *   `insertPantryItem`: Persists the pantry item and automatically records a `PriceEntry` with `storeName = "Entrada na Despensa"` when `unitPriceInCents != null`, keeping product price history updated.
     *   `consumePantryItem` and `consumeBatch`: Atomically validates stock, prevents consumption of soft-deleted items, and updates quantities inside an immediate transaction.
     *   `getExpiringPantryItems`: Accurately separates active non-expired items approaching the threshold from already expired items.
 *   **`RoomPriceRepository`**:
@@ -179,7 +182,7 @@ Configures singletons and use case factories via Koin:
 ## 5. Testing & Verification
 
 The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/` using an in-memory SQLite database (`createInMemoryDatabase(getTestDatabaseBuilder())`):
-*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1, v2, v3 to v4, verifying column names, indices, foreign keys, and data preservation.
+*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1, v2, v3, v4 to v5 (`MIGRATION_4_5`), verifying column names (`unit_price_in_cents`), indices, foreign keys, and data preservation.
 *   **`RoomCatalogRepositoryTest`**: Tests EAN lookups, search, CRUD, LWW updates, media blob handling, and validation limits.
 *   **`RoomPantryRepositoryTest`**: Tests pantry joins with categories, expiration filtering, single/batch consumption deductions, and negative balance guards.
 *   **`RoomPriceRepositoryTest`**: Tests price history queries, latest price resolution, LWW conflict handling, and store name validations.
