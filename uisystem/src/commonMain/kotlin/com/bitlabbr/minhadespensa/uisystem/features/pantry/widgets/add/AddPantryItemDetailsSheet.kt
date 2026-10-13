@@ -50,13 +50,16 @@ import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProduct
 import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
 import kotlinx.datetime.*
+import kotlin.math.roundToLong
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddPantryItemDetailsSheet(
     product: CatalogProductUiModel,
-    onConfirm: (productId: String, quantity: Double, expirationDate: Long?, batchNumber: String?) -> Unit,
+    initialPrice: Long? = null,
+    onConfirm: (productId: String, quantity: Double, expirationDate: Long?, batchNumber: String?, unitPriceInCents: Long?) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -65,6 +68,9 @@ fun AddPantryItemDetailsSheet(
     val typography = MinhaDespensaTheme.typography
 
     var quantityText by remember { mutableStateOf("1.0") }
+    var priceText by remember(product.id, initialPrice) {
+        mutableStateOf(initialPrice?.formatPrice() ?: "")
+    }
     var expirationDate by remember { mutableStateOf<Long?>(null) }
     var batchNumber by remember { mutableStateOf("") }
     var isExpanded by remember { mutableStateOf(false) }
@@ -169,6 +175,17 @@ fun AddPantryItemDetailsSheet(
                             }
                         }
 
+                        ProductTextField(
+                            modifier = Modifier.fillMaxWidth(),
+                            value = priceText,
+                            onValueChange = { input ->
+                                priceText = input.filter { it.isDigit() || it == '.' || it == ',' }.take(8)
+                            },
+                            label = "Preço Unitário (R$)",
+                            placeholder = "0,00",
+                            keyboardType = KeyboardType.Decimal,
+                        )
+
                         MinhaDespensaText(
                             text = "Atalhos de Validade",
                             fontStyle = typography.bodySmall,
@@ -245,8 +262,15 @@ fun AddPantryItemDetailsSheet(
                             enabled = !isSaving && (quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0) > 0.0,
                             onClick = {
                                 val qty = quantityText.replace(',', '.').toDoubleOrNull() ?: 1.0
+                                val price = priceText.replace(',', '.').toDoubleOrNull()?.let { (it * 100).roundToLong() }
                                 isSaving = true
-                                onConfirm(product.id, qty, expirationDate, batchNumber.takeIf { it.isNotBlank() })
+                                onConfirm(
+                                    product.id,
+                                    qty,
+                                    expirationDate,
+                                    batchNumber.takeIf { it.isNotBlank() },
+                                    price,
+                                )
                             },
                         )
                     }

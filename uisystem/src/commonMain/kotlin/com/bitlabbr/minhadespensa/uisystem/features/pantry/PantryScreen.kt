@@ -119,8 +119,8 @@ fun PantryScreen(
         is PantrySubFlow.AddItemDetails -> {
             AddPantryItemDetailsSheet(
                 product = subFlow.product,
-                onConfirm = { productId, qty, expirationDate, batch ->
-                    viewModel.onConfirmAddPantryItem(productId, qty, expirationDate, batch)
+                onConfirm = { productId, qty, expirationDate, batch, priceCents ->
+                    viewModel.onConfirmAddPantryItem(productId, qty, expirationDate, batch, priceCents)
                 },
                 onDismiss = viewModel::onDismissSubFlow,
             )

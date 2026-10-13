@@ -218,8 +218,9 @@ fun ProductDetailsScreen(
         is ProductDetailsSubFlow.AddPantryStock -> {
             AddPantryItemDetailsSheet(
                 product = subFlow.product,
-                onConfirm = { _, qty, expDate, batch ->
-                    viewModel.onAddPantryStock(qty, expDate, batch)
+                initialPrice = uiState.latestPrice,
+                onConfirm = { _, qty, expDate, batch, priceCents ->
+                    viewModel.onAddPantryStock(qty, expDate, batch, priceCents)
                 },
                 onDismiss = viewModel::onDismissSubFlow,
             )

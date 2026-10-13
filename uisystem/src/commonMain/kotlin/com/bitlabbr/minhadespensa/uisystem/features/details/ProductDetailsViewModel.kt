@@ -320,7 +320,12 @@ class ProductDetailsViewModel(
         }
     }
 
-    fun onAddPantryStock(quantity: Double, expirationDate: Long?, batchNumber: String?) {
+    fun onAddPantryStock(
+        quantity: Double,
+        expirationDate: Long?,
+        batchNumber: String?,
+        unitPriceInCents: Long? = null,
+    ) {
         val prodId = _productId.value ?: return
         viewModelScope.launch {
             addPantryItemUseCase(
@@ -328,6 +333,7 @@ class ProductDetailsViewModel(
                 quantity = quantity,
                 expirationDate = expirationDate,
                 batchNumber = batchNumber,
+                unitPriceInCents = unitPriceInCents,
             ).onSuccess {
                 _activeSubFlow.value = null
                 notificationManager.showSuccess(UiText.Resource(Res.string.product_details_add_pantry_success))

@@ -208,6 +208,7 @@ class PantryViewModel(
         quantity: Double,
         expirationDate: Long?,
         batchNumber: String?,
+        unitPriceInCents: Long? = null,
     ) {
         viewModelScope.launch {
             val result = addPantryItemUseCase(
@@ -215,6 +216,7 @@ class PantryViewModel(
                 quantity = quantity,
                 expirationDate = expirationDate,
                 batchNumber = batchNumber,
+                unitPriceInCents = unitPriceInCents,
             )
 
             result.onSuccess {
