@@ -118,6 +118,7 @@ Accessible from both the Catalog and Pantry flows:
   - Dynamic cart total calculations (cents-accurate).
   - One-tap check/uncheck toggling.
   - Barcode scanning integration (camera ML Kit on Android) that matches scanned items against the local catalog.
+  - Duplicate item detection and warning banner in `AddCartItemDetailsSheet` showing current quantity in cart and consolidating quantities automatically on confirmation.
   - Dynamic item replacement (`ReplaceItemOptionsSheet`), manual item addition (`AddCartItemDetailsSheet`), catalog search picker (`CatalogProductPickerSheet`), and budget gauge (`ShoppingFinancialDashboard`).
 
 ### 4.5. State Machine Subflows
@@ -152,7 +153,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 123 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 126 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -168,7 +169,7 @@ All 123 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
-| `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, barcode scanner subflows, item replacement, purchase finalization. |
+| `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, duplicate item detection and consolidation, barcode scanner subflows, item replacement, purchase finalization. |
 | `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
 | `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
 | `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, add to shopping list. |
