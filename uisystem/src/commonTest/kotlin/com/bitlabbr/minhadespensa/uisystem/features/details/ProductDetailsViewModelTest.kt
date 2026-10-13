@@ -27,6 +27,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.*
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddCatalogItemToShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.uisystem.fakes.*
+import com.bitlabbr.minhadespensa.uisystem.features.details.model.PantryBatchUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.details.model.ProductDetailsSubFlow
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import kotlinx.coroutines.Dispatchers
@@ -573,5 +574,149 @@ class ProductDetailsViewModelTest {
         assertEquals(250L, state.priceDifference)
         // (750 - 500) / 500 * 100 = 50.0%
         assertEquals(50.0, state.priceVariationPercentage)
+    }
+
+    @Test
+    fun `batches should map unitPriceInCents and calculate totalPriceInCents correctly`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-batch-prices",
+            name = "Arroz Tipo 1",
+            category = "Grãos",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+
+        val batchWithPrice = PantryItem(
+            id = "batch-with-price",
+            productId = "prod-batch-prices",
+            quantity = 3.0,
+            expirationDate = 2000000L,
+            batchNumber = "L1",
+            unitPriceInCents = 1250L,
+            updatedAt = 1000L,
+        )
+        val batchWithoutPrice = PantryItem(
+            id = "batch-without-price",
+            productId = "prod-batch-prices",
+            quantity = 2.0,
+            expirationDate = 3000000L,
+            batchNumber = "L2",
+            unitPriceInCents = null,
+            updatedAt = 1000L,
+        )
+        pantryRepository.insertPantryItem(batchWithPrice)
+        pantryRepository.insertPantryItem(batchWithoutPrice)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-batch-prices")
+        testScheduler.advanceUntilIdle()
+
+        val batches = viewModel.uiState.value.pantryStock?.batches
+        assertNotNull(batches)
+        assertEquals(2, batches.size)
+
+        val firstBatch = batches.find { it.id == "batch-with-price" }
+        assertNotNull(firstBatch)
+        assertEquals(1250L, firstBatch.unitPriceInCents)
+        assertEquals(3750L, firstBatch.totalPriceInCents)
+
+        val secondBatch = batches.find { it.id == "batch-without-price" }
+        assertNotNull(secondBatch)
+        assertNull(secondBatch.unitPriceInCents)
+        assertNull(secondBatch.totalPriceInCents)
+    }
+
+    @Test
+    fun `onOpenEditBatchSheet should set activeSubFlow to EditPantryBatch`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-edit-subflow",
+            name = "Azeite Extra Virgem",
+            category = "Óleos",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-edit-subflow")
+        testScheduler.advanceUntilIdle()
+
+        val batchUiModel = PantryBatchUiModel(
+            id = "batch-edit-1",
+            quantity = 4.0,
+            expirationDate = 2500000L,
+            batchNumber = "L-EDIT",
+            unitPriceInCents = 890L,
+        )
+
+        viewModel.onOpenEditBatchSheet(batchUiModel)
+        testScheduler.advanceUntilIdle()
+
+        val subFlow = viewModel.uiState.value.activeSubFlow
+        assertTrue(subFlow is ProductDetailsSubFlow.EditPantryBatch)
+        assertEquals(batchUiModel, subFlow.batch)
+    }
+
+    @Test
+    fun `onUpdatePantryBatch should update batch in repository and dismiss subflow on success`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-update-batch",
+            name = "Feijão Preto",
+            category = "Grãos",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+
+        val originalBatch = PantryItem(
+            id = "batch-to-update",
+            productId = "prod-update-batch",
+            quantity = 2.0,
+            expirationDate = 2000000L,
+            batchNumber = "OLD-LOTE",
+            unitPriceInCents = null,
+            updatedAt = 1000L,
+        )
+        pantryRepository.insertPantryItem(originalBatch)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-update-batch")
+        testScheduler.advanceUntilIdle()
+
+        val batchUiModel = PantryBatchUiModel(
+            id = "batch-to-update",
+            quantity = 2.0,
+            expirationDate = 2000000L,
+            batchNumber = "OLD-LOTE",
+            unitPriceInCents = null,
+        )
+        viewModel.onOpenEditBatchSheet(batchUiModel)
+        testScheduler.advanceUntilIdle()
+        assertNotNull(viewModel.uiState.value.activeSubFlow)
+
+        // Execute update with new quantity, new expiration, new lot and price
+        viewModel.onUpdatePantryBatch(
+            batchId = "batch-to-update",
+            quantity = 5.0,
+            expirationDate = 3500000L,
+            batchNumber = "NEW-LOTE",
+            unitPriceInCents = 950L,
+        )
+        testScheduler.advanceUntilIdle()
+
+        // Subflow should be dismissed
+        assertNull(viewModel.uiState.value.activeSubFlow)
+
+        // Repository should contain updated batch
+        val updatedItem = pantryRepository.items.value["batch-to-update"]
+        assertNotNull(updatedItem)
+        assertEquals(5.0, updatedItem.quantity)
+        assertEquals(3500000L, updatedItem.expirationDate)
+        assertEquals("NEW-LOTE", updatedItem.batchNumber)
+        assertEquals(950L, updatedItem.unitPriceInCents)
     }
 }

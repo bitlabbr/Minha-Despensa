@@ -65,6 +65,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductDrop
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.features.details.model.*
+import com.bitlabbr.minhadespensa.uisystem.features.details.widgets.EditPantryBatchSheet
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.add.AddPantryItemDetailsSheet
 import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
 import com.bitlabbr.minhadespensa.uisystem.mapper.toLabel
@@ -184,6 +185,7 @@ fun ProductDetailsScreen(
                     pantryStock = uiState.pantryStock,
                     onAddStock = viewModel::onOpenAddStockSheet,
                     onConsume = viewModel::onOpenConsumeDialog,
+                    onEditBatch = viewModel::onOpenEditBatchSheet,
                 )
 
                 // --- SEÇÃO 2: HISTÓRICO E VARIAÇÃO DE PREÇOS ---
@@ -221,6 +223,17 @@ fun ProductDetailsScreen(
                 initialPrice = uiState.latestPrice,
                 onConfirm = { _, qty, expDate, batch, priceCents ->
                     viewModel.onAddPantryStock(qty, expDate, batch, priceCents)
+                },
+                onDismiss = viewModel::onDismissSubFlow,
+            )
+        }
+
+        is ProductDetailsSubFlow.EditPantryBatch -> {
+            EditPantryBatchSheet(
+                batch = subFlow.batch,
+                measureUnit = uiState.product?.measureUnit ?: MeasureUnit.UNIT,
+                onConfirm = { batchId, qty, expDate, batchNum, priceCents ->
+                    viewModel.onUpdatePantryBatch(batchId, qty, expDate, batchNum, priceCents)
                 },
                 onDismiss = viewModel::onDismissSubFlow,
             )
@@ -405,6 +418,7 @@ private fun ProductPantrySection(
     pantryStock: ProductPantryStockUiModel?,
     onAddStock: () -> Unit,
     onConsume: () -> Unit,
+    onEditBatch: (PantryBatchUiModel) -> Unit = {},
 ) {
     val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
@@ -478,11 +492,15 @@ private fun ProductPantrySection(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     pantryStock.batches.forEach { batch ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable { onEditBatch(batch) }
+                                .padding(vertical = 4.dp, horizontal = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Column {
+                            Column(modifier = Modifier.weight(1f)) {
                                 val batchQty = if (batch.quantity % 1.0 == 0.0) {
                                     batch.quantity.toLong().toString()
                                 } else {
@@ -501,20 +519,57 @@ private fun ProductPantrySection(
                                         color = colors.onSurfaceVariant,
                                     )
                                 }
+                                if (batch.unitPriceInCents != null) {
+                                    val unitStr = stringResource(
+                                        Res.string.product_details_pantry_batch_unit_price,
+                                        batch.unitPriceInCents.formatPrice(),
+                                    )
+                                    val totalStr = batch.totalPriceInCents?.let {
+                                        stringResource(
+                                            Res.string.product_details_pantry_batch_total_price,
+                                            it.formatPrice(),
+                                        )
+                                    }
+                                    val priceLabel = if (totalStr != null) "$unitStr • $totalStr" else unitStr
+                                    MinhaDespensaText(
+                                        text = priceLabel,
+                                        fontStyle = typography.bodySmall,
+                                        fontWeight = FontWeight.Medium,
+                                        color = colors.primary,
+                                    )
+                                } else {
+                                    MinhaDespensaText(
+                                        text = stringResource(Res.string.product_details_pantry_batch_no_price),
+                                        fontStyle = typography.bodySmall,
+                                        color = colors.primary.copy(alpha = 0.8f),
+                                    )
+                                }
                             }
 
-                            if (batch.expirationDate != null) {
-                                MinhaDespensaText(
-                                    text = formatEpochDate(batch.expirationDate),
-                                    fontStyle = typography.bodySmall,
-                                    color = if (batch.isExpired) colors.error else colors.onSurfaceVariant,
-                                    fontWeight = if (batch.isExpired) FontWeight.Bold else FontWeight.Normal,
-                                )
-                            } else {
-                                MinhaDespensaText(
-                                    text = stringResource(Res.string.product_details_pantry_no_expiration),
-                                    fontStyle = typography.bodySmall,
-                                    color = colors.onSurfaceVariant.copy(alpha = 0.6f),
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                if (batch.expirationDate != null) {
+                                    MinhaDespensaText(
+                                        text = formatEpochDate(batch.expirationDate),
+                                        fontStyle = typography.bodySmall,
+                                        color = if (batch.isExpired) colors.error else colors.onSurfaceVariant,
+                                        fontWeight = if (batch.isExpired) FontWeight.Bold else FontWeight.Normal,
+                                    )
+                                } else {
+                                    MinhaDespensaText(
+                                        text = stringResource(Res.string.product_details_pantry_no_expiration),
+                                        fontStyle = typography.bodySmall,
+                                        color = colors.onSurfaceVariant.copy(alpha = 0.6f),
+                                    )
+                                }
+
+                                Icon(
+                                    imageVector = Icons.Rounded.Edit,
+                                    contentDescription = "Editar lote",
+                                    tint = colors.onSurfaceVariant.copy(alpha = 0.6f),
+                                    modifier = Modifier.size(16.dp),
                                 )
                             }
                         }

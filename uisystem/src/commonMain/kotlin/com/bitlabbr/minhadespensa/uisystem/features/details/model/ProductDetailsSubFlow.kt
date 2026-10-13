@@ -28,5 +28,6 @@ import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProduct
 sealed interface ProductDetailsSubFlow {
     data object ConsumeStock : ProductDetailsSubFlow
     data class AddPantryStock(val product: CatalogProductUiModel) : ProductDetailsSubFlow
+    data class EditPantryBatch(val batch: PantryBatchUiModel) : ProductDetailsSubFlow
     data object SelectShoppingList : ProductDetailsSubFlow
 }

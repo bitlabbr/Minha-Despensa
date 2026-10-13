@@ -74,6 +74,8 @@ data class PantryBatchUiModel(
     val batchNumber: String? = null,
     val isExpired: Boolean = false,
     val daysUntilExpiration: Long? = null,
+    val unitPriceInCents: Long? = null,
+    val totalPriceInCents: Long? = unitPriceInCents?.let { kotlin.math.round((quantity * it)).toLong() },
 )
 
 data class ProductPriceEntryUiModel(

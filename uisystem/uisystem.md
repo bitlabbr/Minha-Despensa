@@ -106,7 +106,8 @@ Product registration was consolidated to eliminate duplicate code across screens
 Accessible from both the Catalog and Pantry flows:
 - **Inspection:** Displays brand, category, barcode, net weight, measurement unit, and notes.
 - **Price History:** Dynamic chart visualizing price evolution over time and latest recorded prices.
-- **Pantry Batches:** Lists all active batches in the pantry with quantity and expiration dates.
+- **Pantry Batches & Prices:** Lists all active batches in the pantry with quantity, expiration dates, unit price (`unitPriceInCents`), and computed batch total (`totalPriceInCents`). Lotes sem valor informado exibem o indicativo amigável `Sem valor informado • Toque p/ definir`.
+- **Batch Editing (`EditPantryBatchSheet`):** Permite editar quantidade, data de validade com chips de atalho (`+7d`, `+15d`, etc.), número de lote e preço unitário com validação e persistência reativa.
 - **Quick Actions:** Direct shortcuts to add to an active shopping list, increment pantry stock, or edit product catalog metadata.
 - **Catalog Product Editing:** Supports full inline editing of catalog metadata and photo. Tracks `hasImageRemoved` in `ProductFormState` to explicitly delete media blobs from the database when the user clears an existing photo.
 
@@ -147,13 +148,13 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
   - `PlannedListViewModel`: Injects `CreatePlannedShoppingListUseCase`, catalog repository, logger.
   - `ShoppingAssistantViewModel`: Injects session use cases (`StartShoppingSessionUseCase`, `AddOrUpdateCartItemUseCase`, `FinalizeShoppingSessionUseCase`, `CheckEanStatusUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`), repositories, logger.
   - `ShoppingListsViewModel`: Injects shopping list repository, logger.
-  - `ProductDetailsViewModel`: Injects catalog, pantry, price, and shopping repositories, `AddCatalogItemToShoppingListUseCase`, `AddPantryItemUseCase`, `SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, logger, notification manager.
+  - `ProductDetailsViewModel`: Injects catalog, pantry, price, and shopping repositories, `AddCatalogItemToShoppingListUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, logger, notification manager.
 
 ---
 
 ## 6. Automated Unit Testing Suite
 
-All 126 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 130 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -172,7 +173,7 @@ All 126 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, duplicate item detection and consolidation, barcode scanner subflows, item replacement, purchase finalization. |
 | `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
 | `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
-| `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, add to shopping list. |
+| `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, batch price mapping and calculation, batch editing subflow and updates, add to shopping list. |
 
 ### Running the Tests
 ```bash

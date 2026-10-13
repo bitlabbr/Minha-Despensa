@@ -63,6 +63,7 @@ class ProductDetailsViewModel(
     private val clock: Clock = Clock.System,
     private val saveCatalogProductUseCase: SaveCatalogProductUseCase = SaveCatalogProductUseCase(catalogRepository),
     private val checkEanStatusUseCase: CheckEanStatusUseCase = CheckEanStatusUseCase(catalogRepository),
+    private val updatePantryItemUseCase: UpdatePantryItemUseCase = UpdatePantryItemUseCase(pantryRepository),
 ) : ViewModel() {
 
     private val TAG = "ProductDetailsViewModel"
@@ -344,6 +345,36 @@ class ProductDetailsViewModel(
         }
     }
 
+    fun onOpenEditBatchSheet(batch: PantryBatchUiModel) {
+        _activeSubFlow.value = ProductDetailsSubFlow.EditPantryBatch(batch)
+    }
+
+    fun onUpdatePantryBatch(
+        batchId: String,
+        quantity: Double,
+        expirationDate: Long?,
+        batchNumber: String?,
+        unitPriceInCents: Long?,
+    ) {
+        val prodId = _productId.value ?: return
+        viewModelScope.launch {
+            updatePantryItemUseCase(
+                id = batchId,
+                productId = prodId,
+                quantity = quantity,
+                expirationDate = expirationDate,
+                batchNumber = batchNumber,
+                unitPriceInCents = unitPriceInCents,
+            ).onSuccess {
+                _activeSubFlow.value = null
+                notificationManager.showSuccess(UiText.Resource(Res.string.product_details_batch_edit_success))
+            }.onFailure { error ->
+                logger.e(TAG, "Falha ao atualizar lote: ${error.message}", error)
+                notificationManager.showError(UiText.Resource(Res.string.product_details_batch_edit_error, listOf(error.message ?: "")))
+            }
+        }
+    }
+
     fun onAddToShoppingList(listId: String, quantity: Double = 1.0) {
         val prodId = _productId.value ?: return
         viewModelScope.launch {
@@ -412,6 +443,7 @@ class ProductDetailsViewModel(
                 batchNumber = batch.batchNumber,
                 isExpired = isExpired,
                 daysUntilExpiration = daysUntil,
+                unitPriceInCents = batch.unitPriceInCents,
             )
         }.sortedBy { it.expirationDate ?: Long.MAX_VALUE }
 
