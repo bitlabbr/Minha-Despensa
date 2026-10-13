@@ -96,13 +96,13 @@ The `:core` module defines 11 use cases encapsulating discrete application busin
 *   **`AddPantryItemUseCase`**:
     *   Validates pantry item fields (positive quantity, valid IDs) and persists the item via `PantryRepository`.
 *   **`CreatePlannedShoppingListUseCase`**:
-    *   Creates a planned shopping list (`ShoppingListType.PLANNED`, `ShoppingListStatus.DRAFT`) with specified items and budget constraints.
+    *   Creates a planned shopping list (`ShoppingListType.PLANNED`, `ShoppingListStatus.DRAFT`) with specified items and budget constraints, automatically consolidating duplicate product drafts by summing quantities.
 *   **`CreateQuickShoppingListUseCase`**:
     *   Generates a quick scratchpad shopping list (`ShoppingListType.SCRATCHPAD`, `ShoppingListStatus.DRAFT`) parsing unformatted line items.
 *   **`AddCatalogItemToShoppingListUseCase`**:
-    *   Attaches a catalog product to an active shopping list as a `ShoppingItem`, capturing current catalog or price estimates.
+    *   Attaches a catalog product to an active shopping list as a `ShoppingItem`, accumulating quantity if the product is already present in the list.
 *   **`AddOrUpdateCartItemUseCase`**:
-    *   Handles in-cart item adjustments (quantity updates, price overrides, check/uncheck status) during a shopping trip.
+    *   Handles in-cart item adjustments (quantity updates, price overrides, check/uncheck status) during a shopping trip. Automatically consolidates product quantity if the product is already present in the active cart when adding without an explicit `existingItemId`.
 *   **`ReplaceCartItemUseCase`**:
     *   Replaces a shopping item in the cart during an active session with an alternative product or custom description, preserving quantity and overriding price.
 *   **`RemoveCartItemUseCase`**:

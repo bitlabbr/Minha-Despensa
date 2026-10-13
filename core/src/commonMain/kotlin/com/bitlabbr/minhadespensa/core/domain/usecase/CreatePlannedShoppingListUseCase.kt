@@ -55,20 +55,27 @@ class CreatePlannedShoppingListUseCase(
         val now = getCurrentTime()
         val listId = Uuid.random().toString()
 
-        val items = itemsDraft.map { draft ->
+        itemsDraft.forEach { draft ->
+            require(draft.productId.isNotBlank()) { "ID do produto inválido" }
             require(draft.quantity > 0.0) { "A quantidade deve ser maior que zero" }
-            ShoppingItem(
-                id = Uuid.random().toString(),
-                listId = listId,
-                productId = draft.productId,
-                rawText = null,
-                quantity = draft.quantity,
-                priceAtTime = null,
-                isChecked = false,
-                updatedAt = now,
-                isDeleted = false,
-            )
         }
+
+        val items = itemsDraft
+            .groupBy { it.productId }
+            .map { (productId, drafts) ->
+                val totalQuantity = drafts.sumOf { it.quantity }
+                ShoppingItem(
+                    id = Uuid.random().toString(),
+                    listId = listId,
+                    productId = productId,
+                    rawText = null,
+                    quantity = totalQuantity,
+                    priceAtTime = null,
+                    isChecked = false,
+                    updatedAt = now,
+                    isDeleted = false,
+                )
+            }
 
         val shoppingList = ShoppingList(
             id = listId,
