@@ -433,6 +433,111 @@ class PantryViewModelTest {
         testScheduler.advanceUntilIdle()
         assertNull(viewModel.uiState.value.activeSubFlow)
     }
+
+    @Test
+    fun `search query should filter active pantry items by brand`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod1 = CatalogProduct(id = "prod-leite", name = "Leite Integral", brand = "Piracanjuba", category = "Laticínios", updatedAt = 1000L)
+        val prod2 = CatalogProduct(id = "prod-arroz", name = "Arroz Branco", brand = "Tio João", category = "Grãos", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod1, null)
+        catalogRepository.insertProduct(prod2, null)
+
+        val item1 = PantryItemWithCategory(
+            pantryItem = PantryItem(id = "p-1", productId = prod1.id, quantity = 2.0, expirationDate = null, updatedAt = 1000L),
+            name = prod1.name,
+            category = prod1.category,
+        )
+        val item2 = PantryItemWithCategory(
+            pantryItem = PantryItem(id = "p-2", productId = prod2.id, quantity = 1.0, expirationDate = null, updatedAt = 1000L),
+            name = prod2.name,
+            category = prod2.category,
+        )
+        pantryRepository.customItemsWithCategory.value = listOf(item1, item2)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.listState.products.size)
+
+        // Busca pela marca "piracanjuba"
+        viewModel.onSearchQueryChanged("piracanjuba")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        val matchedItem1 = viewModel.uiState.value.listState.products.first()
+        assertEquals("prod-leite", matchedItem1.id)
+        assertEquals("Piracanjuba", matchedItem1.brand)
+        assertEquals(1, viewModel.uiState.value.searchResults.size)
+
+        // Busca pela marca "tio joao"
+        viewModel.onSearchQueryChanged("tio joao")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        val matchedItem2 = viewModel.uiState.value.listState.products.first()
+        assertEquals("prod-arroz", matchedItem2.id)
+        assertEquals("Tio João", matchedItem2.brand)
+
+        // Limpeza de busca
+        viewModel.onSearchQueryChanged("")
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.listState.products.size)
+        assertEquals(0, viewModel.uiState.value.searchResults.size)
+    }
+
+    @Test
+    fun `search query should filter active pantry items by combined name and brand`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "prod-cafe", name = "Café Tradicional", brand = "Pilão", category = "Bebidas", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val item = PantryItemWithCategory(
+            pantryItem = PantryItem(id = "p-cafe", productId = prod.id, quantity = 1.0, expirationDate = null, updatedAt = 1000L),
+            name = prod.name,
+            category = prod.category,
+        )
+        pantryRepository.customItemsWithCategory.value = listOf(item)
+        testScheduler.advanceUntilIdle()
+
+        // Busca pelo termo composto "cafe pilao" (sem acentos)
+        viewModel.onSearchQueryChanged("cafe pilao")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+        assertEquals("prod-cafe", viewModel.uiState.value.listState.products.first().id)
+        assertEquals("Pilão", viewModel.uiState.value.listState.products.first().brand)
+    }
+
+    @Test
+    fun `search query by brand should be accent and case insensitive`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "prod-choco", name = "Chocolate em Pó", brand = "Nestlé", category = "Doces", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val item = PantryItemWithCategory(
+            pantryItem = PantryItem(id = "p-choco", productId = prod.id, quantity = 3.0, expirationDate = null, updatedAt = 1000L),
+            name = prod.name,
+            category = prod.category,
+        )
+        pantryRepository.customItemsWithCategory.value = listOf(item)
+        testScheduler.advanceUntilIdle()
+
+        // Busca sem acento "nestle"
+        viewModel.onSearchQueryChanged("nestle")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+
+        // Busca maiúscula com acento "NESTLÉ"
+        viewModel.onSearchQueryChanged("NESTLÉ")
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.listState.products.size)
+
+        // Busca inexistente
+        viewModel.onSearchQueryChanged("MarcaInexistente")
+        testScheduler.advanceUntilIdle()
+        assertEquals(0, viewModel.uiState.value.listState.products.size)
+    }
 }
 
 

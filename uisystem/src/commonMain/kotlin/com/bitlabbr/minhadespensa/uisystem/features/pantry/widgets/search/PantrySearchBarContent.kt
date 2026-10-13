@@ -86,10 +86,15 @@ fun PantrySearchBarContent(
             placeholder = placeholder,
             supportingContent = { itemName ->
                 val item = itemsByName[itemName]
-                val infoText = when {
+                val baseInfo = when {
                     item == null -> stringResource(Res.string.pantry_search_bar_no_info)
                     item.isExpired -> stringResource(Res.string.pantry_search_bar_expired_product_warn)
                     else -> "${stringResource(Res.string.pantry_search_bar_sock_quantity)}: ${item.quantity} ${item.measureUnit.toAbbreviation()}"
+                }
+                val infoText = if (!item?.brand.isNullOrBlank()) {
+                    "${item.brand} • $baseInfo"
+                } else {
+                    baseInfo
                 }
 
                 MinhaDespensaText(
