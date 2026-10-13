@@ -157,6 +157,7 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 *   **`RoomPantryRepository`**:
     *   Encapsulates database and DAO as private members.
     *   `insertPantryItem`: Persists the pantry item and automatically records a `PriceEntry` with `storeName = "Entrada na Despensa"` when `unitPriceInCents != null`, keeping product price history updated.
+    *   `updatePantryItemIfNewer`: Updates pantry stock with LWW conflict resolution and automatically records a `PriceEntry` with `storeName = "Atualização de Lote"` when `unitPriceInCents != null` inside an immediate transaction.
     *   `consumePantryItem` and `consumeBatch`: Atomically validates stock, prevents consumption of soft-deleted items, and updates quantities inside an immediate transaction.
     *   `getExpiringPantryItems`: Accurately separates active non-expired items approaching the threshold from already expired items.
 *   **`RoomPriceRepository`**:
@@ -175,7 +176,7 @@ Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
 *   DAOs: `catalogDao`, `pantryDao`, `priceDao`, `shoppingListDao`.
 *   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
-*   Use Case Factories: Registers all 11 domain use cases (`SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`).
+*   Use Case Factories: Registers all 12 domain use cases (`SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`).
 
 ---
 

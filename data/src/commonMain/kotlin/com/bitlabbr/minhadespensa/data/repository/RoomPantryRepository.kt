@@ -110,21 +110,39 @@ class RoomPantryRepository(
         dao.forceUpdatePantryItem(item.toEntity())
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun updatePantryItemIfNewer(item: PantryItem) {
         logger.d(TAG, "updatePantryItemIfNewer item:$item")
         validatePantryItem(item)
-        val rowsAffected = dao.updatePantryItemIfNewer(
-            id = item.id,
-            productId = item.productId,
-            quantity = item.quantity,
-            updatedAt = item.updatedAt,
-            isDeleted = item.isDeleted,
-            expirationDate = item.expirationDate,
-            batchNumber = item.batchNumber,
-            unitPriceInCents = item.unitPriceInCents,
-        )
-        if (rowsAffected == 0) {
-            logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
+        db.useWriterConnection { connection ->
+            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                val rowsAffected = dao.updatePantryItemIfNewer(
+                    id = item.id,
+                    productId = item.productId,
+                    quantity = item.quantity,
+                    updatedAt = item.updatedAt,
+                    isDeleted = item.isDeleted,
+                    expirationDate = item.expirationDate,
+                    batchNumber = item.batchNumber,
+                    unitPriceInCents = item.unitPriceInCents,
+                )
+                if (rowsAffected == 0) {
+                    logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
+                } else {
+                    item.unitPriceInCents?.let { price ->
+                        db.priceDao().insertPriceEntry(
+                            PriceEntry(
+                                id = Uuid.random().toString(),
+                                productId = item.productId,
+                                priceInCents = price,
+                                storeName = "Atualização de Lote",
+                                updatedAt = item.updatedAt,
+                                isDeleted = false,
+                            ).toEntity()
+                        )
+                    }
+                }
+            }
         }
     }
 

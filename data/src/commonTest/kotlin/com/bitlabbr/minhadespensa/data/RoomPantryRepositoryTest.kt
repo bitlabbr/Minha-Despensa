@@ -106,6 +106,47 @@ class RoomPantryRepositoryTest : BaseTest() {
     }
 
     @Test
+    fun `should persist unitPriceInCents and create PriceEntry on updatePantryItemIfNewer`() = runTest {
+        val product = createDummyProduct(name = "Arroz Integral")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val initialItem = createDummyPantryItem(
+            productId = product.id,
+            quantity = 1.0,
+            unitPriceInCents = null,
+            updatedAt = now,
+        )
+        pantryRepository.insertPantryItem(initialItem)
+
+        // Verify initial item has null price and priceDao has 0 entries
+        val initialPrices = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(0, initialPrices.size)
+
+        // Update item with price
+        val updatedItem = initialItem.copy(
+            quantity = 2.0,
+            unitPriceInCents = 1250L,
+            batchNumber = "LOTE-XYZ",
+            updatedAt = now + 100,
+        )
+        pantryRepository.updatePantryItemIfNewer(updatedItem)
+
+        // 1. Retrieve pantry item and verify updated fields
+        val retrieved = pantryRepository.getPantryItemById(initialItem.id).first()
+        assertNotNull(retrieved)
+        assertEquals(2.0, retrieved.quantity)
+        assertEquals(1250L, retrieved.unitPriceInCents)
+        assertEquals("LOTE-XYZ", retrieved.batchNumber)
+
+        // 2. Verify PriceEntry was automatically inserted in db.priceDao()
+        val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, priceEntries.size)
+        assertEquals(1250L, priceEntries[0].priceInCents)
+        assertEquals("Atualização de Lote", priceEntries[0].storeName)
+    }
+
+    @Test
     fun `should ignore older sync updates for pantry items following LWW`() = runTest {
         val product = createDummyProduct()
         catalogRepository.insertProduct(product, null)
