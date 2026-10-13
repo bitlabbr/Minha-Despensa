@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
@@ -46,6 +47,8 @@ data class PantryItemEntity(
     val quantity: Double,
     val expirationDate: Long?,
     val batchNumber: String?,
+    @ColumnInfo(name = "unit_price_in_cents")
+    val unitPriceInCents: Long? = null,
     val updatedAt: Long,
     val isDeleted: Boolean
 )

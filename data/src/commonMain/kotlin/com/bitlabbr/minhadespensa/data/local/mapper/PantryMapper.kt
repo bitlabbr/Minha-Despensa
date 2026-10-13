@@ -36,6 +36,7 @@ fun PantryItemEntity.toDomain(): PantryItem = PantryItem(
     updatedAt = this.updatedAt,
     isDeleted = this.isDeleted,
     batchNumber = this.batchNumber,
+    unitPriceInCents = this.unitPriceInCents,
 )
 
 fun PantryItem.toEntity(): PantryItemEntity = PantryItemEntity(
@@ -46,6 +47,7 @@ fun PantryItem.toEntity(): PantryItemEntity = PantryItemEntity(
     updatedAt = this.updatedAt,
     isDeleted = this.isDeleted,
     batchNumber = this.batchNumber,
+    unitPriceInCents = this.unitPriceInCents,
 )
 
 fun PantryItemWithCategoryDaoResult.toDomain(): PantryItemWithCategory = PantryItemWithCategory(

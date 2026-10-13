@@ -425,10 +425,43 @@ val MIGRATION_1_4 = object : Migration(1, 4) {
     }
 }
 
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        if (!hasColumn(connection, "pantry_items", "unit_price_in_cents")) {
+            connection.execSQL("ALTER TABLE `pantry_items` ADD COLUMN `unit_price_in_cents` INTEGER DEFAULT NULL")
+        }
+    }
+}
+
+val MIGRATION_3_5 = object : Migration(3, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+    }
+}
+
+val MIGRATION_2_5 = object : Migration(2, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+    }
+}
+
+val MIGRATION_1_5 = object : Migration(1, 5) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+    }
+}
+
 val ALL_MIGRATIONS = arrayOf(
     MIGRATION_1_2,
     MIGRATION_2_3,
     MIGRATION_3_4,
     MIGRATION_1_4,
-    MIGRATION_2_4
+    MIGRATION_2_4,
+    MIGRATION_4_5,
+    MIGRATION_3_5,
+    MIGRATION_2_5,
+    MIGRATION_1_5
 )
