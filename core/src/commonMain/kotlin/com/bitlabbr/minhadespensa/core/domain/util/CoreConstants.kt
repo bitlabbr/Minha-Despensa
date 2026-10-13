@@ -56,7 +56,9 @@ object CoreConstants {
     object Validation {
         const val ERROR_PRODUCT_CATEGORY_TOO_LONG = "A categoria ultrapassa o limite máximo de"
         const val ERROR_PRODUCT_ID_REQUIRED = "O ID do produto é obrigatório"
+        const val ERROR_PANTRY_ITEM_ID_REQUIRED = "O ID do item da despensa é obrigatório"
         const val ERROR_PANTRY_QUANTITY_POSITIVE = "A quantidade adicionada deve ser maior que zero"
+        const val ERROR_PANTRY_QUANTITY_NON_NEGATIVE = "A quantidade não pode ser negativa"
         const val ERROR_PRODUCT_NAME_BLANK = "O nome do produto não pode ser vazio"
         const val ERROR_PRODUCT_NAME_TOO_LONG = "O nome do produto excede o limite máximo de caracteres"
         const val ERROR_PRODUCT_NET_WEIGHT_POSITIVE = "O peso ou quantidade líquida deve ser maior que zero"
