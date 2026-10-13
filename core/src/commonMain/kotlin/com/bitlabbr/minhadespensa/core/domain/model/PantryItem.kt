@@ -32,6 +32,7 @@ data class PantryItem(
     val quantity: Double,
     val expirationDate: Long?,
     val batchNumber: String? = null,
+    val unitPriceInCents: Long? = null,
     val updatedAt: Long,
     val isDeleted: Boolean = false
 )
