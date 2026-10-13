@@ -498,6 +498,7 @@ fun ShoppingAssistantScreen(
                     initialQuantity = subFlow.initialQuantity,
                     initialPrice = subFlow.initialPriceInCents,
                     isReplacement = subFlow.isReplacement,
+                    existingQuantityInCart = subFlow.existingQuantityInCart,
                     onReplaceItem = if (!subFlow.isReplacement && subFlow.existingItemId != null) {
                         val item = uiState.items.find { it.id == subFlow.existingItemId }
                         if (item != null) { { viewModel.onReplaceItemClicked(item) } } else null

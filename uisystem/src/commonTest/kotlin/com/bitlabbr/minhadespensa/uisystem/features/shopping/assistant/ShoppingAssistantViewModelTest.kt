@@ -1448,4 +1448,141 @@ class ShoppingAssistantViewModelTest {
         assertEquals(2, viewModel.uiState.value.checkedCount)
         assertEquals(2, viewModel.uiState.value.totalCount)
     }
+
+    @Test
+    fun `onProductSelectedForNewItem when product is already in list should pass existingQuantityInCart`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-leite-dup", name = "Leite Integral", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val listId = "list-dup-check"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.SHOPPING,
+                items = listOf(
+                    ShoppingItem(
+                        id = "item-leite",
+                        listId = listId,
+                        productId = "p-leite-dup",
+                        quantity = 3.0,
+                        priceAtTime = 550L,
+                        isChecked = true,
+                        updatedAt = 1000L,
+                    ),
+                ),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onProductSelectedForNewItem(prod)
+        testScheduler.advanceUntilIdle()
+
+        val active = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(active)
+        assertEquals("p-leite-dup", active.product?.id)
+        assertEquals(3.0, active.existingQuantityInCart)
+        assertEquals(550L, active.initialPriceInCents)
+        assertFalse(active.isReplacement)
+    }
+
+    @Test
+    fun `onConfirmItemDetails when product is already in list should consolidate quantity into existing item`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-arroz-dup", name = "Arroz 5kg", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val listId = "list-consolidate"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.SHOPPING,
+                items = listOf(
+                    ShoppingItem(
+                        id = "item-arroz",
+                        listId = listId,
+                        productId = "p-arroz-dup",
+                        quantity = 2.0,
+                        priceAtTime = 2500L,
+                        isChecked = false,
+                        updatedAt = 1000L,
+                    ),
+                ),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.items.size)
+
+        // Usuário adiciona mais 3 unidades do mesmo produto (sem existingItemId)
+        viewModel.onConfirmItemDetails(
+            product = prod,
+            rawText = null,
+            quantity = 3.0,
+            priceInCents = 2600L,
+            existingItemId = null,
+        )
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.items.size, "Não deve criar linha duplicada na lista")
+        val item = state.items.first()
+        assertEquals("p-arroz-dup", item.productId)
+        assertEquals(5.0, item.quantity, "Deve consolidar somando 2.0 + 3.0 = 5.0")
+        assertEquals(2600L, item.priceAtTime)
+        assertTrue(item.isChecked)
+    }
+
+    @Test
+    fun `onBarcodeScanned when product is already in list should pass existingQuantityInCart`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-feijao-ean", name = "Feijão Preto", ean = "7891112223334", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val listId = "list-ean-dup"
+        shoppingListRepository.insertShoppingList(
+            ShoppingList(
+                id = listId,
+                name = "Lista",
+                type = ShoppingListType.ASSISTANT,
+                status = ShoppingListStatus.SHOPPING,
+                items = listOf(
+                    ShoppingItem(
+                        id = "item-feijao",
+                        listId = listId,
+                        productId = "p-feijao-ean",
+                        quantity = 1.0,
+                        priceAtTime = 800L,
+                        isChecked = true,
+                        updatedAt = 1000L,
+                    ),
+                ),
+                updatedAt = 1000L,
+            ),
+        )
+
+        viewModel.startSession(listId)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onBarcodeScanned("7891112223334")
+        testScheduler.advanceUntilIdle()
+
+        val active = viewModel.uiState.value.activeSubFlow
+        assertIs<ShoppingAssistantSubFlow.AddItemDetails>(active)
+        assertEquals("p-feijao-ean", active.product?.id)
+        assertEquals(1.0, active.existingQuantityInCart)
+        assertEquals(800L, active.initialPriceInCents)
+    }
 }

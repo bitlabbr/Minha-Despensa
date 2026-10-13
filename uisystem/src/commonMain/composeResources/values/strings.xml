@@ -157,6 +157,8 @@
     <string name="shopping_assistant_item_name_label">Nome do Item</string>
     <string name="shopping_assistant_item_name_placeholder">Ex: Frutas, Detergente, Pão...</string>
     <string name="shopping_assistant_add_as_text">Adicionar '%1$s' como texto livre</string>
+    <string name="shopping_assistant_duplicate_item_warning">Este produto já está na lista (%1$s un). A nova quantidade informada será somada.</string>
+    <string name="shopping_assistant_add_sum_confirm">Somar à Lista</string>
     <string name="shopping_assistant_finalize_stock">Finalizar</string>
     <string name="shopping_assistant_finalize_dialog_title">Finalizar Compra?</string>
     <string name="shopping_assistant_finalize_dialog_desc">Ao finalizar, todos os itens marcados no carrinho serão adicionados diretamente ao estoque da sua despensa e esta lista será concluída.</string>

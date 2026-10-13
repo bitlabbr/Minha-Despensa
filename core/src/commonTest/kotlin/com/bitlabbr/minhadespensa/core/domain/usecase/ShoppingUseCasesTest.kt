@@ -173,7 +173,32 @@ class ShoppingUseCasesTest {
     }
 
     @Test
-    fun `AddOrUpdateCartItemUseCase should insert new item when existingItemId is null`() = runTest {
+    fun `CreatePlannedShoppingListUseCase should consolidate duplicate drafts with same productId`() = runTest {
+        val drafts = listOf(
+            PlannedItemDraft(productId = "prod-1", quantity = 2.0),
+            PlannedItemDraft(productId = "prod-2", quantity = 1.0),
+            PlannedItemDraft(productId = "prod-1", quantity = 3.0),
+        )
+
+        val result = createPlannedListUseCase(
+            name = "Compras Consolidadas",
+            budgetInCents = 10000L,
+            itemsDraft = drafts,
+        )
+
+        assertTrue(result.isSuccess)
+        val list = result.getOrThrow()
+        assertEquals(2, list.items.size)
+        val prod1Item = list.items.find { it.productId == "prod-1" }
+        assertNotNull(prod1Item)
+        assertEquals(5.0, prod1Item.quantity) // 2.0 + 3.0
+        val prod2Item = list.items.find { it.productId == "prod-2" }
+        assertNotNull(prod2Item)
+        assertEquals(1.0, prod2Item.quantity)
+    }
+
+    @Test
+    fun `AddOrUpdateCartItemUseCase should consolidate quantity when adding same productId without existingItemId`() = runTest {
         val list = ShoppingList(
             id = "list-1",
             name = "Compras de Teste",
@@ -191,27 +216,89 @@ class ShoppingUseCasesTest {
         )
         assertTrue(firstAddResult.isSuccess)
 
-        // 2. Scan the same product again, adding it as a new item into the cart
+        // 2. Scan the same product again, consolidating into the existing item
         val secondAddResult = addOrUpdateCartItemUseCase(
             listId = "list-1",
             productId = "prod-1",
             quantity = 1.0,
-            priceAtTimeInCents = 800L, // R$ 8.00
+            priceAtTimeInCents = 800L, // R$ 8.00 (updates price)
         )
         assertTrue(secondAddResult.isSuccess)
 
         val updatedList = repository.getShoppingListById("list-1").first()
         assertNotNull(updatedList)
-        assertEquals(2, updatedList.items.size)
-        val item1 = updatedList.items[0]
-        assertEquals(2.0, item1.quantity)
-        assertEquals(750L, item1.priceAtTime)
-        assertTrue(item1.isChecked)
+        assertEquals(1, updatedList.items.size)
+        val consolidatedItem = updatedList.items[0]
+        assertEquals("prod-1", consolidatedItem.productId)
+        assertEquals(3.0, consolidatedItem.quantity) // 2.0 + 1.0
+        assertEquals(800L, consolidatedItem.priceAtTime)
+        assertTrue(consolidatedItem.isChecked)
+    }
 
-        val item2 = updatedList.items[1]
-        assertEquals(1.0, item2.quantity)
-        assertEquals(800L, item2.priceAtTime)
-        assertTrue(item2.isChecked)
+    @Test
+    fun `AddOrUpdateCartItemUseCase should insert separate items when productIds differ`() = runTest {
+        val list = ShoppingList(
+            id = "list-separate",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val firstAddResult = addOrUpdateCartItemUseCase(
+            listId = "list-separate",
+            productId = "prod-1",
+            quantity = 2.0,
+            priceAtTimeInCents = 500L,
+        )
+        assertTrue(firstAddResult.isSuccess)
+
+        val secondAddResult = addOrUpdateCartItemUseCase(
+            listId = "list-separate",
+            productId = "prod-2",
+            quantity = 1.0,
+            priceAtTimeInCents = 800L,
+        )
+        assertTrue(secondAddResult.isSuccess)
+
+        val updatedList = repository.getShoppingListById("list-separate").first()
+        assertNotNull(updatedList)
+        assertEquals(2, updatedList.items.size)
+    }
+
+    @Test
+    fun `AddOrUpdateCartItemUseCase should insert new item if existing item with same productId is deleted`() = runTest {
+        val deletedItem = ShoppingItem(
+            id = "item-del",
+            listId = "list-del-prod",
+            productId = "prod-1",
+            quantity = 2.0,
+            isDeleted = true,
+            updatedAt = 1000L,
+        )
+        val list = ShoppingList(
+            id = "list-del-prod",
+            name = "Compras",
+            type = ShoppingListType.ASSISTANT,
+            items = listOf(deletedItem),
+            updatedAt = 1000L,
+        )
+        repository.insertShoppingList(list)
+
+        val result = addOrUpdateCartItemUseCase(
+            listId = "list-del-prod",
+            productId = "prod-1",
+            quantity = 3.0,
+            priceAtTimeInCents = 700L,
+        )
+        assertTrue(result.isSuccess)
+
+        val updatedList = repository.getShoppingListById("list-del-prod").first()
+        assertNotNull(updatedList)
+        val activeItems = updatedList.items.filter { !it.isDeleted }
+        assertEquals(1, activeItems.size)
+        assertEquals(3.0, activeItems.first().quantity)
+        assertEquals("prod-1", activeItems.first().productId)
     }
 
     @Test
