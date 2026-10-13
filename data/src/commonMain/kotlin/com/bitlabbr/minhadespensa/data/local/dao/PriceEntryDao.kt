@@ -41,6 +41,9 @@ interface PriceEntryDao {
     @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC LIMIT 1")
     fun getLatestPriceForProductId(productId: String): Flow<PriceEntryEntity?>
 
+    @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC LIMIT 1")
+    suspend fun findLatestPriceForProductId(productId: String): PriceEntryEntity?
+
     @Query("UPDATE price_entries SET isDeleted = 1, updatedAt = :updatedAt WHERE id = :id AND updatedAt <= :updatedAt")
     suspend fun markPriceEntryAsDeleted(id: String, updatedAt: Long): Int
 

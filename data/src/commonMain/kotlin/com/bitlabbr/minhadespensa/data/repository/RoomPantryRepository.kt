@@ -130,16 +130,19 @@ class RoomPantryRepository(
                     logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
                 } else {
                     item.unitPriceInCents?.let { price ->
-                        db.priceDao().insertPriceEntry(
-                            PriceEntry(
-                                id = Uuid.random().toString(),
-                                productId = item.productId,
-                                priceInCents = price,
-                                storeName = "Atualização de Lote",
-                                updatedAt = item.updatedAt,
-                                isDeleted = false,
-                            ).toEntity()
-                        )
+                        val latestPrice = db.priceDao().findLatestPriceForProductId(item.productId)
+                        if (latestPrice == null || latestPrice.priceInCents != price) {
+                            db.priceDao().insertPriceEntry(
+                                PriceEntry(
+                                    id = Uuid.random().toString(),
+                                    productId = item.productId,
+                                    priceInCents = price,
+                                    storeName = "Atualização de Lote",
+                                    updatedAt = item.updatedAt,
+                                    isDeleted = false,
+                                ).toEntity()
+                            )
+                        }
                     }
                 }
             }

@@ -144,6 +144,25 @@ class RoomPantryRepositoryTest : BaseTest() {
         assertEquals(1, priceEntries.size)
         assertEquals(1250L, priceEntries[0].priceInCents)
         assertEquals("Atualização de Lote", priceEntries[0].storeName)
+
+        // 3. Update item again with same price: should NOT duplicate PriceEntry
+        val samePriceUpdate = updatedItem.copy(
+            batchNumber = "LOTE-ABC",
+            updatedAt = now + 200,
+        )
+        pantryRepository.updatePantryItemIfNewer(samePriceUpdate)
+        val pricesAfterSamePrice = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, pricesAfterSamePrice.size, "Price history should not contain duplicate entry for unchanged price")
+
+        // 4. Update item with different price: SHOULD insert new PriceEntry
+        val differentPriceUpdate = updatedItem.copy(
+            unitPriceInCents = 1500L,
+            updatedAt = now + 300,
+        )
+        pantryRepository.updatePantryItemIfNewer(differentPriceUpdate)
+        val pricesAfterDiffPrice = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(2, pricesAfterDiffPrice.size, "Price history should record new entry when price changes")
+        assertEquals(1500L, pricesAfterDiffPrice[0].priceInCents)
     }
 
     @Test
