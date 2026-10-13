@@ -127,7 +127,7 @@ This guarantees only one sub-flow modal (camera scanner, registration form, item
 ### 4.6. Accent-Insensitive Search & Normalization
 To provide a smooth search experience for Brazilian Portuguese diacritics and special characters (`pao` -> `pão`, `maca` -> `maçã`, `acucar` -> `açúcar`), all reactive list filters in `:uisystem` utilize `TextNormalizer.matchesSearchQuery(query)`:
 - **`CatalogViewModel`:** Filters catalog items reactive stream matching against product name and brand.
-- **`PantryViewModel`:** Filters pantry inventory items reactive stream matching against item name.
+- **`PantryViewModel`:** Filters pantry inventory items reactive stream matching against item name, brand, or combined name and brand tokens.
 - **`PlannedListViewModel`:** Filters available catalog products matching against name, brand, and category.
 - **`ShoppingAssistantViewModel`:** Filters active cart items reactive stream matching against product name, category, and brand.
 - **`CatalogProductPickerSheet`:** Filters catalog products matching against name and brand within the bottom sheet picker.
@@ -152,7 +152,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 98 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 123 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -162,13 +162,15 @@ All 98 unit tests reside in `uisystem/src/commonTest` and execute across multipl
 | `CatalogProductUiModelTest` | Formats unit weights, packaging info, and handles missing brands. |
 | `ProductFormStateTest` | Form validation: required name, length restrictions, numeric weight parsing. |
 | `ProductFormValidatorTest` | Tests standalone form validation logic across name, brand, weight, category, and notes. |
+| `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
+| `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
 | `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, barcode scanner subflows, item replacement, purchase finalization. |
 | `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
-| `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering, barcode scanned transitions, pantry item persistence, notification dispatch. |
+| `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
 | `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, add to shopping list. |
 
 ### Running the Tests
