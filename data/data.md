@@ -156,8 +156,8 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   Aligns media timestamps directly with `product.updatedAt`.
 *   **`RoomPantryRepository`**:
     *   Encapsulates database and DAO as private members.
-    *   `insertPantryItem`: Persists the pantry item and automatically records a `PriceEntry` with `storeName = "Entrada na Despensa"` when `unitPriceInCents != null`, keeping product price history updated.
-    *   `updatePantryItemIfNewer`: Updates pantry stock with LWW conflict resolution and automatically records a `PriceEntry` with `storeName = "Atualização de Lote"` when `unitPriceInCents != null` inside an immediate transaction, deduplicating consecutive updates if the unit price has not changed.
+    *   `insertPantryItem`: Persists the pantry item directly via DAO (ensuring Room's `InvalidationTracker` notifies active Flow query collectors) and automatically records a `PriceEntry` with `storeName = "Entrada na Despensa"` when `unitPriceInCents != null`, keeping product price history updated.
+    *   `updatePantryItemIfNewer`: Updates pantry stock with LWW conflict resolution directly via DAO (notifying active Flow collectors) and automatically records a `PriceEntry` with `storeName = "Atualização de Lote"` when `unitPriceInCents != null`, deduplicating consecutive updates if the unit price has not changed.
     *   `consumePantryItem` and `consumeBatch`: Atomically validates stock, prevents consumption of soft-deleted items, and updates quantities inside an immediate transaction.
     *   `getExpiringPantryItems`: Accurately separates active non-expired items approaching the threshold from already expired items.
 *   **`RoomPriceRepository`**:

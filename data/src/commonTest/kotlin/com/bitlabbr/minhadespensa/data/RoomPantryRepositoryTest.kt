@@ -82,6 +82,47 @@ class RoomPantryRepositoryTest : BaseTest() {
     }
 
     @Test
+    fun `insertPantryItem should reactively emit new list in getAllActivePantryItemsWithCategory`() = runTest {
+        val product = createDummyProduct(name = "Café")
+        catalogRepository.insertProduct(product, null)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            assertEquals(0, awaitItem().size)
+
+            val pantryItem = createDummyPantryItem(productId = product.id, quantity = 3.0)
+            pantryRepository.insertPantryItem(pantryItem)
+
+            val updated = awaitItem()
+            assertEquals(1, updated.size)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `updatePantryItemIfNewer should reactively emit updated item in getAllActivePantryItemsWithCategory`() = runTest {
+        val product = createDummyProduct(name = "Macarrão")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val item = createDummyPantryItem(productId = product.id, quantity = 2.0, updatedAt = now)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            val initialList = awaitItem()
+            assertEquals(1, initialList.size)
+            assertEquals(2.0, initialList[0].pantryItem.quantity)
+
+            val updatedItem = item.copy(quantity = 5.0, updatedAt = now + 100)
+            pantryRepository.updatePantryItemIfNewer(updatedItem)
+
+            val updatedList = awaitItem()
+            assertEquals(1, updatedList.size)
+            assertEquals(5.0, updatedList[0].pantryItem.quantity)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `should persist unitPriceInCents and create PriceEntry on insertion`() = runTest {
         val product = createDummyProduct(name = "Feijão Preto")
         catalogRepository.insertProduct(product, null)

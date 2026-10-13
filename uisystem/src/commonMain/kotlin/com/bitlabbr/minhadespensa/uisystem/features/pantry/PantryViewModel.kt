@@ -74,6 +74,11 @@ class PantryViewModel(
         val allUiItems = aggregatePantryItems(allItems, catalogMap)
         val isPantryEmpty = allUiItems.isEmpty()
 
+        logger.d(
+            TAG,
+            "uiState recomputed: allItems=${allItems.size}, allUiItems=${allUiItems.size}, expiring=${expiringItems.size}, query='$query', category=$selectedCategory"
+        )
+
         val dynamicCategories =
             (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allUiItems.map { it.category.trim() })
                 .filter { it.isNotBlank() }
@@ -210,6 +215,7 @@ class PantryViewModel(
         batchNumber: String?,
         unitPriceInCents: Long? = null,
     ) {
+        logger.d(TAG, "onConfirmAddPantryItem: productId=$productId, quantity=$quantity, unitPriceInCents=$unitPriceInCents")
         viewModelScope.launch {
             val result = addPantryItemUseCase(
                 productId = productId,
@@ -220,6 +226,7 @@ class PantryViewModel(
             )
 
             result.onSuccess {
+                logger.d(TAG, "onConfirmAddPantryItem: successfully added item with productId=$productId")
                 _activeSubFlow.value = null
                 notificationManager.showSuccess(UiText.Resource(Res.string.pantry_item_added_success))
             }.onFailure { error ->
