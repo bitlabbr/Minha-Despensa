@@ -70,7 +70,8 @@ class PantryViewModel(
         _activeSubFlow,
     ) { allItems, expiringItems, catalogProducts, (query, selectedCategory), subFlow ->
 
-        val allUiItems = aggregatePantryItems(allItems)
+        val catalogMap = catalogProducts.associateBy { it.id }
+        val allUiItems = aggregatePantryItems(allItems, catalogMap)
         val isPantryEmpty = allUiItems.isEmpty()
 
         val dynamicCategories =
@@ -83,7 +84,9 @@ class PantryViewModel(
             val matchesCategory = selectedCategory == null ||
                     item.category.equals(selectedCategory, ignoreCase = true)
             val matchesQuery = query.isBlank() ||
-                    item.name.matchesSearchQuery(query)
+                    item.name.matchesSearchQuery(query) ||
+                    (item.brand?.matchesSearchQuery(query) == true) ||
+                    "${item.name} ${item.brand.orEmpty()}".matchesSearchQuery(query)
 
             matchesCategory && matchesQuery
         }
@@ -91,7 +94,11 @@ class PantryViewModel(
         val searchResults = if (query.isBlank()) {
             emptyList()
         } else {
-            allUiItems.filter { it.name.matchesSearchQuery(query) }
+            allUiItems.filter { item ->
+                item.name.matchesSearchQuery(query) ||
+                        (item.brand?.matchesSearchQuery(query) == true) ||
+                        "${item.name} ${item.brand.orEmpty()}".matchesSearchQuery(query)
+            }
         }
 
         PantryUiState(
@@ -106,7 +113,7 @@ class PantryViewModel(
                 error = null,
             ),
             allActivePantryItems = allUiItems,
-            expiringPantryItems = aggregatePantryItems(expiringItems).sortedBy { it.expirationDate ?: Long.MAX_VALUE },
+            expiringPantryItems = aggregatePantryItems(expiringItems, catalogMap).sortedBy { it.expirationDate ?: Long.MAX_VALUE },
             searchResults = searchResults,
             availableCatalogProducts = catalogProducts,
             activeSubFlow = subFlow,
@@ -220,7 +227,10 @@ class PantryViewModel(
         }
     }
 
-    private fun aggregatePantryItems(items: List<PantryItemWithCategory>): List<PantryItemUiModel> {
+    private fun aggregatePantryItems(
+        items: List<PantryItemWithCategory>,
+        catalogMap: Map<String, CatalogProduct> = emptyMap(),
+    ): List<PantryItemUiModel> {
         val now = Clock.System.now().toEpochMilliseconds()
         return items
             .filter { it.pantryItem.quantity > 0.0 }
@@ -234,15 +244,16 @@ class PantryViewModel(
                 val isExpired = groupedItems.any { item ->
                     item.pantryItem.expirationDate?.let { exp -> exp < now } ?: false
                 }
+                val product = catalogMap[productId]
 
                 PantryItemUiModel(
                     id = productId,
                     name = firstItem.name,
                     category = firstItem.category,
-                    brand = null,
+                    brand = product?.brand,
                     quantity = totalQuantity,
-                    measureUnit = CoreConstants.Product.DEFAULT_MEASURE_UNIT,
-                    netWeight = CoreConstants.Product.DEFAULT_NET_WEIGHT,
+                    measureUnit = product?.measureUnit ?: CoreConstants.Product.DEFAULT_MEASURE_UNIT,
+                    netWeight = product?.netWeight ?: CoreConstants.Product.DEFAULT_NET_WEIGHT,
                     expirationDate = closestExpirationDate,
                     isExpired = isExpired,
                 )
