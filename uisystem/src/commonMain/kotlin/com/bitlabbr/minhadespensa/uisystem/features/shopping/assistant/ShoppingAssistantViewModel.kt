@@ -239,20 +239,29 @@ class ShoppingAssistantViewModel(
 
     fun onProductSelectedForNewItem(product: CatalogProduct) {
         if (uiState.value.isCompleted) return
+        val existingItem = uiState.value.items.find { it.productId == product.id }
         _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
             product = product,
             initialQuantity = 1.0,
+            initialPriceInCents = existingItem?.priceAtTime,
             isReplacement = false,
+            existingQuantityInCart = existingItem?.quantity,
         )
     }
 
     fun onStartAddTextItem(initialText: String? = null) {
         if (uiState.value.isCompleted) return
+        val trimmed = initialText?.trim()
+        val existingItem = if (!trimmed.isNullOrBlank()) {
+            uiState.value.items.find { it.productId == null && it.displayName.equals(trimmed, ignoreCase = true) }
+        } else null
         _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
             product = null,
             rawText = initialText,
             initialQuantity = 1.0,
+            initialPriceInCents = existingItem?.priceAtTime,
             isReplacement = false,
+            existingQuantityInCart = existingItem?.quantity,
         )
     }
 
@@ -271,9 +280,12 @@ class ShoppingAssistantViewModel(
         viewModelScope.launch {
             when (val status = checkEanStatusUseCase(sanitizedEan)) {
                 is EanStatus.Found -> {
+                    val existingItem = uiState.value.items.find { it.productId == status.product.id }
                     _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
                         product = status.product,
                         initialQuantity = 1.0,
+                        initialPriceInCents = existingItem?.priceAtTime,
+                        existingQuantityInCart = existingItem?.quantity,
                     )
                 }
                 is EanStatus.NotFound, is EanStatus.InvalidFormat -> {
@@ -295,9 +307,12 @@ class ShoppingAssistantViewModel(
                 isReplacement = true,
             )
         } else {
+            val existingItem = uiState.value.items.find { it.productId == product.id }
             _activeSubFlow.value = ShoppingAssistantSubFlow.AddItemDetails(
                 product = product,
                 initialQuantity = 1.0,
+                initialPriceInCents = existingItem?.priceAtTime,
+                existingQuantityInCart = existingItem?.quantity,
             )
         }
     }

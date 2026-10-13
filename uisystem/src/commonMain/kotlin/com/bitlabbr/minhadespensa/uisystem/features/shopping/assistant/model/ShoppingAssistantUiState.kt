@@ -40,6 +40,7 @@ sealed interface ShoppingAssistantSubFlow {
         val initialQuantity: Double = 1.0,
         val initialPriceInCents: Long? = null,
         val isReplacement: Boolean = false,
+        val existingQuantityInCart: Double? = null,
     ) : ShoppingAssistantSubFlow
     data class ReplaceItemOptions(
         val item: CartItemUiModel,

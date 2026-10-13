@@ -24,14 +24,20 @@
 package com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.widgets
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.DeleteOutline
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -54,6 +60,7 @@ fun AddCartItemDetailsSheet(
     initialQuantity: Double,
     initialPrice: Long?,
     isReplacement: Boolean = false,
+    existingQuantityInCart: Double? = null,
     onReplaceItem: (() -> Unit)? = null,
     onRemoveItem: (() -> Unit)? = null,
     onConfirm: (name: String?, quantity: Double, price: Long?) -> Unit,
@@ -132,6 +139,46 @@ fun AddCartItemDetailsSheet(
                         maxCharacters = CoreConstants.Product.NAME_MAX_LENGTH,
                         isRequired = true,
                     )
+                }
+                if (existingQuantityInCart != null) {
+                    val formattedExistingQty = if (existingQuantityInCart % 1.0 == 0.0) {
+                        existingQuantityInCart.toLong().toString()
+                    } else {
+                        existingQuantityInCart.toString().replace('.', ',')
+                    }
+                    Spacer(Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(dimens.cardCorner * 0.4f))
+                            .background(colors.primary.copy(alpha = 0.12f))
+                            .border(
+                                width = 1.dp,
+                                color = colors.primary.copy(alpha = 0.35f),
+                                shape = RoundedCornerShape(dimens.cardCorner * 0.4f),
+                            )
+                            .padding(12.dp),
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Info,
+                                contentDescription = null,
+                                tint = colors.primary,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                text = stringResource(
+                                    Res.string.shopping_assistant_duplicate_item_warning,
+                                    formattedExistingQty,
+                                ),
+                                style = typography.bodySmall,
+                                color = colors.onSurface,
+                            )
+                        }
+                    }
                 }
 
                 Spacer(Modifier.height(8.dp))
@@ -221,6 +268,12 @@ fun AddCartItemDetailsSheet(
                     val qtyValue = quantityText.replace(',', '.').toDoubleOrNull() ?: 0.0
                     val isQtyValid = qtyValue > 0.0
 
+                    val confirmButtonText = if (existingQuantityInCart != null) {
+                        stringResource(Res.string.shopping_assistant_add_sum_confirm)
+                    } else {
+                        "Confirmar"
+                    }
+
                     Button(
                         onClick = {
                             val price = priceText.replace(',', '.').toDoubleOrNull()?.let { (it * 100).roundToLong() }
@@ -230,7 +283,7 @@ fun AddCartItemDetailsSheet(
                         enabled = isNameValid && isQtyValid,
                         modifier = Modifier.weight(1.5f),
                     ) {
-                        Text("Confirmar")
+                        Text(confirmButtonText)
                     }
                 }
             }
