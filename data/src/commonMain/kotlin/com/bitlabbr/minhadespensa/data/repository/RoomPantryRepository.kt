@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
+import androidx.room.Transactor
+import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
@@ -83,18 +85,22 @@ class RoomPantryRepository(
     override suspend fun insertPantryItem(item: PantryItem) {
         logger.d(TAG, "insertPantryItem item: $item")
         validatePantryItem(item)
-        dao.insertPantryItem(item.toEntity())
-        item.unitPriceInCents?.let { price ->
-            db.priceDao().insertPriceEntry(
-                PriceEntry(
-                    id = Uuid.random().toString(),
-                    productId = item.productId,
-                    priceInCents = price,
-                    storeName = "Entrada na Despensa",
-                    updatedAt = item.updatedAt,
-                    isDeleted = false,
-                ).toEntity()
-            )
+        db.useWriterConnection { connection ->
+            connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                dao.insertPantryItem(item.toEntity())
+                item.unitPriceInCents?.let { price ->
+                    db.priceDao().insertPriceEntry(
+                        PriceEntry(
+                            id = Uuid.random().toString(),
+                            productId = item.productId,
+                            priceInCents = price,
+                            storeName = "Entrada na Despensa",
+                            updatedAt = item.updatedAt,
+                            isDeleted = false,
+                        ).toEntity()
+                    )
+                }
+            }
         }
     }
 
