@@ -35,7 +35,7 @@ Navegue pelos tópicos usando o menu lateral ou pelos atalhos abaixo:
 * **[[Módulo :uisystem|Module-UISystem]]:** Design System proprietário em Glassmorphism, tokens de tipografia, máquinas de estado e telas do app.
 
 ### 🧪 Testes & Guias
-* **[[Guia do Testador Alpha|Alpha-Testing-Guide]]:** Instruções de instalação do APK `v1.0.0-alpha` para amigos e roteiro de testes.
+* **[[Guia do Testador Alpha|Alpha-Testing-Guide]]:** Instruções de instalação do APK `v1.0.1-alpha` para amigos e roteiro de testes.
 * **[[Roadmap & Próximos Passos|Roadmap]]:** Planejamento de inteligência de consumo, receitas e notificações nativas.
 
 ---
@@ -53,4 +53,4 @@ Navegue pelos tópicos usando o menu lateral ou pelos atalhos abaixo:
 | **Serialização** | kotlinx.serialization |
 | **Datas & Tempo** | kotlinx.datetime |
 | **Scanner de Código** | CameraX + Google ML Kit Barcode Scanning |
-| **Testes Automatizados** | 279 testes unitários (Turbine, In-Memory SQLite, Fake Repositories) |
+| **Testes Automatizados** | 327 testes unitários (Turbine, In-Memory SQLite, Fake Repositories) |

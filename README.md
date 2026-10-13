@@ -1,6 +1,7 @@
 # MinhaDespensa 🛒
 
 [![CI Check](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml/badge.svg)](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/badge/Release-v1.0.1--alpha-00E676?logo=android&logoColor=white)](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.0.1-alpha)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpack-compose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room-KMP-3DDC84?logo=android&logoColor=white)
@@ -238,7 +239,7 @@ The `:core` domain layer defines 11 use cases that orchestrate application logic
 | Pantry domain and persistence | ✅ Implemented |
 | Pantry single & batch consumption | ✅ Implemented |
 | Pantry reactive ViewModel | ✅ Implemented |
-| Automated CI & Unit Tests (279 tests) | ✅ Implemented |
+| Automated CI & Unit Tests (327 tests) | ✅ Implemented |
 | Barcode scanner integration (CameraX/ML Kit) | ✅ Implemented |
 | Unified product registration sheet | ✅ Implemented |
 | Expiration tracking & thresholds | 🚧 In development |
@@ -525,11 +526,11 @@ MinhaDespensa/
 
 # 🧪 Testing & Continuous Integration
 
-MinhaDespensa maintains a comprehensive automated testing suite with **279 unit tests**:
+MinhaDespensa maintains a comprehensive automated testing suite with **327 unit tests**:
 
-- **`:core` (52 tests)**: Multiplatform tests verifying 11 use case business rules, barcode validation, domain metrics, clock-drift tolerances, and model serialization.
-- **`:data` (132 tests)**: In-memory Room SQLite tests validating DAOs, Last-Write-Wins (LWW) conflict handling, entity-domain mappers, cascade deletes, Room v1-v4 schema migrations, and multi-table transactions (`finalizePurchase`, `consumeBatch`).
-- **`:uisystem` (94 tests)**: ViewModel state machines, form validation rules, currency formatting (`R$ 1.234,56`), and notification bus events.
+- **`:core` (65 tests)**: Multiplatform tests verifying 11 use case business rules, text normalizer (accent-insensitive search), barcode validation, domain metrics, duplicate item consolidation, clock-drift tolerances, and model serialization.
+- **`:data` (135 tests)**: In-memory Room SQLite tests validating DAOs, Last-Write-Wins (LWW) conflict handling, entity-domain mappers, cascade deletes, Room v1-v4 schema migrations, and multi-table transactions (`finalizePurchase`, `consumeBatch`).
+- **`:uisystem` (126 tests)**: ViewModel state machines, catalog & pantry options flows, shopping assistant inline filters, duplicate item warnings, form validation rules, currency formatting (`R$ 1.234,56`), barcode ROI validator, stabilizer, and notification bus events.
 - **`:composeApp` (1 test)**: Multiplatform application integration tests.
 
 The entire test suite is executed continuously on every Pull Request and branch push to `main`, `dev`, and `epic/**` via **GitHub Actions** ([`ci.yml`](.github/workflows/ci.yml)).
