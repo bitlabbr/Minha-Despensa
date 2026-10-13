@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.data.repository
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
+import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
@@ -78,10 +79,23 @@ class RoomPantryRepository(
         }
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun insertPantryItem(item: PantryItem) {
         logger.d(TAG, "insertPantryItem item: $item")
         validatePantryItem(item)
         dao.insertPantryItem(item.toEntity())
+        item.unitPriceInCents?.let { price ->
+            db.priceDao().insertPriceEntry(
+                PriceEntry(
+                    id = Uuid.random().toString(),
+                    productId = item.productId,
+                    priceInCents = price,
+                    storeName = "Entrada na Despensa",
+                    updatedAt = item.updatedAt,
+                    isDeleted = false,
+                ).toEntity()
+            )
+        }
     }
 
     override suspend fun forceUpdatePantryItem(item: PantryItem) {
@@ -100,7 +114,8 @@ class RoomPantryRepository(
             updatedAt = item.updatedAt,
             isDeleted = item.isDeleted,
             expirationDate = item.expirationDate,
-            batchNumber = item.batchNumber
+            batchNumber = item.batchNumber,
+            unitPriceInCents = item.unitPriceInCents,
         )
         if (rowsAffected == 0) {
             logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
