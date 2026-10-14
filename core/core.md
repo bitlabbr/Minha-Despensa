@@ -88,14 +88,18 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
         *   `remainingInCents`: Calculated as `budgetInCents?.let { it - totalSpentInCents }`.
         *   `consumptionProgress`: Ratio of `totalSpentInCents / budgetInCents` (0f when no budget or zero budget).
         *   `isOverBudget`: Boolean indicating whether `totalSpentInCents` exceeds `budgetInCents`.
+*   **`PantryMovement`**: Immutable audit ledger and inventory transaction event recording physical entries and depletions.
+    *   *Fields*: `id`, `pantryItemId`, `productId`, `type` (`MovementType`), `quantity`, `unitPriceInCents`, `totalPriceInCents`, `timestamp`, `storeOrReason`, `isDeleted`.
+    *   *Movement Types*: `ENTRY_MANUAL`, `ENTRY_PURCHASE`, `CONSUMPTION`, `EXPIRATION_DISCARD`, `ADJUSTMENT`.
+    *   *Computed Domain Property*:
+        *   `computedTotalPriceInCents`: Resolved from `totalPriceInCents` or calculated as `unitPriceInCents * quantity`.
 *   **`IconKeys`**: String keys mapping domain categories to application icons (e.g., `GRAINS`, `CLEANING`, `BEVERAGES`).
 
 ---
 
 ### 4.2. Domain Use Cases (`domain/usecase`)
 
-The `:core` module defines 14 use cases encapsulating discrete application business rules and orchestration:
-
+The `:core` module defines 15 use cases encapsulating discrete application business rules and orchestration:
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
     *   Saves or updates the product via `CatalogRepository` with optional image thumbnail bytes and explicit `removeImage: Boolean` flag when editing.
@@ -125,6 +129,8 @@ The `:core` module defines 14 use cases encapsulating discrete application busin
     *   Validates year (2000..2100), month (1..12) and non-negative budget value, persisting or updating the family's monthly budget target via `BudgetRepository.setBudgetForMonth()`.
 *   **`GetMonthlyFinancialSummaryUseCase`**:
     *   Combines the monthly budget target with aggregated expenses from `BudgetRepository.getBudgetForMonth()` and `BudgetRepository.getMonthlyExpenses()`, emitting a reactive `MonthlyFinancialSummary` with progress, remaining balance, and over-budget flag.
+*   **`GetMostConsumedProductsUseCase`**:
+    *   Retrieves the most consumed products within a specified time range via `PantryMovementRepository.getMostConsumedProducts()`.
 
 ---
 
@@ -137,6 +143,11 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `setBudgetForMonth(year: Int, month: Int, budgetInCents: Long)`
     *   `getMonthlyExpenses(year: Int, month: Int): Flow<Long>`
     *   `getYearlySummary(year: Int): Flow<List<MonthlyFinancialSummary>>`
+*   **`PantryMovementRepository`**:
+    *   `recordMovement(movement: PantryMovement)`
+    *   `recordMovements(movements: List<PantryMovement>)`
+    *   `getMovementsForPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<PantryMovement>>`
+    *   `getMostConsumedProducts(startTimestamp: Long, endTimestamp: Long, limit: Int): Flow<List<Pair<String, Double>>>`
 *   **`CatalogRepository`**:
     *   `getProductByEan(ean: String): Flow<CatalogProduct?>`
     *   `getProductById(id: String): Flow<CatalogProduct?>`
