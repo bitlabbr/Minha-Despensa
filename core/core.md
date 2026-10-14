@@ -103,7 +103,7 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
 
 ### 4.2. Domain Use Cases (`domain/usecase`)
 
-The `:core` module defines 15 use cases encapsulating discrete application business rules and orchestration:
+The `:core` module defines 17 use cases encapsulating discrete application business rules and orchestration:
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
     *   Saves or updates the product via `CatalogRepository` with optional image thumbnail bytes and explicit `removeImage: Boolean` flag when editing.

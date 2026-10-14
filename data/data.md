@@ -224,4 +224,4 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
 *   **`AndroidImageProcessorTest` & `IosImageProcessorTest`**: Platform-specific thumbnail processing tests.
 
-All tests in `:data` run under Gradle via `./gradlew :data:test` and `./gradlew testDebugUnitTest`.
+All 160 tests in `:data` run under Gradle via `./gradlew :data:test` and `./gradlew testDebugUnitTest`.
