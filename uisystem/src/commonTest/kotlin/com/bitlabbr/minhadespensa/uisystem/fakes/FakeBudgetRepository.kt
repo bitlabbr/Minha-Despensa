@@ -1,0 +1,69 @@
+/*
+ *   Copyright (c) 2026 Willian Santos
+ *
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+ *
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
+ *
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
+ *
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+ */
+
+package com.bitlabbr.minhadespensa.uisystem.fakes
+
+import com.bitlabbr.minhadespensa.core.domain.model.MonthlyBudget
+import com.bitlabbr.minhadespensa.core.domain.model.MonthlyFinancialSummary
+import com.bitlabbr.minhadespensa.core.domain.repository.BudgetRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
+
+class FakeBudgetRepository : BudgetRepository {
+    val budgets = MutableStateFlow<Map<Pair<Int, Int>, MonthlyBudget>>(emptyMap())
+    val expenses = MutableStateFlow<Map<Pair<Int, Int>, Long>>(emptyMap())
+
+    override fun getBudgetForMonth(year: Int, month: Int): Flow<MonthlyBudget?> {
+        return budgets.map { it[Pair(year, month)] }
+    }
+
+    override suspend fun setBudgetForMonth(year: Int, month: Int, budgetInCents: Long) {
+        val key = Pair(year, month)
+        val budget = MonthlyBudget(
+            year = year,
+            month = month,
+            budgetInCents = budgetInCents,
+            updatedAt = 0L,
+        )
+        budgets.value = budgets.value + (key to budget)
+    }
+
+    override fun getMonthlyExpenses(year: Int, month: Int): Flow<Long> {
+        return expenses.map { it[Pair(year, month)] ?: 0L }
+    }
+
+    override fun getYearlySummary(year: Int): Flow<List<MonthlyFinancialSummary>> {
+        return budgets.map { budgetMap ->
+            (1..12).map { m ->
+                val key = Pair(year, m)
+                MonthlyFinancialSummary(
+                    year = year,
+                    month = m,
+                    budgetInCents = budgetMap[key]?.budgetInCents,
+                    totalSpentInCents = expenses.value[key] ?: 0L,
+                )
+            }
+        }
+    }
+}

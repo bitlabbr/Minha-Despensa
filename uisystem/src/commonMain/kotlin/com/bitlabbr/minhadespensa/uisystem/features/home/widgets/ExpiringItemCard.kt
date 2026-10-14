@@ -20,14 +20,36 @@
  *
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
-
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
+import androidx.compose.runtime.Immutable
+import com.bitlabbr.minhadespensa.uisystem.model.UiText
+
+@Immutable
 data class ExpiringItemCard(
-    val expirationLabel: String,
+    val expirationLabel: UiText,
+    val isExpired: Boolean = false,
     val productName: String,
     val productCategory: String,
     val anchoredTargetLabel: String,
     val anchoredGaugeProgress: Float,
-    val iconPainterURI: String?
-)
+    val iconPainterURI: String?,
+) {
+    constructor(
+        expirationLabel: String,
+        productName: String,
+        productCategory: String,
+        anchoredTargetLabel: String,
+        anchoredGaugeProgress: Float,
+        iconPainterURI: String?,
+        isExpired: Boolean = false,
+    ) : this(
+        expirationLabel = UiText.DynamicString(expirationLabel),
+        isExpired = isExpired,
+        productName = productName,
+        productCategory = productCategory,
+        anchoredTargetLabel = anchoredTargetLabel,
+        anchoredGaugeProgress = anchoredGaugeProgress,
+        iconPainterURI = iconPainterURI,
+    )
+}

@@ -23,84 +23,180 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.gauge.InverseAnchoredGauge
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.SecondaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeFinancialUiModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.financial_card_budget
 import minhadespensa.uisystem.generated.resources.financial_card_current_consumption_label
 import minhadespensa.uisystem.generated.resources.financial_card_title
+import minhadespensa.uisystem.generated.resources.home_financial_no_budget_hint
+import minhadespensa.uisystem.generated.resources.home_financial_set_budget_cta
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-fun FinancialWidget(data: HomeWidget.FinancialSummary) {
+fun FinancialWidget(
+    data: HomeFinancialUiModel,
+    modifier: Modifier = Modifier,
+    onCardClick: () -> Unit = {},
+    onDefineBudgetClick: () -> Unit = onCardClick,
+) {
     val colors = getAppColors()
     val appDimens = MinhaDespensaTheme.dimens
-
-    val consumptionProgress = data.consumptionProgress
-    val currentConsumption = data.currentConsumption
-    val targetChartLabel = data.consumptionTargetChartLabel
-    val budget = data.budget
+    val typography = MinhaDespensaTheme.typography
 
     SecondaryContainerGlassCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(enabled = data.hasBudget) { onCardClick() }
+            .padding(
+                horizontal = appDimens.paddingSmall,
+                vertical = appDimens.paddingSmall,
+            ),
         content = {
             SecondaryContainerHeader(
                 text = stringResource(Res.string.financial_card_title)
             )
-            InverseAnchoredGauge(
-                progress = consumptionProgress,
-                gaugeHeight = 35.dp,
-                targetLabel = targetChartLabel
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = appDimens.paddingSmall, vertical = appDimens.paddingMedium
-                    ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
+
+            if (!data.hasBudget) {
+                // Estado Convidativo quando não há meta orçamentária definida
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = appDimens.paddingSmall, vertical = appDimens.paddingSmall),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    if (data.totalSpentInCents > 0L) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            MinhaDespensaText(
+                                text = stringResource(Res.string.financial_card_current_consumption_label),
+                                fontStyle = typography.bodyLarge,
+                                color = colors.onSecondaryContainer,
+                                fontWeight = FontWeight.Light,
+                            )
+                            MinhaDespensaText(
+                                text = data.currentConsumption,
+                                fontStyle = typography.priceLabel,
+                                color = colors.onSecondaryContainer,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
+
                     MinhaDespensaText(
-                        text = stringResource(Res.string.financial_card_current_consumption_label),
-                        fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                        color = colors.onSecondaryContainer,
-                        fontWeight = FontWeight.Light
+                        text = stringResource(Res.string.home_financial_no_budget_hint),
+                        fontStyle = typography.bodySmall,
+                        color = colors.onSecondaryContainer.copy(alpha = 0.7f),
                     )
-                    MinhaDespensaText(
-                        text = currentConsumption,
-                        fontStyle = MinhaDespensaTheme.typography.priceLabel,
-                        color = colors.onSecondaryContainer,
-                        fontWeight = FontWeight.Bold
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    MinhaDespensaPrimaryButton(
+                        text = stringResource(Res.string.home_financial_set_budget_cta),
+                        onClick = onDefineBudgetClick,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
+            } else {
+                // Estado Normal com Gauge e Valores
+                InverseAnchoredGauge(
+                    progress = data.consumptionProgress,
+                    gaugeHeight = 35.dp,
+                    targetLabel = data.targetChartLabel,
+                )
 
-                Column {
-                    MinhaDespensaText(
-                        text = stringResource(Res.string.financial_card_budget),
-                        fontStyle = MinhaDespensaTheme.typography.displayMedium,
-                        color = colors.onSecondaryContainer,
-                        fontWeight = FontWeight.Light
-                    )
-                    MinhaDespensaText(
-                        text = budget,
-                        fontStyle = MinhaDespensaTheme.typography.priceLabel,
-                        color = colors.onSecondaryContainer,
-                        fontWeight = FontWeight.Bold
-                    )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = appDimens.paddingSmall,
+                            vertical = appDimens.paddingMedium,
+                        ),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.financial_card_current_consumption_label),
+                            fontStyle = typography.displayMedium,
+                            color = colors.onSecondaryContainer,
+                            fontWeight = FontWeight.Light,
+                        )
+                        MinhaDespensaText(
+                            text = data.currentConsumption,
+                            fontStyle = typography.priceLabel,
+                            color = colors.onSecondaryContainer,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.financial_card_budget),
+                            fontStyle = typography.displayMedium,
+                            color = colors.onSecondaryContainer,
+                            fontWeight = FontWeight.Light,
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            MinhaDespensaText(
+                                text = data.budget,
+                                fontStyle = typography.priceLabel,
+                                color = colors.onSecondaryContainer,
+                                fontWeight = FontWeight.Bold,
+                            )
+                        }
+                    }
                 }
             }
         }
+    )
+}
+
+/**
+ * Sobrecarga de compatibilidade retroativa para HomeWidget.FinancialSummary
+ */
+@Composable
+fun FinancialWidget(
+    data: HomeWidget.FinancialSummary,
+    modifier: Modifier = Modifier,
+    onCardClick: () -> Unit = {},
+) {
+    FinancialWidget(
+        data = HomeFinancialUiModel(
+            consumptionProgress = data.consumptionProgress,
+            targetChartLabel = data.consumptionTargetChartLabel,
+            currentConsumption = data.currentConsumption,
+            budget = data.budget,
+            hasBudget = true,
+        ),
+        modifier = modifier,
+        onCardClick = onCardClick,
     )
 }

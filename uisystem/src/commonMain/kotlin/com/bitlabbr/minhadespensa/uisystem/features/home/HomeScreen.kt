@@ -23,10 +23,19 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
@@ -35,19 +44,24 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainer
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
-import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.*
+import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ConsumptionTrendWidget
+import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ExpiringSoonWidget
+import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.FinancialWidget
+import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.SetMonthlyBudgetDialog
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.general
 import minhadespensa.uisystem.generated.resources.vision
 import org.jetbrains.compose.resources.stringResource
+import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun HomeScreen(
-    bottomPadding: Dp = 0.dp
+    bottomPadding: Dp = 0.dp,
+    viewModel: HomeViewModel = koinViewModel(),
 ) {
-    val widgets: List<HomeWidget> = HomeMockData.widgets
+    val uiState by viewModel.uiState.collectAsState()
     val appColors = getAppColors()
     val appTypography = MinhaDespensaTheme.typography
     val dimens = MinhaDespensaTheme.dimens
@@ -95,18 +109,40 @@ fun HomeScreen(
                                 textTop = stringResource(Res.string.vision),
                                 textBottom = stringResource(Res.string.general)
                             ) {}
-                            widgets.forEach { homeWidget ->
-                                Column {
-                                    when (homeWidget) {
-                                        is HomeWidget.FinancialSummary -> FinancialWidget(homeWidget)
-                                        is HomeWidget.ExpiringSoon -> ExpiringSoonWidget(homeWidget)
-                                        is HomeWidget.ConsumptionTrend -> ConsumptionTrendWidget(homeWidget)
-                                    }
-                                }
-                            }
+
+                            // 1. Widget Financeiro Conectado a Dados Reais
+                            FinancialWidget(
+                                data = uiState.financialSummary,
+                                onCardClick = { viewModel.openSetBudgetDialog() },
+                                onDefineBudgetClick = { viewModel.openSetBudgetDialog() },
+                            )
+
+                            // 2. Widget Itens Próximos à Validade
+                            ExpiringSoonWidget(
+                                items = uiState.expiringItems,
+                            )
+
+                            // 3. Widget Tendências de Consumo no Mês
+                            ConsumptionTrendWidget(
+                                items = uiState.consumptionTrends,
+                            )
                         }
                     }
                 }
+            }
+
+            // Diálogo de Definição / Edição de Orçamento Mensal
+            if (uiState.isSetBudgetDialogOpen) {
+                SetMonthlyBudgetDialog(
+                    currentBudgetInCents = uiState.financialSummary.budgetInCents,
+                    isSaving = uiState.isSavingBudget,
+                    onConfirm = { budgetInCents ->
+                        viewModel.saveMonthlyBudget(budgetInCents)
+                    },
+                    onDismiss = {
+                        viewModel.dismissSetBudgetDialog()
+                    },
+                )
             }
         }
     }
