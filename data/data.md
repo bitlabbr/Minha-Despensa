@@ -57,7 +57,7 @@ Platform-specific source sets:
 ## 4. Key Components
 
 ### 4.1. Room Database (`local/AppDatabase.kt`)
-*   **Entities**: `CatalogProductEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`, `MonthlyBudgetEntity`.
+*   **Entities**: `CatalogProductEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`, `MonthlyBudgetEntity`, `PantryMovementEntity`.
 *   **Version**: `6`.
 *   **Driver**: `BundledSQLiteDriver()`.
 *   **Platform Initialization**: Uses `expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>` to instantiate platform SQLite drivers.
@@ -81,6 +81,9 @@ Platform-specific source sets:
     *   Room relation data class holding `ShoppingListEntity` with `@Relation` child `List<ShoppingItemEntity>`.
 *   **`MonthlyBudgetEntity`** (`monthly_budgets`):
     *   *Columns*: `year` (PK), `month` (PK), `budgetInCents`, `updatedAt`. Composite primary key `(year, month)`.
+*   **`PantryMovementEntity`** (`pantry_movements`):
+    *   *Columns*: `id` (PK), `pantry_item_id`, `productId` (FK to `catalog_products.id` on delete cascade), `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `timestamp`, `store_or_reason`, `is_deleted`.
+    *   *Indices*: `productId`, `(type, timestamp)`, `timestamp`.
 
 ---
 
@@ -95,6 +98,7 @@ Platform-specific source sets:
     *   Adds `unit_price_in_cents INTEGER DEFAULT NULL` column to `pantry_items`.
 *   **`MIGRATION_5_6`**:
     *   Creates table `monthly_budgets` with composite primary key `(year, month)`.
+    *   Creates audit and expense ledger table `pantry_movements` with indexes on `(type, timestamp)` and `(productId)`.
 *   **`MIGRATION_1_6`, `MIGRATION_2_6`, `MIGRATION_3_6` & `MIGRATION_4_6`**: Direct upgrade paths to schema v6.
 *   **`ALL_MIGRATIONS`**: Exported migration array consumed by Koin's database builder.
 
@@ -122,6 +126,9 @@ Centralized and decoupled from repositories:
 *   **`PriceMapper.kt`**:
     *   `PriceEntryEntity.toDomain()`.
     *   `PriceEntry.toEntity()`.
+*   **`PantryMovementMapper.kt`**:
+    *   `PantryMovementEntity.toDomain()`.
+    *   `PantryMovement.toEntity()`.
 *   **`ShoppingMapper.kt`**:
     *   `ShoppingListWithItems.toDomain()`: Preserves soft-deleted items (`isDeleted = true`) so domain synchronization, cart totals, and LWW state machines have full visibility into the item states.
     *   `ShoppingList.toEntity()`.
@@ -131,9 +138,14 @@ Centralized and decoupled from repositories:
 ---
 
 ### 4.6. Data Access Objects (`local/dao/`)
+*   **`PantryMovementDao`**:
+    *   `insertMovement`, `insertMovements` (`REPLACE`).
+    *   `getMovementsForPeriod`, `getAllMovements` (ordered by timestamp DESC).
+    *   `getMostConsumedProducts` (reactive aggregation of `CONSUMPTION` movements).
+    *   `getMonthlyExpenses`, `findMonthlyExpenses` (reactive calculation summing `ENTRY_MANUAL` and `ENTRY_PURCHASE`).
 *   **`MonthlyBudgetDao`**:
     *   `insertOrUpdate` (`REPLACE`), `getBudget` (reactive Flow), `findBudget` (suspend), `getBudgetsForYear` (ordered by month ASC).
-    *   `getMonthlyExpenses` (reactive Flow calculating completed shopping lists + direct pantry entries within month timestamps), `findMonthlyExpenses` (suspend).
+    *   `getMonthlyExpenses`, `findMonthlyExpenses` (suspend).
 *   **`CatalogProductDao`**:
     *   `findByEan`, `findById`, `getAllActive`, `searchByNameOrBrand` (ordered by name ASC).
     *   `insert` (`ABORT`), `forceUpdateForProduct`, `updateProductIfNewer` (LWW with all product fields including notes), `markAsDeleted`, `deleteProductById`, `exists`.

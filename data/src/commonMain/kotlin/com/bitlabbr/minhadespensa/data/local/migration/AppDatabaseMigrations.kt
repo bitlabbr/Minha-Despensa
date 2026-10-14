@@ -469,6 +469,29 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
                 """.trimIndent()
             )
         }
+        if (!tableExists(connection, "pantry_movements")) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `pantry_movements` (
+                    `id` TEXT NOT NULL,
+                    `pantry_item_id` TEXT,
+                    `productId` TEXT NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `quantity` REAL NOT NULL,
+                    `unit_price_in_cents` INTEGER,
+                    `total_price_in_cents` INTEGER,
+                    `timestamp` INTEGER NOT NULL,
+                    `store_or_reason` TEXT,
+                    `is_deleted` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`),
+                    FOREIGN KEY(`productId`) REFERENCES `catalog_products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_productId` ON `pantry_movements` (`productId`)")
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_type_timestamp` ON `pantry_movements` (`type`, `timestamp`)")
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_timestamp` ON `pantry_movements` (`timestamp`)")
+        }
     }
 }
 

@@ -599,7 +599,7 @@ class AppDatabaseMigrationTest {
         // Run Migration 5 -> 6
         MIGRATION_5_6.migrate(connection)
 
-        // Verify table exists and can store monthly budgets with composite primary key
+        // Verify table monthly_budgets exists and can store monthly budgets with composite primary key
         connection.execSQL(
             """
             INSERT INTO `monthly_budgets` (`year`, `month`, `budgetInCents`, `updatedAt`)
@@ -628,6 +628,27 @@ class AppDatabaseMigrationTest {
             assertEquals(200000L, stmt.getLong(0))
             assertEquals(2000L, stmt.getLong(1))
         }
+
+        // Verify pantry_movements table exists and allows insertion
+        connection.execSQL(
+            """
+            INSERT INTO `catalog_products` (`id`, `name`, `measureUnit`, `netWeight`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`)
+            VALUES ('prod-test-mov', 'Arroz', 'KILOGRAM', 1.0, 1000, 0, 0, 'Grãos')
+            """.trimIndent()
+        )
+        connection.execSQL(
+            """
+            INSERT INTO `pantry_movements` (`id`, `pantry_item_id`, `productId`, `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `timestamp`, `store_or_reason`, `is_deleted`)
+            VALUES ('mov-1', 'pantry-1', 'prod-test-mov', 'ENTRY_MANUAL', 5.0, 1000, 5000, 1728900000000, 'Supermercado Teste', 0)
+            """.trimIndent()
+        )
+
+        connection.prepare("SELECT type, quantity, total_price_in_cents FROM pantry_movements WHERE id = 'mov-1'").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals("ENTRY_MANUAL", stmt.getText(0))
+            assertEquals(5.0, stmt.getDouble(1), 0.001)
+            assertEquals(5000L, stmt.getLong(2))
+        }
     }
 
     @Test
@@ -645,6 +666,25 @@ class AppDatabaseMigrationTest {
         connection.prepare("SELECT budgetInCents FROM monthly_budgets WHERE year = 2026 AND month = 11").useStatement { stmt ->
             assertTrue(stmt.step())
             assertEquals(180000L, stmt.getLong(0))
+        }
+
+        // Verify pantry_movements table exists in direct 1->6 migration
+        connection.execSQL(
+            """
+            INSERT INTO `catalog_products` (`id`, `name`, `measureUnit`, `netWeight`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`)
+            VALUES ('prod-test-direct', 'Feijão', 'KILOGRAM', 1.0, 1000, 0, 0, 'Grãos')
+            """.trimIndent()
+        )
+        connection.execSQL(
+            """
+            INSERT INTO `pantry_movements` (`id`, `pantry_item_id`, `productId`, `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `timestamp`, `store_or_reason`, `is_deleted`)
+            VALUES ('mov-direct', 'pantry-2', 'prod-test-direct', 'ENTRY_PURCHASE', 2.0, 500, 1000, 1728900000000, 'Lista Finalizada', 0)
+            """.trimIndent()
+        )
+
+        connection.prepare("SELECT total_price_in_cents FROM pantry_movements WHERE id = 'mov-direct'").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(1000L, stmt.getLong(0))
         }
     }
 
