@@ -57,6 +57,12 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.error_invalid_number
+import minhadespensa.uisystem.generated.resources.home_expiring_in_days
+import minhadespensa.uisystem.generated.resources.home_expiring_no_date
+import minhadespensa.uisystem.generated.resources.home_expiring_overdue_1
+import minhadespensa.uisystem.generated.resources.home_expiring_overdue_days
+import minhadespensa.uisystem.generated.resources.home_expiring_today
+import minhadespensa.uisystem.generated.resources.home_expiring_tomorrow
 import minhadespensa.uisystem.generated.resources.home_financial_budget_saved_error
 import minhadespensa.uisystem.generated.resources.home_financial_budget_saved_success
 import kotlin.math.roundToLong
@@ -175,27 +181,32 @@ class HomeViewModel(
     ): ExpiringItemCard {
         val item = itemWithCat.pantryItem
         val expMillis = item.expirationDate
-        val (label, targetLabel, gaugeProgress) = if (expMillis != null) {
+        val (label, targetLabel, gaugeProgress, isExpired) = if (expMillis != null) {
             val expDate = Instant.fromEpochMilliseconds(expMillis).toLocalDateTime(timeZone).date
             val daysDiff = (expDate.toEpochDays() - currentDate.toEpochDays())
             val dayStr = expDate.dayOfMonth.toString().padStart(2, '0')
             val monthStr = expDate.monthNumber.toString().padStart(2, '0')
             val target = "$dayStr/$monthStr"
-            val textLabel = when {
-                daysDiff < 0 -> if (daysDiff == -1) "Vencido há 1 dia" else "Vencido há ${-daysDiff} dias"
-                daysDiff == 0 -> "Vence hoje"
-                daysDiff == 1 -> "Vence amanhã"
-                else -> "Vence em $daysDiff dias"
+            val textLabel: UiText = when {
+                daysDiff < 0 -> if (daysDiff == -1) {
+                    UiText.Resource(Res.string.home_expiring_overdue_1)
+                } else {
+                    UiText.Resource(Res.string.home_expiring_overdue_days, listOf(-daysDiff))
+                }
+                daysDiff == 0 -> UiText.Resource(Res.string.home_expiring_today)
+                daysDiff == 1 -> UiText.Resource(Res.string.home_expiring_tomorrow)
+                else -> UiText.Resource(Res.string.home_expiring_in_days, listOf(daysDiff))
             }
             val p = ((CoreConstants.Pantry.EXPIRING_THRESHOLD_DAYS - daysDiff).toFloat() / CoreConstants.Pantry.EXPIRING_THRESHOLD_DAYS.toFloat())
-            Triple(textLabel, target, p)
+            ExpiringItemData(textLabel, target, p, daysDiff < 0)
         } else {
-            Triple("Sem data", "--/--", 0f)
+            ExpiringItemData(UiText.Resource(Res.string.home_expiring_no_date), "--/--", 0f, false)
         }
 
         val catalogProduct = productsMap[item.productId]
         return ExpiringItemCard(
             expirationLabel = label,
+            isExpired = isExpired,
             productName = itemWithCat.name.ifBlank { catalogProduct?.name ?: "Produto" },
             productCategory = itemWithCat.category.ifBlank { catalogProduct?.category ?: "Geral" },
             anchoredTargetLabel = targetLabel,
@@ -203,6 +214,13 @@ class HomeViewModel(
             iconPainterURI = catalogProduct?.thumbnailUrl,
         )
     }
+
+    private data class ExpiringItemData(
+        val label: UiText,
+        val targetLabel: String,
+        val gaugeProgress: Float,
+        val isExpired: Boolean,
+    )
 
     private fun mapConsumptionTrendItem(
         productId: String,

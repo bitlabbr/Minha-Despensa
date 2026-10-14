@@ -52,6 +52,8 @@ import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme.dimens
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.action_show_less
+import minhadespensa.uisystem.generated.resources.action_show_more_count
 import minhadespensa.uisystem.generated.resources.home_consumption_empty_desc
 import minhadespensa.uisystem.generated.resources.home_consumption_empty_title
 import minhadespensa.uisystem.generated.resources.home_consumption_section_title
@@ -127,8 +129,8 @@ fun ConsumptionTrendWidget(
                         ) {
                             MinhaDespensaExpandButton(
                                 isExpanded = isExpanded,
-                                collapsedText = "Mostrar mais (${items.size - maxInitialItems})",
-                                expandedText = "Mostrar menos",
+                                collapsedText = stringResource(Res.string.action_show_more_count, items.size - maxInitialItems),
+                                expandedText = stringResource(Res.string.action_show_less),
                                 onClick = { isExpanded = !isExpanded }
                             )
                         }

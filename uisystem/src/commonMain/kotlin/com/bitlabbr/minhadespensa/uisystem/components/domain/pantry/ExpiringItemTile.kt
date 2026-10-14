@@ -43,14 +43,20 @@ import androidx.compose.ui.unit.sp
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.gauge.InverseAnchoredGauge
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.home_expiring_badge_header
+import minhadespensa.uisystem.generated.resources.home_expiring_badge_warning_header
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun ExpiringItemTile(
-    expirationLabel: String,
+    expirationLabel: UiText,
     productName: String,
     modifier: Modifier = Modifier,
+    isExpired: Boolean = false,
     productCategory: String = "Geral",
     anchoredTargetLabel: String = "01/01",
     anchoredGaugeProgress: Float = 0.8f,
@@ -113,13 +119,15 @@ fun ExpiringItemTile(
             }
 
             // Expiration badge
-            val isExpired = expirationLabel.startsWith("Vencid")
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.Center,
             ) {
                 MinhaDespensaText(
-                    text = if (isExpired) "Atenção" else "Validade",
+                    text = stringResource(
+                        if (isExpired) Res.string.home_expiring_badge_warning_header
+                        else Res.string.home_expiring_badge_header
+                    ),
                     fontStyle = typography.bodySmall,
                     color = if (isExpired) colors.error else colors.onSecondaryContainer.copy(alpha = 0.65f),
                     fontWeight = FontWeight.Light,
@@ -133,4 +141,27 @@ fun ExpiringItemTile(
             }
         }
     }
+}
+
+@Composable
+fun ExpiringItemTile(
+    expirationLabel: String,
+    productName: String,
+    modifier: Modifier = Modifier,
+    isExpired: Boolean = false,
+    productCategory: String = "Geral",
+    anchoredTargetLabel: String = "01/01",
+    anchoredGaugeProgress: Float = 0.8f,
+    iconPainter: Painter? = null,
+) {
+    ExpiringItemTile(
+        expirationLabel = UiText.DynamicString(expirationLabel),
+        productName = productName,
+        modifier = modifier,
+        isExpired = isExpired,
+        productCategory = productCategory,
+        anchoredTargetLabel = anchoredTargetLabel,
+        anchoredGaugeProgress = anchoredGaugeProgress,
+        iconPainter = iconPainter,
+    )
 }

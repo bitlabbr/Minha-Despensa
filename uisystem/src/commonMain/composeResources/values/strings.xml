@@ -375,9 +375,13 @@
     <string name="home_expiring_in_days">Vence em %1$d dias</string>
     <string name="home_expiring_overdue_1">Vencido há 1 dia</string>
     <string name="home_expiring_overdue_days">Vencido há %1$d dias</string>
+    <string name="home_expiring_no_date">Sem data</string>
 
     <string name="home_consumption_section_title">ITENS MAIS CONSUMIDOS NO MÊS</string>
     <string name="home_consumption_empty_title">Nenhum consumo registrado neste mês</string>
     <string name="home_consumption_empty_desc">Ao consumir ou dar baixa em itens da despensa, o histórico de consumo aparecerá aqui.</string>
+
+    <string name="action_show_more_count">Mostrar mais (%1$d)</string>
+    <string name="action_show_less">Mostrar menos</string>
 
 </resources>

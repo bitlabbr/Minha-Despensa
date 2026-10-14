@@ -38,6 +38,14 @@ import com.bitlabbr.minhadespensa.uisystem.fakes.FakeCatalogRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakePantryMovementRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakePantryRepository
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
+import com.bitlabbr.minhadespensa.uisystem.model.UiText
+import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.home_expiring_in_days
+import minhadespensa.uisystem.generated.resources.home_expiring_no_date
+import minhadespensa.uisystem.generated.resources.home_expiring_overdue_1
+import minhadespensa.uisystem.generated.resources.home_expiring_overdue_days
+import minhadespensa.uisystem.generated.resources.home_expiring_today
+import minhadespensa.uisystem.generated.resources.home_expiring_tomorrow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.launchIn
@@ -229,27 +237,32 @@ class HomeViewModelTest {
         assertEquals(5, state.expiringItems.size)
 
         val item1 = state.expiringItems[0]
-        assertEquals("Vence hoje", item1.expirationLabel)
+        assertEquals(UiText.Resource(Res.string.home_expiring_today), item1.expirationLabel)
+        assertFalse(item1.isExpired)
         assertEquals("14/10", item1.anchoredTargetLabel)
         assertEquals(1.0f, item1.anchoredGaugeProgress, 0.001f)
 
         val item2 = state.expiringItems[1]
-        assertEquals("Vence amanhã", item2.expirationLabel)
+        assertEquals(UiText.Resource(Res.string.home_expiring_tomorrow), item2.expirationLabel)
+        assertFalse(item2.isExpired)
         assertEquals("15/10", item2.anchoredTargetLabel)
         assertEquals(6f / 7f, item2.anchoredGaugeProgress, 0.001f)
 
         val item3 = state.expiringItems[2]
-        assertEquals("Vence em 3 dias", item3.expirationLabel)
+        assertEquals(UiText.Resource(Res.string.home_expiring_in_days, listOf(3)), item3.expirationLabel)
+        assertFalse(item3.isExpired)
         assertEquals("17/10", item3.anchoredTargetLabel)
         assertEquals(4f / 7f, item3.anchoredGaugeProgress, 0.001f)
 
         val item4 = state.expiringItems[3]
-        assertEquals("Vencido há 1 dia", item4.expirationLabel)
+        assertEquals(UiText.Resource(Res.string.home_expiring_overdue_1), item4.expirationLabel)
+        assertTrue(item4.isExpired)
         assertEquals("13/10", item4.anchoredTargetLabel)
         assertEquals(8f / 7f, item4.anchoredGaugeProgress, 0.001f)
 
         val item5 = state.expiringItems[4]
-        assertEquals("Vencido há 3 dias", item5.expirationLabel)
+        assertEquals(UiText.Resource(Res.string.home_expiring_overdue_days, listOf(3)), item5.expirationLabel)
+        assertTrue(item5.isExpired)
         assertEquals("11/10", item5.anchoredTargetLabel)
         assertEquals(10f / 7f, item5.anchoredGaugeProgress, 0.001f)
     }
@@ -392,7 +405,8 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals(1, state.expiringItems.size)
-        assertEquals("Sem data", state.expiringItems.first().expirationLabel)
+        assertEquals(UiText.Resource(Res.string.home_expiring_no_date), state.expiringItems.first().expirationLabel)
+        assertFalse(state.expiringItems.first().isExpired)
         assertEquals("--/--", state.expiringItems.first().anchoredTargetLabel)
         assertEquals(0f, state.expiringItems.first().anchoredGaugeProgress)
     }
