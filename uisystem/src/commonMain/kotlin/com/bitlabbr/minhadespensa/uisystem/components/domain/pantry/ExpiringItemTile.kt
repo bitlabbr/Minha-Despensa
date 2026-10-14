@@ -113,20 +113,21 @@ fun ExpiringItemTile(
             }
 
             // Expiration badge
+            val isExpired = expirationLabel.startsWith("Vencid")
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.Center,
             ) {
                 MinhaDespensaText(
-                    text = "Vence em",
+                    text = if (isExpired) "Atenção" else "Validade",
                     fontStyle = typography.bodySmall,
-                    color = colors.onSecondaryContainer.copy(alpha = 0.65f),
+                    color = if (isExpired) colors.error else colors.onSecondaryContainer.copy(alpha = 0.65f),
                     fontWeight = FontWeight.Light,
                 )
                 MinhaDespensaText(
                     text = expirationLabel,
                     fontStyle = typography.bodySmall,
-                    color = colors.onSecondaryContainer,
+                    color = if (isExpired) colors.error else colors.onSecondaryContainer,
                     fontWeight = FontWeight.Bold,
                 )
             }
