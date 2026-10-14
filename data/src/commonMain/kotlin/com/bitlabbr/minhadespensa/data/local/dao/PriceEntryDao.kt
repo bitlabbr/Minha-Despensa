@@ -35,6 +35,9 @@ interface PriceEntryDao {
     @Query("SELECT * FROM price_entries WHERE id = :id")
     fun findById(id: String): Flow<PriceEntryEntity?>
 
+    @Query("SELECT * FROM price_entries WHERE id = :id LIMIT 1")
+    suspend fun findEntryById(id: String): PriceEntryEntity?
+
     @Query("SELECT * FROM price_entries WHERE productId = :productId AND isDeleted = 0 ORDER BY updatedAt DESC")
     fun getPriceHistoryByProductId(productId: String): Flow<List<PriceEntryEntity>>
 

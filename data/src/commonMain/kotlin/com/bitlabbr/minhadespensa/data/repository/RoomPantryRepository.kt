@@ -86,20 +86,17 @@ class RoomPantryRepository(
         dao.insertPantryItem(item.toEntity())
         logger.d(TAG, "insertPantryItem: Successfully inserted pantry item id=${item.id}, productId=${item.productId}")
         item.unitPriceInCents?.let { price ->
-            val latestPrice = db.priceDao().findLatestPriceForProductId(item.productId)
-            if (latestPrice == null || latestPrice.priceInCents != price) {
-                db.priceDao().insertPriceEntry(
-                    PriceEntry(
-                        id = Uuid.random().toString(),
-                        productId = item.productId,
-                        priceInCents = price,
-                        storeName = "Entrada na Despensa",
-                        updatedAt = item.updatedAt,
-                        isDeleted = false,
-                    ).toEntity()
-                )
-                logger.d(TAG, "insertPantryItem: Created price entry for productId=${item.productId}, priceInCents=$price")
-            }
+            db.priceDao().insertPriceEntry(
+                PriceEntry(
+                    id = item.id,
+                    productId = item.productId,
+                    priceInCents = price,
+                    storeName = "Entrada na Despensa",
+                    updatedAt = item.updatedAt,
+                    isDeleted = false,
+                ).toEntity()
+            )
+            logger.d(TAG, "insertPantryItem: Created price entry id=${item.id} for productId=${item.productId}, priceInCents=$price")
         }
     }
 
@@ -127,20 +124,35 @@ class RoomPantryRepository(
             logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
         } else {
             logger.d(TAG, "updatePantryItemIfNewer: Successfully updated pantry item ${item.id}")
-            item.unitPriceInCents?.let { price ->
-                val latestPrice = db.priceDao().findLatestPriceForProductId(item.productId)
-                if (latestPrice == null || latestPrice.priceInCents != price) {
+            val existingEntry = db.priceDao().findEntryById(item.id)
+            val price = item.unitPriceInCents
+            if (price != null) {
+                if (existingEntry != null) {
+                    db.priceDao().forceUpdatePriceEntry(
+                        existingEntry.copy(
+                            priceInCents = price,
+                            updatedAt = item.updatedAt,
+                            isDeleted = false,
+                        )
+                    )
+                    logger.d(TAG, "updatePantryItemIfNewer: Updated existing price entry ${item.id} with price=$price")
+                } else {
                     db.priceDao().insertPriceEntry(
                         PriceEntry(
-                            id = Uuid.random().toString(),
+                            id = item.id,
                             productId = item.productId,
                             priceInCents = price,
-                            storeName = "Atualização de Lote",
+                            storeName = "Entrada na Despensa",
                             updatedAt = item.updatedAt,
                             isDeleted = false,
                         ).toEntity()
                     )
-                    logger.d(TAG, "updatePantryItemIfNewer: Created price entry for productId=${item.productId}, priceInCents=$price")
+                    logger.d(TAG, "updatePantryItemIfNewer: Created new price entry ${item.id} with price=$price")
+                }
+            } else {
+                if (existingEntry != null) {
+                    db.priceDao().markPriceEntryAsDeleted(existingEntry.id, item.updatedAt)
+                    logger.d(TAG, "updatePantryItemIfNewer: Marked price entry ${item.id} as deleted because price was removed")
                 }
             }
         }

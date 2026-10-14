@@ -173,7 +173,7 @@ All 130 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, duplicate item detection and consolidation, barcode scanner subflows, item replacement, purchase finalization. |
 | `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
 | `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
-| `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, batch price mapping and calculation, batch editing subflow and updates, add to shopping list. |
+| `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, batch price mapping and calculation, in-place price recalculation (min/max/average), checkout stock price display, batch editing subflow and updates, add to shopping list. |
 
 ### Running the Tests
 ```bash
