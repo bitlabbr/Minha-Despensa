@@ -98,8 +98,9 @@ Platform-specific source sets:
     *   Adds `unit_price_in_cents INTEGER DEFAULT NULL` column to `pantry_items`.
 *   **`MIGRATION_5_6`**:
     *   Creates table `monthly_budgets` with composite primary key `(year, month)`.
-    *   Creates audit and expense ledger table `pantry_movements` with indexes on `(type, timestamp)` and `(productId)`.
-*   **`MIGRATION_1_6`, `MIGRATION_2_6`, `MIGRATION_3_6` & `MIGRATION_4_6`**: Direct upgrade paths to schema v6.
+*   **`MIGRATION_6_7`**:
+    *   Creates audit and expense ledger table `pantry_movements` with indexes on `(type, timestamp)`, `(productId)` and `timestamp`.
+*   **`MIGRATION_1_7`, `MIGRATION_2_7`, `MIGRATION_3_7`, `MIGRATION_4_7` & `MIGRATION_5_7`**: Direct upgrade paths to schema v7.
 *   **`ALL_MIGRATIONS`**: Exported migration array consumed by Koin's database builder.
 
 ---
@@ -202,16 +203,17 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 
 Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
-*   DAOs: `catalogDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`.
-*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
-*   Use Case Factories: Registers all 14 domain use cases (`SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`).
+*   DAOs: `catalogDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`.
+*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
+*   Use Case Factories: Registers all 15 domain use cases (`SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`).
 
 ---
 
 ## 5. Testing & Verification
 
 The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/` using an in-memory SQLite database (`createInMemoryDatabase(getTestDatabaseBuilder())`):
-*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1, v2, v3, v4, v5 to v6 (`MIGRATION_5_6` and direct migrations `1->6`), verifying table creation (`monthly_budgets`), composite keys, indices, and data preservation.
+*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v6 to v7 (`MIGRATION_5_6`, `MIGRATION_6_7`, and direct migrations `1->7`, `5->7`), verifying table creation (`monthly_budgets`, `pantry_movements`), composite keys, indices, and data preservation.
+*   **`PantryMovementDaoTest`**: Tests CRUD operations for `PantryMovementEntity`, timestamp range filtering, top consumed products aggregation, and reactive monthly expense tracking.
 *   **`MonthlyBudgetDaoTest`**: Tests CRUD operations for `MonthlyBudgetEntity`, composite key updates, annual queries, and reactive monthly expense aggregation joins across shopping lists, items, and pantry entries.
 *   **`RoomBudgetRepositoryTest`**: Tests domain boundary enforcement, monthly budget retrieval/updates, reactive expense aggregation, and full 12-month annual summaries.
 *   **`RoomCatalogRepositoryTest`**: Tests EAN lookups, search, CRUD, LWW updates, media blob handling, and validation limits.
@@ -222,4 +224,4 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
 *   **`AndroidImageProcessorTest` & `IosImageProcessorTest`**: Platform-specific thumbnail processing tests.
 
-All 156 tests in `:data` run under Gradle via `./gradlew :data:test` and `./gradlew testDebugUnitTest`.
+All tests in `:data` run under Gradle via `./gradlew :data:test` and `./gradlew testDebugUnitTest`.

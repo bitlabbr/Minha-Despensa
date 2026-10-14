@@ -205,6 +205,60 @@ class AppDatabaseMigrationTest {
         val savedBudget = roomDb.budgetDao().getBudget(2026, 10).first()
         assertEquals(150000L, savedBudget?.budgetInCents)
 
+        roomDb.movementDao().insertMovement(
+            com.bitlabbr.minhadespensa.data.local.entity.PantryMovementEntity(
+                id = "mov-test-mig",
+                productId = "prod-disk-1",
+                type = "ENTRY_MANUAL",
+                quantity = 2.0,
+                unitPriceInCents = 599L,
+                totalPriceInCents = 1198L,
+                timestamp = 6000L,
+            )
+        )
+        val movements = roomDb.movementDao().getAllMovements().first()
+        assertEquals(1, movements.size)
+        assertEquals("mov-test-mig", movements[0].id)
+
+        roomDb.close()
+    }
+
+    @Test
+    fun room_migrates_database_from_version_6_to_7_and_validates_schema() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val dbFile = File(context.cacheDir, "test_v6_to_v7.db")
+        if (dbFile.exists()) dbFile.delete()
+
+        // 1. Create a version 6 database on disk with hash 47c9379a15d45d778fabda159aab34da
+        val rawConn = AndroidSQLiteDriver().open(dbFile.absolutePath)
+        createV2Schema(rawConn)
+        MIGRATION_2_4.migrate(rawConn)
+        MIGRATION_4_5.migrate(rawConn)
+        MIGRATION_5_6.migrate(rawConn)
+
+        rawConn.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+        rawConn.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '47c9379a15d45d778fabda159aab34da')")
+        rawConn.execSQL("PRAGMA user_version = 6")
+
+        // Insert real v6 data
+        rawConn.execSQL(
+            """
+            INSERT INTO `monthly_budgets` (`year`, `month`, `budgetInCents`, `updatedAt`)
+            VALUES (2026, 10, 250000, 1000)
+            """.trimIndent()
+        )
+        rawConn.close()
+
+        // 2. Open with Room (version 7) and ALL_MIGRATIONS
+        val roomDb = Room.databaseBuilder<AppDatabase>(context, dbFile.absolutePath)
+            .addMigrations(*ALL_MIGRATIONS)
+            .setDriver(AndroidSQLiteDriver())
+            .build()
+
+        // 3. Verify budget data is preserved and movementDao works
+        val budget = roomDb.budgetDao().getBudget(2026, 10).first()
+        assertEquals(250000L, budget?.budgetInCents)
+
         roomDb.close()
     }
 
@@ -628,6 +682,31 @@ class AppDatabaseMigrationTest {
             assertEquals(200000L, stmt.getLong(0))
             assertEquals(2000L, stmt.getLong(1))
         }
+    }
+
+    @Test
+    fun migration_6_to_7_creates_pantry_movements_table_and_preserves_budget_data() {
+        createV2Schema(connection)
+        MIGRATION_2_4.migrate(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+
+        // Insert budget in v6
+        connection.execSQL(
+            """
+            INSERT INTO `monthly_budgets` (`year`, `month`, `budgetInCents`, `updatedAt`)
+            VALUES (2026, 10, 150000, 1000)
+            """.trimIndent()
+        )
+
+        // Run Migration 6 -> 7
+        MIGRATION_6_7.migrate(connection)
+
+        // Verify budget data preserved
+        connection.prepare("SELECT budgetInCents FROM monthly_budgets WHERE year = 2026 AND month = 10").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(150000L, stmt.getLong(0))
+        }
 
         // Verify pantry_movements table exists and allows insertion
         connection.execSQL(
@@ -652,9 +731,24 @@ class AppDatabaseMigrationTest {
     }
 
     @Test
-    fun direct_migration_1_to_6_creates_monthly_budgets_table_successfully() {
+    fun direct_migration_5_to_7_creates_budgets_and_movements_successfully() {
         createV2Schema(connection)
-        MIGRATION_1_6.migrate(connection)
+        MIGRATION_2_4.migrate(connection)
+        MIGRATION_4_5.migrate(connection)
+
+        MIGRATION_5_7.migrate(connection)
+
+        connection.execSQL("INSERT INTO `monthly_budgets` (`year`, `month`, `budgetInCents`, `updatedAt`) VALUES (2026, 12, 100000, 1000)")
+        connection.prepare("SELECT budgetInCents FROM monthly_budgets WHERE year = 2026 AND month = 12").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(100000L, stmt.getLong(0))
+        }
+    }
+
+    @Test
+    fun direct_migration_1_to_7_creates_monthly_budgets_and_movements_successfully() {
+        createV2Schema(connection)
+        MIGRATION_1_7.migrate(connection)
 
         connection.execSQL(
             """
@@ -668,7 +762,7 @@ class AppDatabaseMigrationTest {
             assertEquals(180000L, stmt.getLong(0))
         }
 
-        // Verify pantry_movements table exists in direct 1->6 migration
+        // Verify pantry_movements table exists in direct 1->7 migration
         connection.execSQL(
             """
             INSERT INTO `catalog_products` (`id`, `name`, `measureUnit`, `netWeight`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`)

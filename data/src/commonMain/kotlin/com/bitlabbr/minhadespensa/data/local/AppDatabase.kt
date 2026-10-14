@@ -57,7 +57,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
         MonthlyBudgetEntity::class,
         PantryMovementEntity::class
     ],
-    version = 6
+    version = 7
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)

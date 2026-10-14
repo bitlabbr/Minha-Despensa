@@ -469,6 +469,11 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
                 """.trimIndent()
             )
         }
+    }
+}
+
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(connection: SQLiteConnection) {
         if (!tableExists(connection, "pantry_movements")) {
             connection.execSQL(
                 """
@@ -492,6 +497,44 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
             connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_type_timestamp` ON `pantry_movements` (`type`, `timestamp`)")
             connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_timestamp` ON `pantry_movements` (`timestamp`)")
         }
+    }
+}
+
+val MIGRATION_5_7 = object : Migration(5, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_5_6.migrate(connection)
+        MIGRATION_6_7.migrate(connection)
+    }
+}
+
+val MIGRATION_4_7 = object : Migration(4, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
+    }
+}
+
+val MIGRATION_3_7 = object : Migration(3, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
+    }
+}
+
+val MIGRATION_2_7 = object : Migration(2, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
+    }
+}
+
+val MIGRATION_1_7 = object : Migration(1, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
     }
 }
 
@@ -540,5 +583,11 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_4_6,
     MIGRATION_3_6,
     MIGRATION_2_6,
-    MIGRATION_1_6
+    MIGRATION_1_6,
+    MIGRATION_6_7,
+    MIGRATION_5_7,
+    MIGRATION_4_7,
+    MIGRATION_3_7,
+    MIGRATION_2_7,
+    MIGRATION_1_7
 )
