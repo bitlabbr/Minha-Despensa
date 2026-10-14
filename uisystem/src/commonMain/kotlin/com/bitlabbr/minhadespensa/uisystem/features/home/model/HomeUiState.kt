@@ -38,12 +38,51 @@ data class HomeFinancialUiModel(
 )
 
 @Immutable
+data class HomePantryStockUiModel(
+    val totalValueInCents: Long = 0L,
+    val formattedTotalValue: String = "R$ 0,00",
+    val itemsWithPriceCount: Int = 0,
+    val totalActiveItemsCount: Int = 0,
+    val averageUnitPriceInCents: Long? = null,
+    val formattedAverageUnitPrice: String? = null,
+    val hasPricedItems: Boolean = false,
+)
+
+@Immutable
+data class HomeMonthlyBarUiModel(
+    val month: Int,
+    val monthName: String,
+    val totalSpentInCents: Long,
+    val formattedTotalSpent: String,
+    val budgetInCents: Long?,
+    val formattedBudget: String,
+    val progress: Float,
+    val isOverBudget: Boolean,
+    val hasBudget: Boolean,
+)
+
+@Immutable
+data class HomeYearlyAnalyticsUiModel(
+    val year: Int = 2026,
+    val totalYearSpentInCents: Long = 0L,
+    val formattedTotalYearSpent: String = "R$ 0,00",
+    val averageMonthlySpentInCents: Long = 0L,
+    val formattedAverageMonthlySpent: String = "R$ 0,00",
+    val averageItemPriceInCents: Long? = null,
+    val formattedAverageItemPrice: String? = null,
+    val monthlySummaries: List<HomeMonthlyBarUiModel> = emptyList(),
+)
+
+@Immutable
 data class HomeUiState(
     val financialSummary: HomeFinancialUiModel = HomeFinancialUiModel(),
+    val pantryStockValue: HomePantryStockUiModel = HomePantryStockUiModel(),
+    val yearlyAnalytics: HomeYearlyAnalyticsUiModel = HomeYearlyAnalyticsUiModel(),
     val expiringItems: List<ExpiringItemCard> = emptyList(),
     val consumptionTrends: List<ConsumptionTrendItemUiModel> = emptyList(),
     val isSetBudgetDialogOpen: Boolean = false,
     val isSavingBudget: Boolean = false,
+    val isFinancialAnalyticsDialogOpen: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
 )

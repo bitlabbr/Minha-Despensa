@@ -8,7 +8,7 @@ The `:uisystem` module is a Compose Multiplatform (Android & iOS) design system 
 2. **Domain-Specific Molecules & Sheets:** Reusable cards, filter bars, camera-driven barcode scanners, and a unified product registration sheet.
 3. **Feature Screens & State Machines:** Reactive screens managing pantry inventory, product catalog, product details & price history, quick & planned shopping lists, and a live in-store shopping assistant.
 4. **App Notification Manager:** Decoupled transient notifications via `AppNotificationManager` and `MinhaDespensaSnackbar`.
-5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (141 tests).
+5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (149 tests).
 
 ---
 
@@ -136,8 +136,12 @@ To provide a smooth search experience for Brazilian Portuguese diacritics and sp
 
 ### 4.7. Home Overview & Real-Time Aggregation (`HomeScreen` & `HomeViewModel`)
 The home screen connects the user's live inventory, movement ledger, and monthly financial budget:
-- **`HomeViewModel`:** Reactively combines `GetMonthlyFinancialSummaryUseCase`, `PantryRepository.getExpiringPantryItems`, `GetMostConsumedProductsUseCase`, and `CatalogRepository.getAllActiveProducts` into `HomeUiState`.
-- **Financial Summary (`FinancialWidget`):** Displays real-time spending for the current month (`totalSpentInCents`), defined budget, and animated gauge (`InverseAnchoredGauge`). If no budget is set, renders an inviting empty state with a call-to-action button. Tapping the card triggers budget modification.
+- **`HomeViewModel`:** Reactively combines `GetMonthlyFinancialSummaryUseCase`, `PantryRepository.getExpiringPantryItems`, `GetMostConsumedProductsUseCase`, `CatalogRepository.getAllActiveProducts`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, and `PantryMovementRepository.getMovementsForPeriod` into `HomeUiState`.
+- **Financial Summary (`FinancialWidget`):** Displays real-time spending for the current month (`totalSpentInCents`), defined budget, and animated gauge (`InverseAnchoredGauge`). If no budget is set, renders an inviting empty state with a call-to-action button. Tapping the card triggers budget modification, while dedicated header actions and the bottom inventory valuation banner trigger the financial analytics dialog.
+- **Stock Value Card (`StockValueCard`):** Dedicated valuation widget displaying total active pantry inventory value in currency (`R$ X,XX`), number of evaluated items, and unit average cost.
+- **Financial Analytics Dialog (`FinancialAnalyticsDialog`):** Interactive modal showcasing pantry inventory valuation (`StockValueCard`), annual indicators (total year spent, monthly average, weighted unit item price), and a 12-month evolution list with budget status badges ("Estourado", "Na meta", "Sem meta") and progress bars.
+- **Pantry Stock Valuation (`HomePantryStockUiModel`):** Aggregates the total monetary value of all active pantry items (`sum(quantity * unitPriceInCents)`), formatted currency strings, item count with price, and average unit price.
+- **Yearly Analytics (`HomeYearlyAnalyticsUiModel`):** Prepares 12 monthly bars comparing actual spend vs. budget ceiling, total annual spending, average monthly spend, and weighted average item/purchase price.
 - **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`.
 - **Expiring Soon (`ExpiringSoonWidget`):** Monitors pantry stock with dynamic labels ("Vence hoje", "Vence amanhã", "Vence em X dias", "Vencido há X dias") with gauge urgency and an elegant empty state ("Tudo em dia na sua despensa!").
 - **Consumption Trends (`ConsumptionTrendWidget`):** Highlights top consumed products during the current month with unit resolution and empty state.
@@ -150,7 +154,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Logger:** `AppLogger` qualifier `DiQualifiers.UI_LOGGER` bound to `ConsoleLogger("UISystem")`.
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
-  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `PantryRepository`, `CatalogRepository`, logger, notification manager.
+  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, logger, notification manager.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases, logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
@@ -163,12 +167,13 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 141 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 149 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
 | `CurrencyFormatterTest` | Formats integer cents to Brazilian Real (`R$ 1.234,56`), handles zero, negatives, and large numbers. |
 | `MeasureUnitMapperTest` | Maps all domain `MeasureUnit` enums to localized `StringResource` tokens. |
+| `MonthMapperTest` | Maps `Month` enum and integer numbers to localized `StringResource` tokens and short abbreviation strings with out-of-bounds fallback. |
 | `UiTextTest` | Resolves `DynamicString` and `Resource` with string format arguments. |
 | `CatalogProductUiModelTest` | Formats unit weights, packaging info, and handles missing brands. |
 | `ProductFormStateTest` | Form validation: required name, length restrictions, numeric weight parsing. |
@@ -176,7 +181,7 @@ All 141 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
 | `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
-| `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog lifecycle and validation. |
+| `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, pantry stock value calculation (with priced/unpriced/deleted items), yearly analytics aggregations (12 monthly bars, elapsed month averages, purchase/stock unit costs), dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog & FinancialAnalyticsDialog lifecycles and validation. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |

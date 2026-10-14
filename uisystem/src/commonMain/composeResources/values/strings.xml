@@ -384,4 +384,41 @@
     <string name="action_show_more_count">Mostrar mais (%1$d)</string>
     <string name="action_show_less">Mostrar menos</string>
 
+    <!-- Financial Analytics & Stock Value -->
+    <string name="home_stock_value_title">Estoque da Despensa</string>
+    <string name="home_stock_value_desc">Estoque avaliado em: %1$s</string>
+    <string name="home_stock_value_items_count">%1$d itens com valor cadastrado</string>
+    <string name="home_stock_value_average_unit_price">Média por item: %1$s</string>
+    <string name="home_stock_value_no_prices">Nenhum item com valor cadastrado</string>
+    <string name="home_stock_value_chip_label">Estoque: %1$s</string>
+
+    <string name="home_analytics_dialog_title">Evolução Financeira (%1$d)</string>
+    <string name="home_analytics_dialog_desc">Histórico anual de gastos, metas orçamentárias e avaliação patrimonial do estoque.</string>
+    <string name="home_analytics_total_year_spent">Total gasto no ano</string>
+    <string name="home_analytics_monthly_average">Média mensal</string>
+    <string name="home_analytics_average_item_price">Preço médio por compra/item</string>
+    <string name="home_analytics_evolution_section_title">EVOLUÇÃO MENSAL DE DESPESAS</string>
+    <string name="home_analytics_over_budget_badge">Estourado</string>
+    <string name="home_analytics_no_budget_badge">Sem meta</string>
+    <string name="home_analytics_within_budget_badge">Na meta</string>
+    <string name="home_analytics_action_button">Análise</string>
+    <string name="home_analytics_close_button">Fechar</string>
+    <string name="home_analytics_no_expenses_year">Nenhum gasto registrado neste ano</string>
+
+    <!-- Month Abbreviations for Analytics -->
+    <string name="month_1_short">Jan</string>
+    <string name="month_2_short">Fev</string>
+    <string name="month_3_short">Mar</string>
+    <string name="month_4_short">Abr</string>
+    <string name="month_5_short">Mai</string>
+    <string name="month_6_short">Jun</string>
+    <string name="month_7_short">Jul</string>
+    <string name="month_8_short">Ago</string>
+    <string name="month_9_short">Set</string>
+    <string name="month_10_short">Out</string>
+    <string name="month_11_short">Nov</string>
+    <string name="month_12_short">Dez</string>
+
+    <string name="placeholder_empty_metric">—</string>
+
 </resources>

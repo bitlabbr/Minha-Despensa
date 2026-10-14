@@ -38,6 +38,8 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.CreatePlannedShoppingListU
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.FinalizeShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetMonthlyFinancialSummaryUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetPantryTotalValueUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetYearlyFinancialSummaryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.RemoveCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
@@ -117,4 +119,6 @@ val dataModule = module {
     factory { SetMonthlyBudgetUseCase(budgetRepository = get()) }
     factory { GetMonthlyFinancialSummaryUseCase(budgetRepository = get()) }
     factory { GetMostConsumedProductsUseCase(movementRepository = get()) }
+    factory { GetPantryTotalValueUseCase(pantryRepository = get()) }
+    factory { GetYearlyFinancialSummaryUseCase(budgetRepository = get()) }
 }

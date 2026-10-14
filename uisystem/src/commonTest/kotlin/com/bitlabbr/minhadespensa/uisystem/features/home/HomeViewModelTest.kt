@@ -29,8 +29,12 @@ import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.MonthlyBudget
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
+import com.bitlabbr.minhadespensa.core.domain.model.MovementType
+import com.bitlabbr.minhadespensa.core.domain.model.PantryMovement
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetMonthlyFinancialSummaryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetMostConsumedProductsUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetPantryTotalValueUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetYearlyFinancialSummaryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SetMonthlyBudgetUseCase
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeBudgetRepository
@@ -85,6 +89,8 @@ class HomeViewModelTest {
     private lateinit var getMonthlyFinancialSummaryUseCase: GetMonthlyFinancialSummaryUseCase
     private lateinit var setMonthlyBudgetUseCase: SetMonthlyBudgetUseCase
     private lateinit var getMostConsumedProductsUseCase: GetMostConsumedProductsUseCase
+    private lateinit var getPantryTotalValueUseCase: GetPantryTotalValueUseCase
+    private lateinit var getYearlyFinancialSummaryUseCase: GetYearlyFinancialSummaryUseCase
 
     @BeforeTest
     fun setUp() {
@@ -100,6 +106,8 @@ class HomeViewModelTest {
         getMonthlyFinancialSummaryUseCase = GetMonthlyFinancialSummaryUseCase(budgetRepository)
         setMonthlyBudgetUseCase = SetMonthlyBudgetUseCase(budgetRepository)
         getMostConsumedProductsUseCase = GetMostConsumedProductsUseCase(pantryMovementRepository)
+        getPantryTotalValueUseCase = GetPantryTotalValueUseCase(pantryRepository)
+        getYearlyFinancialSummaryUseCase = GetYearlyFinancialSummaryUseCase(budgetRepository)
     }
 
     @AfterTest
@@ -112,7 +120,10 @@ class HomeViewModelTest {
             getMonthlyFinancialSummaryUseCase = getMonthlyFinancialSummaryUseCase,
             setMonthlyBudgetUseCase = setMonthlyBudgetUseCase,
             getMostConsumedProductsUseCase = getMostConsumedProductsUseCase,
+            getPantryTotalValueUseCase = getPantryTotalValueUseCase,
+            getYearlyFinancialSummaryUseCase = getYearlyFinancialSummaryUseCase,
             pantryRepository = pantryRepository,
+            pantryMovementRepository = pantryMovementRepository,
             catalogRepository = catalogRepository,
             logger = logger,
             notificationManager = notificationManager,
@@ -427,5 +438,170 @@ class HomeViewModelTest {
         assertEquals("Geral", state.consumptionTrends.first().productCategory)
         assertEquals("un", state.consumptionTrends.first().productMeasureUnity)
         assertEquals("3", state.consumptionTrends.first().consumptionAmount)
+    }
+
+    @Test
+    fun `pantry stock value calculates total value and items with price correctly`() = runTest(testDispatcher) {
+        val item1 = PantryItem(id = "p-1", productId = "prod-1", quantity = 2.0, expirationDate = null, unitPriceInCents = 550L, updatedAt = 0L)
+        val item2 = PantryItem(id = "p-2", productId = "prod-2", quantity = 1.0, expirationDate = null, unitPriceInCents = 1200L, updatedAt = 0L)
+        val item3 = PantryItem(id = "p-3", productId = "prod-3", quantity = 3.0, expirationDate = null, unitPriceInCents = null, updatedAt = 0L)
+        val itemDeleted = PantryItem(id = "p-4", productId = "prod-4", quantity = 5.0, expirationDate = null, unitPriceInCents = 200L, isDeleted = true, updatedAt = 0L)
+
+        pantryRepository.items.value = mapOf(
+            item1.id to item1,
+            item2.id to item2,
+            item3.id to item3,
+            itemDeleted.id to itemDeleted,
+        )
+
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        val stockState = viewModel.uiState.value.pantryStockValue
+        assertEquals(2300L, stockState.totalValueInCents) // (2 * 550) + (1 * 1200) = 1100 + 1200 = 2300
+        assertEquals("R$ 23,00", stockState.formattedTotalValue)
+        assertEquals(2, stockState.itemsWithPriceCount)
+        assertEquals(3, stockState.totalActiveItemsCount)
+        assertEquals(1150L, stockState.averageUnitPriceInCents) // 2300 / 2
+        assertEquals("R$ 11,50", stockState.formattedAverageUnitPrice)
+        assertTrue(stockState.hasPricedItems)
+    }
+
+    @Test
+    fun `pantry stock value with no priced items shows zero and false hasPricedItems`() = runTest(testDispatcher) {
+        val unpricedItem = PantryItem(id = "p-unpriced", productId = "prod-unpriced", quantity = 4.0, expirationDate = null, unitPriceInCents = null, updatedAt = 0L)
+        pantryRepository.items.value = mapOf(unpricedItem.id to unpricedItem)
+
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        val stockState = viewModel.uiState.value.pantryStockValue
+        assertEquals(0L, stockState.totalValueInCents)
+        assertEquals("R$ 0,00", stockState.formattedTotalValue)
+        assertEquals(0, stockState.itemsWithPriceCount)
+        assertEquals(1, stockState.totalActiveItemsCount)
+        assertEquals(null, stockState.averageUnitPriceInCents)
+        assertEquals(null, stockState.formattedAverageUnitPrice)
+        assertFalse(stockState.hasPricedItems)
+    }
+
+    @Test
+    fun `pantry stock value updates reactively when pantry items change`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(0L, viewModel.uiState.value.pantryStockValue.totalValueInCents)
+
+        val newItem = PantryItem(id = "p-new", productId = "prod-new", quantity = 3.0, expirationDate = null, unitPriceInCents = 1000L, updatedAt = 0L)
+        pantryRepository.items.value = mapOf(newItem.id to newItem)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(3000L, viewModel.uiState.value.pantryStockValue.totalValueInCents)
+        assertEquals(1, viewModel.uiState.value.pantryStockValue.itemsWithPriceCount)
+    }
+
+    @Test
+    fun `yearly analytics aggregates expenses across 12 months and calculates monthly average`() = runTest(testDispatcher) {
+        // fixedInstant is month 10 (October 2026)
+        budgetRepository.expenses.value = mapOf(
+            Pair(2026, 1) to 10000L,
+            Pair(2026, 5) to 20000L,
+            Pair(2026, 10) to 30000L,
+        )
+
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        val analytics = viewModel.uiState.value.yearlyAnalytics
+        assertEquals(2026, analytics.year)
+        assertEquals(60000L, analytics.totalYearSpentInCents)
+        assertEquals("R$ 600,00", analytics.formattedTotalYearSpent)
+
+        // Elapsed months up to month 10: 60000 / 10 = 6000
+        assertEquals(6000L, analytics.averageMonthlySpentInCents)
+        assertEquals("R$ 60,00", analytics.formattedAverageMonthlySpent)
+        assertEquals(12, analytics.monthlySummaries.size)
+
+        val jan = analytics.monthlySummaries[0]
+        assertEquals("Jan", jan.monthName)
+        assertEquals(10000L, jan.totalSpentInCents)
+
+        val out = analytics.monthlySummaries[9]
+        assertEquals("Out", out.monthName)
+        assertEquals(30000L, out.totalSpentInCents)
+    }
+
+    @Test
+    fun `yearly analytics calculates average price from yearly purchases`() = runTest(testDispatcher) {
+        val timestamp2026 = fixedInstant.toEpochMilliseconds()
+        pantryMovementRepository.movements.value = listOf(
+            PantryMovement(
+                id = "m-1",
+                productId = "prod-1",
+                type = MovementType.ENTRY_PURCHASE,
+                quantity = 2.0,
+                unitPriceInCents = 500L,
+                timestamp = timestamp2026,
+            ),
+            PantryMovement(
+                id = "m-2",
+                productId = "prod-2",
+                type = MovementType.ENTRY_MANUAL,
+                quantity = 3.0,
+                unitPriceInCents = 1000L,
+                timestamp = timestamp2026,
+            ),
+            PantryMovement(
+                id = "m-3",
+                productId = "prod-3",
+                type = MovementType.CONSUMPTION,
+                quantity = 1.0,
+                timestamp = timestamp2026,
+            ),
+        )
+
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        // Total purchases spent: (2 * 500) + (3 * 1000) = 1000 + 3000 = 4000. Total purchases qty: 2 + 3 = 5. Avg = 800
+        val analytics = viewModel.uiState.value.yearlyAnalytics
+        assertEquals(800L, analytics.averageItemPriceInCents)
+        assertEquals("R$ 8,00", analytics.formattedAverageItemPrice)
+    }
+
+    @Test
+    fun `yearly analytics falls back to pantry stock average price when no purchase movements exist`() = runTest(testDispatcher) {
+        val stockItem = PantryItem(id = "p-1", productId = "prod-1", quantity = 2.0, expirationDate = null, unitPriceInCents = 1500L, updatedAt = 0L)
+        pantryRepository.items.value = mapOf(stockItem.id to stockItem)
+
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        val analytics = viewModel.uiState.value.yearlyAnalytics
+        assertEquals(3000L, analytics.averageItemPriceInCents)
+        assertEquals("R$ 30,00", analytics.formattedAverageItemPrice)
+    }
+
+    @Test
+    fun `openFinancialAnalyticsDialog and dismissFinancialAnalyticsDialog toggle dialog visibility`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isFinancialAnalyticsDialogOpen)
+
+        viewModel.openFinancialAnalyticsDialog()
+        testScheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isFinancialAnalyticsDialogOpen)
+
+        viewModel.dismissFinancialAnalyticsDialog()
+        testScheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isFinancialAnalyticsDialogOpen)
     }
 }

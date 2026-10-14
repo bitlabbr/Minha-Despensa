@@ -28,19 +28,29 @@ import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.MonthlyFinancialSummary
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
+import com.bitlabbr.minhadespensa.core.domain.model.PantryMovement
+import com.bitlabbr.minhadespensa.core.domain.model.MovementType
+import com.bitlabbr.minhadespensa.core.domain.model.PantryStockValue
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PantryMovementRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetMonthlyFinancialSummaryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetMostConsumedProductsUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetPantryTotalValueUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetYearlyFinancialSummaryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SetMonthlyBudgetUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeFinancialUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeMonthlyBarUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomePantryStockUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeUiState
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeYearlyAnalyticsUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ExpiringItemCard
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
+import com.bitlabbr.minhadespensa.uisystem.mapper.toShortMonthName
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,7 +81,10 @@ class HomeViewModel(
     private val getMonthlyFinancialSummaryUseCase: GetMonthlyFinancialSummaryUseCase,
     private val setMonthlyBudgetUseCase: SetMonthlyBudgetUseCase,
     private val getMostConsumedProductsUseCase: GetMostConsumedProductsUseCase,
+    private val getPantryTotalValueUseCase: GetPantryTotalValueUseCase,
+    private val getYearlyFinancialSummaryUseCase: GetYearlyFinancialSummaryUseCase,
     private val pantryRepository: PantryRepository,
+    private val pantryMovementRepository: PantryMovementRepository,
     private val catalogRepository: CatalogRepository,
     private val logger: AppLogger? = null,
     private val notificationManager: AppNotificationManager? = null,
@@ -90,6 +103,7 @@ class HomeViewModel(
 
     private val _isSetBudgetDialogOpen = MutableStateFlow(false)
     private val _isSavingBudget = MutableStateFlow(false)
+    private val _isFinancialAnalyticsDialogOpen = MutableStateFlow(false)
 
     private fun getStartOfMonthMillis(year: Int, month: Int): Long {
         return LocalDate(year, month, 1).atStartOfDayIn(timeZone).toEpochMilliseconds()
@@ -100,11 +114,25 @@ class HomeViewModel(
         return nextMonthDate.atStartOfDayIn(timeZone).toEpochMilliseconds() - 1
     }
 
+    private fun getStartOfYearMillis(year: Int): Long {
+        return LocalDate(year, 1, 1).atStartOfDayIn(timeZone).toEpochMilliseconds()
+    }
+
+    private fun getEndOfYearMillis(year: Int): Long {
+        return LocalDate(year + 1, 1, 1).atStartOfDayIn(timeZone).toEpochMilliseconds() - 1
+    }
+
     private data class HomeDomainData(
         val financial: MonthlyFinancialSummary,
         val expiring: List<PantryItemWithCategory>,
         val mostConsumed: List<Pair<String, Double>>,
         val products: List<CatalogProduct>,
+    )
+
+    private data class HomeAnalyticsDomainData(
+        val stockValue: PantryStockValue,
+        val yearlySummaries: List<MonthlyFinancialSummary>,
+        val yearlyMovements: List<PantryMovement>,
     )
 
     private val homeDataFlow = combine(
@@ -125,11 +153,28 @@ class HomeViewModel(
         )
     }
 
+    private val homeAnalyticsFlow = combine(
+        getPantryTotalValueUseCase(),
+        getYearlyFinancialSummaryUseCase(currentYear),
+        pantryMovementRepository.getMovementsForPeriod(
+            startTimestamp = getStartOfYearMillis(currentYear),
+            endTimestamp = getEndOfYearMillis(currentYear),
+        ),
+    ) { stockValue, yearlySummaries, yearlyMovements ->
+        HomeAnalyticsDomainData(
+            stockValue = stockValue,
+            yearlySummaries = yearlySummaries,
+            yearlyMovements = yearlyMovements,
+        )
+    }
+
     val uiState: StateFlow<HomeUiState> = combine(
         homeDataFlow,
+        homeAnalyticsFlow,
         _isSetBudgetDialogOpen,
         _isSavingBudget,
-    ) { data, isDialogOpen, isSaving ->
+        _isFinancialAnalyticsDialogOpen,
+    ) { data, analyticsData, isDialogOpen, isSaving, isAnalyticsDialogOpen ->
         val productsMap = data.products.associateBy { it.id }
 
         val budgetCents = data.financial.budgetInCents
@@ -160,12 +205,23 @@ class HomeViewModel(
             mapConsumptionTrendItem(productId, qty, productsMap)
         }
 
+        val stockModel = mapPantryStockValue(analyticsData.stockValue)
+        val yearlyAnalyticsModel = mapYearlyAnalytics(
+            year = currentYear,
+            yearlySummaries = analyticsData.yearlySummaries,
+            yearlyMovements = analyticsData.yearlyMovements,
+            stockValue = analyticsData.stockValue,
+        )
+
         HomeUiState(
             financialSummary = financialModel,
+            pantryStockValue = stockModel,
+            yearlyAnalytics = yearlyAnalyticsModel,
             expiringItems = expiringList,
             consumptionTrends = trendList,
             isSetBudgetDialogOpen = isDialogOpen,
             isSavingBudget = isSaving,
+            isFinancialAnalyticsDialogOpen = isAnalyticsDialogOpen,
             isLoading = false,
             error = null,
         )
@@ -279,5 +335,84 @@ class HomeViewModel(
         } else {
             notificationManager?.showError(UiText.Resource(Res.string.error_invalid_number))
         }
+    }
+
+    private fun mapPantryStockValue(stockValue: PantryStockValue): HomePantryStockUiModel {
+        val hasPriced = stockValue.itemsWithPriceCount > 0
+        return HomePantryStockUiModel(
+            totalValueInCents = stockValue.totalValueInCents,
+            formattedTotalValue = stockValue.totalValueInCents.formatPrice(includeCurrencySymbol = true),
+            itemsWithPriceCount = stockValue.itemsWithPriceCount,
+            totalActiveItemsCount = stockValue.totalActiveItemsCount,
+            averageUnitPriceInCents = stockValue.averagePriceInCents,
+            formattedAverageUnitPrice = stockValue.averagePriceInCents?.formatPrice(includeCurrencySymbol = true),
+            hasPricedItems = hasPriced,
+        )
+    }
+
+    private fun mapYearlyAnalytics(
+        year: Int,
+        yearlySummaries: List<MonthlyFinancialSummary>,
+        yearlyMovements: List<PantryMovement>,
+        stockValue: PantryStockValue,
+    ): HomeYearlyAnalyticsUiModel {
+        val totalYearSpent = yearlySummaries.sumOf { it.totalSpentInCents }
+        val elapsedMonths = maxOf(1, currentMonth)
+        val averageMonthlySpent = (totalYearSpent.toDouble() / elapsedMonths).roundToLong()
+
+        val purchaseMovements = yearlyMovements.filter {
+            !it.isDeleted &&
+                (it.type == MovementType.ENTRY_PURCHASE || it.type == MovementType.ENTRY_MANUAL) &&
+                (it.unitPriceInCents != null || it.totalPriceInCents != null)
+        }
+        val totalPurchasesSpent = purchaseMovements.sumOf { it.computedTotalPriceInCents ?: 0L }
+        val totalPurchasesQuantity = purchaseMovements.sumOf { it.quantity }
+        val avgPriceInCents = if (totalPurchasesQuantity > 0.0) {
+            (totalPurchasesSpent.toDouble() / totalPurchasesQuantity).roundToLong()
+        } else {
+            stockValue.averagePriceInCents
+        }
+
+        val bars = yearlySummaries.map { summary ->
+            val budget = summary.budgetInCents
+            val hasBudget = budget != null && budget > 0L
+            val progress = if (hasBudget) {
+                summary.totalSpentInCents.toFloat() / budget!!.toFloat()
+            } else {
+                0f
+            }
+            val monthLabel = summary.month.toShortMonthName()
+
+            HomeMonthlyBarUiModel(
+                month = summary.month,
+                monthName = monthLabel,
+                totalSpentInCents = summary.totalSpentInCents,
+                formattedTotalSpent = summary.totalSpentInCents.formatPrice(includeCurrencySymbol = true),
+                budgetInCents = budget,
+                formattedBudget = budget?.formatPrice(includeCurrencySymbol = true) ?: "R$ 0,00",
+                progress = progress,
+                isOverBudget = summary.isOverBudget,
+                hasBudget = hasBudget,
+            )
+        }
+
+        return HomeYearlyAnalyticsUiModel(
+            year = year,
+            totalYearSpentInCents = totalYearSpent,
+            formattedTotalYearSpent = totalYearSpent.formatPrice(includeCurrencySymbol = true),
+            averageMonthlySpentInCents = averageMonthlySpent,
+            formattedAverageMonthlySpent = averageMonthlySpent.formatPrice(includeCurrencySymbol = true),
+            averageItemPriceInCents = avgPriceInCents,
+            formattedAverageItemPrice = avgPriceInCents?.formatPrice(includeCurrencySymbol = true),
+            monthlySummaries = bars,
+        )
+    }
+
+    fun openFinancialAnalyticsDialog() {
+        _isFinancialAnalyticsDialogOpen.value = true
+    }
+
+    fun dismissFinancialAnalyticsDialog() {
+        _isFinancialAnalyticsDialogOpen.value = false
     }
 }

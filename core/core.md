@@ -93,6 +93,10 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
     *   *Movement Types*: `ENTRY_MANUAL`, `ENTRY_PURCHASE`, `CONSUMPTION`, `EXPIRATION_DISCARD`, `ADJUSTMENT`.
     *   *Computed Domain Property*:
         *   `computedTotalPriceInCents`: Resolved from `totalPriceInCents` or calculated as `unitPriceInCents * quantity`.
+*   **`PantryStockValue`**: Aggregate domain model representing the current financial valuation of the pantry inventory.
+    *   *Fields*: `totalValueInCents`, `itemsWithPriceCount`, `totalActiveItemsCount`.
+    *   *Computed Domain Property*:
+        *   `averagePriceInCents`: Resolved as `totalValueInCents / itemsWithPriceCount` when `itemsWithPriceCount > 0`, or `null`.
 *   **`IconKeys`**: String keys mapping domain categories to application icons (e.g., `GRAINS`, `CLEANING`, `BEVERAGES`).
 
 ---
@@ -131,6 +135,10 @@ The `:core` module defines 15 use cases encapsulating discrete application busin
     *   Combines the monthly budget target with aggregated expenses from `BudgetRepository.getBudgetForMonth()` and `BudgetRepository.getMonthlyExpenses()`, emitting a reactive `MonthlyFinancialSummary` with progress, remaining balance, and over-budget flag.
 *   **`GetMostConsumedProductsUseCase`**:
     *   Retrieves the most consumed products within a specified time range via `PantryMovementRepository.getMostConsumedProducts()`.
+*   **`GetPantryTotalValueUseCase`**:
+    *   Calculates the total monetary value of current active inventory in the pantry by summing `quantity * unitPriceInCents` for priced items, emitting a reactive `PantryStockValue`.
+*   **`GetYearlyFinancialSummaryUseCase`**:
+    *   Validates year (2000..2100) and delegates to `BudgetRepository.getYearlySummary()`, emitting the 12-month budget vs expense history.
 
 ---
 
@@ -229,9 +237,11 @@ The `:core` module contains comprehensive unit tests located in `core/src/common
 *   `CheckEanStatusUseCaseTest`: Tests barcode validation, digit checking, and repository lookup.
 *   `BudgetModelsTest`: Validates `MonthlyBudget`, `MonthlyFinancialSummary` computed properties and edge cases, and `getMonthTimeRange` boundary calculations.
 *   `BudgetUseCasesTest`: Validates `SetMonthlyBudgetUseCase` and `GetMonthlyFinancialSummaryUseCase` business constraints, reactive summary emission, and edge cases.
+*   `PantryTotalValueUseCaseTest`: Validates pantry stock financial valuation, priced vs unpriced item filtering, fractional quantity calculations, and deleted item exclusion.
+*   `YearlyFinancialSummaryUseCaseTest`: Validates 12-month budget vs expense aggregation, year boundary validation, and monthly progress computation.
 *   `DomainModelsTest`: Tests model serialization, copy operations, and computed properties (`totalCartInCents`, `isOverBudget`, `subtotalInCents`).
 *   `CoreConstantsTest`: Ensures domain constants remain immutable and properly bounded.
 *   `TimestampToleranceTest`: Verifies clock skew tolerance and boundary enforcement.
 *   `ConsoleLoggerTest`: Verifies formatting and level output.
 
-All 90 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
+All 102 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
