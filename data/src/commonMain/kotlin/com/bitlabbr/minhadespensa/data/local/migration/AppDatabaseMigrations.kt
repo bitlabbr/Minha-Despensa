@@ -454,6 +454,121 @@ val MIGRATION_1_5 = object : Migration(1, 5) {
     }
 }
 
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        if (!tableExists(connection, "monthly_budgets")) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `monthly_budgets` (
+                    `year` INTEGER NOT NULL,
+                    `month` INTEGER NOT NULL,
+                    `budgetInCents` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`year`, `month`)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+}
+
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        if (!tableExists(connection, "pantry_movements")) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `pantry_movements` (
+                    `id` TEXT NOT NULL,
+                    `pantry_item_id` TEXT,
+                    `productId` TEXT NOT NULL,
+                    `type` TEXT NOT NULL,
+                    `quantity` REAL NOT NULL,
+                    `unit_price_in_cents` INTEGER,
+                    `total_price_in_cents` INTEGER,
+                    `timestamp` INTEGER NOT NULL,
+                    `store_or_reason` TEXT,
+                    `is_deleted` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`),
+                    FOREIGN KEY(`productId`) REFERENCES `catalog_products`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                )
+                """.trimIndent()
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_productId` ON `pantry_movements` (`productId`)")
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_type_timestamp` ON `pantry_movements` (`type`, `timestamp`)")
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_timestamp` ON `pantry_movements` (`timestamp`)")
+        }
+    }
+}
+
+val MIGRATION_5_7 = object : Migration(5, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_5_6.migrate(connection)
+        MIGRATION_6_7.migrate(connection)
+    }
+}
+
+val MIGRATION_4_7 = object : Migration(4, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
+    }
+}
+
+val MIGRATION_3_7 = object : Migration(3, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
+    }
+}
+
+val MIGRATION_2_7 = object : Migration(2, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
+    }
+}
+
+val MIGRATION_1_7 = object : Migration(1, 7) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_7.migrate(connection)
+    }
+}
+
+val MIGRATION_4_6 = object : Migration(4, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
+val MIGRATION_3_6 = object : Migration(3, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
+val MIGRATION_2_6 = object : Migration(2, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
+val MIGRATION_1_6 = object : Migration(1, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
 val ALL_MIGRATIONS = arrayOf(
     MIGRATION_1_2,
     MIGRATION_2_3,
@@ -463,5 +578,16 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_4_5,
     MIGRATION_3_5,
     MIGRATION_2_5,
-    MIGRATION_1_5
+    MIGRATION_1_5,
+    MIGRATION_5_6,
+    MIGRATION_4_6,
+    MIGRATION_3_6,
+    MIGRATION_2_6,
+    MIGRATION_1_6,
+    MIGRATION_6_7,
+    MIGRATION_5_7,
+    MIGRATION_4_7,
+    MIGRATION_3_7,
+    MIGRATION_2_7,
+    MIGRATION_1_7
 )

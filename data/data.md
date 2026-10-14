@@ -7,8 +7,8 @@ This document provides an in-depth analysis of the `:data` module, outlining its
 The `:data` module in **Minha Despensa** is a Kotlin Multiplatform (KMP) library responsible for data persistence and local storage. It acts as the single source of truth for all local data, implementing the repository interfaces declared in `:core:domain`.
 
 Key capabilities:
-*   **Offline-First Local Storage**: Uses Google Room Multiplatform (Version 5) backed by SQLite (`BundledSQLiteDriver`).
-*   **Migration Pipeline**: Full schema evolution and migration strategy supporting incremental and multi-version jumps (`1->2`, `2->3`, `3->4`, `4->5`, direct `1->5`, `2->5`, `3->5`).
+*   **Offline-First Local Storage**: Uses Google Room Multiplatform (Version 6) backed by SQLite (`BundledSQLiteDriver`).
+*   **Migration Pipeline**: Full schema evolution and migration strategy supporting incremental and multi-version jumps (`1->2`, `2->3`, `3->4`, `4->5`, `5->6`, direct `1->6`, `2->6`, `3->6`, `4->6`).
 *   **Conflict Resolution**: Enforces Last-Write-Wins (LWW) conflict resolution on updates via SQL timestamp comparison (`updated_at < :updatedAt`).
 *   **Atomic Transactions**: Protects multi-table operations (such as product creation with media, pantry consumption batches, and shopping checkout) using Room's `useWriterConnection { conn -> conn.withTransaction(IMMEDIATE) { ... } }`.
 *   **Clean Architecture Separation**: Pure separation between Room database entities and core domain models via dedicated mappers in `com.bitlabbr.minhadespensa.data.local.mapper`.
@@ -21,13 +21,13 @@ Key capabilities:
 data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/
 ├── di/                     # Koin DataModule dependency injection
 ├── local/
-│   ├── AppDatabase.kt      # Main Room database declaration (Version 5)
+│   ├── AppDatabase.kt      # Main Room database declaration (Version 6)
 │   ├── converter/          # Room TypeConverters (Instant, MeasureUnit)
 │   ├── dao/                # Room Data Access Objects (DAOs)
 │   ├── dto/                # Room query projection DTOs (e.g. joins)
 │   ├── entity/             # Room SQLite table entities
 │   ├── mapper/             # Bidirectional Entity <-> Domain mappers
-│   └── migration/          # Room Migration definitions (1->2, 2->3, 3->4, 4->5, direct 1->5, 2->5, 3->5)
+│   └── migration/          # Room Migration definitions (1->2, 2->3, 3->4, 4->5, 5->6, direct jumps to v6)
 ├── repository/             # Room repository implementations
 └── util/                   # Common utilities (ImageProcessor expect interface)
 ```
@@ -41,7 +41,7 @@ Platform-specific source sets:
 ## 3. Dependencies
 
 ### Internal:
-*   `:core`: Consumes domain models (`CatalogProduct`, `PantryItem`, `PriceEntry`, `ShoppingList`, `ShoppingItem`, etc.), repository interfaces, domain use cases, and utilities (`AppLogger`, `CoreConstants`, `DiQualifiers`, `Helpers`).
+*   `:core`: Consumes domain models (`CatalogProduct`, `PantryItem`, `PriceEntry`, `ShoppingList`, `ShoppingItem`, `MonthlyBudget`, `MonthlyFinancialSummary`, etc.), repository interfaces, domain use cases, and utilities (`AppLogger`, `CoreConstants`, `DiQualifiers`, `Helpers`).
 
 ### External:
 *   **AndroidX Room Multiplatform** (`androidx.room:room-runtime`, `ksp` compiler): SQLite ORM.
@@ -57,8 +57,8 @@ Platform-specific source sets:
 ## 4. Key Components
 
 ### 4.1. Room Database (`local/AppDatabase.kt`)
-*   **Entities**: `CatalogProductEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`.
-*   **Version**: `5`.
+*   **Entities**: `CatalogProductEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`, `MonthlyBudgetEntity`, `PantryMovementEntity`.
+*   **Version**: `6`.
 *   **Driver**: `BundledSQLiteDriver()`.
 *   **Platform Initialization**: Uses `expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>` to instantiate platform SQLite drivers.
 
@@ -79,6 +79,11 @@ Platform-specific source sets:
     *   *Columns*: `id` (PK), `name`, `list_type`, `list_status`, `budget_in_cents` (Kotlin alias `budgedInCents`), `updated_at`, `is_deleted`.
 *   **`ShoppingListWithItems`**:
     *   Room relation data class holding `ShoppingListEntity` with `@Relation` child `List<ShoppingItemEntity>`.
+*   **`MonthlyBudgetEntity`** (`monthly_budgets`):
+    *   *Columns*: `year` (PK), `month` (PK), `budgetInCents`, `updatedAt`. Composite primary key `(year, month)`.
+*   **`PantryMovementEntity`** (`pantry_movements`):
+    *   *Columns*: `id` (PK), `pantry_item_id`, `productId` (FK to `catalog_products.id` on delete cascade), `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `timestamp`, `store_or_reason`, `is_deleted`.
+    *   *Indices*: `productId`, `(type, timestamp)`, `timestamp`.
 
 ---
 
@@ -91,7 +96,11 @@ Platform-specific source sets:
     *   Adds unique index on `catalog_products.ean`.
 *   **`MIGRATION_4_5` (`migrateToSchemaV5`)**:
     *   Adds `unit_price_in_cents INTEGER DEFAULT NULL` column to `pantry_items`.
-*   **`MIGRATION_1_5`, `MIGRATION_2_5` & `MIGRATION_3_5`**: Direct upgrade paths to schema v5.
+*   **`MIGRATION_5_6`**:
+    *   Creates table `monthly_budgets` with composite primary key `(year, month)`.
+*   **`MIGRATION_6_7`**:
+    *   Creates audit and expense ledger table `pantry_movements` with indexes on `(type, timestamp)`, `(productId)` and `timestamp`.
+*   **`MIGRATION_1_7`, `MIGRATION_2_7`, `MIGRATION_3_7`, `MIGRATION_4_7` & `MIGRATION_5_7`**: Direct upgrade paths to schema v7.
 *   **`ALL_MIGRATIONS`**: Exported migration array consumed by Koin's database builder.
 
 ---
@@ -105,6 +114,9 @@ Platform-specific source sets:
 ### 4.5. Domain & Entity Mappers (`local/mapper/`)
 
 Centralized and decoupled from repositories:
+*   **`BudgetMapper.kt`**:
+    *   `MonthlyBudgetEntity.toDomain()`.
+    *   `MonthlyBudget.toEntity()`.
 *   **`CatalogMapper.kt`**:
     *   `CatalogProductEntity.toDomain()` (with safe `runCatching` fallback for `MeasureUnit`).
     *   `CatalogProduct.toEntity()`.
@@ -115,6 +127,9 @@ Centralized and decoupled from repositories:
 *   **`PriceMapper.kt`**:
     *   `PriceEntryEntity.toDomain()`.
     *   `PriceEntry.toEntity()`.
+*   **`PantryMovementMapper.kt`**:
+    *   `PantryMovementEntity.toDomain()`.
+    *   `PantryMovement.toEntity()`.
 *   **`ShoppingMapper.kt`**:
     *   `ShoppingListWithItems.toDomain()`: Preserves soft-deleted items (`isDeleted = true`) so domain synchronization, cart totals, and LWW state machines have full visibility into the item states.
     *   `ShoppingList.toEntity()`.
@@ -124,6 +139,14 @@ Centralized and decoupled from repositories:
 ---
 
 ### 4.6. Data Access Objects (`local/dao/`)
+*   **`PantryMovementDao`**:
+    *   `insertMovement`, `insertMovements` (`REPLACE`).
+    *   `getMovementsForPeriod`, `getAllMovements` (ordered by timestamp DESC).
+    *   `getMostConsumedProducts` (reactive aggregation of `CONSUMPTION` movements).
+    *   `getMonthlyExpenses`, `findMonthlyExpenses` (reactive calculation summing `ENTRY_MANUAL` and `ENTRY_PURCHASE`).
+*   **`MonthlyBudgetDao`**:
+    *   `insertOrUpdate` (`REPLACE`), `getBudget` (reactive Flow), `findBudget` (suspend), `getBudgetsForYear` (ordered by month ASC).
+    *   `getMonthlyExpenses`, `findMonthlyExpenses` (suspend).
 *   **`CatalogProductDao`**:
     *   `findByEan`, `findById`, `getAllActive`, `searchByNameOrBrand` (ordered by name ASC).
     *   `insert` (`ABORT`), `forceUpdateForProduct`, `updateProductIfNewer` (LWW with all product fields including notes), `markAsDeleted`, `deleteProductById`, `exists`.
@@ -167,6 +190,12 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   Encapsulates database and DAOs as private members.
     *   `insertShoppingList`: Atomically saves list entity and its associated items.
     *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries (repassing `unitPriceInCents = item.priceAtTime`), records `PriceEntry` sharing the same ID as the pantry item when prices are present, unchecks items, and updates the list timestamp to `COMPLETED`.
+*   **`RoomBudgetRepository`**:
+    *   Encapsulates `AppDatabase` and `MonthlyBudgetDao` as private members.
+    *   `getBudgetForMonth`: Emits `MonthlyBudget` domain model mapped from `MonthlyBudgetEntity` for a given `(year, month)`.
+    *   `setBudgetForMonth`: Validates year, month, and non-negative budget value, persisting via `budgetDao.insertOrUpdate` with current epoch timestamp.
+    *   `getMonthlyExpenses`: Emits total cents spent in the month using reactive Flow aggregation of completed shopping lists + pantry direct entries, with `distinctUntilChanged` protection.
+    *   `getYearlySummary`: Combines 12 individual reactive monthly expense flows with the annual budgets query into an immutable, reactive list of 12 `MonthlyFinancialSummary` items ordered from January (month 1) to December (month 12).
 
 ---
 
@@ -174,16 +203,19 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 
 Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
-*   DAOs: `catalogDao`, `pantryDao`, `priceDao`, `shoppingListDao`.
-*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
-*   Use Case Factories: Registers all 12 domain use cases (`SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`).
+*   DAOs: `catalogDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`.
+*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
+*   Use Case Factories: Registers all 15 domain use cases (`SaveCatalogProductUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`).
 
 ---
 
 ## 5. Testing & Verification
 
 The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/` using an in-memory SQLite database (`createInMemoryDatabase(getTestDatabaseBuilder())`):
-*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1, v2, v3, v4 to v5 (`MIGRATION_4_5`), verifying column names (`unit_price_in_cents`), indices, foreign keys, and data preservation.
+*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v6 to v7 (`MIGRATION_5_6`, `MIGRATION_6_7`, and direct migrations `1->7`, `5->7`), verifying table creation (`monthly_budgets`, `pantry_movements`), composite keys, indices, and data preservation.
+*   **`PantryMovementDaoTest`**: Tests CRUD operations for `PantryMovementEntity`, timestamp range filtering, top consumed products aggregation, and reactive monthly expense tracking.
+*   **`MonthlyBudgetDaoTest`**: Tests CRUD operations for `MonthlyBudgetEntity`, composite key updates, annual queries, and reactive monthly expense aggregation joins across shopping lists, items, and pantry entries.
+*   **`RoomBudgetRepositoryTest`**: Tests domain boundary enforcement, monthly budget retrieval/updates, reactive expense aggregation, and full 12-month annual summaries.
 *   **`RoomCatalogRepositoryTest`**: Tests EAN lookups, search, CRUD, LWW updates, media blob handling, and validation limits.
 *   **`RoomPantryRepositoryTest`**: Tests pantry joins with categories, expiration filtering, single/batch consumption deductions, and negative balance guards.
 *   **`RoomPriceRepositoryTest`**: Tests price history queries, latest price resolution, LWW conflict handling, and store name validations.
@@ -192,4 +224,4 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
 *   **`AndroidImageProcessorTest` & `IosImageProcessorTest`**: Platform-specific thumbnail processing tests.
 
-All 132 tests in `:data` run under Gradle via `./gradlew :data:test` and `./gradlew testDebugUnitTest`.
+All tests in `:data` run under Gradle via `./gradlew :data:test` and `./gradlew testDebugUnitTest`.

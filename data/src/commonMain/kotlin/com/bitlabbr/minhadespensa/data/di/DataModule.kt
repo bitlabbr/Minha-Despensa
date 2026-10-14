@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.data.di
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.bitlabbr.minhadespensa.core.domain.repository.BudgetRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
@@ -36,16 +37,22 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreatePlannedShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.FinalizeShoppingSessionUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetMonthlyFinancialSummaryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.RemoveCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SetMonthlyBudgetUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.UpdatePantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
+import com.bitlabbr.minhadespensa.data.repository.RoomBudgetRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PantryMovementRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetMostConsumedProductsUseCase
+import com.bitlabbr.minhadespensa.data.repository.RoomPantryMovementRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 
 import com.bitlabbr.minhadespensa.data.local.migration.ALL_MIGRATIONS
@@ -68,6 +75,8 @@ val dataModule = module {
     single { get<AppDatabase>().pantryDao() }
     single { get<AppDatabase>().priceDao() }
     single { get<AppDatabase>().shoppingListDao() }
+    single { get<AppDatabase>().budgetDao() }
+    single { get<AppDatabase>().movementDao() }
 
     single<CatalogRepository> {
         RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
@@ -85,6 +94,14 @@ val dataModule = module {
         RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
     }
 
+    single<BudgetRepository> {
+        RoomBudgetRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+    }
+
+    single<PantryMovementRepository> {
+        RoomPantryMovementRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+    }
+
     factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }
     factory { AddPantryItemUseCase(pantryRepository = get()) }
@@ -97,4 +114,7 @@ val dataModule = module {
     factory { FinalizeShoppingSessionUseCase(shoppingListRepository = get()) }
     factory { CreatePlannedShoppingListUseCase(shoppingListRepository = get()) }
     factory { AddCatalogItemToShoppingListUseCase(shoppingListRepository = get()) }
+    factory { SetMonthlyBudgetUseCase(budgetRepository = get()) }
+    factory { GetMonthlyFinancialSummaryUseCase(budgetRepository = get()) }
+    factory { GetMostConsumedProductsUseCase(movementRepository = get()) }
 }

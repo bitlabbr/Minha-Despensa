@@ -80,14 +80,26 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
         *   `totalCheckedItems`: Count of non-deleted checked items.
         *   `totalCartInCents`: Sum of `subtotalInCents` for checked items.
         *   `isOverBudget`: Boolean indicating if `totalCartInCents` exceeds `budgetInCents`.
+*   **`MonthlyBudget`**: Represents the family's spending budget limit for a specific month and year.
+    *   *Fields*: `year`, `month`, `budgetInCents`, `updatedAt`.
+*   **`MonthlyFinancialSummary`**: Aggregate domain model representing the financial status and health for a specific month.
+    *   *Fields*: `year`, `month`, `budgetInCents`, `totalSpentInCents`, `remainingInCents`, `consumptionProgress`, `isOverBudget`.
+    *   *Computed Domain Properties*:
+        *   `remainingInCents`: Calculated as `budgetInCents?.let { it - totalSpentInCents }`.
+        *   `consumptionProgress`: Ratio of `totalSpentInCents / budgetInCents` (0f when no budget or zero budget).
+        *   `isOverBudget`: Boolean indicating whether `totalSpentInCents` exceeds `budgetInCents`.
+*   **`PantryMovement`**: Immutable audit ledger and inventory transaction event recording physical entries and depletions.
+    *   *Fields*: `id`, `pantryItemId`, `productId`, `type` (`MovementType`), `quantity`, `unitPriceInCents`, `totalPriceInCents`, `timestamp`, `storeOrReason`, `isDeleted`.
+    *   *Movement Types*: `ENTRY_MANUAL`, `ENTRY_PURCHASE`, `CONSUMPTION`, `EXPIRATION_DISCARD`, `ADJUSTMENT`.
+    *   *Computed Domain Property*:
+        *   `computedTotalPriceInCents`: Resolved from `totalPriceInCents` or calculated as `unitPriceInCents * quantity`.
 *   **`IconKeys`**: String keys mapping domain categories to application icons (e.g., `GRAINS`, `CLEANING`, `BEVERAGES`).
 
 ---
 
 ### 4.2. Domain Use Cases (`domain/usecase`)
 
-The `:core` module defines 12 use cases encapsulating discrete application business rules and orchestration:
-
+The `:core` module defines 15 use cases encapsulating discrete application business rules and orchestration:
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
     *   Saves or updates the product via `CatalogRepository` with optional image thumbnail bytes and explicit `removeImage: Boolean` flag when editing.
@@ -113,6 +125,12 @@ The `:core` module defines 12 use cases encapsulating discrete application busin
     *   Transitions an active list into `ShoppingListStatus.SHOPPING` (or instantiates a new `ShoppingListType.ASSISTANT` session).
 *   **`FinalizeShoppingSessionUseCase`**:
     *   Executes checkout: invokes `ShoppingListRepository.finalizePurchase()`, moving checked items into `PantryRepository`, registering price history in `PriceRepository`, and marking the list as `ShoppingListStatus.COMPLETED`.
+*   **`SetMonthlyBudgetUseCase`**:
+    *   Validates year (2000..2100), month (1..12) and non-negative budget value, persisting or updating the family's monthly budget target via `BudgetRepository.setBudgetForMonth()`.
+*   **`GetMonthlyFinancialSummaryUseCase`**:
+    *   Combines the monthly budget target with aggregated expenses from `BudgetRepository.getBudgetForMonth()` and `BudgetRepository.getMonthlyExpenses()`, emitting a reactive `MonthlyFinancialSummary` with progress, remaining balance, and over-budget flag.
+*   **`GetMostConsumedProductsUseCase`**:
+    *   Retrieves the most consumed products within a specified time range via `PantryMovementRepository.getMostConsumedProducts()`.
 
 ---
 
@@ -120,6 +138,16 @@ The `:core` module defines 12 use cases encapsulating discrete application busin
 
 Interface definitions implemented by the data persistence layer (e.g. `:data`):
 
+*   **`BudgetRepository`**:
+    *   `getBudgetForMonth(year: Int, month: Int): Flow<MonthlyBudget?>`
+    *   `setBudgetForMonth(year: Int, month: Int, budgetInCents: Long)`
+    *   `getMonthlyExpenses(year: Int, month: Int): Flow<Long>`
+    *   `getYearlySummary(year: Int): Flow<List<MonthlyFinancialSummary>>`
+*   **`PantryMovementRepository`**:
+    *   `recordMovement(movement: PantryMovement)`
+    *   `recordMovements(movements: List<PantryMovement>)`
+    *   `getMovementsForPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<PantryMovement>>`
+    *   `getMostConsumedProducts(startTimestamp: Long, endTimestamp: Long, limit: Int): Flow<List<Pair<String, Double>>>`
 *   **`CatalogRepository`**:
     *   `getProductByEan(ean: String): Flow<CatalogProduct?>`
     *   `getProductById(id: String): Flow<CatalogProduct?>`
@@ -187,6 +215,7 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
 *   **`Helpers.kt`**:
     *   `getCurrentTime()`: Epoch milliseconds using `Clock.System.now().toEpochMilliseconds()`.
     *   `isValidTimestamp(timestamp: Long, toleranceMillis: Long)`: Timestamp boundary validation preventing negative values and distant future anomalies, accounting for clock skew.
+    *   `getMonthTimeRange(year: Int, month: Int, timeZone: TimeZone)`: Calculates exact epoch milliseconds range `[startOfMonth, endOfMonth]` for financial and monthly aggregations using `kotlinx.datetime.LocalDate`.
 *   **`ImageProcessor`**: Multiplatform `expect` interface for scaling and compressing raw image bytes to WebP thumbnails.
 *   **`TextNormalizer.kt`**: Multiplatform text normalization extensions (`unaccent()`, `normalizeForSearch()`, `matchesSearchQuery()`) for accent- and case-insensitive search queries across products, brands, and categories.
 
@@ -198,9 +227,11 @@ The `:core` module contains comprehensive unit tests located in `core/src/common
 *   `CatalogAndPantryUseCasesTest`: Validates `SaveCatalogProductUseCase`, `AddPantryItemUseCase`, and `UpdatePantryItemUseCase` business rules, constraints, and error handling.
 *   `ShoppingUseCasesTest`: Validates shopping session lifecycles, list creations, cart transitions, item replacements, and deletions.
 *   `CheckEanStatusUseCaseTest`: Tests barcode validation, digit checking, and repository lookup.
+*   `BudgetModelsTest`: Validates `MonthlyBudget`, `MonthlyFinancialSummary` computed properties and edge cases, and `getMonthTimeRange` boundary calculations.
+*   `BudgetUseCasesTest`: Validates `SetMonthlyBudgetUseCase` and `GetMonthlyFinancialSummaryUseCase` business constraints, reactive summary emission, and edge cases.
 *   `DomainModelsTest`: Tests model serialization, copy operations, and computed properties (`totalCartInCents`, `isOverBudget`, `subtotalInCents`).
 *   `CoreConstantsTest`: Ensures domain constants remain immutable and properly bounded.
 *   `TimestampToleranceTest`: Verifies clock skew tolerance and boundary enforcement.
 *   `ConsoleLoggerTest`: Verifies formatting and level output.
 
-All 52 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
+All 90 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
