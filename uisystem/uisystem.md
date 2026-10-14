@@ -8,7 +8,7 @@ The `:uisystem` module is a Compose Multiplatform (Android & iOS) design system 
 2. **Domain-Specific Molecules & Sheets:** Reusable cards, filter bars, camera-driven barcode scanners, and a unified product registration sheet.
 3. **Feature Screens & State Machines:** Reactive screens managing pantry inventory, product catalog, product details & price history, quick & planned shopping lists, and a live in-store shopping assistant.
 4. **App Notification Manager:** Decoupled transient notifications via `AppNotificationManager` and `MinhaDespensaSnackbar`.
-5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (94 tests).
+5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (141 tests).
 
 ---
 
@@ -46,9 +46,9 @@ uisystem/src/
 │   │       ├── pantry/            # PantryItemCard, ExpiringItemTile, ConsumptionTrendTile
 │   │       └── shopping/          # ShoppingItemRow, CartTotalSummary
 │   ├── features/                  # Level 3 & 4: Feature Screens & ViewModels
-│   │   ├── home/                  # HomeScreen, widgets (Financial, Expiring, Trend)
-│   │   │   ├── model/             # ConsumptionTrendItemUiModel
-│   │   │   └── widgets/           # HomeWidget composables and HomeMockData
+│   │   ├── home/                  # HomeScreen, HomeViewModel
+│   │   │   ├── model/             # HomeUiState, HomeFinancialUiModel, ConsumptionTrendItemUiModel
+│   │   │   └── widgets/           # FinancialWidget, ExpiringSoonWidget, ConsumptionTrendWidget, SetMonthlyBudgetDialog
 │   │   ├── catalog/               # CatalogScreen, CatalogViewModel
 │   │   │   ├── model/             # CatalogProductUiModel, CatalogUiState
 │   │   │   └── widgets/register/  # RegisterProductBottomSheet & RegisterProductFormContent
@@ -134,6 +134,14 @@ To provide a smooth search experience for Brazilian Portuguese diacritics and sp
 - **`ShoppingAssistantViewModel`:** Filters active cart items reactive stream matching against product name, category, and brand.
 - **`CatalogProductPickerSheet`:** Filters catalog products matching against name and brand within the bottom sheet picker.
 
+### 4.7. Home Overview & Real-Time Aggregation (`HomeScreen` & `HomeViewModel`)
+The home screen connects the user's live inventory, movement ledger, and monthly financial budget:
+- **`HomeViewModel`:** Reactively combines `GetMonthlyFinancialSummaryUseCase`, `PantryRepository.getExpiringPantryItems`, `GetMostConsumedProductsUseCase`, and `CatalogRepository.getAllActiveProducts` into `HomeUiState`.
+- **Financial Summary (`FinancialWidget`):** Displays real-time spending for the current month (`totalSpentInCents`), defined budget, and animated gauge (`InverseAnchoredGauge`). If no budget is set, renders an inviting empty state with a call-to-action button. Tapping the card triggers budget modification.
+- **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`.
+- **Expiring Soon (`ExpiringSoonWidget`):** Monitors pantry stock with dynamic labels ("Vence hoje", "Vence amanhã", "Vence em X dias", "Vencido há X dias") with gauge urgency and an elegant empty state ("Tudo em dia na sua despensa!").
+- **Consumption Trends (`ConsumptionTrendWidget`):** Highlights top consumed products during the current month with unit resolution and empty state.
+
 ---
 
 ## 5. Dependency Injection (`UiModule`)
@@ -142,6 +150,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Logger:** `AppLogger` qualifier `DiQualifiers.UI_LOGGER` bound to `ConsoleLogger("UISystem")`.
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
+  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `PantryRepository`, `CatalogRepository`, logger, notification manager.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases, logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
@@ -154,7 +163,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 130 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 141 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -167,6 +176,7 @@ All 130 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
 | `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
+| `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog lifecycle and validation. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
