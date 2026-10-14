@@ -45,6 +45,7 @@ class CatalogAndPantryUseCasesTest {
     private val checkEanStatusUseCase = CheckEanStatusUseCase(catalogRepository)
     private val saveCatalogProductUseCase = SaveCatalogProductUseCase(catalogRepository)
     private val addPantryItemUseCase = AddPantryItemUseCase(pantryRepository)
+    private val updatePantryItemUseCase = UpdatePantryItemUseCase(pantryRepository)
 
     @Test
     fun `CheckEanStatusUseCase should validate formats and return Found NotFound or Invalid`() = runTest {
@@ -293,5 +294,127 @@ class CatalogAndPantryUseCasesTest {
         // Blank product ID
         val blankProduct = addPantryItemUseCase(productId = "   ", quantity = 1.0)
         assertTrue(blankProduct.isFailure)
+
+        // Negative unit price
+        val negativePrice = addPantryItemUseCase(
+            productId = "prod-1",
+            quantity = 1.0,
+            unitPriceInCents = -50L,
+        )
+        assertTrue(negativePrice.isFailure)
+        assertEquals(CoreConstants.Validation.ERROR_PANTRY_UNIT_PRICE_NON_NEGATIVE, negativePrice.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun `AddPantryItemUseCase should persist unitPriceInCents and trim batchNumber`() = runTest {
+        val result = addPantryItemUseCase(
+            productId = "prod-10",
+            quantity = 2.5,
+            expirationDate = 2000000000L,
+            batchNumber = "  LOTE-99  ",
+            unitPriceInCents = 1599L,
+        ).getOrThrow()
+
+        assertEquals("prod-10", result.productId)
+        assertEquals(2.5, result.quantity)
+        assertEquals(2000000000L, result.expirationDate)
+        assertEquals("LOTE-99", result.batchNumber)
+        assertEquals(1599L, result.unitPriceInCents)
+
+        val stored = pantryRepository.getPantryItemById(result.id).first()
+        assertNotNull(stored)
+        assertEquals(1599L, stored.unitPriceInCents)
+        assertEquals("LOTE-99", stored.batchNumber)
+    }
+
+    @Test
+    fun `UpdatePantryItemUseCase should update quantity expirationDate batchNumber and unitPriceInCents`() = runTest {
+        val initial = addPantryItemUseCase(
+            productId = "prod-20",
+            quantity = 1.0,
+            expirationDate = 1000L,
+            batchNumber = "LOTE-OLD",
+            unitPriceInCents = null,
+        ).getOrThrow()
+
+        val updated = updatePantryItemUseCase(
+            id = initial.id,
+            productId = "prod-20",
+            quantity = 3.5,
+            expirationDate = 2500L,
+            batchNumber = "  LOTE-NEW  ",
+            unitPriceInCents = 850L,
+        ).getOrThrow()
+
+        assertEquals(initial.id, updated.id)
+        assertEquals("prod-20", updated.productId)
+        assertEquals(3.5, updated.quantity)
+        assertEquals(2500L, updated.expirationDate)
+        assertEquals("LOTE-NEW", updated.batchNumber)
+        assertEquals(850L, updated.unitPriceInCents)
+        assertEquals(false, updated.isDeleted)
+
+        val inRepo = pantryRepository.getPantryItemById(initial.id).first()
+        assertNotNull(inRepo)
+        assertEquals(3.5, inRepo.quantity)
+        assertEquals(850L, inRepo.unitPriceInCents)
+        assertEquals("LOTE-NEW", inRepo.batchNumber)
+    }
+
+    @Test
+    fun `UpdatePantryItemUseCase should mark item as deleted when quantity is zero`() = runTest {
+        val initial = addPantryItemUseCase(
+            productId = "prod-21",
+            quantity = 2.0,
+        ).getOrThrow()
+
+        val updated = updatePantryItemUseCase(
+            id = initial.id,
+            productId = "prod-21",
+            quantity = 0.0,
+        ).getOrThrow()
+
+        assertEquals(0.0, updated.quantity)
+        assertTrue(updated.isDeleted)
+    }
+
+    @Test
+    fun `UpdatePantryItemUseCase should reject invalid inputs`() = runTest {
+        // Blank id
+        val blankId = updatePantryItemUseCase(
+            id = "   ",
+            productId = "prod-1",
+            quantity = 1.0,
+        )
+        assertTrue(blankId.isFailure)
+        assertEquals(CoreConstants.Validation.ERROR_PANTRY_ITEM_ID_REQUIRED, blankId.exceptionOrNull()?.message)
+
+        // Blank productId
+        val blankProductId = updatePantryItemUseCase(
+            id = "item-1",
+            productId = "   ",
+            quantity = 1.0,
+        )
+        assertTrue(blankProductId.isFailure)
+        assertEquals(CoreConstants.Validation.ERROR_PRODUCT_ID_REQUIRED, blankProductId.exceptionOrNull()?.message)
+
+        // Negative quantity
+        val negativeQty = updatePantryItemUseCase(
+            id = "item-1",
+            productId = "prod-1",
+            quantity = -0.5,
+        )
+        assertTrue(negativeQty.isFailure)
+        assertEquals(CoreConstants.Validation.ERROR_PANTRY_QUANTITY_NON_NEGATIVE, negativeQty.exceptionOrNull()?.message)
+
+        // Negative price
+        val negativePrice = updatePantryItemUseCase(
+            id = "item-1",
+            productId = "prod-1",
+            quantity = 1.0,
+            unitPriceInCents = -10L,
+        )
+        assertTrue(negativePrice.isFailure)
+        assertEquals(CoreConstants.Validation.ERROR_PANTRY_UNIT_PRICE_NON_NEGATIVE, negativePrice.exceptionOrNull()?.message)
     }
 }

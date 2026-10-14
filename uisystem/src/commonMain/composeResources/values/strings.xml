@@ -320,12 +320,105 @@
     <string name="product_details_add_to_list_error">Erro ao adicionar à lista: %1$s</string>
     <string name="product_details_not_found">Produto não encontrado</string>
     <string name="product_details_store_fallback">Compra</string>
+    <string name="product_details_batch_edit_success">Lote atualizado com sucesso!</string>
+    <string name="product_details_batch_edit_error">Erro ao atualizar lote: %1$s</string>
+    <string name="product_details_pantry_batch_unit_price">Unitário: %1$s</string>
+    <string name="product_details_pantry_batch_total_price">Total: %1$s</string>
+    <string name="product_details_pantry_batch_no_price">Sem valor informado • Toque p/ definir</string>
     <string name="scanner_instruction_center_barcode">Centralize o código de barras dentro da moldura</string>
+
+    <!-- Edit Pantry Batch Sheet -->
+    <string name="edit_pantry_batch_header_top">Editar</string>
+    <string name="edit_pantry_batch_header_bottom">Lote da Despensa</string>
+    <string name="edit_pantry_batch_header_desc">Ajuste a quantidade, validade, lote e preço unitário</string>
+    <string name="edit_pantry_batch_section_stock_price">Estoque e Valor</string>
+    <string name="edit_pantry_batch_quantity_label">Quantidade (%1$s)</string>
+    <string name="edit_pantry_batch_unit_price_label">Preço Unitário (R$)</string>
+    <string name="edit_pantry_batch_section_expiration">Data de Validade</string>
+    <string name="edit_pantry_batch_expiration_current">Validade atual: %1$s</string>
+    <string name="edit_pantry_batch_expiration_none">Sem validade definida</string>
+    <string name="edit_pantry_batch_expiration_clear">Limpar</string>
+    <string name="edit_pantry_batch_section_batch_info">Identificação do Lote</string>
+    <string name="edit_pantry_batch_number_label">Número do Lote</string>
+    <string name="edit_pantry_batch_number_placeholder">Ex: LOTE123</string>
+    <string name="edit_pantry_batch_action_cancel">Cancelar</string>
+    <string name="edit_pantry_batch_action_save">Salvar Lote</string>
+    <string name="edit_pantry_batch_quantity_decrease">Diminuir</string>
+    <string name="edit_pantry_batch_quantity_increase">Aumentar</string>
 
     <!-- Shopping Assistant Search & Filter -->
     <string name="shopping_assistant_search_placeholder">Buscar por nome, marca ou categoria...</string>
     <string name="shopping_assistant_search_no_results">Nenhum item encontrado para \"%1$s\"</string>
     <string name="shopping_assistant_search_clear">Limpar busca</string>
     <string name="shopping_assistant_search_action">Buscar no carrinho</string>
+
+    <!-- Home Overview & Widgets -->
+    <string name="home_financial_set_budget_cta">Definir meta do mês</string>
+    <string name="home_financial_no_budget_hint">Defina um teto para acompanhar seus gastos do mês</string>
+    <string name="home_financial_dialog_title">Definir Meta do Mês</string>
+    <string name="home_financial_dialog_desc">Informe o valor limite de compras para o mês atual.</string>
+    <string name="home_financial_dialog_input_label">Orçamento Mensal (R$)</string>
+    <string name="home_financial_dialog_input_placeholder">Ex: 1000,00</string>
+    <string name="home_financial_dialog_save">Salvar Orçamento</string>
+    <string name="home_financial_dialog_cancel">Cancelar</string>
+    <string name="home_financial_budget_saved_success">Orçamento mensal definido com sucesso!</string>
+    <string name="home_financial_budget_saved_error">Erro ao salvar orçamento mensal</string>
+    <string name="home_financial_empty_spending">Nenhum gasto registrado este mês</string>
+
+    <string name="home_expiring_section_title">ITENS PRÓXIMOS À VALIDADE</string>
+    <string name="home_expiring_empty_title">Tudo em dia na sua despensa!</string>
+    <string name="home_expiring_empty_desc">Nenhum item próximo ao vencimento nos próximos 7 dias.</string>
+    <string name="home_expiring_badge_header">Validade</string>
+    <string name="home_expiring_badge_warning_header">Atenção</string>
+    <string name="home_expiring_today">Vence hoje</string>
+    <string name="home_expiring_tomorrow">Vence amanhã</string>
+    <string name="home_expiring_in_days">Vence em %1$d dias</string>
+    <string name="home_expiring_overdue_1">Vencido há 1 dia</string>
+    <string name="home_expiring_overdue_days">Vencido há %1$d dias</string>
+    <string name="home_expiring_no_date">Sem data</string>
+
+    <string name="home_consumption_section_title">ITENS MAIS CONSUMIDOS NO MÊS</string>
+    <string name="home_consumption_empty_title">Nenhum consumo registrado neste mês</string>
+    <string name="home_consumption_empty_desc">Ao consumir ou dar baixa em itens da despensa, o histórico de consumo aparecerá aqui.</string>
+
+    <string name="action_show_more_count">Mostrar mais (%1$d)</string>
+    <string name="action_show_less">Mostrar menos</string>
+
+    <!-- Financial Analytics & Stock Value -->
+    <string name="home_stock_value_title">Estoque da Despensa</string>
+    <string name="home_stock_value_desc">Estoque avaliado em: %1$s</string>
+    <string name="home_stock_value_items_count">%1$d itens com valor cadastrado</string>
+    <string name="home_stock_value_average_unit_price">Média por item: %1$s</string>
+    <string name="home_stock_value_no_prices">Nenhum item com valor cadastrado</string>
+    <string name="home_stock_value_chip_label">Estoque: %1$s</string>
+
+    <string name="home_analytics_dialog_title">Evolução Financeira (%1$d)</string>
+    <string name="home_analytics_dialog_desc">Histórico anual de gastos, metas orçamentárias e avaliação patrimonial do estoque.</string>
+    <string name="home_analytics_total_year_spent">Total gasto no ano</string>
+    <string name="home_analytics_monthly_average">Média mensal</string>
+    <string name="home_analytics_average_item_price">Preço médio por compra/item</string>
+    <string name="home_analytics_evolution_section_title">EVOLUÇÃO MENSAL DE DESPESAS</string>
+    <string name="home_analytics_over_budget_badge">Estourado</string>
+    <string name="home_analytics_no_budget_badge">Sem meta</string>
+    <string name="home_analytics_within_budget_badge">Na meta</string>
+    <string name="home_analytics_action_button">Análise</string>
+    <string name="home_analytics_close_button">Fechar</string>
+    <string name="home_analytics_no_expenses_year">Nenhum gasto registrado neste ano</string>
+
+    <!-- Month Abbreviations for Analytics -->
+    <string name="month_1_short">Jan</string>
+    <string name="month_2_short">Fev</string>
+    <string name="month_3_short">Mar</string>
+    <string name="month_4_short">Abr</string>
+    <string name="month_5_short">Mai</string>
+    <string name="month_6_short">Jun</string>
+    <string name="month_7_short">Jul</string>
+    <string name="month_8_short">Ago</string>
+    <string name="month_9_short">Set</string>
+    <string name="month_10_short">Out</string>
+    <string name="month_11_short">Nov</string>
+    <string name="month_12_short">Dez</string>
+
+    <string name="placeholder_empty_metric">—</string>
 
 </resources>

@@ -84,10 +84,12 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         assertEquals(1, pantryItems.size)
         assertEquals(product.id, pantryItems[0].productId)
         assertEquals(5.0, pantryItems[0].quantity)
+        assertEquals(1000L, pantryItems[0].unitPriceInCents)
 
         val prices = db.priceDao().getPriceHistoryByProductId(product.id).first()
         assertEquals(1, prices.size)
         assertEquals(1000L, prices[0].priceInCents)
+        assertEquals(pantryItems[0].id, prices[0].id)
 
         val updatedList = shoppingListRepository.getShoppingListById(listId).first()
         assertNotNull(updatedList)
@@ -458,9 +460,39 @@ class RoomShoppingListRepositoryTest : BaseTest() {
         val pantryItems = db.pantryDao().getAllActivePantryItems().first()
         assertEquals(1, pantryItems.size)
         assertEquals(4.0, pantryItems[0].quantity)
+        assertNull(pantryItems[0].unitPriceInCents)
 
         val prices = db.priceDao().getPriceHistoryByProductId(product.id).first()
         assertTrue(prices.isEmpty(), "Nenhum registro de preço deve ser criado se priceAtTime for null")
+    }
+
+    @Test
+    fun `finalizePurchase should assign item priceAtTime to pantry item unitPriceInCents and share id with PriceEntry`() = runTest {
+        val product = createDummyCatalogProduct(measureUnit = MeasureUnit.UNIT, netWeight = 1.0)
+        catalogRepository.insertProduct(product, null)
+
+        val listId = Uuid.random().toString()
+        val itemWithPrice = createDummyShoppingItem(
+            productId = product.id,
+            listId = listId,
+            quantity = 2.0,
+            isChecked = true,
+            priceAtTime = 1550L
+        )
+        shoppingListRepository.insertShoppingList(
+            createDummyShoppingList(id = listId, items = listOf(itemWithPrice))
+        )
+
+        shoppingListRepository.finalizePurchase(listId)
+
+        val pantryItems = db.pantryDao().getAllActivePantryItems().first()
+        assertEquals(1, pantryItems.size)
+        assertEquals(1550L, pantryItems[0].unitPriceInCents)
+
+        val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, priceEntries.size)
+        assertEquals(1550L, priceEntries[0].priceInCents)
+        assertEquals(pantryItems[0].id, priceEntries[0].id)
     }
 
     @Test

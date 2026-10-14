@@ -28,6 +28,7 @@ import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.details.ProductDetailsViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.home.HomeViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.ShoppingAssistantViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsViewModel
@@ -41,6 +42,21 @@ import org.koin.dsl.module
 val uiModule = module {
     factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
         ConsoleLogger(moduleName = "UISystem")
+    }
+
+    viewModel {
+        HomeViewModel(
+            getMonthlyFinancialSummaryUseCase = get(),
+            setMonthlyBudgetUseCase = get(),
+            getMostConsumedProductsUseCase = get(),
+            getPantryTotalValueUseCase = get(),
+            getYearlyFinancialSummaryUseCase = get(),
+            pantryRepository = get(),
+            pantryMovementRepository = get(),
+            catalogRepository = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
+            notificationManager = get(),
+        )
     }
 
     viewModel {
@@ -112,6 +128,7 @@ val uiModule = module {
             notificationManager = get(),
             saveCatalogProductUseCase = get(),
             checkEanStatusUseCase = get(),
+            updatePantryItemUseCase = get(),
         )
     }
 

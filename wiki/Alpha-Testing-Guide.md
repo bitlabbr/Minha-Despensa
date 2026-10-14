@@ -1,4 +1,4 @@
-# 🧪 Guia do Testador Alpha (Release 1.0.1-alpha)
+# 🧪 Guia do Testador Alpha (Release 1.1.1-alpha)
 
 Se você recebeu o pacote de teste do **Minha Despensa**, este guia explica como instalar e quais cenários você deve experimentar passo a passo para validar as correções e novas funcionalidades!
 
@@ -186,6 +186,52 @@ No rodapé ou no centro da tela vazia, clique no botão **`+ Adicionar`** (ou `A
 ### Cenário 5: Conferindo a Despensa Pós-Compra (Estoque e Histórico)
 - Acesse a aba **Despensa** e confira se os produtos comprados foram adicionados ao estoque automaticamente.
 - Acesse a aba **Catálogo** e clique no produto para conferir o histórico de preços gerado pela compra.
+
+---
+
+### 📊 Cenário 6: Configuração de Orçamento Mensal na Home (`FinancialWidget`)
+
+**Objetivo:** Validar a definição de meta financeira familiar mensal, cálculo automático e reativo de gastos e alertas visuais de teto orçamentário.
+
+1. Acesse a aba **Início** (ícone Home na barra inferior).
+2. No card do **Resumo Financeiro**, se não houver orçamento definido, clique no botão para definir meta orçamentária.
+3. Um diálogo com visual em vidro fosco será exibido. Digite um valor de orçamento (ex.: *R$ 500,00*) e confirme.
+4. **O que validar:**
+   - O card financeiro passa a exibir o total gasto no mês, a meta definida, o saldo restante e a barra de progresso visual.
+5. Toque sobre o card para editar o orçamento para um valor menor que o total já gasto (ex.: *R$ 10,00*).
+6. **O que validar:**
+   - O status muda automaticamente para **"Estourado"** com indicador visual em vermelho e percentual correto de extrapolação.
+
+---
+
+### 🏷️ Cenário 7: Valoração da Despensa & Analytics Financeiro Anual
+
+**Objetivo:** Conferir o patrimônio total estocado na despensa e navegar no histórico financeiro de 12 meses.
+
+1. Na aba **Início**, role até o card **`Valor Total em Estoque`** (`StockValueCard`).
+2. **O que validar:**
+   - O card deve exibir o valor monetário total estocado em reais (`R$ X,XX`), a contagem de itens avaliados e o custo médio unitário.
+3. Toque no card de estoque ou no botão de analytics no cabeçalho do resumo financeiro.
+4. O modal **`Analytics Financeiro`** (`FinancialAnalyticsDialog`) será aberto:
+   - No topo: card de estoque avaliado.
+   - Indicadores anuais: Total Gasto no Ano, Média Mensal de Gastos e Custo Médio por Item.
+   - Lista de evolução de 12 meses (Janeiro a Dezembro): barras com os gastos de cada mês, meta orçamentária e badges informativos ("Na meta", "Estourado", "Sem meta").
+5. Feche o modal pelo botão "Fechar" ou tocando fora.
+
+---
+
+### ✏️ Cenário 8: Edição de Lote e Preço Unitário na Despensa / Detalhes
+
+**Objetivo:** Validar a edição de preço unitário de um lote existente e verificar que o preço mínimo/máximo e o histórico são recalculados sem gerar duplicatas no histórico.
+
+1. Acesse a aba **Despensa** e clique em um produto para abrir a tela de **Detalhes**.
+2. Na seção de lotes em estoque, toque no lote desejado para abrir o painel de edição (`EditPantryBatchSheet`).
+3. Preencha ou altere o **Preço Unitário** (ex.: *R$ 5,50*).
+4. Salve as alterações.
+5. **O que validar:**
+   - O lote atualiza instantaneamente com o novo preço unitário e o valor total do lote é recalculado (`quantidade × preço unitário`).
+   - As métricas de **Menor Preço** e **Maior Preço** na tela de detalhes refletem os novos valores sem criar registros duplicados no histórico.
+   - O card de valor total da despensa na tela inicial recalcula o montante automaticamente.
 
 ---
 

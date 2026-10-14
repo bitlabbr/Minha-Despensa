@@ -23,9 +23,12 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
+import com.bitlabbr.minhadespensa.core.domain.model.MovementType
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemConsumption
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
+import com.bitlabbr.minhadespensa.core.domain.model.PantryMovement
+import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
@@ -36,6 +39,7 @@ import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlin.math.roundToLong
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -78,10 +82,41 @@ class RoomPantryRepository(
         }
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun insertPantryItem(item: PantryItem) {
         logger.d(TAG, "insertPantryItem item: $item")
         validatePantryItem(item)
         dao.insertPantryItem(item.toEntity())
+        logger.d(TAG, "insertPantryItem: Successfully inserted pantry item id=${item.id}, productId=${item.productId}")
+        item.unitPriceInCents?.let { price ->
+            db.priceDao().insertPriceEntry(
+                PriceEntry(
+                    id = item.id,
+                    productId = item.productId,
+                    priceInCents = price,
+                    storeName = "Entrada na Despensa",
+                    updatedAt = item.updatedAt,
+                    isDeleted = false,
+                ).toEntity()
+            )
+            logger.d(TAG, "insertPantryItem: Created price entry id=${item.id} for productId=${item.productId}, priceInCents=$price")
+        }
+
+        // Record entry movement in pantry_movements ledger
+        val movement = PantryMovement(
+            id = Uuid.random().toString(),
+            pantryItemId = item.id,
+            productId = item.productId,
+            type = MovementType.ENTRY_MANUAL,
+            quantity = item.quantity,
+            unitPriceInCents = item.unitPriceInCents,
+            totalPriceInCents = item.unitPriceInCents?.let { (item.quantity * it).roundToLong() },
+            timestamp = item.updatedAt,
+            storeOrReason = "Entrada na Despensa",
+            isDeleted = false,
+        )
+        db.movementDao().insertMovement(movement.toEntity())
+        logger.d(TAG, "insertPantryItem: Recorded entry movement id=${movement.id} for pantryItemId=${item.id}")
     }
 
     override suspend fun forceUpdatePantryItem(item: PantryItem) {
@@ -90,6 +125,7 @@ class RoomPantryRepository(
         dao.forceUpdatePantryItem(item.toEntity())
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun updatePantryItemIfNewer(item: PantryItem) {
         logger.d(TAG, "updatePantryItemIfNewer item:$item")
         validatePantryItem(item)
@@ -100,10 +136,44 @@ class RoomPantryRepository(
             updatedAt = item.updatedAt,
             isDeleted = item.isDeleted,
             expirationDate = item.expirationDate,
-            batchNumber = item.batchNumber
+            batchNumber = item.batchNumber,
+            unitPriceInCents = item.unitPriceInCents,
         )
         if (rowsAffected == 0) {
             logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
+        } else {
+            logger.d(TAG, "updatePantryItemIfNewer: Successfully updated pantry item ${item.id}")
+            val existingEntry = db.priceDao().findEntryById(item.id)
+            val price = item.unitPriceInCents
+            if (price != null) {
+                if (existingEntry != null) {
+                    db.priceDao().forceUpdatePriceEntry(
+                        existingEntry.copy(
+                            priceInCents = price,
+                            updatedAt = item.updatedAt,
+                            isDeleted = false,
+                        )
+                    )
+                    logger.d(TAG, "updatePantryItemIfNewer: Updated existing price entry ${item.id} with price=$price")
+                } else {
+                    db.priceDao().insertPriceEntry(
+                        PriceEntry(
+                            id = item.id,
+                            productId = item.productId,
+                            priceInCents = price,
+                            storeName = "Entrada na Despensa",
+                            updatedAt = item.updatedAt,
+                            isDeleted = false,
+                        ).toEntity()
+                    )
+                    logger.d(TAG, "updatePantryItemIfNewer: Created new price entry ${item.id} with price=$price")
+                }
+            } else {
+                if (existingEntry != null) {
+                    db.priceDao().markPriceEntryAsDeleted(existingEntry.id, item.updatedAt)
+                    logger.d(TAG, "updatePantryItemIfNewer: Marked price entry ${item.id} as deleted because price was removed")
+                }
+            }
         }
     }
 
@@ -117,6 +187,7 @@ class RoomPantryRepository(
         dao.deletePantryItemById(id)
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun consumePantryItem(pantryItemId: String, quantityToConsume: Double) {
         logger.d(TAG, "consumePantryItem id: $pantryItemId, quantity: $quantityToConsume")
         require(quantityToConsume > 0) { "Consumption quantity must be strictly greater than zero" }
@@ -137,8 +208,25 @@ class RoomPantryRepository(
             updatedAt = now
         )
         dao.forceUpdatePantryItem(updatedItem)
+
+        // Record consumption movement
+        val movement = PantryMovement(
+            id = Uuid.random().toString(),
+            pantryItemId = item.id,
+            productId = item.productId,
+            type = MovementType.CONSUMPTION,
+            quantity = quantityToConsume,
+            unitPriceInCents = item.unitPriceInCents,
+            totalPriceInCents = null,
+            timestamp = now,
+            storeOrReason = "Consumo na Despensa",
+            isDeleted = false,
+        )
+        db.movementDao().insertMovement(movement.toEntity())
+        logger.d(TAG, "consumePantryItem: Recorded consumption movement id=${movement.id}")
     }
 
+    @OptIn(ExperimentalUuidApi::class)
     override suspend fun consumeBatch(consumptions: List<PantryItemConsumption>) {
         logger.d(TAG, "consumeBatch: ${consumptions.size} items")
         require(consumptions.isNotEmpty()) { "Consumption list cannot be empty" }
@@ -167,6 +255,24 @@ class RoomPantryRepository(
         }
 
         dao.forceUpdatePantryItems(itemsToUpdate)
+
+        val movements = consumptions.map { consumption ->
+            val item = checkNotNull(dao.findPantryItemById(consumption.pantryItemId))
+            PantryMovement(
+                id = Uuid.random().toString(),
+                pantryItemId = item.id,
+                productId = item.productId,
+                type = MovementType.CONSUMPTION,
+                quantity = consumption.quantityToConsume,
+                unitPriceInCents = item.unitPriceInCents,
+                totalPriceInCents = null,
+                timestamp = now,
+                storeOrReason = "Consumo em Lote",
+                isDeleted = false,
+            ).toEntity()
+        }
+        db.movementDao().insertMovements(movements)
+        logger.d(TAG, "consumeBatch: Recorded ${movements.size} consumption movements")
     }
 
     override fun getPantryItemById(pantryItemId: String): Flow<PantryItem?> {

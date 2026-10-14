@@ -1,7 +1,7 @@
 # MinhaDespensa 🛒
 
 [![CI Check](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml/badge.svg)](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/Release-v1.0.1--alpha-00E676?logo=android&logoColor=white)](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.0.1-alpha)
+[![Release](https://img.shields.io/badge/Release-v1.1.1--alpha-00E676?logo=android&logoColor=white)](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.1.1-alpha)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpack-compose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room-KMP-3DDC84?logo=android&logoColor=white)
@@ -199,21 +199,57 @@ A Compose Multiplatform unified product registration sheet (`RegisterProductBott
 
 ---
 
+## 📊 Monthly Budget & Financial Management
+
+MinhaDespensa allows families to track grocery expenditures against monthly budget ceilings directly from the Home overview:
+
+- **Monthly Budget Targets**: Set and update household spending limits per month (`SetMonthlyBudgetDialog`).
+- **Reactive Financial Summary**: Real-time spending calculations aggregating completed shopping lists and pantry stock entries.
+- **Visual Budget Gauge**: `InverseAnchoredGauge` providing instant visual feedback on budget consumption, remaining balance, and over-budget states.
+
+---
+
+## 🏷️ Pantry Valuation & Unit Price
+
+Inventory tracking supports monetary valuation for every item in the household:
+
+- **Unit Price Tracking**: Enter or edit unit price (`unitPriceInCents`) during pantry addition, checkout, or batch updates.
+- **Stock Value Card**: Highlights the total monetary valuation of active pantry inventory, number of priced items, and average unit price.
+- **Batch Editing**: Dedicated sheet (`EditPantryBatchSheet`) for adjusting lot numbers, expiration dates, and unit prices in-place with instant recalculation of lowest/highest/average price metrics.
+
+---
+
+## 📈 Financial Analytics & 12-Month Evolution
+
+An interactive analytics dialog (`FinancialAnalyticsDialog`) offers deep visibility into spending habits:
+
+- **12-Month Expense Evolution**: Monthly comparison bars visualizing actual spending against budget targets.
+- **Annual Key Indicators**: Total spent in the year, monthly average spend, and weighted cost per item.
+- **Status Badges**: Instant classification per month ("Na meta", "Estourado", "Sem meta").
+
+---
+
 ## ⚡ Domain Use Cases
 
-The `:core` domain layer defines 11 use cases that orchestrate application logic independently of UI and database frameworks:
+The `:core` domain layer defines 17 use cases that orchestrate application logic independently of UI and database frameworks:
 
 1. **`SaveCatalogProductUseCase`**: Validates constraints (name, category, EAN lengths/digits, positive weight) and saves catalog products with image blobs.
 2. **`CheckEanStatusUseCase`**: Validates barcode formatting and verifies product existence by EAN.
-3. **`AddPantryItemUseCase`**: Enforces inventory preconditions and stores active pantry stock.
-4. **`CreatePlannedShoppingListUseCase`**: Builds structured shopping lists with budget thresholds and planned items (`ShoppingListType.PLANNED`).
-5. **`CreateQuickShoppingListUseCase`**: Creates quick scratchpad shopping lists (`ShoppingListType.SCRATCHPAD`) parsing unformatted line items.
-6. **`AddCatalogItemToShoppingListUseCase`**: Attaches catalog products to shopping lists with pre-filled defaults.
-7. **`AddOrUpdateCartItemUseCase`**: Manages dynamic adjustments (quantity, price, checked state) during shopping trips.
-8. **`ReplaceCartItemUseCase`**: Swaps items in the cart with alternative catalog products or custom items during active shopping.
-9. **`RemoveCartItemUseCase`**: Soft-deletes items from active shopping lists.
-10. **`StartShoppingSessionUseCase`**: Transitions shopping lists into the active `ShoppingListStatus.SHOPPING` state.
-11. **`FinalizeShoppingSessionUseCase`**: Atomically orchestrates purchase finalization across pantry, price history, and shopping lists.
+3. **`AddPantryItemUseCase`**: Enforces inventory preconditions and stores active pantry stock with optional unit price.
+4. **`UpdatePantryItemUseCase`**: Enforces update preconditions and modifies pantry stock with Last-Write-Wins semantics.
+5. **`CreatePlannedShoppingListUseCase`**: Builds structured shopping lists with budget thresholds and planned items (`ShoppingListType.PLANNED`).
+6. **`CreateQuickShoppingListUseCase`**: Creates quick scratchpad shopping lists (`ShoppingListType.SCRATCHPAD`) parsing unformatted line items.
+7. **`AddCatalogItemToShoppingListUseCase`**: Attaches catalog products to shopping lists with pre-filled defaults.
+8. **`AddOrUpdateCartItemUseCase`**: Manages dynamic adjustments (quantity, price, checked state) during shopping trips.
+9. **`ReplaceCartItemUseCase`**: Swaps items in the cart with alternative catalog products or custom items during active shopping.
+10. **`RemoveCartItemUseCase`**: Soft-deletes items from active shopping lists.
+11. **`StartShoppingSessionUseCase`**: Transitions shopping lists into the active `ShoppingListStatus.SHOPPING` state.
+12. **`FinalizeShoppingSessionUseCase`**: Atomically orchestrates purchase finalization across pantry, price history, and shopping lists.
+13. **`SetMonthlyBudgetUseCase`**: Validates month, year, and non-negative budget value, persisting the family's monthly budget limit.
+14. **`GetMonthlyFinancialSummaryUseCase`**: Combines budget targets with aggregated monthly expenses, emitting a reactive financial summary.
+15. **`GetMostConsumedProductsUseCase`**: Calculates top consumed products over a given time range.
+16. **`GetPantryTotalValueUseCase`**: Calculates total monetary valuation of current active inventory in the pantry.
+17. **`GetYearlyFinancialSummaryUseCase`**: Aggregates a 12-month budget vs expense history for annual analytics.
 
 ---
 
@@ -225,7 +261,7 @@ The `:core` domain layer defines 11 use cases that orchestrate application logic
 | Compose Multiplatform UI | ✅ Implemented |
 | Clean Architecture + MVVM | ✅ Implemented |
 | Koin dependency injection | ✅ Implemented |
-| Room KMP persistence (v4 + migrations) | ✅ Implemented |
+| Room KMP persistence (v7 + migrations) | ✅ Implemented |
 | Local product catalog | ✅ Implemented |
 | Search by EAN | ✅ Implemented (Domain / Data / Usecase) |
 | Search by name / brand | ✅ Implemented (Domain / Data) |
@@ -239,10 +275,13 @@ The `:core` domain layer defines 11 use cases that orchestrate application logic
 | Pantry domain and persistence | ✅ Implemented |
 | Pantry single & batch consumption | ✅ Implemented |
 | Pantry reactive ViewModel | ✅ Implemented |
-| Automated CI & Unit Tests (327 tests) | ✅ Implemented |
+| Pantry stock valuation & unit price | ✅ Implemented |
+| Monthly budget & expense aggregation | ✅ Implemented |
+| Financial analytics (12-month evolution) | ✅ Implemented |
+| Dynamic expiration & consumption trends | ✅ Implemented |
+| Automated CI & Unit Tests (412 tests) | ✅ Implemented |
 | Barcode scanner integration (CameraX/ML Kit) | ✅ Implemented |
 | Unified product registration sheet | ✅ Implemented |
-| Expiration tracking & thresholds | 🚧 In development |
 | Expiration system notifications | 🚧 In development |
 | Automatic shopping suggestions | 🗺️ Roadmap |
 | Consumption intelligence | 🗺️ Roadmap |
@@ -338,9 +377,9 @@ For example, the pantry ViewModel combines the stream of all active pantry items
 
 # 🗃️ Local Persistence
 
-MinhaDespensa uses **Room KMP (Schema Version 4)** backed by SQLite (`BundledSQLiteDriver`) as its local persistence layer.
+MinhaDespensa uses **Room KMP (Schema Version 7)** backed by SQLite (`BundledSQLiteDriver`) as its local persistence layer.
 
-The project features a defensive SQLite migration pipeline (`MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`, `MIGRATION_1_4`, `MIGRATION_2_4`) ensuring seamless schema evolution across versions.
+The project features a defensive SQLite migration pipeline (`MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`, `MIGRATION_4_5`, `MIGRATION_5_6`, `MIGRATION_6_7`, and direct jumps to v7) ensuring seamless schema evolution across versions.
 
 The current database model includes entities for:
 
@@ -351,6 +390,8 @@ PriceEntryEntity
 ProductMediaEntity
 ShoppingListEntity
 ShoppingItemEntity
+MonthlyBudgetEntity
+PantryMovementEntity
 ```
 
 Relationships between these entities allow the application to avoid duplicating product information across shopping lists, pantry items, and price records.
@@ -526,11 +567,11 @@ MinhaDespensa/
 
 # 🧪 Testing & Continuous Integration
 
-MinhaDespensa maintains a comprehensive automated testing suite with **327 unit tests**:
+MinhaDespensa maintains a comprehensive automated testing suite with **412 unit tests**:
 
-- **`:core` (65 tests)**: Multiplatform tests verifying 11 use case business rules, text normalizer (accent-insensitive search), barcode validation, domain metrics, duplicate item consolidation, clock-drift tolerances, and model serialization.
-- **`:data` (135 tests)**: In-memory Room SQLite tests validating DAOs, Last-Write-Wins (LWW) conflict handling, entity-domain mappers, cascade deletes, Room v1-v4 schema migrations, and multi-table transactions (`finalizePurchase`, `consumeBatch`).
-- **`:uisystem` (126 tests)**: ViewModel state machines, catalog & pantry options flows, shopping assistant inline filters, duplicate item warnings, form validation rules, currency formatting (`R$ 1.234,56`), barcode ROI validator, stabilizer, and notification bus events.
+- **`:core` (102 tests)**: Multiplatform tests verifying 17 use case business rules, monthly budget calculations, pantry stock valuation, 12-month financial aggregation, text normalizer (accent-insensitive search), barcode validation, domain metrics, duplicate item consolidation, clock-drift tolerances, and model serialization.
+- **`:data` (160 tests)**: In-memory Room SQLite tests validating DAOs, Last-Write-Wins (LWW) conflict handling, entity-domain mappers, cascade deletes, Room v1-v7 schema migrations, movement ledgers, monthly budget aggregations, and multi-table transactions (`finalizePurchase`, `consumeBatch`).
+- **`:uisystem` (149 tests)**: ViewModel state machines, `HomeViewModel` reactive flows, budget widgets, stock valuation card, 12-month analytics dialog, catalog & pantry options flows, shopping assistant inline filters, duplicate item warnings, form validation rules, currency formatting (`R$ 1.234,56`), month i18n mappers, barcode ROI validator, stabilizer, and notification bus events.
 - **`:composeApp` (1 test)**: Multiplatform application integration tests.
 
 The entire test suite is executed continuously on every Pull Request and branch push to `main`, `dev`, and `epic/**` via **GitHub Actions** ([`ci.yml`](.github/workflows/ci.yml)).

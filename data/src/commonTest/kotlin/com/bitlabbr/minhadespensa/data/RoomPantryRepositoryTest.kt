@@ -82,6 +82,144 @@ class RoomPantryRepositoryTest : BaseTest() {
     }
 
     @Test
+    fun `insertPantryItem should reactively emit new list in getAllActivePantryItemsWithCategory`() = runTest {
+        val product = createDummyProduct(name = "Café")
+        catalogRepository.insertProduct(product, null)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            assertEquals(0, awaitItem().size)
+
+            val pantryItem = createDummyPantryItem(productId = product.id, quantity = 3.0)
+            pantryRepository.insertPantryItem(pantryItem)
+
+            val updated = awaitItem()
+            assertEquals(1, updated.size)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `updatePantryItemIfNewer should reactively emit updated item in getAllActivePantryItemsWithCategory`() = runTest {
+        val product = createDummyProduct(name = "Macarrão")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val item = createDummyPantryItem(productId = product.id, quantity = 2.0, updatedAt = now)
+        pantryRepository.insertPantryItem(item)
+
+        pantryRepository.getAllActivePantryItemsWithCategory().test {
+            val initialList = awaitItem()
+            assertEquals(1, initialList.size)
+            assertEquals(2.0, initialList[0].pantryItem.quantity)
+
+            val updatedItem = item.copy(quantity = 5.0, updatedAt = now + 100)
+            pantryRepository.updatePantryItemIfNewer(updatedItem)
+
+            val updatedList = awaitItem()
+            assertEquals(1, updatedList.size)
+            assertEquals(5.0, updatedList[0].pantryItem.quantity)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `should persist unitPriceInCents and create PriceEntry on insertion`() = runTest {
+        val product = createDummyProduct(name = "Feijão Preto")
+        catalogRepository.insertProduct(product, null)
+
+        val pantryItem = createDummyPantryItem(
+            productId = product.id,
+            quantity = 2.0,
+            unitPriceInCents = 899L,
+        )
+        pantryRepository.insertPantryItem(pantryItem)
+
+        // 1. Retrieve pantry item and verify unitPriceInCents
+        val retrieved = pantryRepository.getPantryItemById(pantryItem.id).first()
+        assertNotNull(retrieved)
+        assertEquals(899L, retrieved.unitPriceInCents)
+
+        // 2. Verify PriceEntry was automatically inserted in db.priceDao() sharing the same ID
+        val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, priceEntries.size)
+        assertEquals(899L, priceEntries[0].priceInCents)
+        assertEquals(pantryItem.id, priceEntries[0].id)
+        assertEquals("Entrada na Despensa", priceEntries[0].storeName)
+    }
+
+    @Test
+    fun `should persist unitPriceInCents and update PriceEntry in-place on updatePantryItemIfNewer`() = runTest {
+        val product = createDummyProduct(name = "Arroz Integral")
+        catalogRepository.insertProduct(product, null)
+
+        val now = getCurrentTime()
+        val initialItem = createDummyPantryItem(
+            productId = product.id,
+            quantity = 1.0,
+            unitPriceInCents = null,
+            updatedAt = now,
+        )
+        pantryRepository.insertPantryItem(initialItem)
+
+        // Verify initial item has null price and priceDao has 0 entries
+        val initialPrices = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(0, initialPrices.size)
+
+        // 1. Update item with price: should create PriceEntry with item.id
+        val updatedItem = initialItem.copy(
+            quantity = 2.0,
+            unitPriceInCents = 1250L,
+            batchNumber = "LOTE-XYZ",
+            updatedAt = now + 100,
+        )
+        pantryRepository.updatePantryItemIfNewer(updatedItem)
+
+        val retrieved = pantryRepository.getPantryItemById(initialItem.id).first()
+        assertNotNull(retrieved)
+        assertEquals(2.0, retrieved.quantity)
+        assertEquals(1250L, retrieved.unitPriceInCents)
+        assertEquals("LOTE-XYZ", retrieved.batchNumber)
+
+        val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, priceEntries.size)
+        assertEquals(1250L, priceEntries[0].priceInCents)
+        assertEquals(initialItem.id, priceEntries[0].id)
+
+        // 2. Update item again with different price: should UPDATE existing PriceEntry in place (NO duplicate!)
+        val differentPriceUpdate = updatedItem.copy(
+            unitPriceInCents = 1500L,
+            updatedAt = now + 200,
+        )
+        pantryRepository.updatePantryItemIfNewer(differentPriceUpdate)
+        val pricesAfterDiffPrice = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, pricesAfterDiffPrice.size, "Price history should update in-place without duplicate ghost entries")
+        assertEquals(1500L, pricesAfterDiffPrice[0].priceInCents)
+        assertEquals(initialItem.id, pricesAfterDiffPrice[0].id)
+
+        // 3. Update item clearing price (null): should soft-delete the associated PriceEntry
+        val clearedPriceUpdate = differentPriceUpdate.copy(
+            unitPriceInCents = null,
+            updatedAt = now + 300,
+        )
+        pantryRepository.updatePantryItemIfNewer(clearedPriceUpdate)
+        val pricesAfterClear = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(0, pricesAfterClear.size, "Price history should be empty when batch price is cleared")
+
+        // 4. Multiple distinct batches should maintain distinct PriceEntries
+        val secondBatch = createDummyPantryItem(
+            productId = product.id,
+            quantity = 3.0,
+            unitPriceInCents = 2000L,
+            updatedAt = now + 400,
+        )
+        pantryRepository.insertPantryItem(secondBatch)
+        val pricesWithSecondBatch = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, pricesWithSecondBatch.size)
+        assertEquals(2000L, pricesWithSecondBatch[0].priceInCents)
+        assertEquals(secondBatch.id, pricesWithSecondBatch[0].id)
+    }
+
+    @Test
     fun `should ignore older sync updates for pantry items following LWW`() = runTest {
         val product = createDummyProduct()
         catalogRepository.insertProduct(product, null)
@@ -631,7 +769,8 @@ class RoomPantryRepositoryTest : BaseTest() {
         productId: String = Uuid.random().toString(),
         quantity: Double = 1.0,
         expirationDate: Long? = null,
-        updatedAt: Long = getCurrentTime()
+        updatedAt: Long = getCurrentTime(),
+        unitPriceInCents: Long? = null,
     ) = PantryItem(
         id = id,
         productId = productId,
@@ -639,7 +778,8 @@ class RoomPantryRepositoryTest : BaseTest() {
         updatedAt = updatedAt,
         isDeleted = false,
         expirationDate = expirationDate,
-        batchNumber = null
+        batchNumber = null,
+        unitPriceInCents = unitPriceInCents,
     )
 
     @OptIn(ExperimentalUuidApi::class)

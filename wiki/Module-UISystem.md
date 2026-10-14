@@ -16,15 +16,18 @@ O aplicativo utiliza uma identidade visual baseada em profundidade e vidro fosco
 
 ## 📱 Telas & Recursos Principais
 
-### 1. Início (`HomeScreen`)
-* Dashboard financeiro com totais gastos no mês.
-* Widget de itens próximos do vencimento (`ExpiringSoonWidget`).
-* Tendências de consumo recentes (`ConsumptionTrendWidget`).
+### 1. Início (`HomeScreen` & `HomeViewModel`)
+* Dashboard financeiro reativo (`FinancialWidget`) com gastos reais do mês e barra de consumo orçamentário (`InverseAnchoredGauge`).
+* Card de estoque avaliado (`StockValueCard`) com valor patrimonial total da despensa em reais (`R$ X,XX`), quantidade avaliada e custo médio unitário.
+* Diálogo de analytics financeiro (`FinancialAnalyticsDialog`) com evolução anual de 12 meses, gasto médio mensal e custo médio ponderado por item.
+* Diálogo de definição de orçamento (`SetMonthlyBudgetDialog`) para definir ou atualizar a meta orçamentária familiar do mês.
+* Widget de itens próximos do vencimento (`ExpiringSoonWidget`) com badges dinâmicos de urgência e dias restantes.
+* Tendências de consumo recentes (`ConsumptionTrendWidget`) agregadas por mês.
 
 ### 2. Catálogo & Ficha Técnica (`CatalogScreen` & `ProductDetailsScreen`)
 * Listagem de produtos agrupada por categorias ou busca textual.
 * Sheet unificada de cadastro (`RegisterProductBottomSheet`) com validação reativa de formulário.
-* Tela de detalhes completa com gráfico interativo de histórico de preços ao longo do tempo e lotes ativos na despensa.
+* Tela de detalhes completa com gráfico interativo de histórico de preços ao longo do tempo, lotes ativos com valor unitário e edição em lote (`EditPantryBatchSheet`) com recálculo instantâneo das métricas mín/máx/médio.
 
 ### 3. Despensa (`PantryScreen`)
 * Visão de estoque por categorias com contadores em tempo real.
@@ -47,4 +50,4 @@ Para evitar condições de corrida na interface (ex: dois modais abrindo simulta
 
 ## 🧪 Testes no Módulo (:uisystem)
 
-Contém **94 testes unitários** usando Turbine para assertions de `StateFlow` e validação isolada de regras de UI, formatadores de moeda e validadores de formulário.
+Contém **149 testes unitários** usando Turbine para assertions de `StateFlow` e validação isolada de regras de UI, `HomeViewModel`, formatadores de moeda, mappers de mês internacionalizados (`MonthMapper`), validadores de formulário e estabilizadores de scanner.

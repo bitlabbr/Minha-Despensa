@@ -30,13 +30,17 @@ import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
 import com.bitlabbr.minhadespensa.data.local.converter.Converters
 import com.bitlabbr.minhadespensa.data.local.dao.CatalogProductDao
+import com.bitlabbr.minhadespensa.data.local.dao.MonthlyBudgetDao
 import com.bitlabbr.minhadespensa.data.local.dao.PantryItemDao
+import com.bitlabbr.minhadespensa.data.local.dao.PantryMovementDao
 import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
 import com.bitlabbr.minhadespensa.data.local.dao.ProductMediaDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingItemDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingListDao
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
+import com.bitlabbr.minhadespensa.data.local.entity.MonthlyBudgetEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+import com.bitlabbr.minhadespensa.data.local.entity.PantryMovementEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
@@ -49,9 +53,11 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
         PriceEntryEntity::class,
         ShoppingItemEntity::class,
         ProductMediaEntity::class,
-        ShoppingListEntity::class
+        ShoppingListEntity::class,
+        MonthlyBudgetEntity::class,
+        PantryMovementEntity::class
     ],
-    version = 4
+    version = 7
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -62,6 +68,8 @@ abstract class AppDatabase: RoomDatabase() {
     abstract fun shoppingItemDao(): ShoppingItemDao
     abstract fun productMediaDao(): ProductMediaDao
     abstract fun shoppingListDao(): ShoppingListDao
+    abstract fun budgetDao(): MonthlyBudgetDao
+    abstract fun movementDao(): PantryMovementDao
 }
 
 expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {
