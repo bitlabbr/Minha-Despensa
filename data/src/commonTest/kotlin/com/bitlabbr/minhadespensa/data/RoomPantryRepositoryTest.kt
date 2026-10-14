@@ -139,15 +139,16 @@ class RoomPantryRepositoryTest : BaseTest() {
         assertNotNull(retrieved)
         assertEquals(899L, retrieved.unitPriceInCents)
 
-        // 2. Verify PriceEntry was automatically inserted in db.priceDao()
+        // 2. Verify PriceEntry was automatically inserted in db.priceDao() sharing the same ID
         val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
         assertEquals(1, priceEntries.size)
         assertEquals(899L, priceEntries[0].priceInCents)
+        assertEquals(pantryItem.id, priceEntries[0].id)
         assertEquals("Entrada na Despensa", priceEntries[0].storeName)
     }
 
     @Test
-    fun `should persist unitPriceInCents and create PriceEntry on updatePantryItemIfNewer`() = runTest {
+    fun `should persist unitPriceInCents and update PriceEntry in-place on updatePantryItemIfNewer`() = runTest {
         val product = createDummyProduct(name = "Arroz Integral")
         catalogRepository.insertProduct(product, null)
 
@@ -164,7 +165,7 @@ class RoomPantryRepositoryTest : BaseTest() {
         val initialPrices = db.priceDao().getPriceHistoryByProductId(product.id).first()
         assertEquals(0, initialPrices.size)
 
-        // Update item with price
+        // 1. Update item with price: should create PriceEntry with item.id
         val updatedItem = initialItem.copy(
             quantity = 2.0,
             unitPriceInCents = 1250L,
@@ -173,37 +174,49 @@ class RoomPantryRepositoryTest : BaseTest() {
         )
         pantryRepository.updatePantryItemIfNewer(updatedItem)
 
-        // 1. Retrieve pantry item and verify updated fields
         val retrieved = pantryRepository.getPantryItemById(initialItem.id).first()
         assertNotNull(retrieved)
         assertEquals(2.0, retrieved.quantity)
         assertEquals(1250L, retrieved.unitPriceInCents)
         assertEquals("LOTE-XYZ", retrieved.batchNumber)
 
-        // 2. Verify PriceEntry was automatically inserted in db.priceDao()
         val priceEntries = db.priceDao().getPriceHistoryByProductId(product.id).first()
         assertEquals(1, priceEntries.size)
         assertEquals(1250L, priceEntries[0].priceInCents)
-        assertEquals("Atualização de Lote", priceEntries[0].storeName)
+        assertEquals(initialItem.id, priceEntries[0].id)
 
-        // 3. Update item again with same price: should NOT duplicate PriceEntry
-        val samePriceUpdate = updatedItem.copy(
-            batchNumber = "LOTE-ABC",
-            updatedAt = now + 200,
-        )
-        pantryRepository.updatePantryItemIfNewer(samePriceUpdate)
-        val pricesAfterSamePrice = db.priceDao().getPriceHistoryByProductId(product.id).first()
-        assertEquals(1, pricesAfterSamePrice.size, "Price history should not contain duplicate entry for unchanged price")
-
-        // 4. Update item with different price: SHOULD insert new PriceEntry
+        // 2. Update item again with different price: should UPDATE existing PriceEntry in place (NO duplicate!)
         val differentPriceUpdate = updatedItem.copy(
             unitPriceInCents = 1500L,
-            updatedAt = now + 300,
+            updatedAt = now + 200,
         )
         pantryRepository.updatePantryItemIfNewer(differentPriceUpdate)
         val pricesAfterDiffPrice = db.priceDao().getPriceHistoryByProductId(product.id).first()
-        assertEquals(2, pricesAfterDiffPrice.size, "Price history should record new entry when price changes")
+        assertEquals(1, pricesAfterDiffPrice.size, "Price history should update in-place without duplicate ghost entries")
         assertEquals(1500L, pricesAfterDiffPrice[0].priceInCents)
+        assertEquals(initialItem.id, pricesAfterDiffPrice[0].id)
+
+        // 3. Update item clearing price (null): should soft-delete the associated PriceEntry
+        val clearedPriceUpdate = differentPriceUpdate.copy(
+            unitPriceInCents = null,
+            updatedAt = now + 300,
+        )
+        pantryRepository.updatePantryItemIfNewer(clearedPriceUpdate)
+        val pricesAfterClear = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(0, pricesAfterClear.size, "Price history should be empty when batch price is cleared")
+
+        // 4. Multiple distinct batches should maintain distinct PriceEntries
+        val secondBatch = createDummyPantryItem(
+            productId = product.id,
+            quantity = 3.0,
+            unitPriceInCents = 2000L,
+            updatedAt = now + 400,
+        )
+        pantryRepository.insertPantryItem(secondBatch)
+        val pricesWithSecondBatch = db.priceDao().getPriceHistoryByProductId(product.id).first()
+        assertEquals(1, pricesWithSecondBatch.size)
+        assertEquals(2000L, pricesWithSecondBatch[0].priceInCents)
+        assertEquals(secondBatch.id, pricesWithSecondBatch[0].id)
     }
 
     @Test
