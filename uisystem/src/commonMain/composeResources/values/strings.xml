@@ -384,4 +384,25 @@
     <string name="action_show_more_count">Mostrar mais (%1$d)</string>
     <string name="action_show_less">Mostrar menos</string>
 
+    <!-- Financial Analytics & Stock Value -->
+    <string name="home_stock_value_title">Estoque da Despensa</string>
+    <string name="home_stock_value_desc">Estoque avaliado em: %1$s</string>
+    <string name="home_stock_value_items_count">%1$d itens com valor cadastrado</string>
+    <string name="home_stock_value_average_unit_price">Média por item: %1$s</string>
+    <string name="home_stock_value_no_prices">Nenhum item com valor cadastrado</string>
+    <string name="home_stock_value_chip_label">Estoque: %1$s</string>
+
+    <string name="home_analytics_dialog_title">Evolução Financeira (%1$d)</string>
+    <string name="home_analytics_dialog_desc">Histórico anual de gastos, metas orçamentárias e avaliação patrimonial do estoque.</string>
+    <string name="home_analytics_total_year_spent">Total gasto no ano</string>
+    <string name="home_analytics_monthly_average">Média mensal</string>
+    <string name="home_analytics_average_item_price">Preço médio por compra/item</string>
+    <string name="home_analytics_evolution_section_title">EVOLUÇÃO MENSAL DE DESPESAS</string>
+    <string name="home_analytics_over_budget_badge">Estourado</string>
+    <string name="home_analytics_no_budget_badge">Sem meta</string>
+    <string name="home_analytics_within_budget_badge">Na meta</string>
+    <string name="home_analytics_action_button">Análise</string>
+    <string name="home_analytics_close_button">Fechar</string>
+    <string name="home_analytics_no_expenses_year">Nenhum gasto registrado neste ano</string>
+
 </resources>

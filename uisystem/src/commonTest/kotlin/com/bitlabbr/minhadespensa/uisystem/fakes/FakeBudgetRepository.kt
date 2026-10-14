@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 
+import kotlinx.coroutines.flow.combine
+
 class FakeBudgetRepository : BudgetRepository {
     val budgets = MutableStateFlow<Map<Pair<Int, Int>, MonthlyBudget>>(emptyMap())
     val expenses = MutableStateFlow<Map<Pair<Int, Int>, Long>>(emptyMap())
@@ -54,14 +56,14 @@ class FakeBudgetRepository : BudgetRepository {
     }
 
     override fun getYearlySummary(year: Int): Flow<List<MonthlyFinancialSummary>> {
-        return budgets.map { budgetMap ->
+        return combine(budgets, expenses) { budgetMap, expenseMap ->
             (1..12).map { m ->
                 val key = Pair(year, m)
                 MonthlyFinancialSummary(
                     year = year,
                     month = m,
                     budgetInCents = budgetMap[key]?.budgetInCents,
-                    totalSpentInCents = expenses.value[key] ?: 0L,
+                    totalSpentInCents = expenseMap[key] ?: 0L,
                 )
             }
         }

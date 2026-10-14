@@ -136,8 +136,10 @@ To provide a smooth search experience for Brazilian Portuguese diacritics and sp
 
 ### 4.7. Home Overview & Real-Time Aggregation (`HomeScreen` & `HomeViewModel`)
 The home screen connects the user's live inventory, movement ledger, and monthly financial budget:
-- **`HomeViewModel`:** Reactively combines `GetMonthlyFinancialSummaryUseCase`, `PantryRepository.getExpiringPantryItems`, `GetMostConsumedProductsUseCase`, and `CatalogRepository.getAllActiveProducts` into `HomeUiState`.
-- **Financial Summary (`FinancialWidget`):** Displays real-time spending for the current month (`totalSpentInCents`), defined budget, and animated gauge (`InverseAnchoredGauge`). If no budget is set, renders an inviting empty state with a call-to-action button. Tapping the card triggers budget modification.
+- **`HomeViewModel`:** Reactively combines `GetMonthlyFinancialSummaryUseCase`, `PantryRepository.getExpiringPantryItems`, `GetMostConsumedProductsUseCase`, `CatalogRepository.getAllActiveProducts`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, and `PantryMovementRepository.getMovementsForPeriod` into `HomeUiState`.
+- **Financial Summary (`FinancialWidget`):** Displays real-time spending for the current month (`totalSpentInCents`), defined budget, and animated gauge (`InverseAnchoredGauge`). If no budget is set, renders an inviting empty state with a call-to-action button. Tapping the card triggers budget modification, while dedicated actions trigger the financial analytics dialog.
+- **Pantry Stock Valuation (`HomePantryStockUiModel`):** Aggregates the total monetary value of all active pantry items (`sum(quantity * unitPriceInCents)`), formatted currency strings, item count with price, and average unit price.
+- **Yearly Analytics (`HomeYearlyAnalyticsUiModel`):** Prepares 12 monthly bars comparing actual spend vs. budget ceiling, total annual spending, average monthly spend, and weighted average item/purchase price.
 - **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`.
 - **Expiring Soon (`ExpiringSoonWidget`):** Monitors pantry stock with dynamic labels ("Vence hoje", "Vence amanhã", "Vence em X dias", "Vencido há X dias") with gauge urgency and an elegant empty state ("Tudo em dia na sua despensa!").
 - **Consumption Trends (`ConsumptionTrendWidget`):** Highlights top consumed products during the current month with unit resolution and empty state.
@@ -176,7 +178,7 @@ All 141 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
 | `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
-| `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog lifecycle and validation. |
+| `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, pantry stock value calculation (with priced/unpriced/deleted items), yearly analytics aggregations (12 monthly bars, elapsed month averages, purchase/stock unit costs), dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog & FinancialAnalyticsDialog lifecycles and validation. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
