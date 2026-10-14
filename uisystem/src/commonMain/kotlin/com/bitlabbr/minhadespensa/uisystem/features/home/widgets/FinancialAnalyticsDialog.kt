@@ -67,6 +67,7 @@ import minhadespensa.uisystem.generated.resources.home_analytics_no_expenses_yea
 import minhadespensa.uisystem.generated.resources.home_analytics_over_budget_badge
 import minhadespensa.uisystem.generated.resources.home_analytics_total_year_spent
 import minhadespensa.uisystem.generated.resources.home_analytics_within_budget_badge
+import minhadespensa.uisystem.generated.resources.placeholder_empty_metric
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -117,7 +118,7 @@ fun FinancialAnalyticsDialog(
                 )
                 YearlyMetricBox(
                     label = stringResource(Res.string.home_analytics_average_item_price),
-                    value = yearlyAnalytics.formattedAverageItemPrice ?: "—",
+                    value = yearlyAnalytics.formattedAverageItemPrice ?: stringResource(Res.string.placeholder_empty_metric),
                     modifier = Modifier.weight(1f),
                 )
             }

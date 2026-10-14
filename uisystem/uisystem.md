@@ -8,7 +8,7 @@ The `:uisystem` module is a Compose Multiplatform (Android & iOS) design system 
 2. **Domain-Specific Molecules & Sheets:** Reusable cards, filter bars, camera-driven barcode scanners, and a unified product registration sheet.
 3. **Feature Screens & State Machines:** Reactive screens managing pantry inventory, product catalog, product details & price history, quick & planned shopping lists, and a live in-store shopping assistant.
 4. **App Notification Manager:** Decoupled transient notifications via `AppNotificationManager` and `MinhaDespensaSnackbar`.
-5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (141 tests).
+5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (149 tests).
 
 ---
 
@@ -167,12 +167,13 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 141 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All 149 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
 | `CurrencyFormatterTest` | Formats integer cents to Brazilian Real (`R$ 1.234,56`), handles zero, negatives, and large numbers. |
 | `MeasureUnitMapperTest` | Maps all domain `MeasureUnit` enums to localized `StringResource` tokens. |
+| `MonthMapperTest` | Maps `Month` enum and integer numbers to localized `StringResource` tokens and short abbreviation strings with out-of-bounds fallback. |
 | `UiTextTest` | Resolves `DynamicString` and `Resource` with string format arguments. |
 | `CatalogProductUiModelTest` | Formats unit weights, packaging info, and handles missing brands. |
 | `ProductFormStateTest` | Form validation: required name, length restrictions, numeric weight parsing. |

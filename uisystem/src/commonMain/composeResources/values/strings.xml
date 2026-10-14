@@ -405,4 +405,20 @@
     <string name="home_analytics_close_button">Fechar</string>
     <string name="home_analytics_no_expenses_year">Nenhum gasto registrado neste ano</string>
 
+    <!-- Month Abbreviations for Analytics -->
+    <string name="month_1_short">Jan</string>
+    <string name="month_2_short">Fev</string>
+    <string name="month_3_short">Mar</string>
+    <string name="month_4_short">Abr</string>
+    <string name="month_5_short">Mai</string>
+    <string name="month_6_short">Jun</string>
+    <string name="month_7_short">Jul</string>
+    <string name="month_8_short">Ago</string>
+    <string name="month_9_short">Set</string>
+    <string name="month_10_short">Out</string>
+    <string name="month_11_short">Nov</string>
+    <string name="month_12_short">Dez</string>
+
+    <string name="placeholder_empty_metric">—</string>
+
 </resources>

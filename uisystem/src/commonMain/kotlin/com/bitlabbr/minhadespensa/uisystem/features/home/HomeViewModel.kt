@@ -50,6 +50,7 @@ import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeYearlyAnalyti
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ExpiringItemCard
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
 import com.bitlabbr.minhadespensa.uisystem.mapper.toAbbreviation
+import com.bitlabbr.minhadespensa.uisystem.mapper.toShortMonthName
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -349,8 +350,6 @@ class HomeViewModel(
         )
     }
 
-    private val monthNames = listOf("Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez")
-
     private fun mapYearlyAnalytics(
         year: Int,
         yearlySummaries: List<MonthlyFinancialSummary>,
@@ -382,7 +381,7 @@ class HomeViewModel(
             } else {
                 0f
             }
-            val monthLabel = if (summary.month in 1..12) monthNames[summary.month - 1] else "M${summary.month}"
+            val monthLabel = summary.month.toShortMonthName()
 
             HomeMonthlyBarUiModel(
                 month = summary.month,
