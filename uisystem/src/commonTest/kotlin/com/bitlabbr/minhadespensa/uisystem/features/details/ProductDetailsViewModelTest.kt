@@ -719,4 +719,93 @@ class ProductDetailsViewModelTest {
         assertEquals("NEW-LOTE", updatedItem.batchNumber)
         assertEquals(950L, updatedItem.unitPriceInCents)
     }
+
+    @Test
+    fun `should recalculate lowest and highest prices when price entry is updated in place`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-recalc",
+            name = "Açúcar Refinado",
+            category = "Mercearia",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+
+        val batchId = "batch-sugar-1"
+        val initialBatch = PantryItem(
+            id = batchId,
+            productId = "prod-recalc",
+            quantity = 2.0,
+            expirationDate = null,
+            unitPriceInCents = 100L,
+            updatedAt = 1000L,
+        )
+        pantryRepository.insertPantryItem(initialBatch)
+
+        val initialPrice = PriceEntry(
+            id = batchId,
+            productId = "prod-recalc",
+            priceInCents = 100L,
+            storeName = "Entrada na Despensa",
+            updatedAt = 1000L,
+        )
+        priceRepository.insertPriceEntry(initialPrice)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-recalc")
+        testScheduler.advanceUntilIdle()
+
+        // Before update: lowest = 100, highest = 100
+        assertEquals(100L, viewModel.uiState.value.lowestPrice)
+        assertEquals(100L, viewModel.uiState.value.highestPrice)
+
+        // When batch price is corrected/updated in-place from 100L to 500L (R$ 5,00)
+        priceRepository.updatePriceEntryIfNewer(
+            initialPrice.copy(priceInCents = 500L, updatedAt = 1100L)
+        )
+        testScheduler.advanceUntilIdle()
+
+        // After in-place update: lowest = 500, highest = 500, average = 500 (NO ghost 100L!)
+        val updatedState = viewModel.uiState.value
+        assertEquals(500L, updatedState.lowestPrice)
+        assertEquals(500L, updatedState.highestPrice)
+        assertEquals(500L, updatedState.averagePrice)
+        assertNull(updatedState.priceDifference)
+        assertEquals(0.0, updatedState.priceVariationPercentage)
+    }
+
+    @Test
+    fun `batch created with checkout price should display unit and total price in pantry stock`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val product = CatalogProduct(
+            id = "prod-checkout-stock",
+            name = "Leite Desnatado",
+            category = "Laticínios",
+            updatedAt = 1000L,
+        )
+        catalogRepository.insertProduct(product, null)
+
+        val checkoutBatch = PantryItem(
+            id = "batch-from-checkout",
+            productId = "prod-checkout-stock",
+            quantity = 4.0,
+            expirationDate = null,
+            unitPriceInCents = 550L,
+            updatedAt = 1000L,
+        )
+        pantryRepository.insertPantryItem(checkoutBatch)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.loadProduct("prod-checkout-stock")
+        testScheduler.advanceUntilIdle()
+
+        val stock = viewModel.uiState.value.pantryStock
+        assertNotNull(stock)
+        assertEquals(1, stock.batches.size)
+        val batch = stock.batches.first()
+        assertEquals(550L, batch.unitPriceInCents)
+        assertEquals(2200L, batch.totalPriceInCents)
+    }
 }
