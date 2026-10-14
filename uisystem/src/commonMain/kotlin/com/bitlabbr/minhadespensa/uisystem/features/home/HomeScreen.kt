@@ -46,6 +46,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaTex
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ConsumptionTrendWidget
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ExpiringSoonWidget
+import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.FinancialAnalyticsDialog
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.FinancialWidget
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.SetMonthlyBudgetDialog
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
@@ -113,8 +114,10 @@ fun HomeScreen(
                             // 1. Widget Financeiro Conectado a Dados Reais
                             FinancialWidget(
                                 data = uiState.financialSummary,
+                                stockValue = uiState.pantryStockValue,
                                 onCardClick = { viewModel.openSetBudgetDialog() },
                                 onDefineBudgetClick = { viewModel.openSetBudgetDialog() },
+                                onOpenAnalytics = { viewModel.openFinancialAnalyticsDialog() },
                             )
 
                             // 2. Widget Itens Próximos à Validade
@@ -141,6 +144,17 @@ fun HomeScreen(
                     },
                     onDismiss = {
                         viewModel.dismissSetBudgetDialog()
+                    },
+                )
+            }
+
+            // Diálogo de Análise Financeira Anual e Patrimônio
+            if (uiState.isFinancialAnalyticsDialogOpen) {
+                FinancialAnalyticsDialog(
+                    stockValue = uiState.pantryStockValue,
+                    yearlyAnalytics = uiState.yearlyAnalytics,
+                    onDismiss = {
+                        viewModel.dismissFinancialAnalyticsDialog()
                     },
                 )
             }

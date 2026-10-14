@@ -137,7 +137,9 @@ To provide a smooth search experience for Brazilian Portuguese diacritics and sp
 ### 4.7. Home Overview & Real-Time Aggregation (`HomeScreen` & `HomeViewModel`)
 The home screen connects the user's live inventory, movement ledger, and monthly financial budget:
 - **`HomeViewModel`:** Reactively combines `GetMonthlyFinancialSummaryUseCase`, `PantryRepository.getExpiringPantryItems`, `GetMostConsumedProductsUseCase`, `CatalogRepository.getAllActiveProducts`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, and `PantryMovementRepository.getMovementsForPeriod` into `HomeUiState`.
-- **Financial Summary (`FinancialWidget`):** Displays real-time spending for the current month (`totalSpentInCents`), defined budget, and animated gauge (`InverseAnchoredGauge`). If no budget is set, renders an inviting empty state with a call-to-action button. Tapping the card triggers budget modification, while dedicated actions trigger the financial analytics dialog.
+- **Financial Summary (`FinancialWidget`):** Displays real-time spending for the current month (`totalSpentInCents`), defined budget, and animated gauge (`InverseAnchoredGauge`). If no budget is set, renders an inviting empty state with a call-to-action button. Tapping the card triggers budget modification, while dedicated header actions and the bottom inventory valuation banner trigger the financial analytics dialog.
+- **Stock Value Card (`StockValueCard`):** Dedicated valuation widget displaying total active pantry inventory value in currency (`R$ X,XX`), number of evaluated items, and unit average cost.
+- **Financial Analytics Dialog (`FinancialAnalyticsDialog`):** Interactive modal showcasing pantry inventory valuation (`StockValueCard`), annual indicators (total year spent, monthly average, weighted unit item price), and a 12-month evolution list with budget status badges ("Estourado", "Na meta", "Sem meta") and progress bars.
 - **Pantry Stock Valuation (`HomePantryStockUiModel`):** Aggregates the total monetary value of all active pantry items (`sum(quantity * unitPriceInCents)`), formatted currency strings, item count with price, and average unit price.
 - **Yearly Analytics (`HomeYearlyAnalyticsUiModel`):** Prepares 12 monthly bars comparing actual spend vs. budget ceiling, total annual spending, average monthly spend, and weighted average item/purchase price.
 - **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`.
@@ -152,7 +154,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Logger:** `AppLogger` qualifier `DiQualifiers.UI_LOGGER` bound to `ConsoleLogger("UISystem")`.
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
-  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `PantryRepository`, `CatalogRepository`, logger, notification manager.
+  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, logger, notification manager.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases, logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.

@@ -23,16 +23,23 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Analytics
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -46,22 +53,27 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.gauge.InverseAnchored
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.SecondaryContainerHeader
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeFinancialUiModel
+import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomePantryStockUiModel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.financial_card_budget
 import minhadespensa.uisystem.generated.resources.financial_card_current_consumption_label
 import minhadespensa.uisystem.generated.resources.financial_card_title
+import minhadespensa.uisystem.generated.resources.home_analytics_action_button
 import minhadespensa.uisystem.generated.resources.home_financial_no_budget_hint
 import minhadespensa.uisystem.generated.resources.home_financial_set_budget_cta
+import minhadespensa.uisystem.generated.resources.home_stock_value_chip_label
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 fun FinancialWidget(
     data: HomeFinancialUiModel,
     modifier: Modifier = Modifier,
+    stockValue: HomePantryStockUiModel? = null,
     onCardClick: () -> Unit = {},
     onDefineBudgetClick: () -> Unit = onCardClick,
+    onOpenAnalytics: (() -> Unit)? = null,
 ) {
     val colors = getAppColors()
     val appDimens = MinhaDespensaTheme.dimens
@@ -77,7 +89,10 @@ fun FinancialWidget(
             ),
         content = {
             SecondaryContainerHeader(
-                text = stringResource(Res.string.financial_card_title)
+                text = stringResource(Res.string.financial_card_title),
+                actionIcon = if (onOpenAnalytics != null) Icons.Rounded.Analytics else null,
+                actionContentDescription = if (onOpenAnalytics != null) stringResource(Res.string.home_analytics_action_button) else null,
+                onActionClick = onOpenAnalytics,
             )
 
             if (!data.hasBudget) {
@@ -171,6 +186,62 @@ fun FinancialWidget(
                                 color = colors.onSecondaryContainer,
                                 fontWeight = FontWeight.Bold,
                             )
+                        }
+                    }
+                }
+            }
+
+            if (stockValue != null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = appDimens.paddingSmall, vertical = 4.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(colors.onSecondaryContainer.copy(alpha = 0.08f))
+                        .then(if (onOpenAnalytics != null) Modifier.clickable { onOpenAnalytics() } else Modifier)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Inventory2,
+                                contentDescription = null,
+                                tint = colors.onSecondaryContainer.copy(alpha = 0.8f),
+                                modifier = Modifier.size(14.dp),
+                            )
+                            MinhaDespensaText(
+                                text = stringResource(Res.string.home_stock_value_chip_label, stockValue.formattedTotalValue),
+                                fontStyle = typography.bodySmall,
+                                color = colors.onSecondaryContainer,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+
+                        if (onOpenAnalytics != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            ) {
+                                MinhaDespensaText(
+                                    text = stringResource(Res.string.home_analytics_action_button),
+                                    fontStyle = typography.bodySmall,
+                                    color = colors.primary,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                                Icon(
+                                    imageVector = Icons.Rounded.ChevronRight,
+                                    contentDescription = null,
+                                    tint = colors.primary,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
                         }
                     }
                 }
