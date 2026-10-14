@@ -352,4 +352,32 @@
     <string name="shopping_assistant_search_clear">Limpar busca</string>
     <string name="shopping_assistant_search_action">Buscar no carrinho</string>
 
+    <!-- Home Overview & Widgets -->
+    <string name="home_financial_set_budget_cta">Definir meta do mês</string>
+    <string name="home_financial_no_budget_hint">Defina um teto para acompanhar seus gastos do mês</string>
+    <string name="home_financial_dialog_title">Definir Meta do Mês</string>
+    <string name="home_financial_dialog_desc">Informe o valor limite de compras para o mês atual.</string>
+    <string name="home_financial_dialog_input_label">Orçamento Mensal (R$)</string>
+    <string name="home_financial_dialog_input_placeholder">Ex: 1000,00</string>
+    <string name="home_financial_dialog_save">Salvar Orçamento</string>
+    <string name="home_financial_dialog_cancel">Cancelar</string>
+    <string name="home_financial_budget_saved_success">Orçamento mensal definido com sucesso!</string>
+    <string name="home_financial_budget_saved_error">Erro ao salvar orçamento mensal</string>
+    <string name="home_financial_empty_spending">Nenhum gasto registrado este mês</string>
+
+    <string name="home_expiring_section_title">ITENS PRÓXIMOS À VALIDADE</string>
+    <string name="home_expiring_empty_title">Tudo em dia na sua despensa!</string>
+    <string name="home_expiring_empty_desc">Nenhum item próximo ao vencimento nos próximos 7 dias.</string>
+    <string name="home_expiring_badge_header">Validade</string>
+    <string name="home_expiring_badge_warning_header">Atenção</string>
+    <string name="home_expiring_today">Vence hoje</string>
+    <string name="home_expiring_tomorrow">Vence amanhã</string>
+    <string name="home_expiring_in_days">Vence em %1$d dias</string>
+    <string name="home_expiring_overdue_1">Vencido há 1 dia</string>
+    <string name="home_expiring_overdue_days">Vencido há %1$d dias</string>
+
+    <string name="home_consumption_section_title">ITENS MAIS CONSUMIDOS NO MÊS</string>
+    <string name="home_consumption_empty_title">Nenhum consumo registrado neste mês</string>
+    <string name="home_consumption_empty_desc">Ao consumir ou dar baixa em itens da despensa, o histórico de consumo aparecerá aqui.</string>
+
 </resources>
