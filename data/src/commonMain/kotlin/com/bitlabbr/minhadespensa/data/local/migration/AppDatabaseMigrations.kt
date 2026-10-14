@@ -454,6 +454,55 @@ val MIGRATION_1_5 = object : Migration(1, 5) {
     }
 }
 
+val MIGRATION_5_6 = object : Migration(5, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        if (!tableExists(connection, "monthly_budgets")) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `monthly_budgets` (
+                    `year` INTEGER NOT NULL,
+                    `month` INTEGER NOT NULL,
+                    `budgetInCents` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`year`, `month`)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+}
+
+val MIGRATION_4_6 = object : Migration(4, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
+val MIGRATION_3_6 = object : Migration(3, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
+val MIGRATION_2_6 = object : Migration(2, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
+val MIGRATION_1_6 = object : Migration(1, 6) {
+    override fun migrate(connection: SQLiteConnection) {
+        migrateToSchemaV4(connection)
+        MIGRATION_4_5.migrate(connection)
+        MIGRATION_5_6.migrate(connection)
+    }
+}
+
 val ALL_MIGRATIONS = arrayOf(
     MIGRATION_1_2,
     MIGRATION_2_3,
@@ -463,5 +512,10 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_4_5,
     MIGRATION_3_5,
     MIGRATION_2_5,
-    MIGRATION_1_5
+    MIGRATION_1_5,
+    MIGRATION_5_6,
+    MIGRATION_4_6,
+    MIGRATION_3_6,
+    MIGRATION_2_6,
+    MIGRATION_1_6
 )

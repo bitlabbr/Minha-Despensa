@@ -191,6 +191,20 @@ class AppDatabaseMigrationTest {
         assertEquals("shop-disk-1", shoppingItems[0].id)
         assertEquals("prod-disk-1", shoppingItems[0].productId)
 
+        val budget = roomDb.budgetDao().getBudget(2026, 10).first()
+        assertNull(budget)
+
+        roomDb.budgetDao().insertOrUpdate(
+            com.bitlabbr.minhadespensa.data.local.entity.MonthlyBudgetEntity(
+                year = 2026,
+                month = 10,
+                budgetInCents = 150000L,
+                updatedAt = 5000L
+            )
+        )
+        val savedBudget = roomDb.budgetDao().getBudget(2026, 10).first()
+        assertEquals(150000L, savedBudget?.budgetInCents)
+
         roomDb.close()
     }
 
@@ -573,6 +587,64 @@ class AppDatabaseMigrationTest {
         connection.prepare("SELECT unit_price_in_cents FROM pantry_items WHERE id = 'pantry-v5'").useStatement { stmt ->
             assertTrue(stmt.step())
             assertEquals(2990L, stmt.getLong(0))
+        }
+    }
+
+    @Test
+    fun migration_5_to_6_creates_monthly_budgets_table_and_allows_crud() {
+        createV2Schema(connection)
+        MIGRATION_2_4.migrate(connection)
+        MIGRATION_4_5.migrate(connection)
+
+        // Run Migration 5 -> 6
+        MIGRATION_5_6.migrate(connection)
+
+        // Verify table exists and can store monthly budgets with composite primary key
+        connection.execSQL(
+            """
+            INSERT INTO `monthly_budgets` (`year`, `month`, `budgetInCents`, `updatedAt`)
+            VALUES (2026, 10, 150000, 1000)
+            """.trimIndent()
+        )
+
+        connection.prepare("SELECT year, month, budgetInCents, updatedAt FROM monthly_budgets WHERE year = 2026 AND month = 10").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(2026, stmt.getInt(0))
+            assertEquals(10, stmt.getInt(1))
+            assertEquals(150000L, stmt.getLong(2))
+            assertEquals(1000L, stmt.getLong(3))
+        }
+
+        // Test update on conflict replace (same year and month)
+        connection.execSQL(
+            """
+            INSERT OR REPLACE INTO `monthly_budgets` (`year`, `month`, `budgetInCents`, `updatedAt`)
+            VALUES (2026, 10, 200000, 2000)
+            """.trimIndent()
+        )
+
+        connection.prepare("SELECT budgetInCents, updatedAt FROM monthly_budgets WHERE year = 2026 AND month = 10").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(200000L, stmt.getLong(0))
+            assertEquals(2000L, stmt.getLong(1))
+        }
+    }
+
+    @Test
+    fun direct_migration_1_to_6_creates_monthly_budgets_table_successfully() {
+        createV2Schema(connection)
+        MIGRATION_1_6.migrate(connection)
+
+        connection.execSQL(
+            """
+            INSERT INTO `monthly_budgets` (`year`, `month`, `budgetInCents`, `updatedAt`)
+            VALUES (2026, 11, 180000, 3000)
+            """.trimIndent()
+        )
+
+        connection.prepare("SELECT budgetInCents FROM monthly_budgets WHERE year = 2026 AND month = 11").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(180000L, stmt.getLong(0))
         }
     }
 
