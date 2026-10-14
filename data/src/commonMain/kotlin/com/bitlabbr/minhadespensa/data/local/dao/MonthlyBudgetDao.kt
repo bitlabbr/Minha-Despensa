@@ -47,52 +47,26 @@ interface MonthlyBudgetDao {
 
     @Query(
         """
-        SELECT (
-            (SELECT CAST(COALESCE(SUM(ROUND(si.quantity * si.price_at_time)), 0) AS INTEGER)
-             FROM shopping_items si
-             INNER JOIN shopping_lists sl ON si.list_id = sl.id
-             WHERE sl.list_status = 'COMPLETED'
-               AND sl.is_deleted = 0
-               AND si.is_deleted = 0
-               AND si.price_at_time IS NOT NULL
-               AND si.price_at_time > 0
-               AND sl.updated_at >= :startOfMonth AND sl.updated_at <= :endOfMonth)
-            +
-            (SELECT CAST(COALESCE(SUM(ROUND(p.quantity * p.unit_price_in_cents)), 0) AS INTEGER)
-             FROM pantry_items p
-             INNER JOIN price_entries pr ON p.id = pr.id
-             WHERE pr.storeName = 'Entrada na Despensa'
-               AND p.unit_price_in_cents IS NOT NULL
-               AND p.unit_price_in_cents > 0
-               AND pr.isDeleted = 0
-               AND pr.updatedAt >= :startOfMonth AND pr.updatedAt <= :endOfMonth)
-        )
+        SELECT CAST(COALESCE(SUM(total_price_in_cents), 0) AS INTEGER)
+        FROM pantry_movements
+        WHERE type IN ('ENTRY_MANUAL', 'ENTRY_PURCHASE')
+          AND total_price_in_cents IS NOT NULL
+          AND total_price_in_cents > 0
+          AND timestamp >= :startOfMonth AND timestamp <= :endOfMonth
+          AND is_deleted = 0
         """
     )
     fun getMonthlyExpenses(startOfMonth: Long, endOfMonth: Long): Flow<Long>
 
     @Query(
         """
-        SELECT (
-            (SELECT CAST(COALESCE(SUM(ROUND(si.quantity * si.price_at_time)), 0) AS INTEGER)
-             FROM shopping_items si
-             INNER JOIN shopping_lists sl ON si.list_id = sl.id
-             WHERE sl.list_status = 'COMPLETED'
-               AND sl.is_deleted = 0
-               AND si.is_deleted = 0
-               AND si.price_at_time IS NOT NULL
-               AND si.price_at_time > 0
-               AND sl.updated_at >= :startOfMonth AND sl.updated_at <= :endOfMonth)
-            +
-            (SELECT CAST(COALESCE(SUM(ROUND(p.quantity * p.unit_price_in_cents)), 0) AS INTEGER)
-             FROM pantry_items p
-             INNER JOIN price_entries pr ON p.id = pr.id
-             WHERE pr.storeName = 'Entrada na Despensa'
-               AND p.unit_price_in_cents IS NOT NULL
-               AND p.unit_price_in_cents > 0
-               AND pr.isDeleted = 0
-               AND pr.updatedAt >= :startOfMonth AND pr.updatedAt <= :endOfMonth)
-        )
+        SELECT CAST(COALESCE(SUM(total_price_in_cents), 0) AS INTEGER)
+        FROM pantry_movements
+        WHERE type IN ('ENTRY_MANUAL', 'ENTRY_PURCHASE')
+          AND total_price_in_cents IS NOT NULL
+          AND total_price_in_cents > 0
+          AND timestamp >= :startOfMonth AND timestamp <= :endOfMonth
+          AND is_deleted = 0
         """
     )
     suspend fun findMonthlyExpenses(startOfMonth: Long, endOfMonth: Long): Long

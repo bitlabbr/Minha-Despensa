@@ -32,6 +32,7 @@ import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.MonthlyBudgetEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+import com.bitlabbr.minhadespensa.data.local.entity.PantryMovementEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
@@ -146,68 +147,49 @@ class MonthlyBudgetDaoTest : BaseTest() {
             )
         )
 
-        // 2. Insert a COMPLETED shopping list in Oct with 2 items
-        val listId = Uuid.random().toString()
-        db.shoppingListDao().insertShoppingList(
-            ShoppingListEntity(
-                id = listId,
-                name = "Compras do Mês",
-                type = "PLANNED",
-                status = ShoppingListStatus.COMPLETED.name,
-                budgedInCents = 100000L,
-                updatedAt = midOct,
-                isDeleted = false
-            )
-        )
-        db.shoppingItemDao().insertShoppingItem(
-            ShoppingItemEntity(
+        // 2. Insert purchase movement from shopping list checkout: 3000 + 1500 = 4500 cents
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
                 id = Uuid.random().toString(),
-                listId = listId,
+                pantryItemId = Uuid.random().toString(),
                 productId = prodId,
-                rawText = null,
+                type = "ENTRY_PURCHASE",
                 quantity = 2.0,
-                priceAtTime = 1500L, // 2 * 1500 = 3000
-                isChecked = false, // Even if unchecked after checkout
-                updatedAt = midOct,
-                isDeleted = false
+                unitPriceInCents = 1500L,
+                totalPriceInCents = 3000L,
+                timestamp = midOct,
+                storeOrReason = "Compra: Compras do Mês",
+                isDeleted = false,
             )
         )
-        db.shoppingItemDao().insertShoppingItem(
-            ShoppingItemEntity(
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
                 id = Uuid.random().toString(),
-                listId = listId,
-                productId = null,
-                rawText = "Pão Frances",
+                pantryItemId = Uuid.random().toString(),
+                productId = prodId,
+                type = "ENTRY_PURCHASE",
                 quantity = 1.5,
-                priceAtTime = 1000L, // 1.5 * 1000 = 1500
-                isChecked = false,
-                updatedAt = midOct,
-                isDeleted = false
+                unitPriceInCents = 1000L,
+                totalPriceInCents = 1500L,
+                timestamp = midOct,
+                storeOrReason = "Compra: Compras do Mês",
+                isDeleted = false,
             )
         )
 
-        // 3. Insert a direct pantry entry in Oct (storeName = 'Entrada na Despensa')
-        val pantryId = Uuid.random().toString()
-        db.pantryDao().insertPantryItem(
-            PantryItemEntity(
-                id = pantryId,
+        // 3. Insert direct pantry entry in Oct (storeName = 'Entrada na Despensa'): 2400 cents
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
+                id = Uuid.random().toString(),
+                pantryItemId = Uuid.random().toString(),
                 productId = prodId,
+                type = "ENTRY_MANUAL",
                 quantity = 3.0,
-                unitPriceInCents = 800L, // 3 * 800 = 2400
-                expirationDate = null,
-                batchNumber = "L1",
-                updatedAt = midOct,
-                isDeleted = false
-            )
-        )
-        db.priceDao().insertPriceEntry(
-            PriceEntryEntity(
-                id = pantryId,
-                productId = prodId,
-                priceInCents = 800L,
-                storeName = "Entrada na Despensa",
-                updatedAt = midOct,
-                isDeleted = false
+                unitPriceInCents = 800L,
+                totalPriceInCents = 2400L,
+                timestamp = midOct,
+                storeOrReason = "Entrada na Despensa",
+                isDeleted = false,
             )
         )
 
@@ -217,7 +199,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
     }
 
     @Test
-    fun getMonthlyExpenses_should_ignore_uncompleted_lists_deleted_items_and_other_months() = runTest {
+    fun getMonthlyExpenses_should_ignore_deleted_movements_non_purchase_types_and_other_months() = runTest {
         val (startOfOct, endOfOct) = getMonthTimeRange(2026, 10)
         val midOct = startOfOct + 86400000L * 5
         val (startOfNov, _) = getMonthTimeRange(2026, 11)
@@ -241,84 +223,43 @@ class MonthlyBudgetDaoTest : BaseTest() {
             )
         )
 
-        // 1. DRAFT shopping list in Oct -> ignored
-        val draftListId = Uuid.random().toString()
-        db.shoppingListDao().insertShoppingList(
-            ShoppingListEntity(
-                id = draftListId,
-                name = "Lista Rascunho",
-                type = "PLANNED",
-                status = ShoppingListStatus.DRAFT.name,
-                budgedInCents = null,
-                updatedAt = midOct,
-                isDeleted = false
-            )
-        )
-        db.shoppingItemDao().insertShoppingItem(
-            ShoppingItemEntity(
+        // 1. Consumption movement in Oct -> ignored for expenses
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
                 id = Uuid.random().toString(),
-                listId = draftListId,
                 productId = prodId,
-                rawText = null,
+                type = "CONSUMPTION",
                 quantity = 1.0,
-                priceAtTime = 3000L,
-                isChecked = true,
-                updatedAt = midOct,
-                isDeleted = false
+                unitPriceInCents = 3000L,
+                totalPriceInCents = null,
+                timestamp = midOct,
             )
         )
 
-        // 2. COMPLETED shopping list in Nov -> ignored for Oct
-        val novListId = Uuid.random().toString()
-        db.shoppingListDao().insertShoppingList(
-            ShoppingListEntity(
-                id = novListId,
-                name = "Lista Novembro",
-                type = "PLANNED",
-                status = ShoppingListStatus.COMPLETED.name,
-                budgedInCents = null,
-                updatedAt = midNov,
-                isDeleted = false
-            )
-        )
-        db.shoppingItemDao().insertShoppingItem(
-            ShoppingItemEntity(
+        // 2. Purchase movement in Nov -> ignored for Oct
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
                 id = Uuid.random().toString(),
-                listId = novListId,
                 productId = prodId,
-                rawText = null,
+                type = "ENTRY_PURCHASE",
                 quantity = 1.0,
-                priceAtTime = 4000L,
-                isChecked = false,
-                updatedAt = midNov,
-                isDeleted = false
+                unitPriceInCents = 4000L,
+                totalPriceInCents = 4000L,
+                timestamp = midNov,
             )
         )
 
-        // 3. COMPLETED shopping list in Oct with soft-deleted item -> ignored
-        val octListId = Uuid.random().toString()
-        db.shoppingListDao().insertShoppingList(
-            ShoppingListEntity(
-                id = octListId,
-                name = "Lista Outubro",
-                type = "PLANNED",
-                status = ShoppingListStatus.COMPLETED.name,
-                budgedInCents = null,
-                updatedAt = midOct,
-                isDeleted = false
-            )
-        )
-        db.shoppingItemDao().insertShoppingItem(
-            ShoppingItemEntity(
+        // 3. Purchase movement in Oct with isDeleted = true -> ignored
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
                 id = Uuid.random().toString(),
-                listId = octListId,
                 productId = prodId,
-                rawText = null,
+                type = "ENTRY_PURCHASE",
                 quantity = 1.0,
-                priceAtTime = 2000L,
-                isChecked = false,
-                updatedAt = midOct,
-                isDeleted = true // Soft deleted!
+                unitPriceInCents = 2000L,
+                totalPriceInCents = 2000L,
+                timestamp = midOct,
+                isDeleted = true,
             )
         )
 
@@ -359,35 +300,20 @@ class MonthlyBudgetDaoTest : BaseTest() {
             // Initial emission
             assertEquals(0L, awaitItem())
 
-            // Add pantry item with price
-            val pantryId = Uuid.random().toString()
-            db.pantryDao().insertPantryItem(
-                PantryItemEntity(
-                    id = pantryId,
+            // Add pantry movement
+            db.movementDao().insertMovement(
+                PantryMovementEntity(
+                    id = Uuid.random().toString(),
                     productId = prodId,
+                    type = "ENTRY_MANUAL",
                     quantity = 2.0,
-                    unitPriceInCents = 500L, // 1000L
-                    expirationDate = null,
-                    batchNumber = null,
-                    updatedAt = timestamp,
-                    isDeleted = false
+                    unitPriceInCents = 500L,
+                    totalPriceInCents = 1000L,
+                    timestamp = timestamp,
                 )
             )
-            // Intermediate emission from pantry_items table invalidation
-            assertEquals(0L, awaitItem())
-
-            db.priceDao().insertPriceEntry(
-                PriceEntryEntity(
-                    id = pantryId,
-                    productId = prodId,
-                    priceInCents = 500L,
-                    storeName = "Entrada na Despensa",
-                    updatedAt = timestamp,
-                    isDeleted = false
-                )
-            )
-            // Final emission after price entry completes the join
             assertEquals(1000L, awaitItem())
+
             cancelAndIgnoreRemainingEvents()
         }
     }

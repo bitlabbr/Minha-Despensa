@@ -50,6 +50,9 @@ import com.bitlabbr.minhadespensa.data.repository.RoomBudgetRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PantryMovementRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetMostConsumedProductsUseCase
+import com.bitlabbr.minhadespensa.data.repository.RoomPantryMovementRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 
 import com.bitlabbr.minhadespensa.data.local.migration.ALL_MIGRATIONS
@@ -73,6 +76,7 @@ val dataModule = module {
     single { get<AppDatabase>().priceDao() }
     single { get<AppDatabase>().shoppingListDao() }
     single { get<AppDatabase>().budgetDao() }
+    single { get<AppDatabase>().movementDao() }
 
     single<CatalogRepository> {
         RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
@@ -94,6 +98,10 @@ val dataModule = module {
         RoomBudgetRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
     }
 
+    single<PantryMovementRepository> {
+        RoomPantryMovementRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+    }
+
     factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }
     factory { AddPantryItemUseCase(pantryRepository = get()) }
@@ -108,4 +116,5 @@ val dataModule = module {
     factory { AddCatalogItemToShoppingListUseCase(shoppingListRepository = get()) }
     factory { SetMonthlyBudgetUseCase(budgetRepository = get()) }
     factory { GetMonthlyFinancialSummaryUseCase(budgetRepository = get()) }
+    factory { GetMostConsumedProductsUseCase(movementRepository = get()) }
 }

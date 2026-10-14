@@ -26,7 +26,9 @@ package com.bitlabbr.minhadespensa.data.repository
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.core.domain.model.MovementType
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
+import com.bitlabbr.minhadespensa.core.domain.model.PantryMovement
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingList
@@ -43,6 +45,7 @@ import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlin.math.roundToLong
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -237,6 +240,22 @@ class RoomShoppingListRepository(
                             )
                             logger.d(TAG, "finalizePurchase: Created price entry $pantryItemId with price=$price")
                         }
+
+                        // Record movement in pantry_movements ledger
+                        val movement = PantryMovement(
+                            id = Uuid.random().toString(),
+                            pantryItemId = pantryItemId,
+                            productId = targetProductId,
+                            type = MovementType.ENTRY_PURCHASE,
+                            quantity = item.quantity,
+                            unitPriceInCents = item.priceAtTime,
+                            totalPriceInCents = item.priceAtTime?.let { (item.quantity * it).roundToLong() },
+                            timestamp = now,
+                            storeOrReason = "Compra: ${listWithItems.list.name}",
+                            isDeleted = false,
+                        )
+                        db.movementDao().insertMovement(movement.toEntity())
+                        logger.d(TAG, "finalizePurchase: Recorded purchase movement id=${movement.id} for pantryItemId=$pantryItemId")
                     }
                 }
 

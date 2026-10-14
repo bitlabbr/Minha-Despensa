@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.data
 
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.ShoppingListStatus
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.getMonthTimeRange
@@ -31,11 +32,13 @@ import com.bitlabbr.minhadespensa.data.local.BaseTest
 import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
+import com.bitlabbr.minhadespensa.data.local.entity.PantryMovementEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
 import com.bitlabbr.minhadespensa.data.repository.RoomBudgetRepository
+import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
@@ -152,54 +155,34 @@ class RoomBudgetRepositoryTest : BaseTest() {
         )
 
         // 1. Completed Shopping List: 2 * 3500 = 7000 cents
-        val listId = Uuid.random().toString()
-        db.shoppingListDao().insertShoppingList(
-            ShoppingListEntity(
-                id = listId,
-                name = "Compras Limpeza",
-                type = "PLANNED",
-                status = ShoppingListStatus.COMPLETED.name,
-                budgedInCents = 10000L,
-                updatedAt = midOct,
-                isDeleted = false
-            )
-        )
-        db.shoppingItemDao().insertShoppingItem(
-            ShoppingItemEntity(
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
                 id = Uuid.random().toString(),
-                listId = listId,
+                pantryItemId = Uuid.random().toString(),
                 productId = prodId,
-                rawText = null,
+                type = "ENTRY_PURCHASE",
                 quantity = 2.0,
-                priceAtTime = 3500L,
-                isChecked = false,
-                updatedAt = midOct,
-                isDeleted = false
+                unitPriceInCents = 3500L,
+                totalPriceInCents = 7000L,
+                timestamp = midOct,
+                storeOrReason = "Compra: Compras Limpeza",
+                isDeleted = false,
             )
         )
 
         // 2. Direct Pantry Entry: 1 * 4000 = 4000 cents
-        val pantryId = Uuid.random().toString()
-        db.pantryDao().insertPantryItem(
-            PantryItemEntity(
-                id = pantryId,
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
+                id = Uuid.random().toString(),
+                pantryItemId = Uuid.random().toString(),
                 productId = prodId,
+                type = "ENTRY_MANUAL",
                 quantity = 1.0,
                 unitPriceInCents = 4000L,
-                expirationDate = null,
-                batchNumber = null,
-                updatedAt = midOct,
-                isDeleted = false
-            )
-        )
-        db.priceDao().insertPriceEntry(
-            PriceEntryEntity(
-                id = pantryId,
-                productId = prodId,
-                priceInCents = 4000L,
-                storeName = "Entrada na Despensa",
-                updatedAt = midOct,
-                isDeleted = false
+                totalPriceInCents = 4000L,
+                timestamp = midOct,
+                storeOrReason = "Entrada na Despensa",
+                isDeleted = false,
             )
         )
 
@@ -240,54 +223,34 @@ class RoomBudgetRepositoryTest : BaseTest() {
         repository.setBudgetForMonth(year = 2026, month = 10, budgetInCents = 200000L) // R$ 2000
 
         // 2. Expense for February: 120000L (Over budget!)
-        val listIdFeb = Uuid.random().toString()
-        db.shoppingListDao().insertShoppingList(
-            ShoppingListEntity(
-                id = listIdFeb,
-                name = "Compras Fev",
-                type = "PLANNED",
-                status = ShoppingListStatus.COMPLETED.name,
-                budgedInCents = null,
-                updatedAt = startOfFeb + 1000L,
-                isDeleted = false
-            )
-        )
-        db.shoppingItemDao().insertShoppingItem(
-            ShoppingItemEntity(
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
                 id = Uuid.random().toString(),
-                listId = listIdFeb,
+                pantryItemId = Uuid.random().toString(),
                 productId = prodId,
-                rawText = null,
+                type = "ENTRY_PURCHASE",
                 quantity = 3.0,
-                priceAtTime = 40000L, // 3 * 40000 = 120000L
-                isChecked = false,
-                updatedAt = startOfFeb + 1000L,
-                isDeleted = false
+                unitPriceInCents = 40000L,
+                totalPriceInCents = 120000L,
+                timestamp = startOfFeb + 1000L,
+                storeOrReason = "Compra: Compras Fev",
+                isDeleted = false,
             )
         )
 
         // 3. Expense for October: 50000L (Under budget)
-        val pantryIdOct = Uuid.random().toString()
-        db.pantryDao().insertPantryItem(
-            PantryItemEntity(
-                id = pantryIdOct,
+        db.movementDao().insertMovement(
+            PantryMovementEntity(
+                id = Uuid.random().toString(),
+                pantryItemId = Uuid.random().toString(),
                 productId = prodId,
+                type = "ENTRY_MANUAL",
                 quantity = 1.0,
                 unitPriceInCents = 50000L,
-                expirationDate = null,
-                batchNumber = null,
-                updatedAt = startOfOct + 1000L,
-                isDeleted = false
-            )
-        )
-        db.priceDao().insertPriceEntry(
-            PriceEntryEntity(
-                id = pantryIdOct,
-                productId = prodId,
-                priceInCents = 50000L,
-                storeName = "Entrada na Despensa",
-                updatedAt = startOfOct + 1000L,
-                isDeleted = false
+                totalPriceInCents = 50000L,
+                timestamp = startOfOct + 1000L,
+                storeOrReason = "Entrada na Despensa",
+                isDeleted = false,
             )
         )
 
@@ -331,5 +294,61 @@ class RoomBudgetRepositoryTest : BaseTest() {
         assertFailsWith<IllegalArgumentException> {
             repository.getYearlySummary(2101)
         }
+    }
+
+    @Test
+    fun `getMonthlyExpenses should remain immutable when pantry inventory is consumed`() = runTest {
+        val (startOfOct, _) = getMonthTimeRange(2026, 10)
+        val midOct = startOfOct + 86400000L * 5
+
+        val prodId = Uuid.random().toString()
+        db.catalogDao().insert(
+            CatalogProductEntity(
+                id = prodId,
+                ean = null,
+                name = "Arroz Integral",
+                category = "Grãos",
+                brand = "Camil",
+                measureUnit = "KILOGRAM",
+                netWeight = 1.0,
+                thumbnailUrl = null,
+                updatedAt = midOct,
+                isDeleted = false,
+                manuallyAdded = true,
+                notes = null
+            )
+        )
+
+        val pantryRepo = RoomPantryRepository(db, logger)
+        val pantryItemId = Uuid.random().toString()
+
+        // 1. User buys 10 kg of Rice for R$ 5,00 / kg = R$ 50,00 total spent (5000 cents)
+        pantryRepo.insertPantryItem(
+            PantryItem(
+                id = pantryItemId,
+                productId = prodId,
+                quantity = 10.0,
+                expirationDate = null,
+                batchNumber = "LOTE-IMMUTABLE",
+                unitPriceInCents = 500L,
+                updatedAt = midOct,
+                isDeleted = false,
+            )
+        )
+
+        // Expense should be R$ 50,00
+        assertEquals(5000L, repository.getMonthlyExpenses(2026, 10).first())
+
+        // 2. Family consumes 6 kg of Rice (remaining stock = 4 kg)
+        pantryRepo.consumePantryItem(pantryItemId, 6.0)
+
+        // Expense must REMAIN R$ 50,00! (Stock consumption must NOT decrease historical expenses)
+        assertEquals(5000L, repository.getMonthlyExpenses(2026, 10).first())
+
+        // 3. Family consumes the remaining 4 kg of Rice (stock = 0 kg)
+        pantryRepo.consumePantryItem(pantryItemId, 4.0)
+
+        // Expense must STILL remain R$ 50,00!
+        assertEquals(5000L, repository.getMonthlyExpenses(2026, 10).first())
     }
 }
