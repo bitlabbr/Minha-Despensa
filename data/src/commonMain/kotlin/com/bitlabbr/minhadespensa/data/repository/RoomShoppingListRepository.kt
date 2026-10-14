@@ -209,22 +209,25 @@ class RoomShoppingListRepository(
                     }
 
                     if (targetProductId != null) {
+                        val pantryItemId = Uuid.random().toString()
                         db.pantryDao().insertPantryItem(
                             PantryItem(
-                                id = Uuid.random().toString(),
+                                id = pantryItemId,
                                 productId = targetProductId,
                                 quantity = item.quantity,
+                                unitPriceInCents = item.priceAtTime,
                                 updatedAt = now,
                                 isDeleted = false,
                                 expirationDate = null,
                                 batchNumber = null,
                             ).toEntity()
                         )
+                        logger.d(TAG, "finalizePurchase: Restocked pantry item $pantryItemId with unitPriceInCents=${item.priceAtTime}")
 
                         item.priceAtTime?.let { price ->
                             db.priceDao().insertPriceEntry(
                                 PriceEntry(
-                                    id = Uuid.random().toString(),
+                                    id = pantryItemId,
                                     productId = targetProductId,
                                     priceInCents = price,
                                     updatedAt = now,
@@ -232,6 +235,7 @@ class RoomShoppingListRepository(
                                     storeName = "Compra: ${listWithItems.list.name}",
                                 ).toEntity()
                             )
+                            logger.d(TAG, "finalizePurchase: Created price entry $pantryItemId with price=$price")
                         }
                     }
                 }

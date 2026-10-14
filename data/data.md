@@ -166,7 +166,7 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 *   **`RoomShoppingListRepository`**:
     *   Encapsulates database and DAOs as private members.
     *   `insertShoppingList`: Atomically saves list entity and its associated items.
-    *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries, records `PriceEntry` records when prices are present, unchecks items, and updates the list timestamp.
+    *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries (repassing `unitPriceInCents = item.priceAtTime`), records `PriceEntry` sharing the same ID as the pantry item when prices are present, unchecks items, and updates the list timestamp to `COMPLETED`.
 
 ---
 
