@@ -1,15 +1,32 @@
-# 🧪 Guia do Testador Alpha (Release 1.1.1-alpha)
+# 🧪 Guia do Testador Alpha (Release v1.1.1-alpha)
 
-Se você recebeu o pacote de teste do **Minha Despensa**, este guia explica como instalar e quais cenários você deve experimentar passo a passo para validar as correções e novas funcionalidades!
+Seja bem-vindo ao programa de testes da versão **v1.1.1-alpha** do **Minha Despensa**! 🛒✨
+
+Este documento é o roteiro oficial passo a passo para validar tanto as funcionalidades consolidadas de catálogo, despensa e listas, quanto as grandes novidades de **Gestão Financeira Familiar**, **Orçamento Mensal**, **Valoração de Estoque em Reais** e **Analytics Anual de 12 Meses**.
 
 ---
 
-## 📲 Como Instalar no Android
+## 📲 Como Instalar e Configurar no Android
 
-1. Baixe o arquivo **`composeApp-release.apk`** da aba [Releases](https://github.com/bitlabbr/Minha-Despensa/releases).
-2. No seu celular Android, abra o arquivo baixado.
-3. Se for solicitado, autorize a instalação de fontes desconhecidas para o navegador/gerenciador de arquivos.
+1. Baixe o pacote oficial **`composeApp-release.apk`** na página da [Release v1.1.1-alpha](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.1.1-alpha).
+2. No celular Android (compatível com Android 8.0 / API 26 ou superior), toque na notificação de download ou abra o arquivo pelo gerenciador de arquivos.
+3. Se o sistema exibir um aviso de segurança sobre fontes desconhecidas, autorize a instalação para o navegador ou gerenciador utilizado.
 4. Conclua a instalação e abra o aplicativo **Minha Despensa**.
+5. Quando solicitado pelo leitor de código de barras, conceda a **permissão de câmera** (necessária apenas para leitura de códigos EAN).
+
+---
+
+## 🧭 Sumário dos Cenários de Teste
+
+* **[Cenário 1: Cadastro, Busca, Filtro e Edição de Produto no Catálogo](#-cenário-1-cadastro-busca-filtro-e-edição-de-produto)**
+* **[Cenário 2: Gestão de Estoque na Despensa (Scanner, Lotes, Preços e Consumo)](#-cenário-2-gestão-de-estoque-na-despensa-adição-busca-edição-e-consumo)**
+* **[Cenário 3: Criação de Listas de Compras (Direta, Planejada e Rascunho)](#-cenário-3-criação-de-listas-de-compras)**
+* **[Cenário 4: No Supermercado com o Assistente de Compras](#-cenário-4-no-supermercado-com-o-assistente-de-compras)**
+* **[Cenário 5: Conferência Pós-Compra (Estoque Automático, Histórico e Ledger)](#-cenário-5-conferência-pós-compra-estoque-histórico-e-despesas)**
+* **[Cenário 6: Configuração de Orçamento Mensal na Home](#-cenário-6-configuração-de-orçamento-mensal-na-home-financialwidget)**
+* **[Cenário 7: Valoração da Despensa & Analytics Financeiro Anual (12 Meses)](#-cenário-7-valoração-da-despensa--analytics-financeiro-anual)**
+* **[Cenário 8: Edição de Lote e Preço Unitário na Despensa / Detalhes](#-cenário-8-edição-de-lote-e-preço-unitário-na-despensa--detalhes)**
+* **[Cenário 9: Alertas de Vencimento e Tendências de Consumo na Home](#-cenário-9-alertas-de-vencimento-e-tendências-de-consumo-na-home)**
 
 ---
 
@@ -19,225 +36,265 @@ Se você recebeu o pacote de teste do **Minha Despensa**, este guia explica como
 
 ### 📦 Cenário 1: Cadastro, Busca, Filtro e Edição de Produto
 
-**Objetivo:** Validar o ciclo completo de gerenciamento de um item no Catálogo: criação via formulário, persistência, busca textual, filtros por categoria e edição de dados.
+**Objetivo:** Validar o ciclo completo de gerenciamento de um item no Catálogo: criação via formulário unificado, persistência, busca com normalização de acentos, filtros por categoria e edição de dados com remoção de fotos.
 
 #### 1. Criação do Produto
-1. Acesse a aba **Catálogo**.
-2. Localize e clique no botão **`Registrar Produto`**.
-3. Um *Bottom Sheet* (painel deslizante inferior) será exibido. Preencha todos os dados solicitados do produto (ex.: nome, código de barras, marca, categoria, unidade de medida, etc.).
+1. Acesse a aba **Catálogo** (ícone de categorias na barra inferior).
+2. Clique no botão de ação **`Registrar Produto`**.
+3. No painel inferior (*Bottom Sheet*), preencha os dados:
+   * **Foto:** Tire uma foto ou selecione uma imagem da galeria (opcional).
+   * **Nome:** ex.: *"Café Especial Torrado"*.
+   * **Marca:** ex.: *"Orfeu"*.
+   * **Categoria:** Selecione *"Bebidas"*.
+   * **Unidade de Medida & Peso Líquido:** Selecione *"Grama (g)"* e preencha *"500"*.
+   * **Código de Barras (EAN):** Digite um código válido de 8, 12, 13 ou 14 dígitos ou bipe com a câmera.
 4. Clique no botão **`Salvar Produto`**.
 5. **O que validar:**
-   - O *Bottom Sheet* deve fechar automaticamente.
-   - O produto recém-cadastrado deve aparecer imediatamente na listagem do Catálogo.
+   * O painel deve fechar com animação suave.
+   * O produto deve aparecer imediatamente na listagem do Catálogo.
 
-#### 2. Validação dos Detalhes
-1. Clique no cartão do produto recém-criado na listagem.
+#### 2. Teste da Barra de Pesquisa com Acentos e Marca
+1. No campo de busca do Catálogo:
+   * Digite sem acento (ex.: *"cafe"*) e verifique se o produto *"Café Especial Torrado"* é localizado.
+   * Digite apenas um trecho (ex.: *"especial"*).
+   * Digite a marca (ex.: *"Orfeu"*).
 2. **O que validar:**
-   - Verifique se todas as informações exibidas nos detalhes conferem rigorosamente com os dados que você preencheu ao cadastrar.
+   * A busca deve ser instantânea, insensível a maiúsculas/minúsculas e tolerante a diacríticos (acentos).
 
-#### 3. Teste da Barra de Pesquisa
-1. No topo da tela do Catálogo, utilize o campo de busca:
-   - Digite o **nome completo** do produto e verifique se ele é retornado.
-   - Apague e digite apenas um **pedaço (trecho) do nome** do produto e valide o resultado.
-   - Apague e busque pela **marca** do produto e valide o resultado.
-2. **O que validar:**
-   - O produto deve ser filtrado e exibido com precisão nas três tentativas de busca.
+#### 3. Teste dos Chips de Categorias
+1. Com o campo de busca limpo, clique no chip da categoria **Bebidas**.
+2. Clique em outras categorias (ex.: *Limpeza*, *Grãos*).
+3. **O que validar:**
+   * O produto só deve ser exibido ao filtrar pela sua categoria correspondente.
 
-#### 4. Teste dos Filtros de Categoria
-1. Com a barra de pesquisa limpa, navegue pelos botões/chips de categorias na tela do Catálogo.
-2. Clique na **categoria correta** em que o produto foi cadastrado.
-3. Clique em **outras categorias**.
-4. **O que validar:**
-   - O produto deve ser exibido ao selecionar a categoria à qual pertence.
-   - O produto **não** deve aparecer ao selecionar outras categorias distintas.
-
-#### 5. Edição do Produto e Revalidação
-1. Acesse a opção de **Editar** no produto cadastrado.
-2. Altere o **Nome** e mude a **Categoria** para uma categoria diferente.
-3. Salve as alterações.
-4. **O que validar:**
-   - O produto deve exibir os novos dados atualizados na listagem e na tela de detalhes.
-   - Ao buscar na barra de pesquisa pelo **novo nome**, o produto deve ser localizado.
-   - Ao filtrar pela **nova categoria**, o produto deve aparecer nela (e não mais na categoria anterior).
+#### 4. Edição do Produto e Remoção de Imagem
+1. Clique no card do produto para abrir a tela de **Detalhes** e selecione a opção **Editar**.
+2. Altere o nome (ex.: *"Café em Grãos Premium"*).
+3. Se adicionou uma foto, toque no ícone de lixeira/remover foto.
+4. Salve as alterações.
+5. **O que validar:**
+   * Os detalhes e o card no catálogo devem refletir o novo nome e o placeholder padrão de imagem.
 
 ---
 
 ### 🥫 Cenário 2: Gestão de Estoque na Despensa (Adição, Busca, Edição e Consumo)
 
-**Objetivo:** Validar todos os modos de inclusão de produtos no estoque da despensa (via código de barras, busca no catálogo e cadastro de novo produto durante a inserção), além de testar a busca, edição de estoque e o fluxo de consumo até a baixa completa sem perda cadastral no catálogo.
+**Objetivo:** Validar todos os modos de inclusão de produtos no estoque da despensa (via código de barras, busca no catálogo e cadastro de novo produto durante a inserção), incluindo **quantidade, validade, lote e preço unitário**, além do fluxo de baixa por consumo.
 
 ---
 
 #### 2.1 Adicionar à Despensa via Leitor de Código de Barras
-1. Acesse a aba **Minha Despensa**.
-2. Localize e clique no botão **`Adicionar à Despensa`**.
-3. No *Bottom Sheet* de seleção que se abre, clique na opção **`Escanear código de barras`**.
-4. Com o scanner aberto, aponte a câmera para o código de barras do produto.
+1. Acesse a aba **Minha Despensa** (ícone de cozinha na barra inferior).
+2. Clique em **`Adicionar à Despensa`**.
+3. No menu deslizante, escolha **`Escanear código de barras`**.
+4. Aponte a câmera para o código de barras de um produto cadastrado.
 5. **O que validar:**
-   - O aplicativo deve escanear e reconhecer o produto cadastrado.
-   - Um novo *Bottom Sheet* deve se abrir automaticamente trazendo as informações do produto identificado.
-6. No painel de entrada de estoque, preencha:
-   - **Quantidade** do produto a ser estocada.
-   - **Validade** (experimente os botões rápidos de atalho: **`7d`**, **`15d`**, **`30d`**, **`60d`** ou seleção manual de data).
-   - **Número do Lote**.
-7. Clique no botão **`Adicionar à Despensa`**.
+   * O leitor centraliza a mira (filtro de ROI) e reconhece o código com estabilidade (sem leituras falsas).
+   * Abre automaticamente o painel de entrada de estoque.
+6. Preencha os campos de estoque:
+   * **Quantidade:** ex.: *2*.
+   * **Validade:** Experimente os chips de atalho rápido (**`+7d`**, **`+15d`**, **`+30d`**, **`+60d`**) ou escolha uma data no calendário.
+   * **Número do Lote:** ex.: *"LOTE-A1"*.
+   * **Preço Unitário (R$):** ex.: *R$ 14,50*.
+7. Clique em **`Adicionar à Despensa`**.
 8. **O que validar:**
-   - As páginas/painéis abertos devem se fechar automaticamente, retornando à tela da **Minha Despensa**.
-   - O produto deve ser exibido imediatamente na lista da despensa com as quantidades e prazos cadastrados.
+   * O item passa a constar na listagem da Despensa exibindo a quantidade e a validade.
+   * O preço unitário alimenta a valoração total da despensa.
 
-#### 2.2 Busca e Edição do Item na Despensa
-1. Na tela de **Minha Despensa**, utilize o campo de busca:
-   - Digite o nome do produto adicionado e verifique se ele é filtrado com precisão.
-2. Clique sobre o item na despensa para abrir seus detalhes ou selecione a opção de **Editar**.
-3. Modifique os dados de estoque (ex.: ajuste a quantidade ou lote/validade).
-4. Salve a alteração.
+#### 2.2 Adicionar à Despensa a partir do Catálogo
+1. Na tela **Minha Despensa**, clique em **`Adicionar à Despensa`** e escolha **`Buscar no Catálogo`**.
+2. Selecione um item da listagem existente.
+3. Preencha quantidade, validade, lote e preço unitário.
+4. Confirme a adição.
 5. **O que validar:**
-   - O item deve refletir as informações atualizadas na listagem da despensa.
+   * O item selecionado é adicionado ao estoque imediatamente.
 
----
+#### 2.3 Cadastrar Novo Produto Diretamente da Despensa
+1. Na tela **Minha Despensa**, clique em **`Adicionar à Despensa`** e selecione **`Cadastrar novo produto`**.
+2. Preencha a ficha do produto (nome, marca, categoria, unidade) e salve.
+3. Em seguida, preencha a quantidade, validade, lote e preço e conclua.
+4. **O que validar:**
+   * O produto entra no estoque da despensa e **também fica disponível no catálogo geral** para reaproveitamento futuro.
 
-#### 2.3 Adicionar à Despensa a partir do Catálogo (`Buscar no Catálogo`)
-1. Na tela **Minha Despensa**, clique no botão **`Adicionar à Despensa`**.
-2. No *Bottom Sheet*, selecione a opção **`Buscar no Catálogo`**.
-3. Escolha um produto já cadastrado na listagem do catálogo.
-4. Preencha os dados de estoque (Quantidade, Validade e Lote).
-5. Clique no botão **`Adicionar à Despensa`**.
-6. **O que validar:**
-   - O *Bottom Sheet* fecha e o item selecionado aparece devidamente adicionado ao estoque da despensa.
-
----
-
-#### 2.4 Cadastrar Novo Produto Diretamente da Despensa
-1. Na tela **Minha Despensa**, clique no botão **`Adicionar à Despensa`**.
-2. No *Bottom Sheet*, selecione a opção **`Cadastrar novo produto`**.
-3. Preencha todas as informações do novo produto (nome, marca, categoria, unidade de medida, etc.) e salve.
-4. Em seguida, preencha as informações de entrada de estoque (quantidade, validade, lote) e conclua a adição.
-5. **O que validar:**
-   - O novo produto deve ser adicionado ao estoque e aparecer imediatamente na tela de **Minha Despensa**.
-   - Acesse a aba **Catálogo**: certifique-se de que o produto também foi devidamente registrado no catálogo geral para reaproveitamento futuro.
-
----
-
-#### 2.5 Consumo de Itens e Baixa Total de Estoque
-1. Na tela de **Minha Despensa**, clique sobre um item em estoque para abrir seus detalhes.
-2. Role a tela para baixo até localizar o botão **`Consumir`**.
-3. Clique sucessivamente no botão **`Consumir`** até esgotar a quantidade total do produto (consumir tudo).
-4. Volte à listagem da **Minha Despensa**.
-5. **O que validar:**
-   - O item deve desaparecer completamente da listagem da despensa (estoque zerado).
-   - Navegue até a aba **Catálogo**: verifique se o produto **permanece cadastrado no catálogo geral**, confirmando que o consumo dá baixa apenas no estoque da despensa sem deletar o cadastro do produto.
+#### 2.4 Consumo de Itens e Baixa Total de Estoque
+1. Na Despensa, toque em um item para abrir a tela de **Detalhes**.
+2. Localize a seção de estoque e clique no botão **`Consumir`**.
+3. Confirme o consumo de 1 unidade ou utilize o fluxo de baixa total até esgotar o estoque.
+4. **O que validar:**
+   * A quantidade estocada é reduzida imediatamente.
+   * Ao atingir zero unidades, o item deixa de ser exibido na Despensa ativa.
+   * O produto **continua existindo no Catálogo**, provando que o consumo dá baixa no estoque físico sem deletar o cadastro do produto.
 
 ---
 
 ### 🛒 Cenário 3: Criação de Listas de Compras
 
-**Contexto e Compatibilidade:** O aplicativo permite criar listas de compras de formas flexíveis (texto livre, código de barras e catálogo). Esses métodos são **100% compatíveis e interoperáveis**, permitindo que itens de diferentes origens coexistam na mesma lista e alimentem o Catálogo e o Estoque da Despensa após a finalização da compra.
+**Contexto:** O aplicativo oferece listas planejadas estruturadas (`PLANNED`), notas rápidas de texto livre (`SCRATCHPAD`) e sessões de compra direta (`ASSISTANT`). Todos os modos são totalmente integrados com a despensa e catálogo.
 
 ---
 
-#### 3.1 Tipo 1: Compra Direta (Configuração de Orçamento e Adição Multimodal)
+#### 3.1 Lista Planejada com Teto de Gastos
+1. Acesse a aba **Listas de Compras** (ícone de carrinho).
+2. Clique no botão de criação de **`Lista Planejada`**.
+3. Defina um nome para a lista (ex.: *"Compras do Mês"*) e um orçamento limite (ex.: *R$ 350,00*).
+4. No seletor de produtos do catálogo, selecione itens e ajuste quantidades com os botões `+` e `-`.
+5. Utilize a barra de busca para filtrar produtos por nome ou marca.
+6. Salve a lista.
+7. **O que validar:**
+   * A lista aparece na aba de listas ativas com a contagem correta de itens e o orçamento configurado.
 
-**Objetivo:** Iniciar uma sessão de compra direta sem planejamento prévio, configurar nome e teto de gastos da lista e preencher o carrinho combinando itens via leitor de código de barras, busca no catálogo e texto livre simples.
+#### 3.2 Lista Rápida (Texto Livre / Scratchpad)
+1. Na aba **Listas**, escolha **`Lista Rápida`**.
+2. Digite ou cole itens em linhas separadas (ex.: *"Detergente\nEsponja de Aço\nSabão em Pó"*).
+3. Salve a lista.
+4. **O que validar:**
+   * As linhas de texto são convertidas automaticamente em itens avulsos da lista.
 
-##### 1. Iniciar Compra Direta e Ajustar Metadados
-1. Acesse a aba **Listas de Compras** (ícone de carrinho na barra de navegação).
-2. Clique no botão de destaque **`Compra Direta`**.
-3. O Assistente de Compras abrirá a sessão imediata.
-4. **Editar Nome da Lista:**
-   - Toque no título da lista no topo da tela.
-   - Um diálogo de edição será exibido. Digite um novo nome personalizado (ex.: *"Compra Rápida de Sábado"*) e confirme.
-5. **Editar Orçamento (Teto de Gastos):**
-   - No painel financeiro (*dashboard*) ou no diálogo de edição, toque no valor do orçamento.
-   - Defina um teto orçamentário (ex.: *R$ 200,00*) e salve.
-6. **O que validar:**
-   - O título no topo e o painel financeiro devem refletir imediatamente o novo nome e o limite orçamentário configurado.
+---
 
-##### 2. Adicionar Itens Combinando os Três Formatos (`+ Adicionar`)
-No rodapé ou no centro da tela vazia, clique no botão **`+ Adicionar`** (ou `Adicionar Item`). O *Bottom Sheet* apresentará 3 opções de inclusão:
+### 🛍️ Cenário 4: No Supermercado com o Assistente de Compras
 
-- **A. Adicionar via Código de Barras:**
-  1. Selecione a opção **`Escanear código de barras`**.
-  2. Aponte a câmera para o código de um produto da sua despensa ou casa.
-  3. Preencha a quantidade e o preço unitário e confirme a inclusão.
-  4. **O que validar:** O item aparece no carrinho com suas informações identificadas.
+**Objetivo:** Simular uma ida real ao supermercado, conferindo itens do carrinho, inserindo preços da gôndola, bipando produtos pela câmera e prevenindo duplicidades.
 
-- **B. Adicionar via Catálogo:**
-  1. Clique novamente em **`+ Adicionar`** e escolha **`Buscar no catálogo`**.
-  2. Selecione um item da listagem de produtos previamente cadastrados no Catálogo.
-  3. Preencha quantidade e preço e adicione à lista.
-  4. **O que validar:** O produto do catálogo é listado no carrinho.
+1. Na listagem de listas de compras, abra uma lista ativa e toque em **`Iniciar Compras`** (ou use **`Compra Direta`**).
+2. Conforme você colocar itens no carrinho físico:
+   * Toque no checkbox do item para marcá-lo como pego.
+   * Digite o preço unitário que encontrou na prateleira (ex.: *R$ 8,90*).
+3. **Painel Financeiro Superior:**
+   * Observe o total acumulado do carrinho calculando em centavos em tempo real (`quantidade × preço`).
+   * A barra de orçamento deve avançar proporcionalmente ao teto configurado.
+4. **Adicionar Item com Câmera no Meio da Compra:**
+   * Toque no botão de adicionar e use o leitor de código de barras.
+   * Bipe um produto da prateleira, informe quantidade e preço.
+5. **Teste de Detecção de Duplicados:**
+   * Tente adicionar novamente um produto que já está no carrinho.
+   * **O que validar:** O aplicativo deve exibir um banner de aviso informando que o item já existe no carrinho com X unidades e oferecer a consolidação automática das quantidades.
+6. **Busca Rápida no Carrinho:**
+   * Utilize a barra de pesquisa expansível no topo para filtrar itens por nome, categoria ou marca.
+   * **O que validar:** A filtragem visual não altera os totais financeiros de compras já calculados.
+7. **Substituição de Item:**
+   * Caso não encontre um produto da lista, use a opção de substituir item para trocá-lo por outra marca ou produto similar.
+8. Ao terminar a compra, clique no botão em destaque **`Finalizar Compra`**.
+9. **O que validar:**
+   * O checkout atômico executa com sucesso.
+   * A lista passa para o status de concluída (`COMPLETED`).
 
-- **C. Adicionar como Texto Simples (Item Avulso):**
-  1. Clique em **`+ Adicionar`** e escolha a opção de **`Texto simples`** (ou *Item avulso por texto*).
-  2. Digite livremente o nome do produto (ex.: *"Pão Francês"* ou *"Cheiro Verde"*), defina quantidade e valor aproximado e confirme.
-  3. **O que validar:** O item em texto simples é adicionado perfeitamente junto aos demais produtos.
+---
 
-##### 3. Validação Geral do Carrinho da Compra Direta
-1. **O que validar:**
-   - Todos os 3 itens (código de barras, catálogo e texto livre) devem estar visíveis e organizados na mesma lista sem qualquer conflito.
-   - O painel financeiro superior deve calcular a soma dos itens cadastrados, exibindo o total acumulado e a porcentagem gasta em relação ao teto de gastos configurado.
+### 📦 Cenário 5: Conferência Pós-Compra (Estoque, Histórico e Despesas)
 
-### Cenário 4: No Supermercado (Assistente de Compras)
-- Inicie a sessão no Assistente de Compras.
-- Marque os itens conforme for colocando no carrinho e digite o preço que encontrou na gôndola.
-- Veja o painel financeiro calcular o total da compra e o aviso de limite orçamentário.
-- Clique em **"Finalizar Compra"**.
+**Objetivo:** Confirmar que a finalização da compra alimentou todas as camadas da aplicação de forma integrada e atômica.
 
-### Cenário 5: Conferindo a Despensa Pós-Compra (Estoque e Histórico)
-- Acesse a aba **Despensa** e confira se os produtos comprados foram adicionados ao estoque automaticamente.
-- Acesse a aba **Catálogo** e clique no produto para conferir o histórico de preços gerado pela compra.
+1. **Aba Despensa:**
+   * Navegue até a aba **Minha Despensa**.
+   * **O que validar:** Todos os itens marcados na compra foram adicionados ao estoque da despensa com as quantidades e preços unitários pagos.
+2. **Aba Catálogo & Histórico de Preços:**
+   * Acesse a aba **Catálogo** e clique em um dos produtos comprados para abrir a tela de **Detalhes**.
+   * **O que validar:** O gráfico de histórico de preços exibe um novo ponto na data de hoje com o preço exato registrado no supermercado.
+3. **Aba Início (Home):**
+   * Volte para a aba **Início**.
+   * **O que validar:** O valor total gasto na compra foi automaticamente computado no resumo financeiro do mês corrente!
 
 ---
 
 ### 📊 Cenário 6: Configuração de Orçamento Mensal na Home (`FinancialWidget`)
 
-**Objetivo:** Validar a definição de meta financeira familiar mensal, cálculo automático e reativo de gastos e alertas visuais de teto orçamentário.
+**Objetivo:** Validar o planejamento financeiro familiar, a definição de teto orçamentário e a reação visual da interface em tempo real.
 
-1. Acesse a aba **Início** (ícone Home na barra inferior).
-2. No card do **Resumo Financeiro**, se não houver orçamento definido, clique no botão para definir meta orçamentária.
-3. Um diálogo com visual em vidro fosco será exibido. Digite um valor de orçamento (ex.: *R$ 500,00*) e confirme.
-4. **O que validar:**
-   - O card financeiro passa a exibir o total gasto no mês, a meta definida, o saldo restante e a barra de progresso visual.
-5. Toque sobre o card para editar o orçamento para um valor menor que o total já gasto (ex.: *R$ 10,00*).
+1. Acesse a aba **Início** (ícone Home).
+2. Localize o card principal do **Resumo Financeiro**.
+3. Se você ainda não definiu um orçamento para o mês corrente:
+   * **O que validar:** O card exibe o total gasto e um botão convidativo **`Definir Meta Orçamentária`**.
+4. Toque no botão para abrir o diálogo translúcido `SetMonthlyBudgetDialog`.
+5. Digite um valor de orçamento (ex.: *R$ 600,00*) e confirme.
 6. **O que validar:**
-   - O status muda automaticamente para **"Estourado"** com indicador visual em vermelho e percentual correto de extrapolação.
+   * O card atualiza instantaneamente, exibindo:
+     * O total gasto no mês (acumulado de compras e entradas).
+     * O limite orçamentário definido (ex.: *R$ 600,00*).
+     * O saldo restante disponível.
+     * A barra de progresso visual (`InverseAnchoredGauge`) indicando a fatia já utilizada.
+7. **Teste de Teto Estourado:**
+   * Toque novamente sobre o card de finanças para editar a meta.
+   * Defina um valor menor que as despesas já acumuladas (ex.: *R$ 10,00*).
+   * Confirme a alteração.
+   * **O que validar:** O status muda imediatamente para **"Estourado"**, destacando a barra e os textos em tom de alerta (vermelho/âmbar) e indicando a porcentagem excedente.
+8. **Teste de Persistência Offline:**
+   * Feche completamente o aplicativo (remova da lista de apps recentes) e reabra.
+   * **O que validar:** O orçamento configurado e as despesas permanecem salvos com precisão (persistidos no SQLite via Room KMP).
 
 ---
 
 ### 🏷️ Cenário 7: Valoração da Despensa & Analytics Financeiro Anual
 
-**Objetivo:** Conferir o patrimônio total estocado na despensa e navegar no histórico financeiro de 12 meses.
+**Objetivo:** Conferir o patrimônio total estocado na despensa e navegar pelo histórico analítico de 12 meses.
 
 1. Na aba **Início**, role até o card **`Valor Total em Estoque`** (`StockValueCard`).
 2. **O que validar:**
-   - O card deve exibir o valor monetário total estocado em reais (`R$ X,XX`), a contagem de itens avaliados e o custo médio unitário.
-3. Toque no card de estoque ou no botão de analytics no cabeçalho do resumo financeiro.
-4. O modal **`Analytics Financeiro`** (`FinancialAnalyticsDialog`) será aberto:
-   - No topo: card de estoque avaliado.
-   - Indicadores anuais: Total Gasto no Ano, Média Mensal de Gastos e Custo Médio por Item.
-   - Lista de evolução de 12 meses (Janeiro a Dezembro): barras com os gastos de cada mês, meta orçamentária e badges informativos ("Na meta", "Estourado", "Sem meta").
-5. Feche o modal pelo botão "Fechar" ou tocando fora.
+   * Exibe o montante monetário total dos itens ativos na despensa em reais (`R$ X,XX`).
+   * Exibe a contagem de itens avaliados versus total (ex.: *"12 de 15 itens com preço informado"*).
+   * Exibe o custo médio unitário em estoque.
+3. Toque no card de estoque ou no botão de analytics (ícone de gráfico no topo do resumo financeiro).
+4. O modal **`Analytics Financeiro`** (`FinancialAnalyticsDialog`) será aberto.
+5. **O que validar no modal:**
+   * **Topo:** Card de estoque avaliado com resumo patrimonial.
+   * **Indicadores Anuais:**
+     * **Total Gasto no Ano:** Soma consolidada de todas as despesas do ano vigente.
+     * **Média Mensal:** Gasto médio por mês decorrido.
+     * **Custo Médio por Item:** Relação ponderada entre o valor total investido e o volume de produtos comprados.
+   * **Evolução de 12 Meses (Janeiro a Dezembro):**
+     * 12 barras mensais ilustrando a proporção de gastos em relação à meta de cada mês.
+     * Badges de status para cada mês (**"Na meta"**, **"Estourado"** ou **"Sem meta"**).
+     * Nomes dos meses devidamente traduzidos em português (Jan, Fev, Mar, Abr, Mai, Jun, Jul, Ago, Set, Out, Nov, Dez).
+6. Toque no botão **`Fechar`** ou fora do modal para dispensá-lo.
 
 ---
 
 ### ✏️ Cenário 8: Edição de Lote e Preço Unitário na Despensa / Detalhes
 
-**Objetivo:** Validar a edição de preço unitário de um lote existente e verificar que o preço mínimo/máximo e o histórico são recalculados sem gerar duplicatas no histórico.
+**Objetivo:** Validar a edição in-place de preços unitários em lotes da despensa e comprovar que as métricas de menor/maior preço são recalculadas sem gerar duplicatas no banco de dados.
 
-1. Acesse a aba **Despensa** e clique em um produto para abrir a tela de **Detalhes**.
-2. Na seção de lotes em estoque, toque no lote desejado para abrir o painel de edição (`EditPantryBatchSheet`).
-3. Preencha ou altere o **Preço Unitário** (ex.: *R$ 5,50*).
-4. Salve as alterações.
-5. **O que validar:**
-   - O lote atualiza instantaneamente com o novo preço unitário e o valor total do lote é recalculado (`quantidade × preço unitário`).
-   - As métricas de **Menor Preço** e **Maior Preço** na tela de detalhes refletem os novos valores sem criar registros duplicados no histórico.
-   - O card de valor total da despensa na tela inicial recalcula o montante automaticamente.
+1. Acesse a aba **Minha Despensa** e clique em um produto para abrir a tela de **Detalhes**.
+2. Na seção **Lotes na Despensa**:
+   * Observe que lotes sem preço exibem a etiqueta informativa: `Sem valor informado • Toque p/ definir`.
+   * Lotes com preço exibem o valor unitário (`R$ X,XX / un`) e o valor total do lote.
+3. Toque em um lote para abrir o painel deslizante de edição (`EditPantryBatchSheet`).
+4. Altere ou preencha o campo **Preço Unitário** (ex.: altere de *R$ 10,00* para *R$ 12,50*).
+5. Experimente também alterar a data de validade usando os chips rápidos (`+15d`, `+30d`).
+6. Clique em **`Salvar Alterações`**.
+7. **O que validar:**
+   * O lote na lista atualiza imediatamente com o novo valor unitário e o subtotal recalcula (`quantidade × novo preço unitário`).
+   * O bloco de **Menor Preço** e **Maior Preço** no topo da tela de detalhes recalcula em tempo real.
+   * O histórico de preços do produto não ganha linhas fantasmas repetidas (atualização *in-place* atômica).
+   * Volte à aba **Início**: o card **`Valor Total em Estoque`** recalcula o patrimônio da despensa instantaneamente.
 
 ---
 
-## 🐛 Como Relatar um Problema ou Sugestão
+### ⏰ Cenário 9: Alertas de Vencimento e Tendências de Consumo na Home
 
-Se você encontrar um comportamento estranho, tela travando, texto cortado ou tiver uma ideia de melhoria:
-1. Anote o que aconteceu e o modelo do seu celular.
-2. Tire um print ou grave a tela.
-3. Abra uma issue no nosso [GitHub Issues](https://github.com/bitlabbr/Minha-Despensa/issues) ou envie diretamente para o desenvolvedor.
+**Objetivo:** Verificar a exibição em tempo real de produtos próximos ao vencimento e os itens mais consumidos da despensa.
+
+1. Acesse a aba **Início**.
+2. **Widget Itens Próximos do Vencimento (`ExpiringSoonWidget`):**
+   * Se houver produtos cadastrados com validade nos próximos 7 dias:
+     * O card deve listar os itens com seus ícones de categoria e prazo formatado dinamicamente: *"Vence hoje"*, *"Vence amanhã"*, *"Vence em X dias"* ou *"Vencido há X dias"*.
+   * Se todos os itens estiverem com prazo longo:
+     * O widget deve exibir o estado amigável: *"Tudo em dia na sua despensa!"*.
+3. **Widget Tendências de Consumo (`ConsumptionTrendWidget`):**
+   * Após consumir alguns itens na despensa (Cenário 2.4):
+     * O card deve listar os produtos de maior saída no mês corrente, indicando a quantidade e unidade consumida.
+   * Se não houver movimentações de consumo no mês:
+     * Exibe o estado informativo de ausência de dados.
+
+---
+
+## 🐞 Como Relatar um Problema ou Sugestão
+
+Se durante os testes você encontrar algum comportamento inesperado, erro visual, lentidão ou tiver uma sugestão de melhoria:
+
+1. Anote o que aconteceu e o modelo do seu celular Android (marca, modelo e versão do Android).
+2. Tire uma captura de tela (*screenshot*) ou grave a tela demonstrando o fluxo.
+3. Abra uma issue diretamente no nosso repositório:  
+   👉 **[Abrir Nova Issue no GitHub](https://github.com/bitlabbr/Minha-Despensa/issues/new)**  
+   *(Ou envie as anotações e prints diretamente para o desenvolvedor responsável)*.
+
+Obrigado por ajudar a construir o **Minha Despensa**! 💙🚀
