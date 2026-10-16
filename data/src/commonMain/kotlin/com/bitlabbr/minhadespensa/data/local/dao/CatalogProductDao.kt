@@ -105,6 +105,22 @@ interface CatalogProductDao {
     @Query("SELECT * FROM catalog_products WHERE isDeleted = 0 ORDER BY name ASC")
     fun getAllActive(): Flow<List<CatalogProductEntity>>
 
+    @Query("SELECT * FROM catalog_products WHERE isDeleted = 0")
+    suspend fun getAllActiveSnapshot(): List<CatalogProductEntity>
+
+    @Query(
+        """
+        UPDATE catalog_products 
+        SET category = :newCategory, updatedAt = :updatedAt 
+        WHERE id = :id AND isDeleted = 0
+        """
+    )
+    suspend fun updateCategoryById(
+        id: String,
+        newCategory: String,
+        updatedAt: Long,
+    ): Int
+
     @Query(
         """
         UPDATE catalog_products 

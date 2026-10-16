@@ -1101,6 +1101,138 @@ class RoomCatalogRepositoryTest : BaseTest() {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // 7. GERENCIAMENTO DE CATEGORIAS (SEED, CRIAÇÃO, RENOMEAÇÃO E EXCLUSÃO EM CASCATA)
+    // -------------------------------------------------------------------------
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `should seed default categories and emit new custom categories via getCategories and getAllActiveCategories`() = runTest {
+        val initialCategories = catalogRepository.getCategories().first()
+        CoreConstants.CatalogCategories.DEFAULT_CATEGORIES.forEach { defaultCat ->
+            assertTrue(initialCategories.contains(defaultCat), "Deve conter a categoria padrão $defaultCat")
+        }
+
+        val customCategory = com.bitlabbr.minhadespensa.core.domain.model.ProductCategory(
+            id = Uuid.random().toString(),
+            name = "Pet Shop",
+            isDefault = false,
+            updatedAt = getCurrentTime(),
+            isDeleted = false,
+        )
+        catalogRepository.saveCategory(customCategory)
+
+        val updatedCategories = catalogRepository.getCategories().first()
+        assertTrue(updatedCategories.contains("Pet Shop"))
+
+        val activeEntities = catalogRepository.getAllActiveCategories().first()
+        assertTrue(activeEntities.any { it.name == "Pet Shop" && !it.isDefault })
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `renameCategory should update category entity and cascade new name and updatedAt to active products`() = runTest {
+        val now = getCurrentTime()
+        val catId = Uuid.random().toString()
+        catalogRepository.saveCategory(
+            com.bitlabbr.minhadespensa.core.domain.model.ProductCategory(
+                id = catId,
+                name = "Padaria",
+                isDefault = false,
+                updatedAt = now - 10_000L,
+                isDeleted = false,
+            )
+        )
+
+        val prod1 = createDummyProduct(name = "Pão Francês", category = "Padaria", updatedAt = now - 5_000L)
+        val prod2 = createDummyProduct(name = "Bolo de Milho", category = "padaria", updatedAt = now - 5_000L)
+        val prodOther = createDummyProduct(name = "Sabão", category = "Produtos de Limpeza", updatedAt = now - 5_000L)
+        catalogRepository.insertProduct(prod1, null)
+        catalogRepository.insertProduct(prod2, null)
+        catalogRepository.insertProduct(prodOther, null)
+
+        val renameTime = getCurrentTime()
+        catalogRepository.renameCategory(
+            id = catId,
+            oldName = "Padaria",
+            newName = "Padaria & Confeitaria",
+            updatedAt = renameTime,
+        )
+
+        val categories = catalogRepository.getCategories().first()
+        assertTrue(categories.contains("Padaria & Confeitaria"))
+        assertFalse(categories.contains("Padaria"))
+
+        val updatedProd1 = catalogRepository.getProductById(prod1.id).first()!!
+        val updatedProd2 = catalogRepository.getProductById(prod2.id).first()!!
+        val unchangedOther = catalogRepository.getProductById(prodOther.id).first()!!
+
+        assertEquals("Padaria & Confeitaria", updatedProd1.category)
+        assertTrue(updatedProd1.updatedAt >= renameTime)
+        assertEquals("Padaria & Confeitaria", updatedProd2.category)
+        assertTrue(updatedProd2.updatedAt >= renameTime)
+        assertEquals("Produtos de Limpeza", unchangedOther.category)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
+    fun `deleteCategory should soft delete category and move active products to Outros`() = runTest {
+        val now = getCurrentTime()
+        val catId = Uuid.random().toString()
+        catalogRepository.saveCategory(
+            com.bitlabbr.minhadespensa.core.domain.model.ProductCategory(
+                id = catId,
+                name = "Congelados",
+                isDefault = false,
+                updatedAt = now - 10_000L,
+                isDeleted = false,
+            )
+        )
+
+        val prod = createDummyProduct(name = "Pizza Mussarela", category = "Congelados", updatedAt = now - 5_000L)
+        catalogRepository.insertProduct(prod, null)
+
+        val deleteTime = getCurrentTime()
+        catalogRepository.deleteCategory(
+            id = catId,
+            categoryName = "Congelados",
+            fallbackCategory = CoreConstants.Product.DEFAULT_CATEGORY,
+            updatedAt = deleteTime,
+        )
+
+        val activeCategories = catalogRepository.getAllActiveCategories().first()
+        assertFalse(activeCategories.any { it.name == "Congelados" })
+
+        val categoriesNames = catalogRepository.getCategories().first()
+        assertFalse(categoriesNames.contains("Congelados"))
+
+        val migratedProd = catalogRepository.getProductById(prod.id).first()!!
+        assertEquals(CoreConstants.Product.DEFAULT_CATEGORY, migratedProd.category)
+        assertTrue(migratedProd.updatedAt >= deleteTime)
+    }
+
+    @Test
+    fun `renameCategory and deleteCategory should reject modifying default Outros category`() = runTest {
+        val now = getCurrentTime()
+        assertFailsWith<IllegalArgumentException> {
+            catalogRepository.renameCategory(
+                id = "default_category_8",
+                oldName = "Outros",
+                newName = "Geral",
+                updatedAt = now,
+            )
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            catalogRepository.deleteCategory(
+                id = "default_category_8",
+                categoryName = "Outros",
+                fallbackCategory = "Outros",
+                updatedAt = now,
+            )
+        }
+    }
+
     private fun assertProduct(value: CatalogProduct?, ref: CatalogProduct) {
         assertTrue { value != null }
         val netWeight = value?.netWeight ?: 0.0
