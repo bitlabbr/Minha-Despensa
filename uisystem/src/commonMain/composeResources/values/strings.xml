@@ -82,8 +82,6 @@
     <string name="register_product_form_header_title_bottom">PRODUTO</string>
     <string name="register_product_form_header_title_desc">Adicione um produto ao catálogo</string>
     <string name="register_product_form_header_close_button_desc">Fechar formulário</string>
-    <string name="settins_section_tile_top">Outras</string>
-    <string name="settins_section_tile_bottom">Opções</string>
     <string name="product_catalog_title_top">Catálogo de</string>
     <string name="product_catalog_title_bottom">Produtos</string>
     <string name="product_catalog_item_not_found">Nenhum produto cadastrado.</string>
@@ -117,8 +115,6 @@
     <string name="category_others">Outros</string>
     <string name="search_clear">Limpar busca</string>
     <string name="minha">Minha</string>
-    <string name="settings_section_title_top">Outras</string>
-    <string name="settings_section_title_bottom">Opções</string>
     <string name="pantry_search_bar_stock_quantity">Estoque</string>
     <string name="pantry_categories_empty_message">Sua despensa está vazia\nAdicione produtos no botão abaixo!</string>
     <string name="pantry_categories_not_found">Nenhum item nesta categoria da despensa.</string>
@@ -420,5 +416,11 @@
     <string name="month_12_short">Dez</string>
 
     <string name="placeholder_empty_metric">—</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Início</string>
+    <string name="nav_pantry">Despensa</string>
+    <string name="nav_catalog">Catálogo</string>
+    <string name="nav_shopping_lists">Listas</string>
 
 </resources>

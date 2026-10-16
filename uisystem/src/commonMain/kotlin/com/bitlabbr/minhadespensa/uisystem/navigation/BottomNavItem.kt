@@ -24,9 +24,10 @@
 package com.bitlabbr.minhadespensa.uisystem.navigation
 
 import androidx.compose.ui.graphics.vector.ImageVector
+import org.jetbrains.compose.resources.StringResource
 
 data class BottomNavItem<T : Any>(
-    val title: String,
+    val titleRes: StringResource,
     val icon: ImageVector,
     val route: T,
 )

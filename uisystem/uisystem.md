@@ -58,13 +58,12 @@ uisystem/src/
 │   │   ├── pantry/                # PantryScreen, PantryViewModel
 │   │   │   ├── model/             # PantryUiState, PantrySubFlow state machine
 │   │   │   └── widgets/           # Subflow sheets (AddPantryItemOptionsSheet, AddPantryItemDetailsSheet, BarcodeScanner)
-│   │   ├── shopping/              # Shopping suite
-│   │   │   ├── overview/          # ShoppingListsScreen, ShoppingListsViewModel
-│   │   │   ├── assistant/         # ShoppingAssistantScreen, ShoppingAssistantViewModel
-│   │   │   │   └── widgets/       # ReplaceItemOptionsSheet, AddCartItemDetailsSheet, etc.
-│   │   │   ├── planned/           # CreatePlannedListScreen, PlannedListViewModel
-│   │   │   └── quicklist/         # QuickListScreen, QuickListViewModel
-│   │   └── settings/              # SettingsScreen
+│   │   └── shopping/              # Shopping suite
+│   │       ├── overview/          # ShoppingListsScreen, ShoppingListsViewModel
+│   │       ├── assistant/         # ShoppingAssistantScreen, ShoppingAssistantViewModel
+│   │       │   └── widgets/       # ReplaceItemOptionsSheet, AddCartItemDetailsSheet, etc.
+│   │       ├── planned/           # CreatePlannedListScreen, PlannedListViewModel
+│   │       └── quicklist/         # QuickListScreen, QuickListViewModel
 │   ├── manager/                   # AppNotificationManager (SharedFlow event bus)
 │   ├── mapper/                    # MeasureUnitMapper (Domain enum <-> UI Resource)
 │   ├── model/                     # UiText, Deprecated aliases for backwards compat

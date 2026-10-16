@@ -49,7 +49,6 @@ import com.bitlabbr.minhadespensa.uisystem.components.domain.pantry.ConsumptionT
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.mapper.getIconPainterFromString
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
-import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme.dimens
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.action_show_less
@@ -70,14 +69,12 @@ fun ConsumptionTrendWidget(
     val visibleItems = if (isExpanded || !hasMoreItems) items else items.take(maxInitialItems)
     val colors = getAppColors()
     val typography = MinhaDespensaTheme.typography
+    val dimens = MinhaDespensaTheme.dimens
 
     SecondaryContainerGlassCard(
         modifier = modifier
             .animateContentSize()
-            .padding(
-                horizontal = MinhaDespensaTheme.dimens.paddingSmall,
-                vertical = MinhaDespensaTheme.dimens.paddingSmall,
-            ),
+            .padding(horizontal = dimens.paddingSmall),
         content = {
             SecondaryContainerHeader(
                 text = stringResource(Res.string.home_consumption_section_title)
@@ -129,7 +126,10 @@ fun ConsumptionTrendWidget(
                         ) {
                             MinhaDespensaExpandButton(
                                 isExpanded = isExpanded,
-                                collapsedText = stringResource(Res.string.action_show_more_count, items.size - maxInitialItems),
+                                collapsedText = stringResource(
+                                    Res.string.action_show_more_count,
+                                    items.size - maxInitialItems
+                                ),
                                 expandedText = stringResource(Res.string.action_show_less),
                                 onClick = { isExpanded = !isExpanded }
                             )
