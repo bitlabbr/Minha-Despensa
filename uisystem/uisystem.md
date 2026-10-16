@@ -94,9 +94,11 @@ uisystem/src/
   - `priceLabel`: Monetary values and currency display.
 - **UiText Pattern:** Eliminates raw hardcoded strings in ViewModels. Uses `UiText.DynamicString` for runtime messages and `UiText.Resource` for localized Compose Multiplatform strings.
 
-### 4.2. Unified Product Registration (`RegisterProductBottomSheet`)
-Product registration was consolidated to eliminate duplicate code across screens:
+### 4.2. Unified Product Registration (`RegisterProductBottomSheet`) & Category Management
+Product registration and category management are unified across catalog and pantry flows:
 - **`RegisterProductFormContent`:** Encapsulates the form fields (Name, Brand, Category, Net Weight, Measure Unit, Barcode, Photo capture) with inline validation via `ProductFormValidator` and debounced EAN verification.
+- **Inline Category Creation (`ProductDropdownField` + `QuickCreateCategoryDialog`):** Both `RegisterProductFormContent` and `ProductEditSection` (`ProductDetailsScreen`) display a highlighted `+ Nova categoria...` action in the category dropdown, opening `QuickCreateCategoryDialog` to create and immediately select a custom category.
+- **Centralized Category Management (`ManageCategoriesDialog`):** Triggered via the `Categorias` action chip in `CategorizedContainerGlassCard` on `CatalogScreen`, allowing users to create new categories, rename existing categories (with automatic cascading updates to products), and delete categories (moving linked products to the protected `"Outros"` category).
 - **`RegisterProductBottomSheet`:**
   - *Controlled Overload:* Accepts `formState: ProductFormState`, `onFormChange`, `onSave`, and `onDismiss`. Ideal for parent ViewModels (like `CatalogViewModel`, `PantryViewModel`, or `ProductDetailsViewModel`).
   - *Self-Contained Overload:* Instantiates and binds directly to `CatalogViewModel`, simplifying one-off registration triggers.
@@ -155,7 +157,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **ViewModels:**
   - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, logger, notification manager.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases, logger, notification manager.
-  - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
+  - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
   - `PlannedListViewModel`: Injects `CreatePlannedShoppingListUseCase`, catalog repository, logger.
   - `ShoppingAssistantViewModel`: Injects session use cases (`StartShoppingSessionUseCase`, `AddOrUpdateCartItemUseCase`, `FinalizeShoppingSessionUseCase`, `CheckEanStatusUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`), repositories, logger.
@@ -166,7 +168,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 149 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -185,7 +187,7 @@ All 149 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
 | `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, duplicate item detection and consolidation, barcode scanner subflows, item replacement, purchase finalization. |
-| `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
+| `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case, custom category creation, renaming (with active filter & product cascade), and deletion (with fallback to `"Outros"`). |
 | `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
 | `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, batch price mapping and calculation, in-place price recalculation (min/max/average), checkout stock price display, batch editing subflow and updates, add to shopping list. |
 

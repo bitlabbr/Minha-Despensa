@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -51,6 +52,8 @@ fun <T> ProductDropdownField(
     optionLabel: @Composable (T) -> String = { it.toString() },
     isRequired: Boolean = false,
     errorMessage: String? = null,
+    createNewLabel: String? = null,
+    onCreateNewClick: (() -> Unit)? = null,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val colors = getAppColors()
@@ -91,6 +94,35 @@ fun <T> ProductDropdownField(
             shadowElevation = 8.dp,
             modifier = Modifier.padding(vertical = 4.dp),
         ) {
+            if (onCreateNewClick != null && !createNewLabel.isNullOrBlank()) {
+                DropdownMenuItem(
+                    text = {
+                        MinhaDespensaText(
+                            text = createNewLabel,
+                            fontStyle = MinhaDespensaTheme.typography.bodySmall,
+                            color = colors.primary,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = null,
+                            tint = colors.primary,
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onCreateNewClick()
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 2.dp),
+                    color = colors.onSecondaryContainer.copy(alpha = 0.1f),
+                )
+            }
+
             options.forEach { option ->
                 val labelText = optionLabel(option)
                 val isSelected = option == selectedOption

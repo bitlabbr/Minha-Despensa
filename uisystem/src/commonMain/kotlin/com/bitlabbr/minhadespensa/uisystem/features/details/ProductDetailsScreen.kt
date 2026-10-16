@@ -63,6 +63,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaTex
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductDropdownField
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories.QuickCreateCategoryDialog
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.features.details.model.*
 import com.bitlabbr.minhadespensa.uisystem.features.details.widgets.EditPantryBatchSheet
@@ -623,6 +624,7 @@ private fun ProductEditSection(
 
     var showImageSourcePicker by remember { mutableStateOf(false) }
     var showBarcodeScanner by remember { mutableStateOf(false) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
 
     val imagePickerManager = rememberImagePickerManager { bytes ->
         onFormChange(formState.copy(imageBytes = bytes, hasImageRemoved = false))
@@ -695,18 +697,29 @@ private fun ProductEditSection(
                 )
             }
 
+            val categoryOptions = remember(formState.availableCategories, formState.category) {
+                val base = formState.availableCategories
+                if (formState.category.isNotBlank() && base.none { it.equals(formState.category, ignoreCase = true) }) {
+                    (base + formState.category).sorted()
+                } else {
+                    base
+                }
+            }
+
             // Categoria
             ProductDropdownField(
                 modifier = Modifier.fillMaxWidth(),
                 label = stringResource(Res.string.register_product_form_basic_info_product_category),
                 selectedOption = formState.category.takeIf { it.isNotBlank() },
                 placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
-                options = formState.availableCategories.filter {
+                options = categoryOptions.filter {
                     !it.equals(stringResource(Res.string.category_filter_all), ignoreCase = true)
                 },
                 optionLabel = { it },
                 isRequired = true,
                 errorMessage = formState.categoryError?.asString(),
+                createNewLabel = stringResource(Res.string.category_dropdown_create_new),
+                onCreateNewClick = { showCreateCategoryDialog = true },
                 onSelected = { onFormChange(formState.copy(category = it, categoryError = null)) },
             )
         }
@@ -823,6 +836,25 @@ private fun ProductEditSection(
                 onFormChange(formState.copy(ean = digits, eanError = null))
             },
             onDismissRequest = { showBarcodeScanner = false },
+        )
+    }
+
+    if (showCreateCategoryDialog) {
+        QuickCreateCategoryDialog(
+            onConfirm = { newCategory ->
+                val updatedAvailable = (formState.availableCategories + newCategory)
+                    .distinct()
+                    .sorted()
+                onFormChange(
+                    formState.copy(
+                        category = newCategory,
+                        categoryError = null,
+                        availableCategories = updatedAvailable,
+                    )
+                )
+                showCreateCategoryDialog = false
+            },
+            onDismiss = { showCreateCategoryDialog = false },
         )
     }
 }

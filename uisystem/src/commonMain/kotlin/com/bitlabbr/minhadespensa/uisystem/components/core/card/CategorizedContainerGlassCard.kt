@@ -33,6 +33,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
@@ -63,6 +65,7 @@ fun CategorizedContainerGlassCard(
     error: String? = null,
     emptyMessage: String = stringResource(Res.string.product_catalog_item_not_found),
     notFoundMessage: String = stringResource(Res.string.product_catalog_item_not_found_in_category_search),
+    onManageCategoriesClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
     val dimens = MinhaDespensaTheme.dimens
@@ -78,7 +81,18 @@ fun CategorizedContainerGlassCard(
             contentPadding = PaddingValues(horizontal = dimens.paddingSmall),
             horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
         ) {
-            item {
+            if (onManageCategoriesClick != null) {
+                item(key = "__manage_categories__") {
+                    MinhaDespensaFilterChip(
+                        selected = false,
+                        onClick = onManageCategoriesClick,
+                        label = stringResource(Res.string.category_manage_button),
+                        leadingIcon = Icons.Rounded.Tune,
+                    )
+                }
+            }
+
+            item(key = "__all_categories__") {
                 MinhaDespensaFilterChip(
                     selected = isAllSelected,
                     onClick = { onCategorySelected(null) },
@@ -86,7 +100,7 @@ fun CategorizedContainerGlassCard(
                 )
             }
 
-            items(categories) { category ->
+            items(categories, key = { it }) { category ->
                 MinhaDespensaFilterChip(
                     selected = category.equals(selectedCategory, ignoreCase = true),
                     onClick = { onCategorySelected(category) },

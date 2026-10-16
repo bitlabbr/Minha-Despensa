@@ -233,4 +233,58 @@ class CatalogViewModelTest {
             assertEquals(MinhaDespensaSnackbarType.SUCCESS, notification.type)
         }
     }
+
+    @Test
+    fun `manage categories dialog toggle and createCategory should add custom category to availableCategories`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.filterState.isManageCategoriesOpen)
+        viewModel.openManageCategoriesDialog()
+        testScheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.filterState.isManageCategoriesOpen)
+
+        notificationManager.notifications.test {
+            viewModel.createCategory("Pet Shop")
+            testScheduler.advanceUntilIdle()
+
+            assertTrue(viewModel.uiState.value.filterState.availableCategories.contains("Pet Shop"))
+            assertTrue(viewModel.uiState.value.filterState.managedCategories.any { it.name == "Pet Shop" })
+
+            val notification = awaitItem()
+            assertEquals(MinhaDespensaSnackbarType.SUCCESS, notification.type)
+        }
+
+        viewModel.closeManageCategoriesDialog()
+        testScheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.filterState.isManageCategoriesOpen)
+    }
+
+    @Test
+    fun `renameCategory and deleteCategory should update selectedCategory and cascade product categories`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+
+        val prod = CatalogProduct(id = "p-bebida", name = "Suco de Uva", category = "Bebidas", updatedAt = 1000L)
+        catalogRepository.insertProduct(prod, null)
+        testScheduler.advanceUntilIdle()
+
+        val bebidasCat = viewModel.uiState.value.filterState.managedCategories.first { it.name == "Bebidas" }
+        viewModel.onCategorySelected("Bebidas")
+        testScheduler.advanceUntilIdle()
+        assertEquals("Bebidas", viewModel.uiState.value.filterState.selectedCategory)
+
+        // Rename "Bebidas" -> "Sucos e Bebidas"
+        viewModel.renameCategory(bebidasCat.id, "Sucos e Bebidas")
+        testScheduler.advanceUntilIdle()
+
+        assertEquals("Sucos e Bebidas", viewModel.uiState.value.filterState.selectedCategory)
+        assertEquals("Sucos e Bebidas", viewModel.uiState.value.listState.products.first().category)
+
+        // Delete "Sucos e Bebidas" -> selectedCategory resets to null and product moves to "Outros"
+        viewModel.deleteCategory(bebidasCat.id)
+        testScheduler.advanceUntilIdle()
+
+        assertNull(viewModel.uiState.value.filterState.selectedCategory)
+        assertEquals("Outros", viewModel.uiState.value.listState.products.first().category)
+    }
 }

@@ -423,4 +423,30 @@
     <string name="nav_catalog">Catálogo</string>
     <string name="nav_shopping_lists">Listas</string>
 
+    <!-- Custom Product Categories Management -->
+    <string name="category_manage_button">Categorias</string>
+    <string name="category_manage_dialog_title">Gerenciar Categorias</string>
+    <string name="category_manage_dialog_desc">Crie novas categorias ou renomeie e exclua as existentes.</string>
+    <string name="category_manage_new_input_label">Nova Categoria</string>
+    <string name="category_manage_new_input_placeholder">Ex: Pet Shop, Suplementos...</string>
+    <string name="category_manage_add_button">Adicionar</string>
+    <string name="category_manage_close_button">Fechar</string>
+    <string name="category_manage_edit_action">Renomear categoria</string>
+    <string name="category_manage_delete_action">Excluir categoria</string>
+    <string name="category_manage_protected_badge">Protegida</string>
+    <string name="category_manage_edit_dialog_title">Renomear Categoria</string>
+    <string name="category_manage_edit_dialog_desc">Todos os produtos em '%1$s' serão atualizados automaticamente.</string>
+    <string name="category_manage_edit_input_label">Nome da Categoria</string>
+    <string name="category_manage_edit_save_button">Salvar</string>
+    <string name="category_manage_delete_dialog_title">Excluir Categoria?</string>
+    <string name="category_manage_delete_dialog_desc">Tem certeza de que deseja excluir '%1$s'? Os produtos vinculados serão movidos para 'Outros'.</string>
+    <string name="category_manage_delete_confirm_button">Sim, Excluir</string>
+    <string name="category_dropdown_create_new">+ Nova categoria...</string>
+    <string name="category_create_dialog_title">Nova Categoria</string>
+    <string name="category_create_dialog_desc">Informe o nome da nova categoria para seus produtos.</string>
+    <string name="category_create_save_button">Criar Categoria</string>
+    <string name="category_saved_success">Categoria salva com sucesso!</string>
+    <string name="category_renamed_success">Categoria renomeada com sucesso!</string>
+    <string name="category_deleted_success">Categoria excluída! Produtos movidos para 'Outros'.</string>
+
 </resources>

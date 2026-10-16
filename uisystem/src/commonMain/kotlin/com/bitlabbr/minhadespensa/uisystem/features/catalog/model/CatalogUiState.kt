@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.catalog.model
 
+import com.bitlabbr.minhadespensa.core.domain.model.ProductCategory
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.register.ProductFormState
 import com.bitlabbr.minhadespensa.uisystem.model.UiText
 
@@ -35,6 +36,8 @@ data class SearchSubState(
 data class CategoryFilterSubState(
     val availableCategories: List<String> = emptyList(),
     val selectedCategory: String? = null,
+    val managedCategories: List<ProductCategory> = emptyList(),
+    val isManageCategoriesOpen: Boolean = false,
 )
 
 data class ProductListSubState(
