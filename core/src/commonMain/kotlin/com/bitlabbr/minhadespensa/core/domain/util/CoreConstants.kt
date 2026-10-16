@@ -64,6 +64,10 @@ object CoreConstants {
         const val ERROR_PRODUCT_NET_WEIGHT_POSITIVE = "O peso ou quantidade líquida deve ser maior que zero"
         const val ERROR_EAN_INVALID_FORMAT = "Código de barras inválido. Deve conter 8, 12, 13 ou 14 dígitos numéricos"
         const val ERROR_PANTRY_UNIT_PRICE_NON_NEGATIVE = "O preço unitário não pode ser negativo"
+        const val ERROR_CATEGORY_NAME_BLANK = "O nome da categoria não pode ser vazio"
+        const val ERROR_CATEGORY_ALREADY_EXISTS = "Já existe uma categoria com este nome"
+        const val ERROR_CATEGORY_DEFAULT_IMMUTABLE = "A categoria padrão 'Outros' não pode ser alterada ou excluída"
+        const val ERROR_CATEGORY_ID_REQUIRED = "O ID da categoria é obrigatório"
     }
 
     object CatalogCategories {

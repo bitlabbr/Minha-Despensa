@@ -97,16 +97,22 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
     *   *Fields*: `totalValueInCents`, `itemsWithPriceCount`, `totalActiveItemsCount`.
     *   *Computed Domain Property*:
         *   `averagePriceInCents`: Resolved as `totalValueInCents / itemsWithPriceCount` when `itemsWithPriceCount > 0`, or `null`.
+*   **`ProductCategory`**: Represents a product category (default or user-created) with CRDT LWW metadata.
+    *   *Fields*: `id`, `name`, `isDefault`, `updatedAt`, `isDeleted`.
 *   **`IconKeys`**: String keys mapping domain categories to application icons (e.g., `GRAINS`, `CLEANING`, `BEVERAGES`).
 
 ---
 
 ### 4.2. Domain Use Cases (`domain/usecase`)
 
-The `:core` module defines 17 use cases encapsulating discrete application business rules and orchestration:
+The `:core` module defines 19 use cases encapsulating discrete application business rules and orchestration:
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
     *   Saves or updates the product via `CatalogRepository` with optional image thumbnail bytes and explicit `removeImage: Boolean` flag when editing.
+*   **`SaveProductCategoryUseCase`**:
+    *   Creates or renames a product category, validating non-blank name, maximum length (`CATEGORY_MAX_LENGTH`), accent/case-insensitive uniqueness against existing categories, and immutability of the default fallback category (`"Outros"`).
+*   **`DeleteProductCategoryUseCase`**:
+    *   Prevents deletion of the default fallback category (`"Outros"`) and soft-deletes custom or non-fallback categories via `CatalogRepository.deleteCategory()`, cascading affected products to `"Outros"`.
 *   **`CheckEanStatusUseCase`**:
     *   Validates EAN barcode format and checks if a product with this EAN already exists in `CatalogRepository`.
 *   **`AddPantryItemUseCase`**:
@@ -168,6 +174,10 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `deleteProductById(id: String)`
     *   `existsById(id: String): Flow<Boolean>`
     *   `getCategories(): Flow<List<String>>`
+    *   `getAllActiveCategories(): Flow<List<ProductCategory>>`
+    *   `saveCategory(category: ProductCategory)`
+    *   `renameCategory(id: String, oldName: String, newName: String, updatedAt: Long)`
+    *   `deleteCategory(id: String, categoryName: String, fallbackCategory: String, updatedAt: Long)`
     *   `getProductImage(productId: String): Flow<ByteArray?>`
 *   **`PantryRepository`**:
     *   `getAllActivePantryItems(): Flow<List<PantryItem>>`
@@ -233,6 +243,7 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
 
 The `:core` module contains comprehensive unit tests located in `core/src/commonTest/`:
 *   `CatalogAndPantryUseCasesTest`: Validates `SaveCatalogProductUseCase`, `AddPantryItemUseCase`, and `UpdatePantryItemUseCase` business rules, constraints, and error handling.
+*   `ProductCategoryUseCasesTest`: Validates `SaveProductCategoryUseCase` and `DeleteProductCategoryUseCase` creation, whitespace trimming, length bounds, accent/case-insensitive duplicate rejection, cascading rename, soft-delete fallback to `"Outros"`, and protection of `"Outros"`.
 *   `ShoppingUseCasesTest`: Validates shopping session lifecycles, list creations, cart transitions, item replacements, and deletions.
 *   `CheckEanStatusUseCaseTest`: Tests barcode validation, digit checking, and repository lookup.
 *   `BudgetModelsTest`: Validates `MonthlyBudget`, `MonthlyFinancialSummary` computed properties and edge cases, and `getMonthTimeRange` boundary calculations.
@@ -244,4 +255,4 @@ The `:core` module contains comprehensive unit tests located in `core/src/common
 *   `TimestampToleranceTest`: Verifies clock skew tolerance and boundary enforcement.
 *   `ConsoleLoggerTest`: Verifies formatting and level output.
 
-All 102 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
+All 109 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.

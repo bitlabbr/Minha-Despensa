@@ -24,15 +24,31 @@
 package com.bitlabbr.minhadespensa.core.domain.fakes
 
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.model.ProductCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
+import com.bitlabbr.minhadespensa.core.domain.util.normalizeForSearch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 class FakeCatalogRepository : CatalogRepository {
     val products = MutableStateFlow<Map<String, CatalogProduct>>(emptyMap())
     val productImages = MutableStateFlow<Map<String, ByteArray?>>(emptyMap())
+    val categories = MutableStateFlow<Map<String, ProductCategory>>(
+        CoreConstants.CatalogCategories.DEFAULT_CATEGORIES.mapIndexed { index, name ->
+            val id = "default-cat-$index"
+            id to ProductCategory(
+                id = id,
+                name = name,
+                isDefault = true,
+                updatedAt = 1000L,
+                isDeleted = false,
+            )
+        }.toMap()
+    )
     var lastRemoveImage: Boolean = false
         private set
 
@@ -56,7 +72,18 @@ class FakeCatalogRepository : CatalogRepository {
 
     override fun existsById(id: String): Flow<Boolean> = products.map { it.containsKey(id) }
     override fun getCategories(): Flow<List<String>> =
-        products.map { it.values.map { p -> p.category }.distinct() }
+        combine(categories, products) { catMap, prodMap ->
+            val activeCatNames = catMap.values.filter { !it.isDeleted }.map { it.name }
+            val activeProdCategories = prodMap.values.filter { !it.isDeleted }.map { it.category }
+            (activeCatNames + activeProdCategories + listOf(CoreConstants.Product.DEFAULT_CATEGORY))
+                .map { it.trim() }
+                .filter { it.isNotBlank() }
+                .distinctBy { it.normalizeForSearch() }
+                .sorted()
+        }
+
+    override fun getAllActiveCategories(): Flow<List<ProductCategory>> =
+        categories.map { map -> map.values.filter { !it.isDeleted }.sortedBy { it.name } }
 
     override fun getProductImage(productId: String): Flow<ByteArray?> =
         productImages.map { it[productId] }
@@ -97,5 +124,43 @@ class FakeCatalogRepository : CatalogRepository {
     override suspend fun deleteProductById(id: String) {
         products.value -= id
         productImages.value -= id
+    }
+
+    override suspend fun saveCategory(category: ProductCategory) {
+        categories.value += (category.id to category)
+    }
+
+    override suspend fun renameCategory(id: String, oldName: String, newName: String, updatedAt: Long) {
+        val current = categories.value[id]
+        if (current != null) {
+            categories.value += (id to current.copy(name = newName, updatedAt = updatedAt, isDeleted = false))
+        }
+        val normalizedOld = oldName.normalizeForSearch()
+        products.value = products.value.mapValues { (_, prod) ->
+            if (!prod.isDeleted && prod.category.normalizeForSearch() == normalizedOld) {
+                prod.copy(category = newName, updatedAt = updatedAt)
+            } else {
+                prod
+            }
+        }
+    }
+
+    override suspend fun deleteCategory(
+        id: String,
+        categoryName: String,
+        fallbackCategory: String,
+        updatedAt: Long,
+    ) {
+        categories.value[id]?.let {
+            categories.value += (id to it.copy(isDeleted = true, updatedAt = updatedAt))
+        }
+        val normalizedTarget = categoryName.normalizeForSearch()
+        products.value = products.value.mapValues { (_, prod) ->
+            if (!prod.isDeleted && prod.category.normalizeForSearch() == normalizedTarget) {
+                prod.copy(category = fallbackCategory, updatedAt = updatedAt)
+            } else {
+                prod
+            }
+        }
     }
 }
