@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -49,9 +50,8 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainer
 import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.GlobalNotificationHost
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
 import com.bitlabbr.minhadespensa.uisystem.features.details.ProductDetailsScreen
-import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
-import com.bitlabbr.minhadespensa.uisystem.features.settings.SettingsScreen
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.PantryScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.assistant.ShoppingAssistantScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.overview.ShoppingListsScreen
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.planned.CreatePlannedListScreen
@@ -64,7 +64,6 @@ import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 private val bottomNavItems = listOf(
     BottomNavItem("Início", Icons.Rounded.Home, HomeScreenRoute),
     BottomNavItem("Despensa", Icons.Rounded.Kitchen, PantryScreenRoute),
-    //BottomNavItem("Configurações", Icons.Default.Settings, SettingsRoute),
     BottomNavItem("Catálogo", Icons.Rounded.Category, ProductCatalogRoute),
     BottomNavItem("Listas", Icons.Rounded.ShoppingCart, ShoppingListsRoute),
 )
@@ -77,71 +76,7 @@ fun App() {
             Scaffold(
                 containerColor = Color.Transparent,
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                bottomBar = {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentDestination = navBackStackEntry?.destination
-                    val appDimens = MinhaDespensaTheme.dimens
-                    val isTopLevelDestination = remember(currentDestination) {
-                        bottomNavItems.any { item ->
-                            currentDestination?.hierarchy?.any { it.hasRoute(item.route::class) } == true
-                        }
-                    }
-                    AnimatedVisibility(
-                        visible = isTopLevelDestination,
-                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
-                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .navigationBarsPadding()
-                        ) {
-                            PrimaryContainerGlassCard(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = appDimens.paddingSmall, vertical = appDimens.paddingSmall),
-                                shape = RoundedCornerShape(appDimens.cardCorner),
-                                borderWidth = 2.dp
-                            ) {
-                                NavigationBar(
-                                    containerColor = getAppColors().primaryContainer,
-                                    tonalElevation = 0.dp,
-                                    windowInsets = WindowInsets(0, 0, 0, 0)
-                                ) {
-                                    bottomNavItems.forEach { item ->
-                                        val isSelected = currentDestination?.hierarchy?.any {
-                                            it.hasRoute(item.route::class)
-                                        } == true
-
-                                        val appColors = getAppColors()
-                                        NavigationBarItem(
-                                            icon = {
-                                                Icon(
-                                                    imageVector = item.icon,
-                                                    contentDescription = item.title,
-                                                    tint = if (isSelected) appColors.onSecondaryContainer.copy(alpha = .9f) else appColors.onSurface
-                                                )
-                                            },
-                                            selected = isSelected,
-                                            colors = NavigationBarItemDefaults.colors(
-                                                indicatorColor = appColors.primary.copy(alpha = 0.5f)
-                                            ),
-                                            onClick = {
-                                                navController.navigate(item.route) {
-                                                    popUpTo(navController.graph.startDestinationRoute!!) {
-                                                        saveState = true
-                                                    }
-                                                    launchSingleTop = true
-                                                    restoreState = true
-                                                }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                bottomBar = appNavigationBar(navController)
             ) { innerPadding ->
                 NavHost(
                     navController = navController,
@@ -157,10 +92,6 @@ fun App() {
                                 )
                             },
                         )
-                    }
-
-                    composable<SettingsRoute> {
-                        SettingsScreen()
                     }
 
                     composable<HomeScreenRoute> {
@@ -232,6 +163,74 @@ fun App() {
                 }
             }
             GlobalNotificationHost()
+        }
+    }
+}
+
+@Composable
+private fun appNavigationBar(navController: NavHostController): @Composable () -> Unit = {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+    val appDimens = MinhaDespensaTheme.dimens
+    val isTopLevelDestination = remember(currentDestination) {
+        bottomNavItems.any { item ->
+            currentDestination?.hierarchy?.any { it.hasRoute(item.route::class) } == true
+        }
+    }
+    AnimatedVisibility(
+        visible = isTopLevelDestination,
+        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+        ) {
+            PrimaryContainerGlassCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = appDimens.paddingSmall, vertical = appDimens.paddingSmall),
+                shape = RoundedCornerShape(appDimens.cardCorner),
+                borderWidth = 2.dp
+            ) {
+                NavigationBar(
+                    containerColor = getAppColors().primaryContainer,
+                    tonalElevation = 0.dp,
+                    windowInsets = WindowInsets(0, 0, 0, 0)
+                ) {
+                    bottomNavItems.forEach { item ->
+                        val isSelected = currentDestination?.hierarchy?.any {
+                            it.hasRoute(item.route::class)
+                        } == true
+
+                        val appColors = getAppColors()
+                        NavigationBarItem(
+                            icon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.title,
+                                    tint = if (isSelected)
+                                        appColors.onSecondaryContainer.copy(alpha = .9f) else appColors.onSurface
+                                )
+                            },
+                            selected = isSelected,
+                            colors = NavigationBarItemDefaults.colors(
+                                indicatorColor = appColors.primary.copy(alpha = 0.5f)
+                            ),
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(navController.graph.startDestinationRoute!!) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
     }
 }
