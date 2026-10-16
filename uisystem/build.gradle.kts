@@ -44,7 +44,7 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
-            implementation(compose.components.resources)
+            api(compose.components.resources)
 
             api(project(":core"))
 

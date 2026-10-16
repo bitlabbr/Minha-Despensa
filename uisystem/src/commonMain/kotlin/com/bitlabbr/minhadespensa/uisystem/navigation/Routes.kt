@@ -32,10 +32,6 @@ data object HomeScreenRoute
 data object PantryScreenRoute
 
 @Serializable
-data object SettingsRoute
-
-
-@Serializable
 data object ProductCatalogRoute
 
 @Serializable
