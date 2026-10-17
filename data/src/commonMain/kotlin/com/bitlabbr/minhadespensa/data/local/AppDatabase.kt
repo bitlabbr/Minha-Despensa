@@ -34,6 +34,7 @@ import com.bitlabbr.minhadespensa.data.local.dao.MonthlyBudgetDao
 import com.bitlabbr.minhadespensa.data.local.dao.PantryItemDao
 import com.bitlabbr.minhadespensa.data.local.dao.PantryMovementDao
 import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
+import com.bitlabbr.minhadespensa.data.local.dao.ProductCategoryDao
 import com.bitlabbr.minhadespensa.data.local.dao.ProductMediaDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingItemDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingListDao
@@ -42,6 +43,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.MonthlyBudgetEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryMovementEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ProductCategoryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
@@ -55,9 +57,10 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
         ProductMediaEntity::class,
         ShoppingListEntity::class,
         MonthlyBudgetEntity::class,
-        PantryMovementEntity::class
+        PantryMovementEntity::class,
+        ProductCategoryEntity::class,
     ],
-    version = 7
+    version = 8
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -70,6 +73,7 @@ abstract class AppDatabase: RoomDatabase() {
     abstract fun shoppingListDao(): ShoppingListDao
     abstract fun budgetDao(): MonthlyBudgetDao
     abstract fun movementDao(): PantryMovementDao
+    abstract fun categoryDao(): ProductCategoryDao
 }
 
 expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {

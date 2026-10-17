@@ -28,7 +28,9 @@ import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.DeleteProductCategoryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SaveProductCategoryUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
@@ -51,6 +53,8 @@ class CatalogViewModel(
     private val logger: AppLogger,
     private val notificationManager: AppNotificationManager,
     private val checkEanStatusUseCase: CheckEanStatusUseCase = CheckEanStatusUseCase(catalogRepository),
+    private val saveCategoryUseCase: SaveProductCategoryUseCase = SaveProductCategoryUseCase(catalogRepository),
+    private val deleteCategoryUseCase: DeleteProductCategoryUseCase = DeleteProductCategoryUseCase(catalogRepository),
 ) : ViewModel() {
 
     private val TAG = "CatalogViewModel"
@@ -60,20 +64,36 @@ class CatalogViewModel(
     private val _selectedCategory = MutableStateFlow<String?>(null)
     private val _formState = MutableStateFlow(ProductFormState())
     private val _isFormOpen = MutableStateFlow(false)
+    private val _isManageCategoriesOpen = MutableStateFlow(false)
     private val _userMessage = MutableStateFlow<UiText?>(null)
     val userMessage: StateFlow<UiText?> = _userMessage.asStateFlow()
 
     val uiState: StateFlow<CatalogUiState> = combine(
-        catalogRepository.getAllActiveProducts(),
+        combine(
+            catalogRepository.getAllActiveProducts(),
+            catalogRepository.getAllActiveCategories(),
+        ) { products, categories -> products to categories },
         _searchQuery,
-        _selectedCategory,
+        combine(_selectedCategory, _isManageCategoriesOpen) { selected, isManageOpen -> selected to isManageOpen },
         _formState,
         _isFormOpen,
-    ) { products, query, selectedCategory, form, isFormOpen ->
+    ) { (products, activeCategories), query, (selectedCategory, isManageCategoriesOpen), form, isFormOpen ->
 
         val uiProducts = products.map { it.toUiModel() }
         val isCatalogEmpty = products.isEmpty()
-        val dynamicCategories = (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + products.map { it.category.trim() })
+
+        val baseCategoryNames = if (activeCategories.isNotEmpty()) {
+            activeCategories.map { it.name.trim() }
+        } else {
+            CoreConstants.CatalogCategories.DEFAULT_CATEGORIES
+        }
+
+        val dynamicCategories = (baseCategoryNames + products.map { it.category.trim() })
+            .filter { it.isNotBlank() }
+            .distinct()
+            .sorted()
+
+        val formCategories = (dynamicCategories + form.availableCategories + listOf(form.category.trim()))
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
@@ -109,6 +129,8 @@ class CatalogViewModel(
             filterState = CategoryFilterSubState(
                 availableCategories = dynamicCategories,
                 selectedCategory = selectedCategory,
+                managedCategories = activeCategories,
+                isManageCategoriesOpen = isManageCategoriesOpen,
             ),
             listState = ProductListSubState(
                 products = filteredList,
@@ -116,7 +138,7 @@ class CatalogViewModel(
                 isCatalogEmpty = isCatalogEmpty,
                 error = null,
             ),
-            formState = form.copy(availableCategories = dynamicCategories),
+            formState = form.copy(availableCategories = formCategories),
             isFormOpen = isFormOpen,
         )
     }.stateIn(
@@ -131,6 +153,70 @@ class CatalogViewModel(
 
     fun onCategorySelected(category: String?) {
         _selectedCategory.value = category
+    }
+
+    fun openManageCategoriesDialog() {
+        _isManageCategoriesOpen.value = true
+    }
+
+    fun closeManageCategoriesDialog() {
+        _isManageCategoriesOpen.value = false
+    }
+
+    fun createCategory(name: String) {
+        viewModelScope.launch {
+            saveCategoryUseCase(name = name)
+                .onSuccess {
+                    logger.d(TAG, "Category created: ${it.name}")
+                    notificationManager.showSuccess(UiText.Resource(Res.string.category_saved_success))
+                }
+                .onFailure { error ->
+                    logger.e(TAG, "Failed to create category: ${error.message}", error)
+                    notificationManager.showError(UiText.DynamicString(error.message ?: "Erro ao criar categoria"))
+                }
+        }
+    }
+
+    fun renameCategory(categoryId: String, newName: String) {
+        viewModelScope.launch {
+            val previousCategory = uiState.value.filterState.managedCategories.find { it.id == categoryId }
+            saveCategoryUseCase(
+                id = categoryId,
+                name = newName,
+                oldName = previousCategory?.name,
+            ).onSuccess { updated ->
+                logger.d(TAG, "Category renamed to: ${updated.name}")
+                if (previousCategory != null && _selectedCategory.value.equals(previousCategory.name, ignoreCase = true)) {
+                    _selectedCategory.value = updated.name
+                }
+                notificationManager.showSuccess(UiText.Resource(Res.string.category_renamed_success))
+            }.onFailure { error ->
+                logger.e(TAG, "Failed to rename category: ${error.message}", error)
+                notificationManager.showError(UiText.DynamicString(error.message ?: "Erro ao renomear categoria"))
+            }
+        }
+    }
+
+    fun deleteCategory(categoryId: String) {
+        viewModelScope.launch {
+            val targetCategory = uiState.value.filterState.managedCategories.find { it.id == categoryId }
+            if (targetCategory == null) return@launch
+            deleteCategoryUseCase(
+                id = categoryId,
+                categoryName = targetCategory.name,
+            )
+                .onSuccess {
+                    logger.d(TAG, "Category deleted: $categoryId")
+                    if (_selectedCategory.value.equals(targetCategory.name, ignoreCase = true)) {
+                        _selectedCategory.value = null
+                    }
+                    notificationManager.showSuccess(UiText.Resource(Res.string.category_deleted_success))
+                }
+                .onFailure { error ->
+                    logger.e(TAG, "Failed to delete category: ${error.message}", error)
+                    notificationManager.showError(UiText.DynamicString(error.message ?: "Erro ao excluir categoria"))
+                }
+        }
     }
 
     fun onProductSelected(product: CatalogProductUiModel) {

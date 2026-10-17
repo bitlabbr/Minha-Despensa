@@ -202,7 +202,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `expiring items dynamic label calculations for today, tomorrow, future, and past`() = runTest(testDispatcher) {
+    fun `expiring items dynamic label calculations for today and tomorrow and future and past`() = runTest(testDispatcher) {
         // Base date: 2026-10-14
         val todayMillis = LocalDate(2026, 10, 14).atStartOfDayIn(fixedTimeZone).toEpochMilliseconds()
         val tomorrowMillis = LocalDate(2026, 10, 15).atStartOfDayIn(fixedTimeZone).toEpochMilliseconds()
@@ -346,7 +346,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `saveMonthlyBudget updates repository, closes dialog, and updates uiState`() = runTest(testDispatcher) {
+    fun `saveMonthlyBudget updates repository closes dialog and updates uiState`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
         viewModel.uiState.launchIn(backgroundScope)
         testScheduler.advanceUntilIdle()

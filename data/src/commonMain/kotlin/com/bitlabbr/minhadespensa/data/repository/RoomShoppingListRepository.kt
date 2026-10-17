@@ -268,6 +268,7 @@ class RoomShoppingListRepository(
                 logger.d(TAG, "Checkout finalized. [${checkedItems.size}] items processed.")
             }
         }
+        db.invalidationTracker.refreshAsync()
     }
 
     @OptIn(ExperimentalUuidApi::class)

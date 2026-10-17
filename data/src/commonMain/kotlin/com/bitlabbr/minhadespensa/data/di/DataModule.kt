@@ -36,6 +36,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreatePlannedShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.DeleteProductCategoryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.FinalizeShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetMonthlyFinancialSummaryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetPantryTotalValueUseCase
@@ -43,6 +44,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.GetYearlyFinancialSummaryU
 import com.bitlabbr.minhadespensa.core.domain.usecase.RemoveCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SaveProductCategoryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SetMonthlyBudgetUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.UpdatePantryItemUseCase
@@ -79,6 +81,7 @@ val dataModule = module {
     single { get<AppDatabase>().shoppingListDao() }
     single { get<AppDatabase>().budgetDao() }
     single { get<AppDatabase>().movementDao() }
+    single { get<AppDatabase>().categoryDao() }
 
     single<CatalogRepository> {
         RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
@@ -106,6 +109,8 @@ val dataModule = module {
 
     factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }
+    factory { SaveProductCategoryUseCase(catalogRepository = get()) }
+    factory { DeleteProductCategoryUseCase(catalogRepository = get()) }
     factory { AddPantryItemUseCase(pantryRepository = get()) }
     factory { UpdatePantryItemUseCase(pantryRepository = get()) }
     factory { CreateQuickShoppingListUseCase(shoppingListRepository = get()) }

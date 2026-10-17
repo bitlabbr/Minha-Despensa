@@ -44,6 +44,7 @@ fun CatalogCategoriesWidget(
         categories = uiState.filterState.availableCategories,
         selectedCategory = uiState.filterState.selectedCategory,
         onCategorySelected = viewModel::onCategorySelected,
+        onManageCategoriesClick = viewModel::openManageCategoriesDialog,
         isLoading = uiState.listState.isLoading,
         isEmpty = uiState.listState.products.isEmpty(),
         isRootEmpty = uiState.listState.isCatalogEmpty,
@@ -54,6 +55,16 @@ fun CatalogCategoriesWidget(
             products = uiState.listState.products,
             onProductClick = onProductClick,
             onGetProductImage = viewModel::getProductImage,
+        )
+    }
+
+    if (uiState.filterState.isManageCategoriesOpen) {
+        ManageCategoriesDialog(
+            categories = uiState.filterState.managedCategories,
+            onCreateCategory = viewModel::createCategory,
+            onRenameCategory = viewModel::renameCategory,
+            onDeleteCategory = viewModel::deleteCategory,
+            onDismiss = viewModel::closeManageCategoriesDialog,
         )
     }
 }

@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.components.core.chip
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.SelectableChipColors
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 
@@ -64,6 +66,7 @@ fun MinhaDespensaFilterChip(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         },

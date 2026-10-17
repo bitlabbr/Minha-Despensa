@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.data.local.migration
 import androidx.room.migration.Migration
 import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 
 private fun hasColumn(connection: SQLiteConnection, tableName: String, columnName: String): Boolean {
     val stmt = connection.prepare("PRAGMA table_info(`$tableName`)")
@@ -569,6 +570,94 @@ val MIGRATION_1_6 = object : Migration(1, 6) {
     }
 }
 
+val MIGRATION_7_8 = object : Migration(7, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        if (!tableExists(connection, "product_categories")) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `product_categories` (
+                    `id` TEXT NOT NULL,
+                    `name` TEXT NOT NULL,
+                    `isDefault` INTEGER NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    `isDeleted` INTEGER NOT NULL,
+                    PRIMARY KEY(`id`)
+                )
+                """.trimIndent()
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_product_categories_name` ON `product_categories` (`name`)")
+
+            CoreConstants.CatalogCategories.DEFAULT_CATEGORIES.forEachIndexed { index, categoryName ->
+                val escapedName = categoryName.replace("'", "''")
+                connection.execSQL(
+                    """
+                    INSERT OR IGNORE INTO `product_categories` (`id`, `name`, `isDefault`, `updatedAt`, `isDeleted`)
+                    VALUES ('default_category_$index', '$escapedName', 1, 1000, 0)
+                    """.trimIndent()
+                )
+            }
+
+            if (tableExists(connection, "catalog_products") && hasColumn(connection, "catalog_products", "category")) {
+                connection.execSQL(
+                    """
+                    INSERT OR IGNORE INTO `product_categories` (`id`, `name`, `isDefault`, `updatedAt`, `isDeleted`)
+                    SELECT 'custom_category_' || LOWER(HEX(RANDOMBLOB(8))), TRIM(`category`), 0, MAX(`updatedAt`), 0
+                    FROM `catalog_products`
+                    WHERE `isDeleted` = 0
+                      AND TRIM(`category`) != ''
+                      AND LOWER(TRIM(`category`)) NOT IN (
+                          SELECT LOWER(TRIM(`name`)) FROM `product_categories`
+                      )
+                    GROUP BY LOWER(TRIM(`category`))
+                    """.trimIndent()
+                )
+            }
+        }
+    }
+}
+
+val MIGRATION_6_8 = object : Migration(6, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_6_7.migrate(connection)
+        MIGRATION_7_8.migrate(connection)
+    }
+}
+
+val MIGRATION_5_8 = object : Migration(5, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_5_7.migrate(connection)
+        MIGRATION_7_8.migrate(connection)
+    }
+}
+
+val MIGRATION_4_8 = object : Migration(4, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_4_7.migrate(connection)
+        MIGRATION_7_8.migrate(connection)
+    }
+}
+
+val MIGRATION_3_8 = object : Migration(3, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_3_7.migrate(connection)
+        MIGRATION_7_8.migrate(connection)
+    }
+}
+
+val MIGRATION_2_8 = object : Migration(2, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_2_7.migrate(connection)
+        MIGRATION_7_8.migrate(connection)
+    }
+}
+
+val MIGRATION_1_8 = object : Migration(1, 8) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_1_7.migrate(connection)
+        MIGRATION_7_8.migrate(connection)
+    }
+}
+
 val ALL_MIGRATIONS = arrayOf(
     MIGRATION_1_2,
     MIGRATION_2_3,
@@ -589,5 +678,12 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_4_7,
     MIGRATION_3_7,
     MIGRATION_2_7,
-    MIGRATION_1_7
+    MIGRATION_1_7,
+    MIGRATION_7_8,
+    MIGRATION_6_8,
+    MIGRATION_5_8,
+    MIGRATION_4_8,
+    MIGRATION_3_8,
+    MIGRATION_2_8,
+    MIGRATION_1_8,
 )

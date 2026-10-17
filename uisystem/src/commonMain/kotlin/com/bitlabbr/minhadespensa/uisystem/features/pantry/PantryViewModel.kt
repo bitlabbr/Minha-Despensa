@@ -65,10 +65,13 @@ class PantryViewModel(
     val uiState: StateFlow<PantryUiState> = combine(
         pantryRepository.getAllActivePantryItemsWithCategory(),
         pantryRepository.getExpiringPantryItems(EXPIRATION_THRESHOLD_DAYS),
-        catalogRepository.getAllActiveProducts(),
+        combine(
+            catalogRepository.getAllActiveProducts(),
+            catalogRepository.getCategories(),
+        ) { products, categories -> products to categories },
         combine(_searchQuery, _selectedCategory) { query, category -> query to category },
         _activeSubFlow,
-    ) { allItems, expiringItems, catalogProducts, (query, selectedCategory), subFlow ->
+    ) { allItems, expiringItems, (catalogProducts, repoCategories), (query, selectedCategory), subFlow ->
 
         val catalogMap = catalogProducts.associateBy { it.id }
         val allUiItems = aggregatePantryItems(allItems, catalogMap)
@@ -79,8 +82,14 @@ class PantryViewModel(
             "uiState recomputed: allItems=${allItems.size}, allUiItems=${allUiItems.size}, expiring=${expiringItems.size}, query='$query', category=$selectedCategory"
         )
 
+        val baseCategories = if (repoCategories.isNotEmpty()) {
+            repoCategories.map { it.trim() }
+        } else {
+            CoreConstants.CatalogCategories.DEFAULT_CATEGORIES
+        }
+
         val dynamicCategories =
-            (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allUiItems.map { it.category.trim() })
+            (baseCategories + allUiItems.map { it.category.trim() })
                 .filter { it.isNotBlank() }
                 .distinct()
                 .sorted()
