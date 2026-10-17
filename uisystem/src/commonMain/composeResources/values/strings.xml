@@ -306,7 +306,7 @@
     <string name="product_details_notes_label">Observações</string>
     <string name="product_details_no_notes">Nenhuma observação informada</string>
     <string name="product_details_price_variation_title">Variação de Preço</string>
-    <string name="product_details_price_variation_desc">%1$s%% de variação entre menor e maior</string>
+    <string name="product_details_price_variation_desc">%1$s% de variação entre menor e maior</string>
     <string name="product_details_price_difference">Diferença de %1$s</string>
     <string name="product_details_price_single_recorded">Preço único registrado</string>
     <string name="product_details_price_purchases_title">Compras Registradas</string>
@@ -441,7 +441,7 @@
     <string name="category_manage_delete_dialog_title">Excluir Categoria?</string>
     <string name="category_manage_delete_dialog_desc">Tem certeza de que deseja excluir '%1$s'? Os produtos vinculados serão movidos para 'Outros'.</string>
     <string name="category_manage_delete_confirm_button">Sim, Excluir</string>
-    <string name="category_dropdown_create_new">+ Nova categoria...</string>
+    <string name="category_dropdown_create_new">Nova categoria</string>
     <string name="category_create_dialog_title">Nova Categoria</string>
     <string name="category_create_dialog_desc">Informe o nome da nova categoria para seus produtos.</string>
     <string name="category_create_save_button">Criar Categoria</string>

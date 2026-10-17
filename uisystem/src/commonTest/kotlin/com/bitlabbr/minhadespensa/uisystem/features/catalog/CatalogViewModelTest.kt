@@ -200,7 +200,7 @@ class CatalogViewModelTest {
     }
 
     @Test
-    fun `saveProduct should persist product via SaveCatalogProductUseCase, close sheet, and emit success notification`() = runTest(testDispatcher) {
+    fun `saveProduct should persist product via SaveCatalogProductUseCase close sheet and emit success notification`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 
         notificationManager.notifications.test {

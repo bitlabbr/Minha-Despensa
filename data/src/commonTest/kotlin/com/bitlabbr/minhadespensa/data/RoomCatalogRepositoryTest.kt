@@ -1131,6 +1131,51 @@ class RoomCatalogRepositoryTest : BaseTest() {
 
     @OptIn(ExperimentalUuidApi::class)
     @Test
+    fun `should reactively emit category updates via getAllActiveCategories and getCategories`() = runTest {
+        val prod = createDummyProduct(name = "Sabão em Pó", category = "Limpeza Pesada")
+        catalogRepository.insertProduct(prod, null)
+
+        catalogRepository.getAllActiveCategories().test {
+            val initial = awaitItem()
+            val cat = com.bitlabbr.minhadespensa.core.domain.model.ProductCategory(
+                id = Uuid.random().toString(),
+                name = "Limpeza Pesada",
+                isDefault = false,
+                updatedAt = getCurrentTime(),
+                isDeleted = false,
+            )
+            catalogRepository.saveCategory(cat)
+            val updated = awaitItem()
+            assertTrue(updated.any { it.name == "Limpeza Pesada" })
+
+            catalogRepository.renameCategory(
+                id = cat.id,
+                oldName = "Limpeza Pesada",
+                newName = "Super Limpeza",
+                updatedAt = getCurrentTime(),
+            )
+            val renamed = awaitItem()
+            assertTrue(renamed.any { it.name == "Super Limpeza" })
+            assertFalse(renamed.any { it.name == "Limpeza Pesada" })
+
+            catalogRepository.deleteCategory(
+                id = cat.id,
+                categoryName = "Super Limpeza",
+                fallbackCategory = "Outros",
+                updatedAt = getCurrentTime(),
+            )
+            val deleted = awaitItem()
+            assertFalse(deleted.any { it.name == "Super Limpeza" })
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        val updatedProd = catalogRepository.getProductById(prod.id).first()!!
+        assertEquals("Outros", updatedProd.category)
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    @Test
     fun `renameCategory should update category entity and cascade new name and updatedAt to active products`() = runTest {
         val now = getCurrentTime()
         val catId = Uuid.random().toString()

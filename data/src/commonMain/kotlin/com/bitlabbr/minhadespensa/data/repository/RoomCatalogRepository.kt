@@ -269,6 +269,18 @@ class RoomCatalogRepository(
 
         val normalizedTarget = trimmedName.normalizeForSearch()
         val allExisting = categoryDao.getAllSnapshot()
+        val activeMatch = allExisting.firstOrNull {
+            !it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
+        }
+        if (activeMatch != null) {
+            categoryDao.insertOrUpdate(
+                activeMatch.copy(
+                    name = trimmedName,
+                    updatedAt = maxOf(category.updatedAt, activeMatch.updatedAt),
+                )
+            )
+            return
+        }
         val matchingDeleted = allExisting.firstOrNull {
             it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
         }
@@ -307,20 +319,21 @@ class RoomCatalogRepository(
 
         db.useWriterConnection { transactor ->
             transactor.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
-                val existing = categoryDao.findById(id)
-                    ?: categoryDao.getAllSnapshot().firstOrNull {
-                        !it.isDeleted && it.name.normalizeForSearch() == normalizedOld
-                    }
+                val matchingCategories = categoryDao.getAllSnapshot().filter {
+                    it.id == id || (!it.isDeleted && it.name.normalizeForSearch() == normalizedOld)
+                }
 
-                if (existing != null) {
-                    if (existing.updatedAt <= updatedAt) {
-                        categoryDao.insertOrUpdate(
-                            existing.copy(
-                                name = trimmedNew,
-                                isDeleted = false,
-                                updatedAt = updatedAt,
+                if (matchingCategories.isNotEmpty()) {
+                    matchingCategories.forEach { cat ->
+                        if (cat.updatedAt <= updatedAt) {
+                            categoryDao.insertOrUpdate(
+                                cat.copy(
+                                    name = trimmedNew,
+                                    isDeleted = false,
+                                    updatedAt = updatedAt,
+                                )
                             )
-                        )
+                        }
                     }
                 } else {
                     categoryDao.insertOrUpdate(
@@ -347,6 +360,7 @@ class RoomCatalogRepository(
                     }
             }
         }
+        db.invalidationTracker.refreshAsync()
     }
 
     override suspend fun deleteCategory(
@@ -390,6 +404,7 @@ class RoomCatalogRepository(
                     }
             }
         }
+        db.invalidationTracker.refreshAsync()
     }
 
     private fun validateCategory(id: String, name: String, updatedAt: Long) {
