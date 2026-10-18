@@ -25,8 +25,10 @@ package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
@@ -51,7 +54,6 @@ import minhadespensa.uisystem.generated.resources.home_financial_dialog_input_pl
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_save
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_title
 import org.jetbrains.compose.resources.stringResource
-import kotlin.math.roundToLong
 
 @Composable
 fun SetMonthlyBudgetDialog(
@@ -62,15 +64,18 @@ fun SetMonthlyBudgetDialog(
     isSaving: Boolean = false,
 ) {
     var budgetText by remember(currentBudgetInCents) {
-        mutableStateOf(currentBudgetInCents?.formatPrice() ?: "")
+        mutableStateOf(
+            if (currentBudgetInCents != null && currentBudgetInCents > 0L) {
+                currentBudgetInCents.formatPrice(includeCurrencySymbol = true)
+            } else {
+                ""
+            }
+        )
     }
 
     val parsedCents = remember(budgetText) {
-        budgetText.trim()
-            .replace(".", "")
-            .replace(",", ".")
-            .toDoubleOrNull()
-            ?.let { (it * 100).roundToLong() }
+        val digits = budgetText.filter { it.isDigit() }
+        digits.toLongOrNull()
     }
 
     MinhaDespensaDialog(
@@ -101,15 +106,26 @@ fun SetMonthlyBudgetDialog(
                     },
                 )
             }
+            Spacer(Modifier.padding(vertical = MinhaDespensaTheme.dimens.paddingSmall))
         },
     ) {
         MinhaDespensaTextField(
             value = budgetText,
-            onValueChange = { budgetText = it },
+            textStyle = MinhaDespensaTheme.typography.bodyLarge,
+            onValueChange = { input ->
+                val digits = input.filter { it.isDigit() }
+                budgetText = when {
+                    digits.isEmpty() || digits.all { it == '0' } -> ""
+                    else -> {
+                        val cents = digits.take(11).toLongOrNull() ?: 0L
+                        cents.formatPrice(includeCurrencySymbol = true)
+                    }
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             label = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_label)) },
             placeholder = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_placeholder)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             singleLine = true,
         )
     }

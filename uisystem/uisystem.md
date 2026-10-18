@@ -143,7 +143,7 @@ The home screen connects the user's live inventory, movement ledger, and monthly
 - **Financial Analytics Dialog (`FinancialAnalyticsDialog`):** Interactive modal showcasing pantry inventory valuation (`StockValueCard`), annual indicators (total year spent, monthly average, weighted unit item price), and a 12-month evolution list with budget status badges ("Estourado", "Na meta", "Sem meta") and progress bars.
 - **Pantry Stock Valuation (`HomePantryStockUiModel`):** Aggregates the total monetary value of all active pantry items (`sum(quantity * unitPriceInCents)`), formatted currency strings, item count with price, and average unit price.
 - **Yearly Analytics (`HomeYearlyAnalyticsUiModel`):** Prepares 12 monthly bars comparing actual spend vs. budget ceiling, total annual spending, average monthly spend, and weighted average item/purchase price.
-- **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`.
+- **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`. Supports live real-time currency formatting mask with thousand separators and currency symbol (`R$ 1.500,00`).
 - **Expiring Soon (`ExpiringSoonWidget`):** Monitors pantry stock with dynamic labels ("Vence hoje", "Vence amanhã", "Vence em X dias", "Vencido há X dias") with gauge urgency and an elegant empty state ("Tudo em dia na sua despensa!").
 - **Consumption Trends (`ConsumptionTrendWidget`):** Highlights top consumed products during the current month with unit resolution and empty state.
 

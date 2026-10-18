@@ -172,7 +172,7 @@ class HomeViewModelTest {
         assertEquals(100000L, state.financialSummary.budgetInCents)
         assertEquals(42050L, state.financialSummary.totalSpentInCents)
         assertEquals("R$ 420,50", state.financialSummary.currentConsumption)
-        assertEquals("R$ 1000,00", state.financialSummary.budget)
+        assertEquals("R$ 1.000,00", state.financialSummary.budget)
         assertEquals(0.4205f, state.financialSummary.consumptionProgress, 0.001f)
     }
 
@@ -364,7 +364,7 @@ class HomeViewModelTest {
         assertFalse(state.isSetBudgetDialogOpen)
         assertTrue(state.financialSummary.hasBudget)
         assertEquals(150000L, state.financialSummary.budgetInCents)
-        assertEquals("R$ 1500,00", state.financialSummary.budget)
+        assertEquals("R$ 1.500,00", state.financialSummary.budget)
     }
 
     @Test
@@ -381,7 +381,24 @@ class HomeViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.financialSummary.hasBudget)
         assertEquals(125050L, state.financialSummary.budgetInCents)
-        assertEquals("R$ 1250,50", state.financialSummary.budget)
+        assertEquals("R$ 1.250,50", state.financialSummary.budget)
+    }
+
+    @Test
+    fun `saveMonthlyBudgetText parses currency string with symbol correctly`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.financialSummary.hasBudget)
+
+        viewModel.saveMonthlyBudgetText("R$ 1.500,00")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.financialSummary.hasBudget)
+        assertEquals(150000L, state.financialSummary.budgetInCents)
+        assertEquals("R$ 1.500,00", state.financialSummary.budget)
     }
 
     @Test
