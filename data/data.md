@@ -144,6 +144,10 @@ Centralized and decoupled from repositories:
     *   `ShoppingList.toEntity()`.
     *   `ShoppingItemEntity.toDomain()`.
     *   `ShoppingItem.toEntity()`.
+*   **`InvoiceMapper.kt`**:
+    *   `InvoiceResponseDto.toDomain()`.
+    *   `InvoiceItemDto.toDomain()`.
+    *   `parseMeasureUnit(rawUnit: String?)`: Maps Brazilian invoice unit representations (e.g. `KG`, `G`, `LT`, `ML`, `CX`, `PCT`, `UN`) to domain `MeasureUnit`.
 
 ---
 
@@ -157,7 +161,7 @@ Centralized and decoupled from repositories:
     *   `insertOrUpdate` (`REPLACE`), `getBudget` (reactive Flow), `findBudget` (suspend), `getBudgetsForYear` (ordered by month ASC).
     *   `getMonthlyExpenses`, `findMonthlyExpenses` (suspend).
 *   **`CatalogProductDao`**:
-    *   `findByEan`, `findById`, `getAllActive`, `getAllActiveSnapshot`, `searchByNameOrBrand` (ordered by name ASC).
+    *   `findByEan`, `findSnapshotByEan`, `findById`, `getAllActive`, `getAllActiveSnapshot`, `searchByNameOrBrand` (ordered by name ASC).
     *   `insert` (`ABORT`), `forceUpdateForProduct`, `updateProductIfNewer` (LWW with all product fields including notes), `updateCategoryById`, `markAsDeleted`, `deleteProductById`, `exists`.
 *   **`ProductCategoryDao`**:
     *   `getAllActive` (ordered by `name COLLATE NOCASE ASC`), `getAllActiveSnapshot`, `getAllSnapshot`, `findById`, `countAll`.
@@ -208,6 +212,10 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   `setBudgetForMonth`: Validates year, month, and non-negative budget value, persisting via `budgetDao.insertOrUpdate` with current epoch timestamp.
     *   `getMonthlyExpenses`: Emits total cents spent in the month using reactive Flow aggregation of completed shopping lists + pantry direct entries, with `distinctUntilChanged` protection.
     *   `getYearlySummary`: Combines 12 individual reactive monthly expense flows with the annual budgets query into an immutable, reactive list of 12 `MonthlyFinancialSummary` items ordered from January (month 1) to December (month 12).
+*   **`RoomInvoiceRepository`**:
+    *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase` and logger as private members.
+    *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice`.
+    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, persists `PantryItemEntity` stock, creates `PriceEntryEntity` price history for priced items, and registers audit ledger `PantryMovementEntity` with `ENTRY_PURCHASE`.
 
 ---
 
@@ -216,8 +224,9 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
 *   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`.
-*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
-*   Use Case Factories: Registers all 19 domain use cases (`SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`).
+*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
+*   Networking & Invoice: `InvoiceServerConfig` (configurable base URL), `HttpClient` (with `ContentNegotiation` and `json()`), and `InvoiceRemoteDataSource` (`KtorInvoiceRemoteDataSource`).
+*   Use Case Factories: Registers all 21 domain use cases (`SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`).
 
 ---
 
@@ -232,6 +241,9 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`RoomPantryRepositoryTest`**: Tests pantry joins with categories, expiration filtering, single/batch consumption deductions, and negative balance guards.
 *   **`RoomPriceRepositoryTest`**: Tests price history queries, latest price resolution, LWW conflict handling, and store name validations.
 *   **`RoomShoppingListRepositoryTest`**: Tests shopping lists, item management, scratchpad items, LWW updates, and checkout (`finalizePurchase`).
+*   **`RoomInvoiceRepositoryTest`**: Tests invoice QR code parsing delegation and atomic bulk pantry import with SQLite in-memory: creating new catalog products, reusing existing products by matching EAN or name, inserting pantry items, recording latest price history and purchase movements in `pantry_movements`.
+*   **`KtorInvoiceRemoteDataSourceTest`**: Tests HTTP JSON request payload serialization, endpoint routing, and error status handling using Ktor's `MockEngine`.
+*   **`InvoiceMapperTest`**: Tests mapping between remote DTOs and domain models (`Invoice`, `InvoiceItem`) and measurement unit normalization (`parseMeasureUnit`).
 *   **`DataConsistencyTest`**: Cross-repository integration tests validating database cascade deletions, foreign key enforcement, and end-to-end multi-table transactions.
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
 *   **`AndroidImageProcessorTest` & `IosImageProcessorTest`**: Platform-specific thumbnail processing tests.

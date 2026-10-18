@@ -29,6 +29,7 @@ plugins {
     alias(libs.plugins.androidLibrary)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -54,14 +55,21 @@ kotlin {
             api(libs.room.runtime)
             api(libs.sqlite.bundled)
 
-            // Coroutines
+            // Coroutines & Serialization
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
+
+            // Ktor Client
+            implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
         }
 
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
             implementation(libs.turbine)
+            implementation(libs.ktor.client.mock)
         }
 
         val androidUnitTest by getting {
