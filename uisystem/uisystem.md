@@ -8,7 +8,7 @@ The `:uisystem` module is a Compose Multiplatform (Android & iOS) design system 
 2. **Domain-Specific Molecules & Sheets:** Reusable cards, filter bars, camera-driven barcode scanners, and a unified product registration sheet.
 3. **Feature Screens & State Machines:** Reactive screens managing pantry inventory, product catalog, product details & price history, quick & planned shopping lists, and a live in-store shopping assistant.
 4. **App Notification Manager:** Decoupled transient notifications via `AppNotificationManager` and `MinhaDespensaSnackbar`.
-5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (149 tests).
+5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (169 tests).
 
 ---
 
@@ -145,7 +145,13 @@ The home screen connects the user's live inventory, movement ledger, and monthly
 - **Yearly Analytics (`HomeYearlyAnalyticsUiModel`):** Prepares 12 monthly bars comparing actual spend vs. budget ceiling, total annual spending, average monthly spend, and weighted average item/purchase price.
 - **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`. Supports live real-time currency formatting mask with thousand separators and currency symbol (`R$ 1.500,00`).
 - **Expiring Soon (`ExpiringSoonWidget`):** Monitors pantry stock with dynamic labels ("Vence hoje", "Vence amanhã", "Vence em X dias", "Vencido há X dias") with gauge urgency and an elegant empty state ("Tudo em dia na sua despensa!").
-- **Consumption Trends (`ConsumptionTrendWidget`):** Highlights top consumed products during the current month with unit resolution and empty state.
+### 4.8. NFC-e Invoice QR Code Scanning & Bulk Import
+Enables adding items to the pantry in bulk by scanning state tax invoice QR Codes (SEFAZ-PE / NFC-e):
+- **Entry Point (`AddPantryItemOptionsSheet`):** Adds a dedicated "Escanear Nota Fiscal (QR Code)" action option.
+- **Scanner Modal (`PantrySubFlow.InvoiceScanner`):** Configures `BarcodeScannerModal` with a square reticle (`isSquareReticle = true`) and dedicated instruction text ("Aponte para o QR Code da Nota Fiscal").
+- **Backend Resolution (`ParseInvoiceQrCodeUseCase`):** Consults the dedicated backend service to parse the HTML and extract items with name, EAN, quantity, unit price, and measure unit.
+- **Selective Review Sheet (`InvoiceReviewBottomSheet` / `InvoiceItemRow`):** Displays store name, total items, dynamic total price (cents-accurate), and interactive checkboxes allowing the user to uncheck non-pantry products (such as shopping bags) before finalizing import.
+- **Atomic Bulk Import (`ImportInvoiceToPantryUseCase`):** Automatically registers missing catalog products, creates pantry stock batches, logs unit price history, and creates purchase movement ledger entries in a single database transaction.
 
 ---
 
@@ -156,7 +162,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
   - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, logger, notification manager.
-  - `PantryViewModel`: Injects pantry & catalog repositories, use cases, logger, notification manager.
+  - `PantryViewModel`: Injects pantry & catalog repositories, use cases (`CheckEanStatusUseCase`, `AddPantryItemUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`), logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
   - `PlannedListViewModel`: Injects `CreatePlannedShoppingListUseCase`, catalog repository, logger.
@@ -188,7 +194,7 @@ All unit tests reside in `uisystem/src/commonTest` and execute across multiplatf
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
 | `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, duplicate item detection and consolidation, barcode scanner subflows, item replacement, purchase finalization. |
 | `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case, custom category creation, renaming (with active filter & product cascade), and deletion (with fallback to `"Outros"`). |
-| `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
+| `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, invoice QR code scanning, parsing, selective item toggling, bulk pantry import, notification dispatch. |
 | `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, batch price mapping and calculation, in-place price recalculation (min/max/average), checkout stock price display, batch editing subflow and updates, add to shopping list. |
 
 ### Running the Tests

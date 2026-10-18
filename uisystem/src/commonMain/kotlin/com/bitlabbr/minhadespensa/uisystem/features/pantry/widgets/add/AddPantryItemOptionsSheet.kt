@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.DocumentScanner
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -51,6 +52,7 @@ fun AddPantryItemOptionsSheet(
     onScanBarcode: () -> Unit,
     onSearchCatalog: () -> Unit,
     onCreateProduct: () -> Unit,
+    onScanInvoice: () -> Unit = {},
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -111,6 +113,42 @@ fun AddPantryItemOptionsSheet(
                         )
                         MinhaDespensaText(
                             text = stringResource(Res.string.pantry_add_option_scan_desc),
+                            fontStyle = typography.bodySmall,
+                            color = colors.onSecondaryContainer.copy(alpha = 0.65f),
+                        )
+                    }
+                }
+            }
+
+            // Option: Ler Nota Fiscal (QR Code)
+            ItemContainerGlassCard(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(dimens.cardCorner * 0.6f))
+                    .clickable(onClick = onScanInvoice),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(dimens.paddingMedium),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(dimens.paddingMedium),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.QrCodeScanner,
+                        contentDescription = null,
+                        tint = colors.primary,
+                        modifier = Modifier.size(32.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.pantry_add_option_invoice),
+                            fontStyle = typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colors.onSecondaryContainer,
+                        )
+                        MinhaDespensaText(
+                            text = stringResource(Res.string.pantry_add_option_invoice_desc),
                             fontStyle = typography.bodySmall,
                             color = colors.onSecondaryContainer.copy(alpha = 0.65f),
                         )
