@@ -7,8 +7,8 @@ This document provides an in-depth analysis of the `:data` module, outlining its
 The `:data` module in **Minha Despensa** is a Kotlin Multiplatform (KMP) library responsible for data persistence and local storage. It acts as the single source of truth for all local data, implementing the repository interfaces declared in `:core:domain`.
 
 Key capabilities:
-*   **Offline-First Local Storage**: Uses Google Room Multiplatform (Version 8) backed by SQLite (`BundledSQLiteDriver`).
-*   **Migration Pipeline**: Full schema evolution and migration strategy supporting incremental and multi-version jumps (`1->2` through `7->8`, and direct jumps `1->8` through `6->8`).
+*   **Offline-First Local Storage**: Uses Google Room Multiplatform (Version 9) backed by SQLite (`BundledSQLiteDriver`).
+*   **Migration Pipeline**: Full schema evolution and migration strategy supporting incremental and multi-version jumps (`1->2` through `8->9`, and direct jumps `1->9` through `7->9`).
 *   **Conflict Resolution**: Enforces Last-Write-Wins (LWW) conflict resolution on updates via SQL timestamp comparison (`updated_at < :updatedAt`).
 *   **Atomic Transactions**: Protects multi-table operations (such as product creation with media, category cascading renames/deletes, pantry consumption batches, and shopping checkout) using Room's `useWriterConnection { conn -> conn.withTransaction(IMMEDIATE) { ... } }`.
 *   **Clean Architecture Separation**: Pure separation between Room database entities and core domain models via dedicated mappers in `com.bitlabbr.minhadespensa.data.local.mapper`.
@@ -21,13 +21,13 @@ Key capabilities:
 data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/
 ├── di/                     # Koin DataModule dependency injection
 ├── local/
-│   ├── AppDatabase.kt      # Main Room database declaration (Version 8)
+│   ├── AppDatabase.kt      # Main Room database declaration (Version 9)
 │   ├── converter/          # Room TypeConverters (Instant, MeasureUnit)
 │   ├── dao/                # Room Data Access Objects (DAOs)
 │   ├── dto/                # Room query projection DTOs (e.g. joins)
 │   ├── entity/             # Room SQLite table entities
 │   ├── mapper/             # Bidirectional Entity <-> Domain mappers
-│   └── migration/          # Room Migration definitions (1->2..7->8, direct jumps to v8)
+│   └── migration/          # Room Migration definitions (1->2..8->9, direct jumps to v9)
 ├── repository/             # Room repository implementations
 └── util/                   # Common utilities (ImageProcessor expect interface)
 ```
@@ -84,8 +84,8 @@ Platform-specific source sets:
 *   **`MonthlyBudgetEntity`** (`monthly_budgets`):
     *   *Columns*: `year` (PK), `month` (PK), `budgetInCents`, `updatedAt`. Composite primary key `(year, month)`.
 *   **`PantryMovementEntity`** (`pantry_movements`):
-    *   *Columns*: `id` (PK), `pantry_item_id`, `productId` (FK to `catalog_products.id` on delete cascade), `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `timestamp`, `store_or_reason`, `is_deleted`.
-    *   *Indices*: `productId`, `(type, timestamp)`, `timestamp`.
+    *   *Columns*: `id` (PK), `pantry_item_id`, `productId` (FK to `catalog_products.id` on delete cascade), `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `updatedAt`, `store_or_reason`, `is_deleted`.
+    *   *Indices*: `productId`, `(type, updatedAt)`, `updatedAt`.
 
 ---
 
@@ -104,7 +104,9 @@ Platform-specific source sets:
     *   Creates audit and expense ledger table `pantry_movements` with indexes on `(type, timestamp)`, `(productId)` and `timestamp`.
 *   **`MIGRATION_7_8` (`migrateToSchemaV8`)**:
     *   Creates `product_categories` table (`id`, `name`, `is_default`, `updated_at`, `is_deleted`), creates `index_product_categories_name`, seeds the 9 default categories with deterministic IDs (`00000000-0000-0000-0000-000000000001`..`009`), and backfills any custom categories already present on active `catalog_products`.
-*   **Direct Upgrade Paths**: `MIGRATION_1_7`..`MIGRATION_5_7` and `MIGRATION_1_8`..`MIGRATION_6_8`.
+*   **`MIGRATION_8_9`**:
+    *   Standardizes `pantry_movements` to use `updatedAt` instead of `timestamp` (matching all CRDT entities), renames column `timestamp` to `updatedAt`, drops old indices and recreates `index_pantry_movements_type_updatedAt` and `index_pantry_movements_updatedAt`.
+*   **Direct Upgrade Paths**: `MIGRATION_1_7`..`MIGRATION_5_7`, `MIGRATION_1_8`..`MIGRATION_6_8`, and `MIGRATION_1_9`..`MIGRATION_7_9`.
 *   **`ALL_MIGRATIONS`**: Exported migration array consumed by Koin's database builder.
 
 ---
@@ -222,7 +224,7 @@ Configures singletons and use case factories via Koin:
 ## 5. Testing & Verification
 
 The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/` using an in-memory SQLite database (`createInMemoryDatabase(getTestDatabaseBuilder())`):
-*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v7 to v8, verifying table creation (`monthly_budgets`, `pantry_movements`, `product_categories`), composite keys, indices, and data preservation.
+*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v8 to v9, verifying table creation (`monthly_budgets`, `pantry_movements`, `product_categories`), column evolution (`updatedAt`), composite keys, indices, and data preservation.
 *   **`PantryMovementDaoTest`**: Tests CRUD operations for `PantryMovementEntity`, timestamp range filtering, top consumed products aggregation, and reactive monthly expense tracking.
 *   **`MonthlyBudgetDaoTest`**: Tests CRUD operations for `MonthlyBudgetEntity`, composite key updates, annual queries, and reactive monthly expense aggregation joins across shopping lists, items, and pantry entries.
 *   **`RoomBudgetRepositoryTest`**: Tests domain boundary enforcement, monthly budget retrieval/updates, reactive expense aggregation, and full 12-month annual summaries.
