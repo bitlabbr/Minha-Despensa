@@ -122,6 +122,7 @@ val dataModule = module {
 
     single {
         HttpClient {
+            followRedirects = true
             install(ContentNegotiation) {
                 json(
                     Json {
