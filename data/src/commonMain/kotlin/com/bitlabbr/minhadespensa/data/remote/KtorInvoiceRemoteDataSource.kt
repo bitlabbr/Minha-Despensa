@@ -46,7 +46,14 @@ class KtorInvoiceRemoteDataSource(
         }
 
         if (!response.status.isSuccess()) {
-            throw IllegalStateException("Servidor retornou erro ${response.status.value}: ${response.status.description}")
+            val serverMessage = runCatching {
+                val rawBody = response.body<String>()
+                val match = Regex("\"message\"\\s*:\\s*\"([^\"]+)\"").find(rawBody)
+                match?.groupValues?.getOrNull(1)
+            }.getOrNull()
+
+            val errorMessage = serverMessage ?: "Servidor retornou erro ${response.status.value}: ${response.status.description}"
+            throw IllegalStateException(errorMessage)
         }
 
         return response.body<InvoiceResponseDto>()

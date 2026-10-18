@@ -205,7 +205,12 @@ class PantryViewModel(
             }.onFailure { error ->
                 logger.e(TAG, "Falha ao consultar nota fiscal: ${error.message}", error)
                 _activeSubFlow.value = null
-                notificationManager.showError(UiText.Resource(Res.string.invoice_parse_error))
+                val userMessage = error.message?.takeIf { it.isNotBlank() }
+                if (userMessage != null) {
+                    notificationManager.showError(UiText.DynamicString(userMessage))
+                } else {
+                    notificationManager.showError(UiText.Resource(Res.string.invoice_parse_error))
+                }
             }
         }
     }
