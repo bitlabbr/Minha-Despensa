@@ -44,7 +44,7 @@ class FakePantryMovementRepository : PantryMovementRepository {
 
     override fun getMovementsForPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<PantryMovement>> {
         return movements.map { list ->
-            list.filter { it.timestamp in startTimestamp..endTimestamp }
+            list.filter { it.updatedAt in startTimestamp..endTimestamp }
         }
     }
 
@@ -58,7 +58,7 @@ class FakePantryMovementRepository : PantryMovementRepository {
                 custom.take(limit)
             } else {
                 movements.value
-                    .filter { it.timestamp in startTimestamp..endTimestamp && it.type == MovementType.CONSUMPTION }
+                    .filter { it.updatedAt in startTimestamp..endTimestamp && it.type == MovementType.CONSUMPTION }
                     .groupBy { it.productId }
                     .mapValues { entry -> entry.value.sumOf { it.quantity } }
                     .toList()

@@ -562,7 +562,7 @@ class HomeViewModelTest {
                 type = MovementType.ENTRY_PURCHASE,
                 quantity = 2.0,
                 unitPriceInCents = 500L,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
             PantryMovement(
                 id = "m-2",
@@ -570,14 +570,14 @@ class HomeViewModelTest {
                 type = MovementType.ENTRY_MANUAL,
                 quantity = 3.0,
                 unitPriceInCents = 1000L,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
             PantryMovement(
                 id = "m-3",
                 productId = "prod-3",
                 type = MovementType.CONSUMPTION,
                 quantity = 1.0,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
         )
 
