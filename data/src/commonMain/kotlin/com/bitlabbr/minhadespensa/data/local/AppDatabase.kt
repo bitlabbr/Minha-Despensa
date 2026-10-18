@@ -60,7 +60,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
         PantryMovementEntity::class,
         ProductCategoryEntity::class,
     ],
-    version = 8
+    version = 9
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)

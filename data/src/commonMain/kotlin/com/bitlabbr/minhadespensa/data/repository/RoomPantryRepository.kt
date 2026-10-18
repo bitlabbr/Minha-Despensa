@@ -111,7 +111,7 @@ class RoomPantryRepository(
             quantity = item.quantity,
             unitPriceInCents = item.unitPriceInCents,
             totalPriceInCents = item.unitPriceInCents?.let { (item.quantity * it).roundToLong() },
-            timestamp = item.updatedAt,
+            updatedAt = item.updatedAt,
             storeOrReason = "Entrada na Despensa",
             isDeleted = false,
         )
@@ -218,7 +218,7 @@ class RoomPantryRepository(
             quantity = quantityToConsume,
             unitPriceInCents = item.unitPriceInCents,
             totalPriceInCents = null,
-            timestamp = now,
+            updatedAt = now,
             storeOrReason = "Consumo na Despensa",
             isDeleted = false,
         )
@@ -266,7 +266,7 @@ class RoomPantryRepository(
                 quantity = consumption.quantityToConsume,
                 unitPriceInCents = item.unitPriceInCents,
                 totalPriceInCents = null,
-                timestamp = now,
+                updatedAt = now,
                 storeOrReason = "Consumo em Lote",
                 isDeleted = false,
             ).toEntity()

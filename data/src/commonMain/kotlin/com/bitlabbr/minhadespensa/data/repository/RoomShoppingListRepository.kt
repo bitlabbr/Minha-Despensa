@@ -250,7 +250,7 @@ class RoomShoppingListRepository(
                             quantity = item.quantity,
                             unitPriceInCents = item.priceAtTime,
                             totalPriceInCents = item.priceAtTime?.let { (item.quantity * it).roundToLong() },
-                            timestamp = now,
+                            updatedAt = now,
                             storeOrReason = "Compra: ${listWithItems.list.name}",
                             isDeleted = false,
                         )
