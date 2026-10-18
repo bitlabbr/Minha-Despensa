@@ -26,17 +26,17 @@ package com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.invoice
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.invoice.Invoice
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.sheet.MinhaDespensaBottomSheet
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
@@ -54,72 +54,79 @@ fun InvoiceReviewBottomSheet(
     onConfirmImport: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    onToggleAllItems: ((Boolean) -> Unit)? = null,
 ) {
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
 
+    val allSelected = invoice.items.isNotEmpty() && invoice.items.all { it.isSelected }
+
     MinhaDespensaBottomSheet(
         onDismissRequest = onDismiss,
         modifier = modifier,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(dimens.paddingMedium),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                MinhaDespensaText(
-                    text = stringResource(Res.string.invoice_review_title),
-                    fontStyle = typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = colors.onPrimaryContainer,
-                )
-                MinhaDespensaText(
-                    text = stringResource(Res.string.invoice_review_subtitle),
-                    fontStyle = typography.bodySmall,
-                    color = colors.onSecondaryContainer.copy(alpha = 0.7f),
-                )
-            }
-
-            // Store Info & Totals Summary Card
-            SecondaryContainerGlassCard(
-                modifier = Modifier.fillMaxWidth(),
+        header = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = dimens.paddingMedium)
+                    .padding(top = dimens.paddingSmall),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(dimens.paddingMedium),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         MinhaDespensaText(
-                            text = invoice.storeName,
+                            text = stringResource(Res.string.invoice_review_title),
                             fontStyle = typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
-                            color = colors.onSecondaryContainer,
+                            color = colors.onPrimaryContainer,
                         )
 
-                        invoice.emissionDate?.let { date ->
-                            MinhaDespensaText(
-                                text = date,
-                                fontStyle = typography.bodySmall,
-                                color = colors.onSecondaryContainer.copy(alpha = 0.6f),
-                            )
+                        val formattedDate = formatEmissionDate(invoice.emissionDate)
+                        val storeDetails = buildString {
+                            append(invoice.storeName)
+                            if (!formattedDate.isNullOrBlank()) {
+                                append(" • ")
+                                append(formattedDate)
+                            }
                         }
+
+                        MinhaDespensaText(
+                            text = storeDetails,
+                            fontStyle = typography.bodySmall,
+                            color = colors.onSecondaryContainer.copy(alpha = 0.7f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
 
-                    HorizontalDivider(color = colors.outline.copy(alpha = 0.2f))
+                    IconButton(
+                        onClick = onDismiss,
+                        enabled = !isImporting,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Close,
+                            contentDescription = stringResource(Res.string.action_cancel),
+                            tint = colors.onSecondaryContainer.copy(alpha = 0.7f),
+                        )
+                    }
+                }
 
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         MinhaDespensaText(
                             text = stringResource(
@@ -128,43 +135,47 @@ fun InvoiceReviewBottomSheet(
                                 invoice.totalSelectedInCents.formatPrice(includeCurrencySymbol = true),
                             ),
                             fontStyle = typography.bodySmall,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
                             color = colors.primary,
                         )
 
                         MinhaDespensaText(
-                            text = stringResource(
-                                Res.string.invoice_review_total_invoice,
-                                invoice.totalInvoiceInCents.formatPrice(includeCurrencySymbol = true),
-                            ),
+                            text = "(${invoice.items.size} itens)",
                             fontStyle = typography.bodySmall,
-                            color = colors.onSecondaryContainer.copy(alpha = 0.7f),
+                            color = colors.onSecondaryContainer.copy(alpha = 0.6f),
                         )
                     }
-                }
-            }
 
-            // Products list
-            LazyColumn(
+                    if (onToggleAllItems != null && invoice.items.isNotEmpty()) {
+                        TextButton(
+                            onClick = { onToggleAllItems(!allSelected) },
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        ) {
+                            MinhaDespensaText(
+                                text = stringResource(
+                                    if (allSelected) Res.string.invoice_review_deselect_all
+                                    else Res.string.invoice_review_select_all
+                                ),
+                                fontStyle = typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colors.primary,
+                            )
+                        }
+                    }
+                }
+
+                HorizontalDivider(
+                    color = colors.outline.copy(alpha = 0.15f),
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        },
+        footer = {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 340.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items(invoice.items, key = { it.id }) { item ->
-                    InvoiceItemRow(
-                        item = item,
-                        onToggleSelect = { isSelected ->
-                            onToggleItem(item.id, isSelected)
-                        },
-                    )
-                }
-            }
-
-            // Action buttons
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = dimens.paddingMedium)
+                    .padding(top = dimens.paddingSmall),
             ) {
                 MinhaDespensaPrimaryButton(
                     text = stringResource(Res.string.invoice_review_action_import, invoice.totalSelectedItems),
@@ -173,20 +184,44 @@ fun InvoiceReviewBottomSheet(
                     isLoading = isImporting,
                     modifier = Modifier.fillMaxWidth(),
                 )
-
-                OutlinedButton(
-                    onClick = onDismiss,
-                    enabled = !isImporting,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(dimens.cardCorner * 0.5f)),
-                ) {
-                    MinhaDespensaText(
-                        text = stringResource(Res.string.pantry_add_option_cancel),
-                        fontStyle = typography.button,
-                    )
-                }
+            }
+        },
+    ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+            contentPadding = PaddingValues(
+                horizontal = dimens.paddingMedium,
+                vertical = dimens.paddingSmall,
+            ),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items(invoice.items, key = { it.id }) { item ->
+                InvoiceItemRow(
+                    item = item,
+                    onToggleSelect = { isSelected ->
+                        onToggleItem(item.id, isSelected)
+                    },
+                )
             }
         }
+    }
+}
+
+private fun formatEmissionDate(raw: String?): String? {
+    if (raw.isNullOrBlank()) return null
+    return try {
+        val dt = raw.take(19)
+        if (dt.contains("T")) {
+            val parts = dt.split("T")
+            val dateParts = parts[0].split("-")
+            val timeParts = parts.getOrNull(1)?.take(5)
+            if (dateParts.size == 3) {
+                "${dateParts[2]}/${dateParts[1]}/${dateParts[0]}" + if (timeParts != null) " $timeParts" else ""
+            } else dt
+        } else dt
+    } catch (_: Exception) {
+        raw
     }
 }

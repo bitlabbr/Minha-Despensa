@@ -227,6 +227,16 @@ class PantryViewModel(
         }
     }
 
+    fun onToggleAllInvoiceItems(selectAll: Boolean) {
+        val currentSubFlow = _activeSubFlow.value
+        if (currentSubFlow is PantrySubFlow.InvoiceReview) {
+            val updatedItems = currentSubFlow.invoice.items.map { it.copy(isSelected = selectAll) }
+            _activeSubFlow.value = currentSubFlow.copy(
+                invoice = currentSubFlow.invoice.copy(items = updatedItems)
+            )
+        }
+    }
+
     fun onConfirmInvoiceImport() {
         val currentSubFlow = _activeSubFlow.value as? PantrySubFlow.InvoiceReview ?: return
         val selectedItems = currentSubFlow.invoice.items.filter { it.isSelected }
