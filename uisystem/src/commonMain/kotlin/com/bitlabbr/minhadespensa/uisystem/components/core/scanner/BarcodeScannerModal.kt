@@ -67,6 +67,8 @@ fun BarcodeScannerModal(
     onManualEntryClick: (() -> Unit)? = null,
     onSearchCatalogClick: (() -> Unit)? = null,
     searchCatalogLabel: String = stringResource(Res.string.action_search_catalog),
+    instructionText: String = stringResource(Res.string.scanner_instruction_center_barcode),
+    isSquareReticle: Boolean = false,
 ) {
     val colors = getAppColors()
     val dimens = MinhaDespensaTheme.dimens
@@ -88,8 +90,7 @@ fun BarcodeScannerModal(
             )
 
             Box(
-                modifier = Modifier
-                    .size(280.dp, 160.dp)
+                modifier = (if (isSquareReticle) Modifier.size(260.dp, 260.dp) else Modifier.size(280.dp, 160.dp))
                     .align(Alignment.Center)
                     .border(
                         width = 2.dp,
@@ -120,7 +121,7 @@ fun BarcodeScannerModal(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 MinhaDespensaText(
-                    text = stringResource(Res.string.scanner_instruction_center_barcode),
+                    text = instructionText,
                     color = Color.White,
                     fontStyle = MinhaDespensaTheme.typography.bodySmall,
                 )

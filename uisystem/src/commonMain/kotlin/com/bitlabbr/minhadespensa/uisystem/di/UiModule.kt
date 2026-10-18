@@ -65,6 +65,8 @@ val uiModule = module {
             catalogRepository = get(),
             checkEanStatusUseCase = get(),
             addPantryItemUseCase = get(),
+            parseInvoiceQrCodeUseCase = get(),
+            importInvoiceToPantryUseCase = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
         )

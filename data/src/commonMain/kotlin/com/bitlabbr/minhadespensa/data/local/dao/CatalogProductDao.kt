@@ -85,6 +85,16 @@ interface CatalogProductDao {
     @Query(
         """
         SELECT * FROM catalog_products 
+        WHERE (ean = :ean OR ('0' || ean) = :ean OR ean = ('0' || :ean)) 
+          AND isDeleted = 0 
+        LIMIT 1
+    """
+    )
+    suspend fun findSnapshotByEan(ean: String): CatalogProductEntity?
+
+    @Query(
+        """
+        SELECT * FROM catalog_products 
         WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name)) 
           AND isDeleted = 0 
         LIMIT 1

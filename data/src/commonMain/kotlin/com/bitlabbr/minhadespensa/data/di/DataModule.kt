@@ -59,9 +59,20 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.GetMostConsumedProductsUse
 import com.bitlabbr.minhadespensa.data.repository.RoomPantryMovementRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 
+import com.bitlabbr.minhadespensa.core.domain.repository.InvoiceRepository
+import com.bitlabbr.minhadespensa.core.domain.usecase.ImportInvoiceToPantryUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ParseInvoiceQrCodeUseCase
+import com.bitlabbr.minhadespensa.data.remote.InvoiceRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.InvoiceServerConfig
+import com.bitlabbr.minhadespensa.data.remote.KtorInvoiceRemoteDataSource
+import com.bitlabbr.minhadespensa.data.repository.RoomInvoiceRepository
 import com.bitlabbr.minhadespensa.data.local.migration.ALL_MIGRATIONS
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
@@ -107,6 +118,37 @@ val dataModule = module {
         RoomPantryMovementRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
     }
 
+    single { InvoiceServerConfig() }
+
+    single {
+        HttpClient {
+            install(ContentNegotiation) {
+                json(
+                    Json {
+                        ignoreUnknownKeys = true
+                        isLenient = true
+                        prettyPrint = false
+                    }
+                )
+            }
+        }
+    }
+
+    single<InvoiceRemoteDataSource> {
+        KtorInvoiceRemoteDataSource(
+            httpClient = get(),
+            serverConfig = get(),
+        )
+    }
+
+    single<InvoiceRepository> {
+        RoomInvoiceRepository(
+            remoteDataSource = get(),
+            db = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
     factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }
     factory { SaveProductCategoryUseCase(catalogRepository = get()) }
@@ -126,4 +168,6 @@ val dataModule = module {
     factory { GetMostConsumedProductsUseCase(movementRepository = get()) }
     factory { GetPantryTotalValueUseCase(pantryRepository = get()) }
     factory { GetYearlyFinancialSummaryUseCase(budgetRepository = get()) }
+    factory { ParseInvoiceQrCodeUseCase(invoiceRepository = get()) }
+    factory { ImportInvoiceToPantryUseCase(invoiceRepository = get()) }
 }

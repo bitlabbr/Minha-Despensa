@@ -27,11 +27,16 @@ import app.cash.turbine.test
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
+import com.bitlabbr.minhadespensa.core.domain.model.invoice.Invoice
+import com.bitlabbr.minhadespensa.core.domain.model.invoice.InvoiceItem
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ImportInvoiceToPantryUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ParseInvoiceQrCodeUseCase
 import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.MinhaDespensaSnackbarType
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeCatalogRepository
+import com.bitlabbr.minhadespensa.uisystem.fakes.FakeInvoiceRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakePantryRepository
 import com.bitlabbr.minhadespensa.uisystem.features.pantry.model.PantrySubFlow
 import com.bitlabbr.minhadespensa.uisystem.manager.AppNotificationManager
@@ -59,8 +64,11 @@ class PantryViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var pantryRepository: FakePantryRepository
     private lateinit var catalogRepository: FakeCatalogRepository
+    private lateinit var invoiceRepository: FakeInvoiceRepository
     private lateinit var checkEanStatusUseCase: CheckEanStatusUseCase
     private lateinit var addPantryItemUseCase: AddPantryItemUseCase
+    private lateinit var parseInvoiceQrCodeUseCase: ParseInvoiceQrCodeUseCase
+    private lateinit var importInvoiceToPantryUseCase: ImportInvoiceToPantryUseCase
     private lateinit var logger: FakeAppLogger
     private lateinit var notificationManager: AppNotificationManager
     private lateinit var viewModel: PantryViewModel
@@ -70,8 +78,11 @@ class PantryViewModelTest {
         Dispatchers.setMain(testDispatcher)
         catalogRepository = FakeCatalogRepository()
         pantryRepository = FakePantryRepository(catalogRepository)
+        invoiceRepository = FakeInvoiceRepository()
         checkEanStatusUseCase = CheckEanStatusUseCase(catalogRepository)
         addPantryItemUseCase = AddPantryItemUseCase(pantryRepository)
+        parseInvoiceQrCodeUseCase = ParseInvoiceQrCodeUseCase(invoiceRepository)
+        importInvoiceToPantryUseCase = ImportInvoiceToPantryUseCase(invoiceRepository)
         logger = FakeAppLogger()
         notificationManager = AppNotificationManager()
 
@@ -80,6 +91,8 @@ class PantryViewModelTest {
             catalogRepository = catalogRepository,
             checkEanStatusUseCase = checkEanStatusUseCase,
             addPantryItemUseCase = addPantryItemUseCase,
+            parseInvoiceQrCodeUseCase = parseInvoiceQrCodeUseCase,
+            importInvoiceToPantryUseCase = importInvoiceToPantryUseCase,
             logger = logger,
             notificationManager = notificationManager,
         )
@@ -539,6 +552,162 @@ class PantryViewModelTest {
         viewModel.onSearchQueryChanged("MarcaInexistente")
         testScheduler.advanceUntilIdle()
         assertEquals(0, viewModel.uiState.value.listState.products.size)
+    }
+
+    @Test
+    fun `onStartInvoiceScanFlow should set activeSubFlow to InvoiceScanner`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        viewModel.onStartInvoiceScanFlow()
+        testScheduler.advanceUntilIdle()
+        assertEquals(PantrySubFlow.InvoiceScanner, viewModel.uiState.value.activeSubFlow)
+    }
+
+    @Test
+    fun `onInvoiceQrCodeScanned success should set activeSubFlow to InvoiceReview`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        val testInvoice = Invoice(
+            storeName = "Supermercado Exemplo",
+            items = listOf(
+                InvoiceItem(id = "1", name = "Arroz", quantity = 2.0, ean = "7891234567890"),
+                InvoiceItem(id = "2", name = "Feijão", quantity = 1.0, ean = "7891234567891"),
+            )
+        )
+        invoiceRepository.parseResult = Result.success(testInvoice)
+
+        viewModel.onInvoiceQrCodeScanned("https://sefaz.pe.gov.br/nfce/qrcode?p=123")
+        testScheduler.advanceUntilIdle()
+
+        val activeFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<PantrySubFlow.InvoiceReview>(activeFlow)
+        assertEquals("Supermercado Exemplo", activeFlow.invoice.storeName)
+        assertEquals(2, activeFlow.invoice.items.size)
+        assertFalse(activeFlow.isImporting)
+    }
+
+    @Test
+    fun `onInvoiceQrCodeScanned failure should emit error notification and dismiss activeSubFlow`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        invoiceRepository.parseResult = Result.failure(Exception("Falha ao comunicar com o servidor"))
+
+        viewModel.onStartInvoiceScanFlow()
+        testScheduler.advanceUntilIdle()
+        assertEquals(PantrySubFlow.InvoiceScanner, viewModel.uiState.value.activeSubFlow)
+
+        notificationManager.notifications.test {
+            viewModel.onInvoiceQrCodeScanned("invalido")
+            testScheduler.advanceUntilIdle()
+
+            assertNull(viewModel.uiState.value.activeSubFlow)
+            val notif = awaitItem()
+            assertEquals(MinhaDespensaSnackbarType.ERROR, notif.type)
+        }
+    }
+
+    @Test
+    fun `onToggleInvoiceItem should update isSelected flag of item in review sheet`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        val testInvoice = Invoice(
+            storeName = "Supermercado Exemplo",
+            items = listOf(
+                InvoiceItem(id = "1", name = "Arroz", quantity = 2.0, isSelected = true),
+                InvoiceItem(id = "2", name = "Feijão", quantity = 1.0, isSelected = true),
+            )
+        )
+        invoiceRepository.parseResult = Result.success(testInvoice)
+
+        viewModel.onInvoiceQrCodeScanned("https://sefaz.pe.gov.br/nfce/qrcode?p=123")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onToggleInvoiceItem(itemId = "1", isSelected = false)
+        testScheduler.advanceUntilIdle()
+
+        val activeFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<PantrySubFlow.InvoiceReview>(activeFlow)
+        val item1 = activeFlow.invoice.items.first { it.id == "1" }
+        val item2 = activeFlow.invoice.items.first { it.id == "2" }
+        assertFalse(item1.isSelected)
+        assertTrue(item2.isSelected)
+    }
+
+    @Test
+    fun `onConfirmInvoiceImport with no items selected should show warning notification`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        val testInvoice = Invoice(
+            storeName = "Supermercado Exemplo",
+            items = listOf(
+                InvoiceItem(id = "1", name = "Sacola", quantity = 1.0, isSelected = false),
+            )
+        )
+        invoiceRepository.parseResult = Result.success(testInvoice)
+
+        viewModel.onInvoiceQrCodeScanned("https://sefaz.pe.gov.br/nfce/qrcode?p=123")
+        testScheduler.advanceUntilIdle()
+
+        notificationManager.notifications.test {
+            viewModel.onConfirmInvoiceImport()
+            testScheduler.advanceUntilIdle()
+
+            val notif = awaitItem()
+            assertEquals(MinhaDespensaSnackbarType.WARNING, notif.type)
+            val activeFlow = viewModel.uiState.value.activeSubFlow
+            assertIs<PantrySubFlow.InvoiceReview>(activeFlow)
+            assertFalse(activeFlow.isImporting)
+        }
+    }
+
+    @Test
+    fun `onConfirmInvoiceImport success should import selected items and dismiss subflow`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        val testInvoice = Invoice(
+            storeName = "Supermercado Exemplo",
+            items = listOf(
+                InvoiceItem(id = "1", name = "Arroz", quantity = 2.0, isSelected = true),
+                InvoiceItem(id = "2", name = "Sacola", quantity = 1.0, isSelected = false),
+            )
+        )
+        invoiceRepository.parseResult = Result.success(testInvoice)
+        invoiceRepository.importResult = Result.success(1)
+
+        viewModel.onInvoiceQrCodeScanned("https://sefaz.pe.gov.br/nfce/qrcode?p=123")
+        testScheduler.advanceUntilIdle()
+
+        notificationManager.notifications.test {
+            viewModel.onConfirmInvoiceImport()
+            testScheduler.advanceUntilIdle()
+
+            assertNull(viewModel.uiState.value.activeSubFlow)
+            assertEquals(1, invoiceRepository.lastImportedItems.size)
+            assertEquals("Arroz", invoiceRepository.lastImportedItems.first().name)
+            val notif = awaitItem()
+            assertEquals(MinhaDespensaSnackbarType.SUCCESS, notif.type)
+        }
+    }
+
+    @Test
+    fun `onConfirmInvoiceImport failure should emit error notification and reset isImporting`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        val testInvoice = Invoice(
+            storeName = "Supermercado Exemplo",
+            items = listOf(
+                InvoiceItem(id = "1", name = "Arroz", quantity = 2.0, isSelected = true),
+            )
+        )
+        invoiceRepository.parseResult = Result.success(testInvoice)
+        invoiceRepository.importResult = Result.failure(Exception("Erro ao salvar no banco"))
+
+        viewModel.onInvoiceQrCodeScanned("https://sefaz.pe.gov.br/nfce/qrcode?p=123")
+        testScheduler.advanceUntilIdle()
+
+        notificationManager.notifications.test {
+            viewModel.onConfirmInvoiceImport()
+            testScheduler.advanceUntilIdle()
+
+            val activeFlow = viewModel.uiState.value.activeSubFlow
+            assertIs<PantrySubFlow.InvoiceReview>(activeFlow)
+            assertFalse(activeFlow.isImporting)
+            val notif = awaitItem()
+            assertEquals(MinhaDespensaSnackbarType.ERROR, notif.type)
+        }
     }
 }
 
