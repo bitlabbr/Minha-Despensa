@@ -327,7 +327,7 @@ class HomeViewModel(
     }
 
     fun saveMonthlyBudgetText(budgetText: String) {
-        val clean = budgetText.trim().replace(".", "").replace(",", ".")
+        val clean = budgetText.replace("R$", "", ignoreCase = true).trim().replace(".", "").replace(",", ".")
         val valueInDouble = clean.toDoubleOrNull()
         if (valueInDouble != null && valueInDouble >= 0.0) {
             val cents = (valueInDouble * 100).roundToLong()

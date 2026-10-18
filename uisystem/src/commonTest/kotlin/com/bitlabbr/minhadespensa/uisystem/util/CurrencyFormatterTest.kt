@@ -50,7 +50,8 @@ class CurrencyFormatterTest {
 
     @Test
     fun formatPrice_formatsLargeAmountsCorrectly() {
-        assertEquals("1234567,89", 123456789L.formatPrice())
+        assertEquals("1.000,00", 100000L.formatPrice())
+        assertEquals("1.234.567,89", 123456789L.formatPrice())
     }
 
     @Test

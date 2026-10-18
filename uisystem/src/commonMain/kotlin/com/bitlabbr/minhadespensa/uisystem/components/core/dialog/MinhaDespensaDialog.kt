@@ -70,7 +70,7 @@ fun MinhaDespensaDialog(
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
         properties = properties,
-        modifier = modifier.padding(horizontal = dimens.paddingLarge),
+        modifier = modifier.padding(horizontal = dimens.paddingSmall),
     ) {
         Box(
             modifier = Modifier

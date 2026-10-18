@@ -20,7 +20,7 @@ O aplicativo utiliza uma identidade visual baseada em profundidade e vidro fosco
 * Dashboard financeiro reativo (`FinancialWidget`) com gastos reais do mês e barra de consumo orçamentário (`InverseAnchoredGauge`).
 * Card de estoque avaliado (`StockValueCard`) com valor patrimonial total da despensa em reais (`R$ X,XX`), quantidade avaliada e custo médio unitário.
 * Diálogo de analytics financeiro (`FinancialAnalyticsDialog`) com evolução anual de 12 meses, gasto médio mensal e custo médio ponderado por item.
-* Diálogo de definição de orçamento (`SetMonthlyBudgetDialog`) para definir ou atualizar a meta orçamentária familiar do mês.
+* Diálogo de definição de orçamento (`SetMonthlyBudgetDialog`) para definir ou atualizar a meta orçamentária familiar do mês, com máscara dinâmica de moeda e separador de milhares (`R$ 1.500,00`).
 * Widget de itens próximos do vencimento (`ExpiringSoonWidget`) com badges dinâmicos de urgência e dias restantes.
 * Tendências de consumo recentes (`ConsumptionTrendWidget`) agregadas por mês.
 
@@ -50,4 +50,4 @@ Para evitar condições de corrida na interface (ex: dois modais abrindo simulta
 
 ## 🧪 Testes no Módulo (:uisystem)
 
-Contém **149 testes unitários** usando Turbine para assertions de `StateFlow` e validação isolada de regras de UI, `HomeViewModel`, formatadores de moeda, mappers de mês internacionalizados (`MonthMapper`), validadores de formulário e estabilizadores de scanner.
+Contém **155 testes unitários** usando Turbine para assertions de `StateFlow` e validação isolada de regras de UI, `HomeViewModel`, formatadores de moeda, mappers de mês internacionalizados (`MonthMapper`), validadores de formulário e estabilizadores de scanner.
