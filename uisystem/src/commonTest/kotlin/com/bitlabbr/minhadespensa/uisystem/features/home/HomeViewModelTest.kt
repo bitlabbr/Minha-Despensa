@@ -402,6 +402,23 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `saveMonthlyBudgetText parses currency string without symbol correctly`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.financialSummary.hasBudget)
+
+        viewModel.saveMonthlyBudgetText("1.500,00")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.financialSummary.hasBudget)
+        assertEquals(150000L, state.financialSummary.budgetInCents)
+        assertEquals("R$ 1.500,00", state.financialSummary.budget)
+    }
+
+    @Test
     fun `saveMonthlyBudgetText with invalid string shows error notification and does not update budget`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
         viewModel.uiState.launchIn(backgroundScope)

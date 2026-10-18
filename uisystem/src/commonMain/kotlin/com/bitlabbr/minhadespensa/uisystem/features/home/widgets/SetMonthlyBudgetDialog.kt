@@ -66,7 +66,7 @@ fun SetMonthlyBudgetDialog(
     var budgetText by remember(currentBudgetInCents) {
         mutableStateOf(
             if (currentBudgetInCents != null && currentBudgetInCents > 0L) {
-                currentBudgetInCents.formatPrice(includeCurrencySymbol = true)
+                currentBudgetInCents.formatPrice(includeCurrencySymbol = false)
             } else {
                 ""
             }
@@ -112,13 +112,19 @@ fun SetMonthlyBudgetDialog(
         MinhaDespensaTextField(
             value = budgetText,
             textStyle = MinhaDespensaTheme.typography.bodyLarge,
+            prefix = {
+                MinhaDespensaText(
+                    text = "R$ ",
+                    fontStyle = MinhaDespensaTheme.typography.bodyLarge,
+                )
+            },
             onValueChange = { input ->
                 val digits = input.filter { it.isDigit() }
                 budgetText = when {
                     digits.isEmpty() || digits.all { it == '0' } -> ""
                     else -> {
                         val cents = digits.take(11).toLongOrNull() ?: 0L
-                        cents.formatPrice(includeCurrencySymbol = true)
+                        cents.formatPrice(includeCurrencySymbol = false)
                     }
                 }
             },
