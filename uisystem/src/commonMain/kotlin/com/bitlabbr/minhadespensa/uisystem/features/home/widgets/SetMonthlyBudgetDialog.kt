@@ -45,6 +45,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaD
 import com.bitlabbr.minhadespensa.uisystem.components.core.input.MinhaDespensaTextField
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.util.CurrencyThousandsVisualTransformation
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_cancel
@@ -54,6 +55,8 @@ import minhadespensa.uisystem.generated.resources.home_financial_dialog_input_pl
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_save
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_title
 import org.jetbrains.compose.resources.stringResource
+
+import kotlin.math.roundToLong
 
 @Composable
 fun SetMonthlyBudgetDialog(
@@ -66,7 +69,13 @@ fun SetMonthlyBudgetDialog(
     var budgetText by remember(currentBudgetInCents) {
         mutableStateOf(
             if (currentBudgetInCents != null && currentBudgetInCents > 0L) {
-                currentBudgetInCents.formatPrice(includeCurrencySymbol = true)
+                val reais = currentBudgetInCents / 100
+                val cents = currentBudgetInCents % 100
+                if (cents == 0L) {
+                    reais.toString()
+                } else {
+                    "$reais,${cents.toString().padStart(2, '0')}"
+                }
             } else {
                 ""
             }
@@ -74,8 +83,12 @@ fun SetMonthlyBudgetDialog(
     }
 
     val parsedCents = remember(budgetText) {
-        val digits = budgetText.filter { it.isDigit() }
-        digits.toLongOrNull()
+        if (budgetText.isBlank()) {
+            null
+        } else {
+            val clean = budgetText.trim().replace(".", "").replace(",", ".")
+            clean.toDoubleOrNull()?.let { (it * 100).roundToLong() }
+        }
     }
 
     MinhaDespensaDialog(
@@ -100,7 +113,7 @@ fun SetMonthlyBudgetDialog(
                     text = stringResource(Res.string.home_financial_dialog_save),
                     modifier = Modifier.weight(1.3f),
                     isLoading = isSaving,
-                    enabled = !isSaving && parsedCents != null && parsedCents >= 0L,
+                    enabled = !isSaving && parsedCents != null && parsedCents > 0L,
                     onClick = {
                         parsedCents?.let(onConfirm)
                     },
@@ -112,20 +125,29 @@ fun SetMonthlyBudgetDialog(
         MinhaDespensaTextField(
             value = budgetText,
             textStyle = MinhaDespensaTheme.typography.bodyLarge,
+            prefix = {
+                MinhaDespensaText(
+                    text = "R$ ",
+                    fontStyle = MinhaDespensaTheme.typography.bodyLarge,
+                )
+            },
             onValueChange = { input ->
-                val digits = input.filter { it.isDigit() }
-                budgetText = when {
-                    digits.isEmpty() || digits.all { it == '0' } -> ""
-                    else -> {
-                        val cents = digits.take(11).toLongOrNull() ?: 0L
-                        cents.formatPrice(includeCurrencySymbol = true)
-                    }
+                val filtered = input.filter { it.isDigit() || it == ',' || it == '.' }
+                val normalized = filtered.replace('.', ',')
+                val commaIndex = normalized.indexOf(',')
+                budgetText = if (commaIndex != -1) {
+                    val integerPart = normalized.substring(0, commaIndex).filter { it.isDigit() }.take(8)
+                    val decimalPart = normalized.substring(commaIndex + 1).filter { it.isDigit() }.take(2)
+                    "$integerPart,$decimalPart"
+                } else {
+                    normalized.take(8)
                 }
             },
             modifier = Modifier.fillMaxWidth(),
             label = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_label)) },
             placeholder = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_placeholder)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            visualTransformation = remember { CurrencyThousandsVisualTransformation() },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             singleLine = true,
         )
     }

@@ -35,7 +35,7 @@ fun PantryMovementEntity.toDomain(): PantryMovement = PantryMovement(
     quantity = quantity,
     unitPriceInCents = unitPriceInCents,
     totalPriceInCents = totalPriceInCents,
-    timestamp = timestamp,
+    updatedAt = updatedAt,
     storeOrReason = storeOrReason,
     isDeleted = isDeleted,
 )
@@ -48,7 +48,7 @@ fun PantryMovement.toEntity(): PantryMovementEntity = PantryMovementEntity(
     quantity = quantity,
     unitPriceInCents = unitPriceInCents,
     totalPriceInCents = computedTotalPriceInCents,
-    timestamp = timestamp,
+    updatedAt = updatedAt,
     storeOrReason = storeOrReason,
     isDeleted = isDeleted,
 )

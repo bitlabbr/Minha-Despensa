@@ -354,7 +354,7 @@
     <string name="home_financial_dialog_title">Definir Meta do Mês</string>
     <string name="home_financial_dialog_desc">Informe o valor limite de compras para o mês atual.</string>
     <string name="home_financial_dialog_input_label">Orçamento Mensal</string>
-    <string name="home_financial_dialog_input_placeholder">Ex: R$ 1.500,00</string>
+    <string name="home_financial_dialog_input_placeholder">Ex: 1500</string>
     <string name="home_financial_dialog_save">Salvar</string>
     <string name="home_financial_dialog_cancel">Cancelar</string>
     <string name="home_financial_budget_saved_success">Orçamento mensal definido com sucesso!</string>

@@ -402,6 +402,23 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun `saveMonthlyBudgetText parses currency string without symbol correctly`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.financialSummary.hasBudget)
+
+        viewModel.saveMonthlyBudgetText("1.500,00")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.financialSummary.hasBudget)
+        assertEquals(150000L, state.financialSummary.budgetInCents)
+        assertEquals("R$ 1.500,00", state.financialSummary.budget)
+    }
+
+    @Test
     fun `saveMonthlyBudgetText with invalid string shows error notification and does not update budget`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
         viewModel.uiState.launchIn(backgroundScope)
@@ -562,7 +579,7 @@ class HomeViewModelTest {
                 type = MovementType.ENTRY_PURCHASE,
                 quantity = 2.0,
                 unitPriceInCents = 500L,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
             PantryMovement(
                 id = "m-2",
@@ -570,14 +587,14 @@ class HomeViewModelTest {
                 type = MovementType.ENTRY_MANUAL,
                 quantity = 3.0,
                 unitPriceInCents = 1000L,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
             PantryMovement(
                 id = "m-3",
                 productId = "prod-3",
                 type = MovementType.CONSUMPTION,
                 quantity = 1.0,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
         )
 

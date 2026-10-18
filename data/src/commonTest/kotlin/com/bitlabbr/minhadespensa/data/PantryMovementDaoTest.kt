@@ -94,14 +94,14 @@ class PantryMovementDaoTest : BaseTest() {
             quantity = 2.0,
             unitPriceInCents = 1000L,
             totalPriceInCents = 2000L,
-            timestamp = 1000L,
+            updatedAt = 1000L,
         )
         val mov2 = PantryMovementEntity(
             id = Uuid.random().toString(),
             productId = prodId,
             type = "CONSUMPTION",
             quantity = 1.0,
-            timestamp = 2000L,
+            updatedAt = 2000L,
         )
         val mov3 = PantryMovementEntity(
             id = Uuid.random().toString(),
@@ -110,7 +110,7 @@ class PantryMovementDaoTest : BaseTest() {
             quantity = 5.0,
             unitPriceInCents = 800L,
             totalPriceInCents = 4000L,
-            timestamp = 3000L,
+            updatedAt = 3000L,
         )
 
         db.movementDao().insertMovements(listOf(mov1, mov2, mov3))
@@ -141,7 +141,7 @@ class PantryMovementDaoTest : BaseTest() {
                 productId = prod1,
                 type = "CONSUMPTION",
                 quantity = 3.0,
-                timestamp = 1000L,
+                updatedAt = 1000L,
             )
         )
         db.movementDao().insertMovement(
@@ -150,7 +150,7 @@ class PantryMovementDaoTest : BaseTest() {
                 productId = prod1,
                 type = "CONSUMPTION",
                 quantity = 2.0,
-                timestamp = 2000L,
+                updatedAt = 2000L,
             )
         )
 
@@ -161,7 +161,7 @@ class PantryMovementDaoTest : BaseTest() {
                 productId = prod2,
                 type = "CONSUMPTION",
                 quantity = 10.0,
-                timestamp = 1500L,
+                updatedAt = 1500L,
             )
         )
 
@@ -173,7 +173,7 @@ class PantryMovementDaoTest : BaseTest() {
                 type = "ENTRY_MANUAL",
                 quantity = 50.0,
                 totalPriceInCents = 10000L,
-                timestamp = 1200L,
+                updatedAt = 1200L,
             )
         )
 
@@ -207,7 +207,7 @@ class PantryMovementDaoTest : BaseTest() {
                     quantity = 2.0,
                     unitPriceInCents = 1750L,
                     totalPriceInCents = 3500L,
-                    timestamp = 2000L,
+                    updatedAt = 2000L,
                 )
             )
             assertEquals(3500L, awaitItem())
@@ -221,7 +221,7 @@ class PantryMovementDaoTest : BaseTest() {
                     quantity = 1.0,
                     unitPriceInCents = 5000L,
                     totalPriceInCents = 5000L,
-                    timestamp = 3000L,
+                    updatedAt = 3000L,
                 )
             )
             assertEquals(8500L, awaitItem())
@@ -233,7 +233,7 @@ class PantryMovementDaoTest : BaseTest() {
                     productId = prodId,
                     type = "CONSUMPTION",
                     quantity = 2.0,
-                    timestamp = 3500L,
+                    updatedAt = 3500L,
                 )
             )
             // No new emission of different expense value, query still evaluates to 8500
@@ -248,7 +248,7 @@ class PantryMovementDaoTest : BaseTest() {
                     quantity = 1.0,
                     unitPriceInCents = 2000L,
                     totalPriceInCents = 2000L,
-                    timestamp = 4000L,
+                    updatedAt = 4000L,
                     isDeleted = true,
                 )
             )

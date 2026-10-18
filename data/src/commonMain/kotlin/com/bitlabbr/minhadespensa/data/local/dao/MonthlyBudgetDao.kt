@@ -52,7 +52,7 @@ interface MonthlyBudgetDao {
         WHERE type IN ('ENTRY_MANUAL', 'ENTRY_PURCHASE')
           AND total_price_in_cents IS NOT NULL
           AND total_price_in_cents > 0
-          AND timestamp >= :startOfMonth AND timestamp <= :endOfMonth
+          AND updatedAt >= :startOfMonth AND updatedAt <= :endOfMonth
           AND is_deleted = 0
         """
     )
@@ -65,7 +65,7 @@ interface MonthlyBudgetDao {
         WHERE type IN ('ENTRY_MANUAL', 'ENTRY_PURCHASE')
           AND total_price_in_cents IS NOT NULL
           AND total_price_in_cents > 0
-          AND timestamp >= :startOfMonth AND timestamp <= :endOfMonth
+          AND updatedAt >= :startOfMonth AND updatedAt <= :endOfMonth
           AND is_deleted = 0
         """
     )

@@ -47,8 +47,8 @@ interface PantryMovementDao {
     @Query(
         """
         SELECT * FROM pantry_movements
-        WHERE timestamp >= :startTimestamp AND timestamp <= :endTimestamp AND is_deleted = 0
-        ORDER BY timestamp DESC
+        WHERE updatedAt >= :startTimestamp AND updatedAt <= :endTimestamp AND is_deleted = 0
+        ORDER BY updatedAt DESC
         """
     )
     fun getMovementsForPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<PantryMovementEntity>>
@@ -57,7 +57,7 @@ interface PantryMovementDao {
         """
         SELECT * FROM pantry_movements
         WHERE is_deleted = 0
-        ORDER BY timestamp DESC
+        ORDER BY updatedAt DESC
         """
     )
     fun getAllMovements(): Flow<List<PantryMovementEntity>>
@@ -67,7 +67,7 @@ interface PantryMovementDao {
         SELECT productId, SUM(quantity) AS totalConsumed
         FROM pantry_movements
         WHERE type = 'CONSUMPTION'
-          AND timestamp >= :startTimestamp AND timestamp <= :endTimestamp
+          AND updatedAt >= :startTimestamp AND updatedAt <= :endTimestamp
           AND is_deleted = 0
         GROUP BY productId
         ORDER BY totalConsumed DESC
@@ -83,7 +83,7 @@ interface PantryMovementDao {
         WHERE type IN ('ENTRY_MANUAL', 'ENTRY_PURCHASE')
           AND total_price_in_cents IS NOT NULL
           AND total_price_in_cents > 0
-          AND timestamp >= :startOfMonth AND timestamp <= :endOfMonth
+          AND updatedAt >= :startOfMonth AND updatedAt <= :endOfMonth
           AND is_deleted = 0
         """
     )
@@ -96,7 +96,7 @@ interface PantryMovementDao {
         WHERE type IN ('ENTRY_MANUAL', 'ENTRY_PURCHASE')
           AND total_price_in_cents IS NOT NULL
           AND total_price_in_cents > 0
-          AND timestamp >= :startOfMonth AND timestamp <= :endOfMonth
+          AND updatedAt >= :startOfMonth AND updatedAt <= :endOfMonth
           AND is_deleted = 0
         """
     )

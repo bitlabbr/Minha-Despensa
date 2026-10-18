@@ -164,7 +164,7 @@ class RoomBudgetRepositoryTest : BaseTest() {
                 quantity = 2.0,
                 unitPriceInCents = 3500L,
                 totalPriceInCents = 7000L,
-                timestamp = midOct,
+                updatedAt = midOct,
                 storeOrReason = "Compra: Compras Limpeza",
                 isDeleted = false,
             )
@@ -180,7 +180,7 @@ class RoomBudgetRepositoryTest : BaseTest() {
                 quantity = 1.0,
                 unitPriceInCents = 4000L,
                 totalPriceInCents = 4000L,
-                timestamp = midOct,
+                updatedAt = midOct,
                 storeOrReason = "Entrada na Despensa",
                 isDeleted = false,
             )
@@ -232,7 +232,7 @@ class RoomBudgetRepositoryTest : BaseTest() {
                 quantity = 3.0,
                 unitPriceInCents = 40000L,
                 totalPriceInCents = 120000L,
-                timestamp = startOfFeb + 1000L,
+                updatedAt = startOfFeb + 1000L,
                 storeOrReason = "Compra: Compras Fev",
                 isDeleted = false,
             )
@@ -248,7 +248,7 @@ class RoomBudgetRepositoryTest : BaseTest() {
                 quantity = 1.0,
                 unitPriceInCents = 50000L,
                 totalPriceInCents = 50000L,
-                timestamp = startOfOct + 1000L,
+                updatedAt = startOfOct + 1000L,
                 storeOrReason = "Entrada na Despensa",
                 isDeleted = false,
             )

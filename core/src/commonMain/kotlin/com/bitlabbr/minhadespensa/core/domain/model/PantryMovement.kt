@@ -28,23 +28,27 @@ import kotlin.math.roundToLong
 
 @Serializable
 enum class MovementType {
-    ENTRY_MANUAL,       // Adição avulsa direta na despensa
-    ENTRY_PURCHASE,     // Entrada oriunda de finalização de lista de compras
-    CONSUMPTION,        // Baixa por consumo de alimento
-    EXPIRATION_DISCARD, // Baixa por descarte de produto vencido
-    ADJUSTMENT          // Ajuste de contagem física de estoque
+    ENTRY_MANUAL,
+    ENTRY_PURCHASE,
+    CONSUMPTION,
+    EXPIRATION_DISCARD,
+    ADJUSTMENT
 }
 
 @Serializable
 data class PantryMovement(
     val id: String,
+    /**
+     * Optional reference to the specific pantry item. Nullable because audit ledger movements
+     * persist even if a pantry item is deleted, or when recorded from bulk shopping purchases.
+     */
     val pantryItemId: String? = null,
     val productId: String,
     val type: MovementType,
     val quantity: Double,
     val unitPriceInCents: Long? = null,
     val totalPriceInCents: Long? = null,
-    val timestamp: Long,
+    val updatedAt: Long,
     val storeOrReason: String? = null,
     val isDeleted: Boolean = false,
 ) {

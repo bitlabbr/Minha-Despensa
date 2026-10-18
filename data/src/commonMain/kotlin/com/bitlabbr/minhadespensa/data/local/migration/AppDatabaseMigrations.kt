@@ -658,6 +658,71 @@ val MIGRATION_1_8 = object : Migration(1, 8) {
     }
 }
 
+val MIGRATION_8_9 = object : Migration(8, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        if (tableExists(connection, "pantry_movements")) {
+            if (hasColumn(connection, "pantry_movements", "timestamp") &&
+                !hasColumn(connection, "pantry_movements", "updatedAt")
+            ) {
+                connection.execSQL("ALTER TABLE `pantry_movements` RENAME COLUMN `timestamp` TO `updatedAt`")
+            }
+            connection.execSQL("DROP INDEX IF EXISTS `index_pantry_movements_type_timestamp`")
+            connection.execSQL("DROP INDEX IF EXISTS `index_pantry_movements_timestamp`")
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_type_updatedAt` ON `pantry_movements` (`type`, `updatedAt`)")
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pantry_movements_updatedAt` ON `pantry_movements` (`updatedAt`)")
+        }
+    }
+}
+
+val MIGRATION_7_9 = object : Migration(7, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_7_8.migrate(connection)
+        MIGRATION_8_9.migrate(connection)
+    }
+}
+
+val MIGRATION_6_9 = object : Migration(6, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_6_8.migrate(connection)
+        MIGRATION_8_9.migrate(connection)
+    }
+}
+
+val MIGRATION_5_9 = object : Migration(5, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_5_8.migrate(connection)
+        MIGRATION_8_9.migrate(connection)
+    }
+}
+
+val MIGRATION_4_9 = object : Migration(4, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_4_8.migrate(connection)
+        MIGRATION_8_9.migrate(connection)
+    }
+}
+
+val MIGRATION_3_9 = object : Migration(3, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_3_8.migrate(connection)
+        MIGRATION_8_9.migrate(connection)
+    }
+}
+
+val MIGRATION_2_9 = object : Migration(2, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_2_8.migrate(connection)
+        MIGRATION_8_9.migrate(connection)
+    }
+}
+
+val MIGRATION_1_9 = object : Migration(1, 9) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_1_8.migrate(connection)
+        MIGRATION_8_9.migrate(connection)
+    }
+}
+
 val ALL_MIGRATIONS = arrayOf(
     MIGRATION_1_2,
     MIGRATION_2_3,
@@ -686,4 +751,12 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_3_8,
     MIGRATION_2_8,
     MIGRATION_1_8,
+    MIGRATION_8_9,
+    MIGRATION_7_9,
+    MIGRATION_6_9,
+    MIGRATION_5_9,
+    MIGRATION_4_9,
+    MIGRATION_3_9,
+    MIGRATION_2_9,
+    MIGRATION_1_9,
 )

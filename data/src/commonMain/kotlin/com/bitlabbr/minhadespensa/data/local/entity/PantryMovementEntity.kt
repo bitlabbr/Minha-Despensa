@@ -41,8 +41,8 @@ import androidx.room.PrimaryKey
     ],
     indices = [
         Index(value = ["productId"]),
-        Index(value = ["type", "timestamp"]),
-        Index(value = ["timestamp"])
+        Index(value = ["type", "updatedAt"]),
+        Index(value = ["updatedAt"])
     ]
 )
 data class PantryMovementEntity(
@@ -57,7 +57,7 @@ data class PantryMovementEntity(
     val unitPriceInCents: Long? = null,
     @ColumnInfo(name = "total_price_in_cents")
     val totalPriceInCents: Long? = null,
-    val timestamp: Long,
+    val updatedAt: Long,
     @ColumnInfo(name = "store_or_reason")
     val storeOrReason: String? = null,
     @ColumnInfo(name = "is_deleted")

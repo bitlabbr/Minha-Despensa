@@ -157,7 +157,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
                 quantity = 2.0,
                 unitPriceInCents = 1500L,
                 totalPriceInCents = 3000L,
-                timestamp = midOct,
+                updatedAt = midOct,
                 storeOrReason = "Compra: Compras do Mês",
                 isDeleted = false,
             )
@@ -171,7 +171,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
                 quantity = 1.5,
                 unitPriceInCents = 1000L,
                 totalPriceInCents = 1500L,
-                timestamp = midOct,
+                updatedAt = midOct,
                 storeOrReason = "Compra: Compras do Mês",
                 isDeleted = false,
             )
@@ -187,7 +187,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
                 quantity = 3.0,
                 unitPriceInCents = 800L,
                 totalPriceInCents = 2400L,
-                timestamp = midOct,
+                updatedAt = midOct,
                 storeOrReason = "Entrada na Despensa",
                 isDeleted = false,
             )
@@ -232,7 +232,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
                 quantity = 1.0,
                 unitPriceInCents = 3000L,
                 totalPriceInCents = null,
-                timestamp = midOct,
+                updatedAt = midOct,
             )
         )
 
@@ -245,7 +245,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
                 quantity = 1.0,
                 unitPriceInCents = 4000L,
                 totalPriceInCents = 4000L,
-                timestamp = midNov,
+                updatedAt = midNov,
             )
         )
 
@@ -258,7 +258,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
                 quantity = 1.0,
                 unitPriceInCents = 2000L,
                 totalPriceInCents = 2000L,
-                timestamp = midOct,
+                updatedAt = midOct,
                 isDeleted = true,
             )
         )
@@ -309,7 +309,7 @@ class MonthlyBudgetDaoTest : BaseTest() {
                     quantity = 2.0,
                     unitPriceInCents = 500L,
                     totalPriceInCents = 1000L,
-                    timestamp = timestamp,
+                    updatedAt = timestamp,
                 )
             )
             assertEquals(1000L, awaitItem())
