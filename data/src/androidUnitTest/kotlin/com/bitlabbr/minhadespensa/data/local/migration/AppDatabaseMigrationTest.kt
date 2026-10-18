@@ -213,7 +213,7 @@ class AppDatabaseMigrationTest {
                 quantity = 2.0,
                 unitPriceInCents = 599L,
                 totalPriceInCents = 1198L,
-                timestamp = 6000L,
+                updatedAt = 6000L,
             )
         )
         val movements = roomDb.movementDao().getAllMovements().first()
@@ -780,6 +780,123 @@ class AppDatabaseMigrationTest {
             assertTrue(stmt.step())
             assertEquals(1000L, stmt.getLong(0))
         }
+    }
+
+    @Test
+    fun migration_8_to_9_renames_timestamp_to_updatedAt_and_preserves_movement_data() {
+        createV2Schema(connection)
+        MIGRATION_1_7.migrate(connection)
+        MIGRATION_7_8.migrate(connection)
+
+        // Insert movement with timestamp column in v8
+        connection.execSQL(
+            """
+            INSERT INTO `catalog_products` (`id`, `name`, `measureUnit`, `netWeight`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`)
+            VALUES ('prod-test-v8-v9', 'Macarrão', 'KILOGRAM', 0.5, 1000, 0, 0, 'Massas')
+            """.trimIndent()
+        )
+        connection.execSQL(
+            """
+            INSERT INTO `pantry_movements` (`id`, `pantry_item_id`, `productId`, `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `timestamp`, `store_or_reason`, `is_deleted`)
+            VALUES ('mov-v8', 'pantry-v8', 'prod-test-v8-v9', 'ENTRY_PURCHASE', 3.0, 450, 1350, 1728900000000, 'Mercado Teste', 0)
+            """.trimIndent()
+        )
+
+        // Execute Migration 8 -> 9
+        MIGRATION_8_9.migrate(connection)
+
+        // Verify column updatedAt exists with exact value
+        connection.prepare("SELECT type, quantity, total_price_in_cents, updatedAt, store_or_reason FROM pantry_movements WHERE id = 'mov-v8'").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals("ENTRY_PURCHASE", stmt.getText(0))
+            assertEquals(3.0, stmt.getDouble(1), 0.001)
+            assertEquals(1350L, stmt.getLong(2))
+            assertEquals(1728900000000L, stmt.getLong(3))
+            assertEquals("Mercado Teste", stmt.getText(4))
+        }
+
+        // Verify index_pantry_movements_updatedAt exists
+        connection.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'index_pantry_movements_updatedAt'").useStatement { stmt ->
+            assertTrue(stmt.step())
+        }
+        // Verify index_pantry_movements_type_updatedAt exists
+        connection.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'index_pantry_movements_type_updatedAt'").useStatement { stmt ->
+            assertTrue(stmt.step())
+        }
+    }
+
+    @Test
+    fun direct_migration_1_to_9_creates_and_migrates_all_tables_successfully() {
+        createV2Schema(connection)
+        MIGRATION_1_9.migrate(connection)
+
+        connection.execSQL(
+            """
+            INSERT INTO `catalog_products` (`id`, `name`, `measureUnit`, `netWeight`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`)
+            VALUES ('prod-test-1-9', 'Café', 'KILOGRAM', 0.5, 1000, 0, 0, 'Bebidas')
+            """.trimIndent()
+        )
+        connection.execSQL(
+            """
+            INSERT INTO `pantry_movements` (`id`, `pantry_item_id`, `productId`, `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `updatedAt`, `store_or_reason`, `is_deleted`)
+            VALUES ('mov-1-9', 'pantry-1-9', 'prod-test-1-9', 'ENTRY_MANUAL', 1.0, 1500, 1500, 1728900000000, 'Café Teste', 0)
+            """.trimIndent()
+        )
+
+        connection.prepare("SELECT total_price_in_cents, updatedAt FROM pantry_movements WHERE id = 'mov-1-9'").useStatement { stmt ->
+            assertTrue(stmt.step())
+            assertEquals(1500L, stmt.getLong(0))
+            assertEquals(1728900000000L, stmt.getLong(1))
+        }
+    }
+
+    @Test
+    fun room_migrates_database_from_version_8_to_9_and_validates_schema() = runTest {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val dbFile = File(context.cacheDir, "test_v8_to_v9.db")
+        if (dbFile.exists()) dbFile.delete()
+
+        // 1. Create a version 8 database on disk
+        val rawConn = AndroidSQLiteDriver().open(dbFile.absolutePath)
+        createV2Schema(rawConn)
+        MIGRATION_2_4.migrate(rawConn)
+        MIGRATION_4_5.migrate(rawConn)
+        MIGRATION_5_6.migrate(rawConn)
+        MIGRATION_6_7.migrate(rawConn)
+        MIGRATION_7_8.migrate(rawConn)
+
+        rawConn.execSQL("CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)")
+        rawConn.execSQL("INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9b670eca776704137c77f0c94cb100c0')")
+        rawConn.execSQL("PRAGMA user_version = 8")
+
+        // Insert real v8 pantry movement
+        rawConn.execSQL(
+            """
+            INSERT INTO `catalog_products` (`id`, `name`, `measureUnit`, `netWeight`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`)
+            VALUES ('prod-disk-v8', 'Sabonete', 'GRAM', 90.0, 1000, 0, 0, 'Higiene')
+            """.trimIndent()
+        )
+        rawConn.execSQL(
+            """
+            INSERT INTO `pantry_movements` (`id`, `pantry_item_id`, `productId`, `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `timestamp`, `store_or_reason`, `is_deleted`)
+            VALUES ('mov-disk-v8', 'pantry-disk-v8', 'prod-disk-v8', 'ENTRY_MANUAL', 4.0, 300, 1200, 1728900000000, 'Farmácia', 0)
+            """.trimIndent()
+        )
+        rawConn.close()
+
+        // 2. Open with Room (version 9) and ALL_MIGRATIONS
+        val roomDb = Room.databaseBuilder<AppDatabase>(context, dbFile.absolutePath)
+            .addMigrations(*ALL_MIGRATIONS)
+            .setDriver(AndroidSQLiteDriver())
+            .build()
+
+        // 3. Verify movement data is preserved and DAO returns updatedAt
+        val movements = roomDb.movementDao().getAllMovements().first()
+        assertEquals(1, movements.size)
+        assertEquals("mov-disk-v8", movements[0].id)
+        assertEquals(1728900000000L, movements[0].updatedAt)
+
+        roomDb.close()
     }
 
     private fun createV2Schema(connection: SQLiteConnection) {
