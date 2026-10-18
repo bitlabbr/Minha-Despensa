@@ -65,6 +65,14 @@ kotlin {
             implementation(libs.ktor.serialization.kotlinx.json)
         }
 
+        androidMain.dependencies {
+            api(libs.ktor.client.okhttp)
+        }
+
+        iosMain.dependencies {
+            api(libs.ktor.client.darwin)
+        }
+
         commonTest.dependencies {
             implementation(kotlin("test"))
             implementation(libs.kotlinx.coroutines.test)
