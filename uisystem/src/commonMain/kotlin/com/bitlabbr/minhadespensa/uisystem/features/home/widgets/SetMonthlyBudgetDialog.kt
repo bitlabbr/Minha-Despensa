@@ -45,6 +45,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaD
 import com.bitlabbr.minhadespensa.uisystem.components.core.input.MinhaDespensaTextField
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.util.CurrencyThousandsVisualTransformation
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_cancel
@@ -145,6 +146,7 @@ fun SetMonthlyBudgetDialog(
             modifier = Modifier.fillMaxWidth(),
             label = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_label)) },
             placeholder = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_placeholder)) },
+            visualTransformation = remember { CurrencyThousandsVisualTransformation() },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             singleLine = true,
         )
