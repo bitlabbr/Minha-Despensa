@@ -51,7 +51,7 @@ class PantryMovementTest {
             quantity = 5.0,
             unitPriceInCents = 1000L,
             totalPriceInCents = 5000L,
-            timestamp = 1728900000000L,
+            updatedAt = 1728900000000L,
             storeOrReason = "Entrada na Despensa",
             isDeleted = false,
         )
@@ -71,7 +71,7 @@ class PantryMovementTest {
             quantity = 2.0,
             unitPriceInCents = 500L,
             totalPriceInCents = 1200L, // Explicit total takes precedence
-            timestamp = 1000L,
+            updatedAt = 1000L,
         )
 
         assertEquals(1200L, movement.computedTotalPriceInCents)
@@ -86,7 +86,7 @@ class PantryMovementTest {
             quantity = 2.5,
             unitPriceInCents = 1000L,
             totalPriceInCents = null,
-            timestamp = 1000L,
+            updatedAt = 1000L,
         )
 
         assertEquals(2500L, movement.computedTotalPriceInCents)
@@ -101,7 +101,7 @@ class PantryMovementTest {
             quantity = 1.0,
             unitPriceInCents = null,
             totalPriceInCents = null,
-            timestamp = 1000L,
+            updatedAt = 1000L,
         )
 
         assertNull(movement.computedTotalPriceInCents)
