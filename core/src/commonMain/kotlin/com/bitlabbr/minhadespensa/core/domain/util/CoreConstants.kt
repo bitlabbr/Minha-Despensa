@@ -68,6 +68,9 @@ object CoreConstants {
         const val ERROR_CATEGORY_ALREADY_EXISTS = "Já existe uma categoria com este nome"
         const val ERROR_CATEGORY_DEFAULT_IMMUTABLE = "A categoria padrão 'Outros' não pode ser alterada ou excluída"
         const val ERROR_CATEGORY_ID_REQUIRED = "O ID da categoria é obrigatório"
+        const val ERROR_INVOICE_QR_CODE_BLANK = "O conteúdo do QR Code da nota fiscal não pode ser vazio"
+        const val ERROR_INVOICE_ITEMS_EMPTY = "Nenhum item selecionado para importação da nota fiscal"
+        const val ERROR_INVOICE_STORE_NAME_BLANK = "O nome do estabelecimento não pode ser vazio"
     }
 
     object CatalogCategories {

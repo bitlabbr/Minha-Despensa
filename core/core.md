@@ -99,13 +99,19 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
         *   `averagePriceInCents`: Resolved as `totalValueInCents / itemsWithPriceCount` when `itemsWithPriceCount > 0`, or `null`.
 *   **`ProductCategory`**: Represents a product category (default or user-created) with CRDT LWW metadata.
     *   *Fields*: `id`, `name`, `isDefault`, `updatedAt`, `isDeleted`.
+*   **`Invoice`**: Represents a parsed invoice (NFC-e) from a supermarket/store.
+    *   *Fields*: `accessKey`, `storeName`, `emissionDate`, `items`.
+    *   *Computed Domain Properties*: `totalInvoiceInCents`, `totalSelectedItems`, `totalSelectedInCents`.
+*   **`InvoiceItem`**: Individual product line item extracted from an invoice.
+    *   *Fields*: `id`, `ean`, `name`, `quantity`, `measureUnit`, `unitPriceInCents`, `totalPriceInCents`, `isSelected`.
+    *   *Computed Domain Property*: `computedTotalPriceInCents`.
 *   **`IconKeys`**: String keys mapping domain categories to application icons (e.g., `GRAINS`, `CLEANING`, `BEVERAGES`).
 
 ---
 
 ### 4.2. Domain Use Cases (`domain/usecase`)
 
-The `:core` module defines 19 use cases encapsulating discrete application business rules and orchestration:
+The `:core` module defines 21 use cases encapsulating discrete application business rules and orchestration:
 *   **`SaveCatalogProductUseCase`**:
     *   Validates catalog product constraints (name length, category, EAN numeric format and length, positive net weight).
     *   Saves or updates the product via `CatalogRepository` with optional image thumbnail bytes and explicit `removeImage: Boolean` flag when editing.
@@ -145,6 +151,10 @@ The `:core` module defines 19 use cases encapsulating discrete application busin
     *   Calculates the total monetary value of current active inventory in the pantry by summing `quantity * unitPriceInCents` for priced items, emitting a reactive `PantryStockValue`.
 *   **`GetYearlyFinancialSummaryUseCase`**:
     *   Validates year (2000..2100) and delegates to `BudgetRepository.getYearlySummary()`, emitting the 12-month budget vs expense history.
+*   **`ParseInvoiceQrCodeUseCase`**:
+    *   Validates that the scanned QR code content is not blank, and invokes `InvoiceRepository.parseInvoiceFromQrCode()` to retrieve the parsed invoice with items, store details, and prices.
+*   **`ImportInvoiceToPantryUseCase`**:
+    *   Validates non-blank store name, non-empty selection of invoice items, positive quantities and non-negative unit prices, delegating bulk atomic import to `InvoiceRepository.importInvoiceToPantry()`.
 
 ---
 
@@ -216,6 +226,9 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `markShoppingItemAsDeleted(itemId: String, updatedAt: Long)`
     *   `deleteShoppingItemById(itemId: String)`
     *   `finalizePurchase(listId: String)`
+*   **`InvoiceRepository`**:
+    *   `parseInvoiceFromQrCode(qrCodeContent: String): Result<Invoice>`
+    *   `importInvoiceToPantry(storeName: String, items: List<InvoiceItem>): Result<Int>`
 
 ---
 
@@ -254,5 +267,6 @@ The `:core` module contains comprehensive unit tests located in `core/src/common
 *   `CoreConstantsTest`: Ensures domain constants remain immutable and properly bounded.
 *   `TimestampToleranceTest`: Verifies clock skew tolerance and boundary enforcement.
 *   `ConsoleLoggerTest`: Verifies formatting and level output.
+*   `InvoiceUseCasesTest`: Tests QR code blank validation, invoice parsing delegation, item validation (positive quantities, non-blank names, non-negative unit prices), item selection filtering, and computed properties (`totalInvoiceInCents`, `totalSelectedItems`, `totalSelectedInCents`).
 
-All 109 tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
+All unit tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
