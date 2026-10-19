@@ -214,8 +214,8 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   `getYearlySummary`: Combines 12 individual reactive monthly expense flows with the annual budgets query into an immutable, reactive list of 12 `MonthlyFinancialSummary` items ordered from January (month 1) to December (month 12).
 *   **`RoomInvoiceRepository`**:
     *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase` and logger as private members.
-    *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice`.
-    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, persists `PantryItemEntity` stock, creates `PriceEntryEntity` price history for priced items, and registers audit ledger `PantryMovementEntity` with `ENTRY_PURCHASE`.
+    *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice` with automatic consolidation of duplicate product lines.
+    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing consolidated bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, groups items matching the same `targetProductId`, and persists a single consolidated `PantryItemEntity`, a single `PriceEntryEntity`, and a single `PantryMovementEntity` (`ENTRY_PURCHASE`) per unique product.
 
 ---
 

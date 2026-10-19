@@ -32,6 +32,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.PantryMovement
 import com.bitlabbr.minhadespensa.core.domain.model.PriceEntry
 import com.bitlabbr.minhadespensa.core.domain.model.invoice.Invoice
 import com.bitlabbr.minhadespensa.core.domain.model.invoice.InvoiceItem
+import com.bitlabbr.minhadespensa.core.domain.model.invoice.consolidateDuplicates
 import com.bitlabbr.minhadespensa.core.domain.repository.InvoiceRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
@@ -41,6 +42,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import com.bitlabbr.minhadespensa.data.remote.InvoiceRemoteDataSource
+import kotlin.math.roundToLong
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -61,14 +63,19 @@ class RoomInvoiceRepository(
         storeName: String,
         items: List<InvoiceItem>,
     ): Result<Int> = runCatching {
-        logger.d(TAG, "importInvoiceToPantry starting import for ${items.size} items from store '$storeName'")
+        val consolidatedItems = items.consolidateDuplicates()
+        logger.d(
+            TAG,
+            "importInvoiceToPantry starting import for ${consolidatedItems.size} consolidated items (from ${items.size} raw) from store '$storeName'"
+        )
         var importedCount = 0
 
         db.useWriterConnection { connection ->
             connection.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
                 val now = getCurrentTime()
+                val groupedByProductId = LinkedHashMap<String, MutableList<InvoiceItem>>()
 
-                items.forEach { item ->
+                consolidatedItems.forEach { item ->
                     val trimmedName = item.name.trim()
                     val sanitizedName = trimmedName.take(CoreConstants.Product.NAME_MAX_LENGTH).trim()
 
@@ -104,13 +111,25 @@ class RoomInvoiceRepository(
                         newId
                     }
 
+                    groupedByProductId.getOrPut(targetProductId) { mutableListOf() }.add(item)
+                }
+
+                groupedByProductId.forEach { (targetProductId, productItems) ->
+                    val totalQuantity = (productItems.sumOf { it.quantity } * 10000.0).roundToLong() / 10000.0
+                    val unitPriceInCents = productItems.firstNotNullOfOrNull { it.unitPriceInCents }
+                    val totalPriceInCents = if (productItems.any { it.computedTotalPriceInCents != null }) {
+                        productItems.sumOf { it.computedTotalPriceInCents ?: 0L }
+                    } else {
+                        null
+                    }
+
                     val pantryItemId = Uuid.random().toString()
                     db.pantryDao().insertPantryItem(
                         PantryItem(
                             id = pantryItemId,
                             productId = targetProductId,
-                            quantity = item.quantity,
-                            unitPriceInCents = item.unitPriceInCents,
+                            quantity = totalQuantity,
+                            unitPriceInCents = unitPriceInCents,
                             updatedAt = now,
                             isDeleted = false,
                             expirationDate = null,
@@ -118,7 +137,7 @@ class RoomInvoiceRepository(
                         ).toEntity()
                     )
 
-                    item.unitPriceInCents?.let { price ->
+                    unitPriceInCents?.let { price ->
                         db.priceDao().insertPriceEntry(
                             PriceEntry(
                                 id = pantryItemId,
@@ -136,9 +155,9 @@ class RoomInvoiceRepository(
                         pantryItemId = pantryItemId,
                         productId = targetProductId,
                         type = MovementType.ENTRY_PURCHASE,
-                        quantity = item.quantity,
-                        unitPriceInCents = item.unitPriceInCents,
-                        totalPriceInCents = item.computedTotalPriceInCents,
+                        quantity = totalQuantity,
+                        unitPriceInCents = unitPriceInCents,
+                        totalPriceInCents = totalPriceInCents,
                         updatedAt = now,
                         storeOrReason = "Nota Fiscal: $storeName",
                         isDeleted = false,

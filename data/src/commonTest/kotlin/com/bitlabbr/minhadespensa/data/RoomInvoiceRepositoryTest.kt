@@ -218,4 +218,50 @@ class RoomInvoiceRepositoryTest : BaseTest() {
         assertEquals(1.5, movements[0].quantity)
         assertEquals(null, movements[0].unitPriceInCents)
     }
+
+    @Test
+    fun `importInvoiceToPantry should group duplicate products into a single pantry item price entry and movement`() = runTest {
+        val items = listOf(
+            InvoiceItem(
+                id = "dup-1",
+                ean = "7898123456789",
+                name = "PALMEIRON EXTRATO DE TOMATE",
+                quantity = 1.0,
+                measureUnit = MeasureUnit.UNIT,
+                unitPriceInCents = 279L,
+                totalPriceInCents = 279L,
+            ),
+            InvoiceItem(
+                id = "dup-2",
+                ean = "7898123456789",
+                name = "PALMEIRON EXTRATO DE TOMATE",
+                quantity = 2.0,
+                measureUnit = MeasureUnit.UNIT,
+                unitPriceInCents = 279L,
+                totalPriceInCents = 558L,
+            ),
+        )
+
+        val result = repository.importInvoiceToPantry("Estrada de Belém", items)
+        assertTrue(result.isSuccess)
+        assertEquals(1, result.getOrThrow())
+
+        val allProducts = db.catalogDao().getAllActiveSnapshot()
+        assertEquals(1, allProducts.size)
+
+        val pantryItems = db.pantryDao().getPantryItemsByProductId(allProducts[0].id).first()
+        assertEquals(1, pantryItems.size)
+        assertEquals(3.0, pantryItems[0].quantity)
+        assertEquals(279L, pantryItems[0].unitPriceInCents)
+
+        val priceHistory = db.priceDao().getPriceHistoryByProductId(allProducts[0].id).first()
+        assertEquals(1, priceHistory.size)
+        assertEquals(279L, priceHistory[0].priceInCents)
+
+        val movements = db.movementDao().getAllMovements().first()
+        assertEquals(1, movements.size)
+        assertEquals(3.0, movements[0].quantity)
+        assertEquals(279L, movements[0].unitPriceInCents)
+        assertEquals(837L, movements[0].totalPriceInCents)
+    }
 }

@@ -104,4 +104,35 @@ class InvoiceMapperTest {
         assertEquals(MeasureUnit.UNIT, parseMeasureUnit(null))
         assertEquals(MeasureUnit.UNIT, parseMeasureUnit("UNKNOWN"))
     }
+
+    @Test
+    fun `toDomain should consolidate duplicate InvoiceItemDto entries by EAN and normalized name`() {
+        val dto = InvoiceResponseDto(
+            storeName = "Supermercado Estrada de Belém",
+            items = listOf(
+                InvoiceItemDto(
+                    ean = "7898123456789",
+                    name = "PALMEIRON EXTRATO DE TOMATE",
+                    quantity = 1.0,
+                    measureUnit = "UN",
+                    unitPriceInCents = 279L,
+                    totalPriceInCents = 279L,
+                ),
+                InvoiceItemDto(
+                    ean = "7898123456789",
+                    name = "PALMEIRON EXTRATO DE TOMATE",
+                    quantity = 1.0,
+                    measureUnit = "UN",
+                    unitPriceInCents = 279L,
+                    totalPriceInCents = 279L,
+                ),
+            ),
+        )
+
+        val domain = dto.toDomain()
+        assertEquals(1, domain.items.size)
+        assertEquals(2.0, domain.items[0].quantity)
+        assertEquals(279L, domain.items[0].unitPriceInCents)
+        assertEquals(558L, domain.items[0].totalPriceInCents)
+    }
 }
