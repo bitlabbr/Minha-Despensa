@@ -176,4 +176,65 @@ class InvoiceUseCasesTest {
         assertEquals(1, invoice.totalSelectedItems)
         assertEquals(1500L, invoice.totalSelectedInCents)
     }
+
+    @Test
+    fun `ParseInvoiceQrCodeUseCase should consolidate duplicate products with same EAN or normalized name`() = runTest {
+        val ungroupedInvoice = Invoice(
+            accessKey = "26241012345678000190650010001234561001234567",
+            storeName = "Supermercado Estrada de Belém",
+            items = listOf(
+                InvoiceItem(
+                    id = "1",
+                    ean = "7898123456789",
+                    name = "PALMEIRON EXTRATO DE TOMATE",
+                    quantity = 1.0,
+                    measureUnit = MeasureUnit.UNIT,
+                    unitPriceInCents = 279L,
+                    totalPriceInCents = 279L,
+                ),
+                InvoiceItem(
+                    id = "2",
+                    ean = "7898123456789",
+                    name = "PALMEIRON EXTRATO DE TOMATE",
+                    quantity = 2.0,
+                    measureUnit = MeasureUnit.UNIT,
+                    unitPriceInCents = 279L,
+                    totalPriceInCents = 558L,
+                ),
+                InvoiceItem(
+                    id = "3",
+                    ean = null,
+                    name = "Maçã Nacional KG",
+                    quantity = 0.29,
+                    measureUnit = MeasureUnit.KILOGRAM,
+                    unitPriceInCents = 1099L,
+                    totalPriceInCents = 319L,
+                ),
+                InvoiceItem(
+                    id = "4",
+                    ean = null,
+                    name = "MACA NACIONAL KG",
+                    quantity = 0.71,
+                    measureUnit = MeasureUnit.KILOGRAM,
+                    unitPriceInCents = 1099L,
+                    totalPriceInCents = 780L,
+                ),
+            ),
+        )
+        invoiceRepository.parseResult = Result.success(ungroupedInvoice)
+
+        val result = parseInvoiceQrCodeUseCase("http://nfce.sefaz.pe.gov.br/nfce/consulta?p=123").getOrThrow()
+        assertEquals(2, result.items.size)
+
+        val first = result.items[0]
+        assertEquals("7898123456789", first.ean)
+        assertEquals(3.0, first.quantity)
+        assertEquals(279L, first.unitPriceInCents)
+        assertEquals(837L, first.totalPriceInCents)
+
+        val second = result.items[1]
+        assertEquals(1.0, second.quantity)
+        assertEquals(1099L, second.unitPriceInCents)
+        assertEquals(1099L, second.totalPriceInCents)
+    }
 }

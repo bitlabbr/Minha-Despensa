@@ -152,7 +152,7 @@ The `:core` module defines 21 use cases encapsulating discrete application busin
 *   **`GetYearlyFinancialSummaryUseCase`**:
     *   Validates year (2000..2100) and delegates to `BudgetRepository.getYearlySummary()`, emitting the 12-month budget vs expense history.
 *   **`ParseInvoiceQrCodeUseCase`**:
-    *   Validates that the scanned QR code content is not blank, and invokes `InvoiceRepository.parseInvoiceFromQrCode()` to retrieve the parsed invoice with items, store details, and prices.
+    *   Validates that the scanned QR code content is not blank, invokes `InvoiceRepository.parseInvoiceFromQrCode()` to retrieve the parsed invoice, and consolidates duplicate product entries (`consolidateDuplicateItems()`) by summing quantities and total prices.
 *   **`ImportInvoiceToPantryUseCase`**:
     *   Validates non-blank store name, non-empty selection of invoice items, positive quantities and non-negative unit prices, delegating bulk atomic import to `InvoiceRepository.importInvoiceToPantry()`.
 

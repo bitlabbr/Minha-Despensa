@@ -33,6 +33,6 @@ class ParseInvoiceQrCodeUseCase(
     suspend operator fun invoke(qrCodeContent: String): Result<Invoice> = runCatching {
         val trimmed = qrCodeContent.trim()
         require(trimmed.isNotBlank()) { CoreConstants.Validation.ERROR_INVOICE_QR_CODE_BLANK }
-        invoiceRepository.parseInvoiceFromQrCode(trimmed).getOrThrow()
+        invoiceRepository.parseInvoiceFromQrCode(trimmed).getOrThrow().consolidateDuplicateItems()
     }
 }
