@@ -214,8 +214,8 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   `getYearlySummary`: Combines 12 individual reactive monthly expense flows with the annual budgets query into an immutable, reactive list of 12 `MonthlyFinancialSummary` items ordered from January (month 1) to December (month 12).
 *   **`RoomInvoiceRepository`**:
     *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase` and logger as private members.
-    *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice`.
-    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, persists `PantryItemEntity` stock, creates `PriceEntryEntity` price history for priced items, and registers audit ledger `PantryMovementEntity` with `ENTRY_PURCHASE`.
+    *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice` with automatic consolidation of duplicate product lines.
+    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing consolidated bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, groups items matching the same `targetProductId`, and persists a single consolidated `PantryItemEntity`, a single `PriceEntryEntity`, and a single `PantryMovementEntity` (`ENTRY_PURCHASE`) per unique product.
 
 ---
 
@@ -225,7 +225,7 @@ Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
 *   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`.
 *   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
-*   Networking & Invoice: `InvoiceServerConfig` (configurable base URL), `HttpClient` (with `ContentNegotiation` and `json()`), and `InvoiceRemoteDataSource` (`KtorInvoiceRemoteDataSource`).
+*   Networking & Invoice: `InvoiceServerConfig` (configurable base URL), `HttpClient(createPlatformHttpClientEngine())` (with `ContentNegotiation`, `json()`, and platform-specific engine providing SSL/TLS custom trust for `*.domus.arpa` and local development hosts on Android), and `InvoiceRemoteDataSource` (`KtorInvoiceRemoteDataSource`).
 *   Use Case Factories: Registers all 21 domain use cases (`SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`).
 
 ---
@@ -243,6 +243,7 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`RoomShoppingListRepositoryTest`**: Tests shopping lists, item management, scratchpad items, LWW updates, and checkout (`finalizePurchase`).
 *   **`RoomInvoiceRepositoryTest`**: Tests invoice QR code parsing delegation and atomic bulk pantry import with SQLite in-memory: creating new catalog products, reusing existing products by matching EAN or name, inserting pantry items, recording latest price history and purchase movements in `pantry_movements`.
 *   **`KtorInvoiceRemoteDataSourceTest`**: Tests HTTP JSON request payload serialization, endpoint routing, and error status handling using Ktor's `MockEngine`.
+*   **`AndroidHttpClientEngineTest`**: Tests Android platform OkHttp engine instantiation, custom `X509TrustManager` fallback for `*.domus.arpa` and development CAs, and dev hostname verification.
 *   **`InvoiceMapperTest`**: Tests mapping between remote DTOs and domain models (`Invoice`, `InvoiceItem`) and measurement unit normalization (`parseMeasureUnit`).
 *   **`DataConsistencyTest`**: Cross-repository integration tests validating database cascade deletions, foreign key enforcement, and end-to-end multi-table transactions.
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.

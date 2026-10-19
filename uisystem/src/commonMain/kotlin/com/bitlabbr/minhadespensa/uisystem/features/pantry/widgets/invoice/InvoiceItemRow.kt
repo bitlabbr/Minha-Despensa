@@ -30,12 +30,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.RadioButtonUnchecked
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.core.domain.model.invoice.InvoiceItem
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
@@ -64,29 +64,33 @@ fun InvoiceItemRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(dimens.paddingSmall),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                IconButton(onClick = { onToggleSelect(!item.isSelected) }) {
-                    Icon(
-                        imageVector = if (item.isSelected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
-                        contentDescription = null,
-                        tint = if (item.isSelected) colors.primary else colors.onSecondaryContainer.copy(alpha = 0.4f),
-                    )
-                }
+                Icon(
+                    imageVector = if (item.isSelected) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (item.isSelected) colors.primary else colors.onSecondaryContainer.copy(alpha = 0.35f),
+                    modifier = Modifier.size(22.dp),
+                )
 
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
                     MinhaDespensaText(
                         text = item.name,
                         fontStyle = typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                         color = if (item.isSelected) colors.onSecondaryContainer else colors.onSecondaryContainer.copy(alpha = 0.5f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
                     )
 
                     val quantityFormatted = if (item.quantity % 1.0 == 0.0) {
@@ -95,20 +99,34 @@ fun InvoiceItemRow(
                         "${item.quantity} ${item.measureUnit.toAbbreviation()}"
                     }
 
-                    val eanInfo = item.ean?.let { " • EAN: $it" } ?: ""
+                    val detailsText = buildString {
+                        append(quantityFormatted)
+                        item.unitPriceInCents?.let { unitPrice ->
+                            append(" • ")
+                            append(unitPrice.formatPrice(includeCurrencySymbol = true))
+                            append("/${item.measureUnit.toAbbreviation()}")
+                        }
+                        item.ean?.takeIf { it.isNotBlank() }?.let { ean ->
+                            append(" • ")
+                            append(ean)
+                        }
+                    }
 
                     MinhaDespensaText(
-                        text = "$quantityFormatted$eanInfo",
+                        text = detailsText,
                         fontStyle = typography.bodySmall,
                         color = colors.onSecondaryContainer.copy(alpha = 0.65f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
 
+            Spacer(modifier = Modifier.width(8.dp))
+
             Column(
                 horizontalAlignment = Alignment.End,
                 verticalArrangement = Arrangement.spacedBy(2.dp),
-                modifier = Modifier.padding(end = dimens.paddingSmall),
             ) {
                 item.computedTotalPriceInCents?.let { totalCents ->
                     MinhaDespensaText(
@@ -116,14 +134,6 @@ fun InvoiceItemRow(
                         fontStyle = typography.priceLabel,
                         fontWeight = FontWeight.Bold,
                         color = if (item.isSelected) colors.primary else colors.onSecondaryContainer.copy(alpha = 0.5f),
-                    )
-                }
-
-                item.unitPriceInCents?.let { unitCents ->
-                    MinhaDespensaText(
-                        text = "${unitCents.formatPrice(includeCurrencySymbol = true)} / un",
-                        fontStyle = typography.bodySmall,
-                        color = colors.onSecondaryContainer.copy(alpha = 0.55f),
                     )
                 }
             }

@@ -154,6 +154,7 @@ fun PantryScreen(
                 invoice = subFlow.invoice,
                 isImporting = subFlow.isImporting,
                 onToggleItem = viewModel::onToggleInvoiceItem,
+                onToggleAllItems = viewModel::onToggleAllInvoiceItems,
                 onConfirmImport = viewModel::onConfirmInvoiceImport,
                 onDismiss = viewModel::onDismissSubFlow,
             )

@@ -65,6 +65,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.ParseInvoiceQrCodeUseCase
 import com.bitlabbr.minhadespensa.data.remote.InvoiceRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.InvoiceServerConfig
 import com.bitlabbr.minhadespensa.data.remote.KtorInvoiceRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.createPlatformHttpClientEngine
 import com.bitlabbr.minhadespensa.data.repository.RoomInvoiceRepository
 import com.bitlabbr.minhadespensa.data.local.migration.ALL_MIGRATIONS
 import io.ktor.client.HttpClient
@@ -121,7 +122,8 @@ val dataModule = module {
     single { InvoiceServerConfig() }
 
     single {
-        HttpClient {
+        HttpClient(createPlatformHttpClientEngine()) {
+            followRedirects = true
             install(ContentNegotiation) {
                 json(
                     Json {

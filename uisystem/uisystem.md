@@ -150,7 +150,7 @@ Enables adding items to the pantry in bulk by scanning state tax invoice QR Code
 - **Entry Point (`AddPantryItemOptionsSheet`):** Adds a dedicated "Escanear Nota Fiscal (QR Code)" action option.
 - **Scanner Modal (`PantrySubFlow.InvoiceScanner`):** Configures `BarcodeScannerModal` with a square reticle (`isSquareReticle = true`) and dedicated instruction text ("Aponte para o QR Code da Nota Fiscal").
 - **Backend Resolution (`ParseInvoiceQrCodeUseCase`):** Consults the dedicated backend service to parse the HTML and extract items with name, EAN, quantity, unit price, and measure unit.
-- **Selective Review Sheet (`InvoiceReviewBottomSheet` / `InvoiceItemRow`):** Displays store name, total items, dynamic total price (cents-accurate), and interactive checkboxes allowing the user to uncheck non-pantry products (such as shopping bags) before finalizing import.
+- **Selective Review Sheet (`InvoiceReviewBottomSheet` / `InvoiceItemRow`):** Compact header displaying store name, emission date, dynamic selected item counter and total price (cents-accurate), bulk select/deselect all toggle (`onToggleAllItems`), and full-height scrollable product list with dynamic measure unit price labels.
 - **Atomic Bulk Import (`ImportInvoiceToPantryUseCase`):** Automatically registers missing catalog products, creates pantry stock batches, logs unit price history, and creates purchase movement ledger entries in a single database transaction.
 
 ---

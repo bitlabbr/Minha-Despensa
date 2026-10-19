@@ -23,7 +23,9 @@
 
 package com.bitlabbr.minhadespensa.core.domain.model.invoice
 
+import com.bitlabbr.minhadespensa.core.domain.util.normalizeForSearch
 import kotlinx.serialization.Serializable
+import kotlin.math.roundToLong
 
 @Serializable
 data class Invoice(
@@ -40,4 +42,57 @@ data class Invoice(
 
     val totalSelectedInCents: Long
         get() = items.filter { it.isSelected }.sumOf { it.computedTotalPriceInCents ?: 0L }
+
+    fun consolidateDuplicateItems(): Invoice = copy(
+        items = items.consolidateDuplicates()
+    )
+}
+
+fun List<InvoiceItem>.consolidateDuplicates(): List<InvoiceItem> {
+    if (size <= 1) return this
+
+    val groups = mutableListOf<MutableList<InvoiceItem>>()
+
+    for (item in this) {
+        val itemName = item.name.normalizeForSearch().replace(Regex("\\s+"), " ")
+        val itemEan = item.ean?.trim()?.takeIf { it.isNotBlank() }
+
+        val matchingGroup = groups.firstOrNull { group ->
+            val representative = group.first()
+            val repName = representative.name.normalizeForSearch().replace(Regex("\\s+"), " ")
+            val repEan = group.firstNotNullOfOrNull { it.ean?.trim()?.takeIf { e -> e.isNotBlank() } }
+
+            representative.measureUnit == item.measureUnit && (
+                (itemEan != null && repEan != null && itemEan == repEan) ||
+                    (repName.isNotBlank() && repName == itemName && (itemEan == null || repEan == null || itemEan == repEan))
+                )
+        }
+
+        if (matchingGroup != null) {
+            matchingGroup.add(item)
+        } else {
+            groups.add(mutableListOf(item))
+        }
+    }
+
+    return groups.map { group ->
+        if (group.size == 1) {
+            group.first()
+        } else {
+            val first = group.first()
+            val totalQuantity = (group.sumOf { it.quantity } * 10000.0).roundToLong() / 10000.0
+            val totalPriceInCents = group.sumOf { it.computedTotalPriceInCents ?: 0L }
+            val resolvedEan = group.firstNotNullOfOrNull { it.ean?.trim()?.takeIf { e -> e.isNotBlank() } }
+            val resolvedUnitPrice = first.unitPriceInCents
+                ?: group.firstNotNullOfOrNull { it.unitPriceInCents }
+
+            first.copy(
+                ean = resolvedEan,
+                quantity = totalQuantity,
+                unitPriceInCents = resolvedUnitPrice,
+                totalPriceInCents = totalPriceInCents,
+                isSelected = group.any { it.isSelected },
+            )
+        }
+    }
 }

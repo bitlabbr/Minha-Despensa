@@ -205,7 +205,12 @@ class PantryViewModel(
             }.onFailure { error ->
                 logger.e(TAG, "Falha ao consultar nota fiscal: ${error.message}", error)
                 _activeSubFlow.value = null
-                notificationManager.showError(UiText.Resource(Res.string.invoice_parse_error))
+                val userMessage = error.message?.takeIf { it.isNotBlank() }
+                if (userMessage != null) {
+                    notificationManager.showError(UiText.DynamicString(userMessage))
+                } else {
+                    notificationManager.showError(UiText.Resource(Res.string.invoice_parse_error))
+                }
             }
         }
     }
@@ -216,6 +221,16 @@ class PantryViewModel(
             val updatedItems = currentSubFlow.invoice.items.map { item ->
                 if (item.id == itemId) item.copy(isSelected = isSelected) else item
             }
+            _activeSubFlow.value = currentSubFlow.copy(
+                invoice = currentSubFlow.invoice.copy(items = updatedItems)
+            )
+        }
+    }
+
+    fun onToggleAllInvoiceItems(selectAll: Boolean) {
+        val currentSubFlow = _activeSubFlow.value
+        if (currentSubFlow is PantrySubFlow.InvoiceReview) {
+            val updatedItems = currentSubFlow.invoice.items.map { it.copy(isSelected = selectAll) }
             _activeSubFlow.value = currentSubFlow.copy(
                 invoice = currentSubFlow.invoice.copy(items = updatedItems)
             )

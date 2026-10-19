@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.data.local.mapper
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.invoice.Invoice
 import com.bitlabbr.minhadespensa.core.domain.model.invoice.InvoiceItem
+import com.bitlabbr.minhadespensa.core.domain.model.invoice.consolidateDuplicates
 import com.bitlabbr.minhadespensa.data.remote.dto.InvoiceItemDto
 import com.bitlabbr.minhadespensa.data.remote.dto.InvoiceResponseDto
 import kotlin.uuid.ExperimentalUuidApi
@@ -36,9 +37,9 @@ fun InvoiceResponseDto.toDomain(): Invoice = Invoice(
     accessKey = this.accessKey?.trim()?.takeIf { it.isNotBlank() },
     storeName = this.storeName.trim(),
     emissionDate = this.emissionDate?.trim()?.takeIf { it.isNotBlank() },
-    items = this.items.mapIndexed { index, itemDto ->
+    items = this.items.map { itemDto ->
         itemDto.toDomain()
-    },
+    }.consolidateDuplicates(),
 )
 
 @OptIn(ExperimentalUuidApi::class)
@@ -47,7 +48,7 @@ fun InvoiceItemDto.toDomain(): InvoiceItem = InvoiceItem(
     ean = this.ean?.trim()?.takeIf { it.isNotBlank() },
     name = this.name.trim(),
     quantity = this.quantity,
-    measureUnit = parseMeasureUnit(this.unit),
+    measureUnit = parseMeasureUnit(this.measureUnit ?: this.unit),
     unitPriceInCents = this.unitPriceInCents,
     totalPriceInCents = this.totalPriceInCents,
     isSelected = true,

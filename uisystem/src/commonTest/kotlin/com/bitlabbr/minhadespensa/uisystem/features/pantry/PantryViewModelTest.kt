@@ -630,6 +630,36 @@ class PantryViewModelTest {
     }
 
     @Test
+    fun `onToggleAllInvoiceItems should update isSelected flag for all items in review`() = runTest(testDispatcher) {
+        viewModel.uiState.launchIn(backgroundScope)
+        val testInvoice = Invoice(
+            storeName = "Supermercado Exemplo",
+            items = listOf(
+                InvoiceItem(id = "1", name = "Arroz", quantity = 2.0, isSelected = true),
+                InvoiceItem(id = "2", name = "Feijão", quantity = 1.0, isSelected = true),
+            )
+        )
+        invoiceRepository.parseResult = Result.success(testInvoice)
+
+        viewModel.onInvoiceQrCodeScanned("https://sefaz.pe.gov.br/nfce/qrcode?p=123")
+        testScheduler.advanceUntilIdle()
+
+        viewModel.onToggleAllInvoiceItems(selectAll = false)
+        testScheduler.advanceUntilIdle()
+
+        val activeFlow = viewModel.uiState.value.activeSubFlow
+        assertIs<PantrySubFlow.InvoiceReview>(activeFlow)
+        assertTrue(activeFlow.invoice.items.none { it.isSelected })
+
+        viewModel.onToggleAllInvoiceItems(selectAll = true)
+        testScheduler.advanceUntilIdle()
+
+        val activeFlow2 = viewModel.uiState.value.activeSubFlow
+        assertIs<PantrySubFlow.InvoiceReview>(activeFlow2)
+        assertTrue(activeFlow2.invoice.items.all { it.isSelected })
+    }
+
+    @Test
     fun `onConfirmInvoiceImport with no items selected should show warning notification`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
         val testInvoice = Invoice(
