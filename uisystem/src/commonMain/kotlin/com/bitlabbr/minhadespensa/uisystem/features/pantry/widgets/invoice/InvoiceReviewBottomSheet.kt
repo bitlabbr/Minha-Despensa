@@ -134,10 +134,15 @@ fun InvoiceReviewBottomSheet(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         MinhaDespensaText(
-                            text = "${invoice.totalSelectedItems}/${invoice.items.size} selecionados",
+                            text = stringResource(
+                                Res.string.invoice_review_total_selected,
+                                invoice.totalSelectedItems,
+                                invoice.items.size,
+                            ),
                             fontStyle = typography.bodySmall,
                             color = colors.onSecondaryContainer.copy(alpha = 0.75f),
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
 
                         MinhaDespensaText(
