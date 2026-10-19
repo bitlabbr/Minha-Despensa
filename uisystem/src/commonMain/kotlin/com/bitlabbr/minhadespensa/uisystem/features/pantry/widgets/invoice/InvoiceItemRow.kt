@@ -104,7 +104,7 @@ fun InvoiceItemRow(
                         item.unitPriceInCents?.let { unitPrice ->
                             append(" • ")
                             append(unitPrice.formatPrice(includeCurrencySymbol = true))
-                            append("/un")
+                            append("/${item.measureUnit.toAbbreviation()}")
                         }
                         item.ean?.takeIf { it.isNotBlank() }?.let { ean ->
                             append(" • ")

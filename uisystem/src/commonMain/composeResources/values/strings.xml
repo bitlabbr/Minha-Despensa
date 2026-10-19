@@ -142,7 +142,7 @@
     <string name="invoice_review_date_label">Data de Emissão</string>
     <string name="invoice_review_total_invoice">Total da Nota: %1$s</string>
     <string name="invoice_review_total_selected">Selecionados: %1$d itens (%2$s)</string>
-    <string name="invoice_review_action_import">Importar %1$d itens para a despensa</string>
+    <string name="invoice_review_action_import">Importar %1$d itens</string>
     <string name="invoice_review_badge_new">Novo Produto</string>
     <string name="invoice_review_badge_catalog">No Catálogo</string>
     <string name="invoice_review_select_all">Selecionar todos</string>

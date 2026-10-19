@@ -44,6 +44,7 @@ data class InvoiceItemDto(
     val name: String,
     val quantity: Double,
     val unit: String? = null,
+    val measureUnit: String? = null,
     val unitPriceInCents: Long? = null,
     val totalPriceInCents: Long? = null,
 )

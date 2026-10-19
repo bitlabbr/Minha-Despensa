@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -70,8 +71,8 @@ fun InvoiceReviewBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = dimens.paddingMedium)
-                    .padding(top = dimens.paddingSmall),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(top = 4.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -101,7 +102,7 @@ fun InvoiceReviewBottomSheet(
                         MinhaDespensaText(
                             text = storeDetails,
                             fontStyle = typography.bodySmall,
-                            color = colors.onSecondaryContainer.copy(alpha = 0.7f),
+                            color = colors.onSecondaryContainer.copy(alpha = 0.65f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -110,6 +111,7 @@ fun InvoiceReviewBottomSheet(
                     IconButton(
                         onClick = onDismiss,
                         enabled = !isImporting,
+                        modifier = Modifier.size(32.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.Close,
@@ -120,52 +122,66 @@ fun InvoiceReviewBottomSheet(
                 }
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Row(
+                        modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
                         MinhaDespensaText(
-                            text = stringResource(
-                                Res.string.invoice_review_total_selected,
-                                invoice.totalSelectedItems,
-                                invoice.totalSelectedInCents.formatPrice(includeCurrencySymbol = true),
-                            ),
+                            text = "${invoice.totalSelectedItems}/${invoice.items.size} selecionados",
                             fontStyle = typography.bodySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = colors.primary,
+                            color = colors.onSecondaryContainer.copy(alpha = 0.75f),
+                            maxLines = 1,
                         )
 
                         MinhaDespensaText(
-                            text = "(${invoice.items.size} itens)",
+                            text = "•",
                             fontStyle = typography.bodySmall,
-                            color = colors.onSecondaryContainer.copy(alpha = 0.6f),
+                            color = colors.onSecondaryContainer.copy(alpha = 0.4f),
+                        )
+
+                        MinhaDespensaText(
+                            text = invoice.totalSelectedInCents.formatPrice(includeCurrencySymbol = true),
+                            fontStyle = typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.primary,
+                            maxLines = 1,
                         )
                     }
 
                     if (onToggleAllItems != null && invoice.items.isNotEmpty()) {
-                        TextButton(
-                            onClick = { onToggleAllItems(!allSelected) },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp),
+                        CompositionLocalProvider(
+                            LocalMinimumInteractiveComponentSize provides 0.dp
                         ) {
-                            MinhaDespensaText(
-                                text = stringResource(
-                                    if (allSelected) Res.string.invoice_review_deselect_all
-                                    else Res.string.invoice_review_select_all
-                                ),
-                                fontStyle = typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colors.primary,
-                            )
+                            TextButton(
+                                onClick = { onToggleAllItems(!allSelected) },
+                                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+                                modifier = Modifier.height(28.dp),
+                            ) {
+                                MinhaDespensaText(
+                                    text = stringResource(
+                                        if (allSelected) Res.string.invoice_review_deselect_all
+                                        else Res.string.invoice_review_select_all
+                                    ),
+                                    fontStyle = typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = colors.primary,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                )
+                            }
                         }
                     }
                 }
 
                 HorizontalDivider(
-                    color = colors.outline.copy(alpha = 0.15f),
+                    color = colors.outline.copy(alpha = 0.12f),
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
@@ -175,7 +191,7 @@ fun InvoiceReviewBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = dimens.paddingMedium)
-                    .padding(top = dimens.paddingSmall),
+                    .padding(top = 8.dp),
             ) {
                 MinhaDespensaPrimaryButton(
                     text = stringResource(Res.string.invoice_review_action_import, invoice.totalSelectedItems),
