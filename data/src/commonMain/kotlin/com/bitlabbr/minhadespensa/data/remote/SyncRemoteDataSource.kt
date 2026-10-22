@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.data.remote
 
+import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.LogSanitizer
 import com.bitlabbr.minhadespensa.data.remote.dto.ApiErrorResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.ApiResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPullResponseDto
@@ -37,6 +39,7 @@ import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
@@ -48,19 +51,44 @@ interface SyncRemoteDataSource {
 class KtorSyncRemoteDataSource(
     private val httpClient: HttpClient,
     private val config: SyncServerConfig,
+    private val authTokenProvider: AuthTokenProvider = AuthTokenProvider { null },
+    private val logger: AppLogger? = null,
 ) : SyncRemoteDataSource {
 
+    private val tag = "SyncRemote"
+
     override suspend fun push(householdId: String, payload: SyncPushRequestDto): Result<SyncPushResponseDto> = runCatching {
+        val token = authTokenProvider.getAccessToken()
+        logger?.d(
+            tag,
+            "--> PUSH /api/v1/sync/push [household=$householdId, token=${LogSanitizer.maskToken(token)}, " +
+                "categories=${payload.categories.size}, products=${payload.products.size}, " +
+                "pantry=${payload.pantryItems.size}, shopping=${payload.shoppingLists.size}]",
+        )
+
         val response = httpClient.post("${config.baseUrl}/api/v1/sync/push") {
             contentType(ContentType.Application.Json)
             header("X-Household-Id", householdId)
+            if (!token.isNullOrBlank()) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
             setBody(payload)
         }
+
         if (!response.status.isSuccess()) {
-            throw RuntimeException(extractErrorMessage(response, "Sync push failed: HTTP ${response.status.value}"))
+            val errorMsg = extractErrorMessage(response, "Sync push failed: HTTP ${response.status.value}")
+            logger?.w(tag, "<-- PUSH FAILED: status=${response.status.value}, message=$errorMsg")
+            throw RuntimeException(errorMsg)
         }
+
         val envelope = response.body<ApiResponseDto<SyncPushResponseDto>>()
-        envelope.data ?: throw RuntimeException(envelope.message ?: "Sync push failed: empty data")
+        val result = envelope.data ?: throw RuntimeException(envelope.message ?: "Sync push failed: empty data")
+        logger?.i(
+            tag,
+            "<-- PUSH SUCCESS: serverVersion=${result.serverVersion}, processed=${result.processedCount}, " +
+                "remappedProducts=${result.productIdMappings.size}",
+        )
+        result
     }
 
     override suspend fun pull(
@@ -68,17 +96,39 @@ class KtorSyncRemoteDataSource(
         sinceVersion: Long,
         limit: Int,
     ): Result<SyncPullResponseDto> = runCatching {
+        val token = authTokenProvider.getAccessToken()
+        logger?.d(
+            tag,
+            "--> PULL /api/v1/sync/pull [household=$householdId, sinceVersion=$sinceVersion, " +
+                "token=${LogSanitizer.maskToken(token)}]",
+        )
+
         val response = httpClient.get("${config.baseUrl}/api/v1/sync/pull") {
             header("X-Household-Id", householdId)
+            if (!token.isNullOrBlank()) {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
             parameter("sinceVersion", sinceVersion)
             parameter("since", sinceVersion)
             parameter("limit", limit)
         }
+
         if (!response.status.isSuccess()) {
-            throw RuntimeException(extractErrorMessage(response, "Sync pull failed: HTTP ${response.status.value}"))
+            val errorMsg = extractErrorMessage(response, "Sync pull failed: HTTP ${response.status.value}")
+            logger?.w(tag, "<-- PULL FAILED: status=${response.status.value}, message=$errorMsg")
+            throw RuntimeException(errorMsg)
         }
+
         val envelope = response.body<ApiResponseDto<SyncPullResponseDto>>()
-        envelope.data ?: throw RuntimeException(envelope.message ?: "Sync pull failed: empty data")
+        val result = envelope.data ?: throw RuntimeException(envelope.message ?: "Sync pull failed: empty data")
+        val entities = result.effectiveEntities
+        logger?.i(
+            tag,
+            "<-- PULL SUCCESS: serverVersion=${result.currentVersion}, products=${entities.products.size}, " +
+                "categories=${entities.categories.size}, pantry=${entities.pantryItems.size}, " +
+                "lists=${entities.shoppingLists.size}",
+        )
+        result
     }
 
     private suspend fun extractErrorMessage(response: HttpResponse, fallback: String): String {

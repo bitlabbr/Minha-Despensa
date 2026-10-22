@@ -66,7 +66,9 @@ import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
 import com.bitlabbr.minhadespensa.core.domain.util.SyncClock
 import com.bitlabbr.minhadespensa.core.domain.util.SyncCoordinator
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
+import com.bitlabbr.minhadespensa.data.remote.AppKeyAuthTokenProvider
 import com.bitlabbr.minhadespensa.data.remote.AuthRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.AuthTokenProvider
 import com.bitlabbr.minhadespensa.data.remote.HouseholdRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorAuthRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorHouseholdRemoteDataSource
@@ -146,10 +148,15 @@ val dataModule = module {
     single { SyncServerConfig() }
     single { SyncClock() }
 
+    single<AuthTokenProvider> {
+        AppKeyAuthTokenProvider(appKeyValueDao = get())
+    }
+
     single<AuthRemoteDataSource> {
         KtorAuthRemoteDataSource(
             httpClient = get(),
             config = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
         )
     }
 
@@ -157,6 +164,8 @@ val dataModule = module {
         KtorHouseholdRemoteDataSource(
             httpClient = get(),
             config = get(),
+            authTokenProvider = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
         )
     }
 
@@ -164,6 +173,8 @@ val dataModule = module {
         KtorSyncRemoteDataSource(
             httpClient = get(),
             config = get(),
+            authTokenProvider = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
         )
     }
 
@@ -171,6 +182,7 @@ val dataModule = module {
         RoomAuthRepository(
             authRemoteDataSource = get(),
             appKeyValueDao = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
         )
     }
 
@@ -179,6 +191,7 @@ val dataModule = module {
             householdRemoteDataSource = get(),
             appKeyValueDao = get(),
             authRepository = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
         )
     }
 
@@ -187,6 +200,7 @@ val dataModule = module {
             database = get(),
             syncRemoteDataSource = get(),
             syncClock = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
         )
     }
 
@@ -248,5 +262,11 @@ val dataModule = module {
     factory { SwitchActiveHouseholdUseCase(householdRepository = get(), syncRepository = get()) }
     factory { ManageHouseholdUseCase(householdRepository = get(), syncRepository = get()) }
     factory { SyncHouseholdDataUseCase(householdRepository = get(), syncRepository = get()) }
-    single { SyncCoordinator(syncHouseholdDataUseCase = get(), syncRepository = get()) }
+    single {
+        SyncCoordinator(
+            syncHouseholdDataUseCase = get(),
+            syncRepository = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
 }

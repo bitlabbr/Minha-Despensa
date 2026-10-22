@@ -233,4 +233,60 @@ class KtorAuthAndSyncRemoteDataSourceTest {
         assertEquals(2, push.processedCount)
         assertEquals("canonical-p1", push.productIdMappings["old-p1"])
     }
+
+    @Test
+    fun syncAndHouseholdShouldAttachBearerAuthorizationHeaderWhenTokenPresent() = runTest {
+        var capturedPushAuthHeader: String? = null
+        var capturedPullAuthHeader: String? = null
+        var capturedHouseholdAuthHeader: String? = null
+
+        val client = HttpClient(MockEngine) {
+            install(ContentNegotiation) {
+                json(Json { ignoreUnknownKeys = true })
+            }
+            engine {
+                addHandler { request ->
+                    when (request.url.encodedPath) {
+                        "/api/v1/sync/push" -> {
+                            capturedPushAuthHeader = request.headers[HttpHeaders.Authorization]
+                            respond(
+                                content = """{"success":true,"data":{"serverVersion":1}}""",
+                                status = HttpStatusCode.OK,
+                                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                            )
+                        }
+                        "/api/v1/sync/pull" -> {
+                            capturedPullAuthHeader = request.headers[HttpHeaders.Authorization]
+                            respond(
+                                content = """{"success":true,"data":{"serverVersion":1}}""",
+                                status = HttpStatusCode.OK,
+                                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                            )
+                        }
+                        "/api/v1/households" -> {
+                            capturedHouseholdAuthHeader = request.headers[HttpHeaders.Authorization]
+                            respond(
+                                content = """{"success":true,"data":[]}""",
+                                status = HttpStatusCode.OK,
+                                headers = headersOf(HttpHeaders.ContentType, "application/json"),
+                            )
+                        }
+                        else -> respond("{}", HttpStatusCode.NotFound)
+                    }
+                }
+            }
+        }
+
+        val tokenProvider = { "secret_jwt_token_xyz" }
+        val syncRemote = KtorSyncRemoteDataSource(client, SyncServerConfig("https://mock.domus.arpa"), tokenProvider)
+        val householdRemote = KtorHouseholdRemoteDataSource(client, SyncServerConfig("https://mock.domus.arpa"), tokenProvider)
+
+        syncRemote.push("hh-1", SyncPushRequestDto())
+        syncRemote.pull("hh-1", 0L)
+        householdRemote.listHouseholds()
+
+        assertEquals("Bearer secret_jwt_token_xyz", capturedPushAuthHeader)
+        assertEquals("Bearer secret_jwt_token_xyz", capturedPullAuthHeader)
+        assertEquals("Bearer secret_jwt_token_xyz", capturedHouseholdAuthHeader)
+    }
 }

@@ -28,6 +28,8 @@ import com.bitlabbr.minhadespensa.core.domain.model.Household
 import com.bitlabbr.minhadespensa.core.domain.model.HouseholdRole
 import com.bitlabbr.minhadespensa.core.domain.model.UserAccount
 import com.bitlabbr.minhadespensa.core.domain.repository.AuthRepository
+import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.LogSanitizer
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.dao.AppKeyValueDao
 import com.bitlabbr.minhadespensa.data.local.entity.AppKeyValueEntity
@@ -42,8 +44,10 @@ import kotlinx.serialization.json.Json
 class RoomAuthRepository(
     private val authRemoteDataSource: AuthRemoteDataSource,
     private val appKeyValueDao: AppKeyValueDao,
+    private val logger: AppLogger? = null,
 ) : AuthRepository {
 
+    private val tag = "Auth"
     private val json = Json { ignoreUnknownKeys = true }
 
     companion object {
@@ -64,21 +68,30 @@ class RoomAuthRepository(
     }
 
     override suspend fun register(name: String, email: String, password: String): Result<AuthSession> = runCatching {
+        logger?.i(tag, "Registering user email=${LogSanitizer.maskEmail(email)}")
         val response = authRemoteDataSource.register(name, email, password).getOrThrow()
-        saveSessionFromResponse(response)
+        val session = saveSessionFromResponse(response)
+        logger?.i(tag, "Registration successful: userId=${session.user.id}, householdId=${session.activeHousehold.id}")
+        session
     }
 
     override suspend fun login(email: String, password: String): Result<AuthSession> = runCatching {
+        logger?.i(tag, "Logging in user email=${LogSanitizer.maskEmail(email)}")
         val response = authRemoteDataSource.login(email, password).getOrThrow()
-        saveSessionFromResponse(response)
+        val session = saveSessionFromResponse(response)
+        logger?.i(tag, "Login successful: userId=${session.user.id}, householdId=${session.activeHousehold.id}")
+        session
     }
 
     override suspend fun logout(forceDiscard: Boolean): Result<Unit> = runCatching {
+        logger?.i(tag, "Logging out user (forceDiscard=$forceDiscard)")
         clearSession()
+        logger?.i(tag, "User logged out, session cleared")
     }
 
     override suspend fun refreshSession(): Result<AuthSession> = runCatching {
         val current = getCurrentSession() ?: throw IllegalStateException("No active session to refresh")
+        logger?.d(tag, "Refreshing session token...")
         val response = authRemoteDataSource.refreshToken(current.refreshToken).getOrThrow()
         val updated = current.copy(
             accessToken = response.accessToken,
@@ -86,6 +99,7 @@ class RoomAuthRepository(
             expiresInSeconds = response.expiresIn,
         )
         persistSession(updated)
+        logger?.i(tag, "Session refreshed successfully (expiresIn=${response.expiresIn}s)")
         updated
     }
 

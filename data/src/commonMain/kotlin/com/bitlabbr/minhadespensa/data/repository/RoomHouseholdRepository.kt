@@ -29,6 +29,8 @@ import com.bitlabbr.minhadespensa.core.domain.model.HouseholdMember
 import com.bitlabbr.minhadespensa.core.domain.model.HouseholdRole
 import com.bitlabbr.minhadespensa.core.domain.repository.AuthRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.HouseholdRepository
+import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.LogSanitizer
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.dao.AppKeyValueDao
 import com.bitlabbr.minhadespensa.data.local.entity.AppKeyValueEntity
@@ -43,8 +45,10 @@ class RoomHouseholdRepository(
     private val householdRemoteDataSource: HouseholdRemoteDataSource,
     private val appKeyValueDao: AppKeyValueDao,
     private val authRepository: AuthRepository,
+    private val logger: AppLogger? = null,
 ) : HouseholdRepository {
 
+    private val tag = "Household"
     private val json = Json { ignoreUnknownKeys = true }
 
     override fun observeActiveHousehold(): Flow<Household?> =

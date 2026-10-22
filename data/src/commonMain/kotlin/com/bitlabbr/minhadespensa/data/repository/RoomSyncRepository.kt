@@ -29,6 +29,7 @@ import androidx.sqlite.execSQL
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.WorkspaceSwitchCheckResult
 import com.bitlabbr.minhadespensa.core.domain.repository.SyncRepository
+import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.SyncClock
 import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
@@ -61,6 +62,7 @@ class RoomSyncRepository(
     private val database: AppDatabase,
     private val syncRemoteDataSource: SyncRemoteDataSource,
     private val syncClock: SyncClock,
+    private val logger: AppLogger? = null,
 ) : SyncRepository {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -72,15 +74,21 @@ class RoomSyncRepository(
         database.pendingSyncDao().getPendingCount()
 
     override suspend fun sync(): Result<Unit> = runCatching {
+        val startTime = getCurrentTime()
         val activeHouseholdId = database.appKeyValueDao().get(RoomAuthRepository.KEY_ACTIVE_HOUSEHOLD_ID)
-            ?: return@runCatching
+        if (activeHouseholdId.isNullOrBlank()) {
+            logger?.d("Sync", "Sync skipped: no active household configured")
+            return@runCatching
+        }
 
         val cursorKey = "sync_cursor_$activeHouseholdId"
         val currentCursor = database.appKeyValueDao().get(cursorKey)?.toLongOrNull() ?: 0L
+        logger?.i("Sync", "Starting bidirectional sync for household=$activeHouseholdId (cursor=$currentCursor)")
 
         // 1. Process pending outbox mutations (push)
         val pendingEntries = database.pendingSyncDao().getAllPending(100)
         if (pendingEntries.isNotEmpty()) {
+            logger?.d("Sync", "Processing ${pendingEntries.size} pending outbox mutations...")
             val mutationDtos = mutableListOf<SyncMutationRequestDto>()
             val categories = mutableListOf<CategorySyncDto>()
             val products = mutableListOf<CatalogProductSyncDto>()
@@ -132,22 +140,32 @@ class RoomSyncRepository(
 
             val pushResponse = syncRemoteDataSource.push(activeHouseholdId, pushPayload).getOrThrow()
             syncClock.calibrate(pushResponse.serverTimestamp)
+            logger?.i("Sync", "Outbox push completed: serverVersion=${pushResponse.serverVersion}, processed=${pushResponse.processedCount}")
 
             // Reconcile product ID remappings atomically
             if (pushResponse.productIdMappings.isNotEmpty()) {
+                logger?.d("Sync", "Applying ${pushResponse.productIdMappings.size} product ID remappings")
                 applyProductIdMappings(pushResponse.productIdMappings)
             }
 
             // Delete processed entries from outbox
             database.pendingSyncDao().deleteByIds(pendingEntries.map { it.id })
+            logger?.d("Sync", "Drained ${pendingEntries.size} processed entries from local outbox")
         }
 
         // 2. Pull remote updates
+        logger?.d("Sync", "Pulling delta updates since cursor=$currentCursor...")
         val pullResponse = syncRemoteDataSource.pull(activeHouseholdId, currentCursor, 100).getOrThrow()
         syncClock.calibrate(pullResponse.serverTimestamp)
 
         // 3. Apply pulled entities atomically
-        applyPulledEntities(pullResponse.effectiveEntities)
+        val entities = pullResponse.effectiveEntities
+        logger?.i(
+            "Sync",
+            "Applying pulled delta: nextCursor=${pullResponse.currentVersion}, products=${entities.products.size}, " +
+                "categories=${entities.categories.size}, pantry=${entities.pantryItems.size}, lists=${entities.shoppingLists.size}",
+        )
+        applyPulledEntities(entities)
 
         // 4. Update cursor
         database.appKeyValueDao().put(
@@ -157,6 +175,8 @@ class RoomSyncRepository(
                 updatedAt = syncClock.now(),
             ),
         )
+        val durationMs = getCurrentTime() - startTime
+        logger?.i("Sync", "Bidirectional sync completed successfully in ${durationMs}ms")
     }
 
     private suspend fun applyProductIdMappings(mappings: Map<String, String>) {

@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.data.remote
 
+import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.LogSanitizer
 import com.bitlabbr.minhadespensa.data.remote.dto.ApiErrorResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.ApiResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.AuthResponseDto
@@ -48,42 +50,59 @@ interface AuthRemoteDataSource {
 class KtorAuthRemoteDataSource(
     private val httpClient: HttpClient,
     private val config: SyncServerConfig,
+    private val logger: AppLogger? = null,
 ) : AuthRemoteDataSource {
 
+    private val tag = "AuthRemote"
+
     override suspend fun register(name: String, email: String, password: String): Result<AuthResponseDto> = runCatching {
+        logger?.d(tag, "--> POST /api/v1/auth/register [email=${LogSanitizer.maskEmail(email)}]")
         val response = httpClient.post("${config.baseUrl}/api/v1/auth/register") {
             contentType(ContentType.Application.Json)
             setBody(RegisterRequestDto(name = name, email = email, password = password))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException(extractErrorMessage(response, "Registration failed: HTTP ${response.status.value}"))
+            val errorMsg = extractErrorMessage(response, "Registration failed: HTTP ${response.status.value}")
+            logger?.w(tag, "<-- POST /api/v1/auth/register FAILED: $errorMsg")
+            throw RuntimeException(errorMsg)
         }
         val envelope = response.body<ApiResponseDto<AuthResponseDto>>()
-        envelope.data ?: throw RuntimeException(envelope.message ?: "Registration failed: empty data")
+        val data = envelope.data ?: throw RuntimeException(envelope.message ?: "Registration failed: empty data")
+        logger?.i(tag, "<-- POST /api/v1/auth/register SUCCESS: userId=${data.user.id}, token=${LogSanitizer.maskToken(data.accessToken)}")
+        data
     }
 
     override suspend fun login(email: String, password: String): Result<AuthResponseDto> = runCatching {
+        logger?.d(tag, "--> POST /api/v1/auth/login [email=${LogSanitizer.maskEmail(email)}]")
         val response = httpClient.post("${config.baseUrl}/api/v1/auth/login") {
             contentType(ContentType.Application.Json)
             setBody(LoginRequestDto(email = email, password = password))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException(extractErrorMessage(response, "Login failed: HTTP ${response.status.value}"))
+            val errorMsg = extractErrorMessage(response, "Login failed: HTTP ${response.status.value}")
+            logger?.w(tag, "<-- POST /api/v1/auth/login FAILED: $errorMsg")
+            throw RuntimeException(errorMsg)
         }
         val envelope = response.body<ApiResponseDto<AuthResponseDto>>()
-        envelope.data ?: throw RuntimeException(envelope.message ?: "Login failed: empty data")
+        val data = envelope.data ?: throw RuntimeException(envelope.message ?: "Login failed: empty data")
+        logger?.i(tag, "<-- POST /api/v1/auth/login SUCCESS: userId=${data.user.id}, token=${LogSanitizer.maskToken(data.accessToken)}")
+        data
     }
 
     override suspend fun refreshToken(refreshToken: String): Result<TokenRefreshResponseDto> = runCatching {
+        logger?.d(tag, "--> POST /api/v1/auth/refresh [token=${LogSanitizer.maskToken(refreshToken)}]")
         val response = httpClient.post("${config.baseUrl}/api/v1/auth/refresh") {
             contentType(ContentType.Application.Json)
             setBody(RefreshTokenRequestDto(refreshToken = refreshToken))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException(extractErrorMessage(response, "Token refresh failed: HTTP ${response.status.value}"))
+            val errorMsg = extractErrorMessage(response, "Token refresh failed: HTTP ${response.status.value}")
+            logger?.w(tag, "<-- POST /api/v1/auth/refresh FAILED: $errorMsg")
+            throw RuntimeException(errorMsg)
         }
         val envelope = response.body<ApiResponseDto<AuthResponseDto>>()
         val data = envelope.data ?: throw RuntimeException(envelope.message ?: "Token refresh failed: empty data")
+        logger?.i(tag, "<-- POST /api/v1/auth/refresh SUCCESS: token=${LogSanitizer.maskToken(data.accessToken)}")
         TokenRefreshResponseDto(
             accessToken = data.accessToken,
             refreshToken = data.refreshToken,

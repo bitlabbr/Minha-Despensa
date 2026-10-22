@@ -42,7 +42,9 @@ import kotlinx.coroutines.sync.Mutex
 class SyncCoordinator(
     private val syncHouseholdDataUseCase: SyncHouseholdDataUseCase,
     private val syncRepository: SyncRepository,
+    private val logger: AppLogger? = null,
 ) {
+    private val tag = "SyncCoordinator"
     private val syncMutex = Mutex()
     private val _status = MutableStateFlow<SyncState>(SyncState.IDLE)
     val status: StateFlow<SyncState> = _status.asStateFlow()
@@ -61,16 +63,21 @@ class SyncCoordinator(
 
     suspend fun triggerSync(): Result<Unit> {
         if (!syncMutex.tryLock()) {
+            logger?.d(tag, "Sync already in progress; skipping concurrent trigger")
             return Result.success(Unit)
         }
 
         return try {
             _status.value = SyncState.SYNCING
+            logger?.i(tag, "Sync cycle triggered by coordinator...")
             syncHouseholdDataUseCase().getOrThrow()
             _status.value = SyncState.SUCCESS
+            logger?.i(tag, "Sync cycle completed successfully (status=SUCCESS)")
             Result.success(Unit)
         } catch (e: Throwable) {
-            _status.value = SyncState.ERROR
+            val isAuthExpired = e.message?.contains("401") == true || e.message?.contains("SESSION_EXPIRED") == true
+            _status.value = if (isAuthExpired) SyncState.SESSION_EXPIRED else SyncState.ERROR
+            logger?.w(tag, "Sync cycle failed: ${e.message} (newStatus=${_status.value})", e)
             Result.failure(e)
         } finally {
             syncMutex.unlock()
