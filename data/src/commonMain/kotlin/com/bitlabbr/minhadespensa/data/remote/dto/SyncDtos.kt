@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.data.remote.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -36,16 +37,27 @@ data class SyncMutationRequestDto(
 
 @Serializable
 data class SyncPushRequestDto(
-    val clientTimestamp: Long,
+    val clientTimestamp: Long = 0L,
     val localVersion: Long = 0L,
-    val mutations: List<SyncMutationRequestDto>,
+    val mutations: List<SyncMutationRequestDto> = emptyList(),
+    val categories: List<CategorySyncDto> = emptyList(),
+    val products: List<CatalogProductSyncDto> = emptyList(),
+    val shoppingLists: List<ShoppingListSyncDto> = emptyList(),
+    val shoppingItems: List<ShoppingItemSyncDto> = emptyList(),
+    val pantryItems: List<PantryItemSyncDto> = emptyList(),
+    val priceEntries: List<PriceEntrySyncDto> = emptyList(),
+    @SerialName("pantryMovements")
+    val movements: List<PantryMovementSyncDto> = emptyList(),
+    @SerialName("monthlyBudgets")
+    val budgets: List<MonthlyBudgetSyncDto> = emptyList(),
 )
 
 @Serializable
 data class SyncPushResponseDto(
-    val serverTimestamp: Long,
-    val serverVersion: Long,
-    val processedCount: Int,
+    val serverTimestamp: Long = 0L,
+    val serverVersion: Long = 0L,
+    @SerialName("totalProcessed")
+    val processedCount: Int = 0,
     val productIdMappings: Map<String, String> = emptyMap(),
     val categoryIdMappings: Map<String, String> = emptyMap(),
     val rejectedMutations: List<String> = emptyList(),
@@ -170,8 +182,39 @@ data class SyncEntitiesDto(
 
 @Serializable
 data class SyncPullResponseDto(
-    val serverTimestamp: Long,
-    val currentVersion: Long,
+    val serverTimestamp: Long = 0L,
+    @SerialName("serverVersion")
+    val currentVersion: Long = 0L,
     val hasMore: Boolean = false,
     val entities: SyncEntitiesDto = SyncEntitiesDto(),
-)
+    val categories: List<CategorySyncDto> = emptyList(),
+    val products: List<CatalogProductSyncDto> = emptyList(),
+    val shoppingLists: List<ShoppingListSyncDto> = emptyList(),
+    val shoppingItems: List<ShoppingItemSyncDto> = emptyList(),
+    val pantryItems: List<PantryItemSyncDto> = emptyList(),
+    val priceEntries: List<PriceEntrySyncDto> = emptyList(),
+    @SerialName("pantryMovements")
+    val movements: List<PantryMovementSyncDto> = emptyList(),
+    @SerialName("monthlyBudgets")
+    val budgets: List<MonthlyBudgetSyncDto> = emptyList(),
+) {
+    val effectiveEntities: SyncEntitiesDto
+        get() = if (entities.products.isNotEmpty() || entities.categories.isNotEmpty() ||
+            entities.pantryItems.isNotEmpty() || entities.shoppingLists.isNotEmpty() ||
+            entities.priceEntries.isNotEmpty() || entities.movements.isNotEmpty() ||
+            entities.budgets.isNotEmpty()
+        ) {
+            entities
+        } else {
+            SyncEntitiesDto(
+                products = products,
+                categories = categories,
+                shoppingLists = shoppingLists,
+                shoppingItems = shoppingItems,
+                pantryItems = pantryItems,
+                priceEntries = priceEntries,
+                movements = movements,
+                budgets = budgets,
+            )
+        }
+}

@@ -33,6 +33,7 @@ import com.bitlabbr.minhadespensa.data.local.dao.AppKeyValueDao
 import com.bitlabbr.minhadespensa.data.local.entity.AppKeyValueEntity
 import com.bitlabbr.minhadespensa.data.remote.AuthRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.dto.AuthResponseDto
+import com.bitlabbr.minhadespensa.data.remote.dto.HouseholdDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
@@ -96,7 +97,12 @@ class RoomAuthRepository(
     }
 
     private suspend fun saveSessionFromResponse(response: AuthResponseDto): AuthSession {
-        val role = runCatching { HouseholdRole.valueOf(response.household.role) }.getOrDefault(HouseholdRole.MEMBER)
+        val household = response.household ?: HouseholdDto(
+            id = response.user.defaultHouseholdId ?: "default",
+            name = "Minha Casa",
+            inviteCode = "",
+        )
+        val role = runCatching { HouseholdRole.valueOf(household.role) }.getOrDefault(HouseholdRole.MEMBER)
         val session = AuthSession(
             accessToken = response.accessToken,
             refreshToken = response.refreshToken,
@@ -105,17 +111,17 @@ class RoomAuthRepository(
                 id = response.user.id,
                 name = response.user.name,
                 email = response.user.email,
-                defaultHouseholdId = response.household.id,
+                defaultHouseholdId = response.user.defaultHouseholdId ?: household.id,
             ),
             activeHousehold = Household(
-                id = response.household.id,
-                name = response.household.name,
-                inviteCode = response.household.inviteCode,
+                id = household.id,
+                name = household.name,
+                inviteCode = household.inviteCode,
                 role = role,
             ),
         )
         persistSession(session)
-        appKeyValueDao.put(AppKeyValueEntity(KEY_ACTIVE_HOUSEHOLD_ID, response.household.id, getCurrentTime()))
+        appKeyValueDao.put(AppKeyValueEntity(KEY_ACTIVE_HOUSEHOLD_ID, household.id, getCurrentTime()))
         return session
     }
 

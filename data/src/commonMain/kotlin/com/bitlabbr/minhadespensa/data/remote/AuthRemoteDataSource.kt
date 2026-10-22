@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.data.remote
 
+import com.bitlabbr.minhadespensa.data.remote.dto.ApiErrorResponseDto
+import com.bitlabbr.minhadespensa.data.remote.dto.ApiResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.AuthResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.LoginRequestDto
 import com.bitlabbr.minhadespensa.data.remote.dto.RefreshTokenRequestDto
@@ -32,6 +34,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -53,9 +56,10 @@ class KtorAuthRemoteDataSource(
             setBody(RegisterRequestDto(name = name, email = email, password = password))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Registration failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Registration failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<AuthResponseDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Registration failed: empty data")
     }
 
     override suspend fun login(email: String, password: String): Result<AuthResponseDto> = runCatching {
@@ -64,9 +68,10 @@ class KtorAuthRemoteDataSource(
             setBody(LoginRequestDto(email = email, password = password))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Login failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Login failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<AuthResponseDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Login failed: empty data")
     }
 
     override suspend fun refreshToken(refreshToken: String): Result<TokenRefreshResponseDto> = runCatching {
@@ -75,8 +80,22 @@ class KtorAuthRemoteDataSource(
             setBody(RefreshTokenRequestDto(refreshToken = refreshToken))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Token refresh failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Token refresh failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<AuthResponseDto>>()
+        val data = envelope.data ?: throw RuntimeException(envelope.message ?: "Token refresh failed: empty data")
+        TokenRefreshResponseDto(
+            accessToken = data.accessToken,
+            refreshToken = data.refreshToken,
+            tokenType = data.tokenType,
+            expiresIn = data.expiresIn,
+        )
+    }
+
+    private suspend fun extractErrorMessage(response: HttpResponse, fallback: String): String {
+        return runCatching {
+            val errorDto = response.body<ApiErrorResponseDto>()
+            errorDto.message ?: fallback
+        }.getOrDefault(fallback)
     }
 }

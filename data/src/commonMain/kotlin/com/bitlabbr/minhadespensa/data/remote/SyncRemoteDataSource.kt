@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.data.remote
 
+import com.bitlabbr.minhadespensa.data.remote.dto.ApiErrorResponseDto
+import com.bitlabbr.minhadespensa.data.remote.dto.ApiResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPullResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPushRequestDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPushResponseDto
@@ -33,6 +35,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -54,9 +57,10 @@ class KtorSyncRemoteDataSource(
             setBody(payload)
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Sync push failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Sync push failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<SyncPushResponseDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Sync push failed: empty data")
     }
 
     override suspend fun pull(
@@ -66,12 +70,21 @@ class KtorSyncRemoteDataSource(
     ): Result<SyncPullResponseDto> = runCatching {
         val response = httpClient.get("${config.baseUrl}/api/v1/sync/pull") {
             header("X-Household-Id", householdId)
+            parameter("sinceVersion", sinceVersion)
             parameter("since", sinceVersion)
             parameter("limit", limit)
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Sync pull failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Sync pull failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<SyncPullResponseDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Sync pull failed: empty data")
+    }
+
+    private suspend fun extractErrorMessage(response: HttpResponse, fallback: String): String {
+        return runCatching {
+            val errorDto = response.body<ApiErrorResponseDto>()
+            errorDto.message ?: fallback
+        }.getOrDefault(fallback)
     }
 }

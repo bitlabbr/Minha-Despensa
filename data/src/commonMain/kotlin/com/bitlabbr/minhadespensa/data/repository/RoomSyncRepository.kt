@@ -81,19 +81,53 @@ class RoomSyncRepository(
         // 1. Process pending outbox mutations (push)
         val pendingEntries = database.pendingSyncDao().getAllPending(100)
         if (pendingEntries.isNotEmpty()) {
-            val mutationDtos = pendingEntries.map { entry ->
-                SyncMutationRequestDto(
-                    entityType = entry.entityType,
-                    entityId = entry.entityId,
-                    operation = entry.operation,
-                    payload = entry.payload,
-                    timestamp = entry.updatedAt,
+            val mutationDtos = mutableListOf<SyncMutationRequestDto>()
+            val categories = mutableListOf<CategorySyncDto>()
+            val products = mutableListOf<CatalogProductSyncDto>()
+            val shoppingLists = mutableListOf<ShoppingListSyncDto>()
+            val shoppingItems = mutableListOf<ShoppingItemSyncDto>()
+            val pantryItems = mutableListOf<PantryItemSyncDto>()
+            val priceEntries = mutableListOf<PriceEntrySyncDto>()
+            val movements = mutableListOf<PantryMovementSyncDto>()
+            val budgets = mutableListOf<MonthlyBudgetSyncDto>()
+
+            for (entry in pendingEntries) {
+                mutationDtos.add(
+                    SyncMutationRequestDto(
+                        entityType = entry.entityType,
+                        entityId = entry.entityId,
+                        operation = entry.operation,
+                        payload = entry.payload,
+                        timestamp = entry.updatedAt,
+                    ),
                 )
+                val payloadStr = entry.payload ?: continue
+                runCatching {
+                    when (entry.entityType) {
+                        "CATEGORY", "PRODUCT_CATEGORY" -> categories.add(json.decodeFromString(payloadStr))
+                        "PRODUCT", "CATALOG_PRODUCT" -> products.add(json.decodeFromString(payloadStr))
+                        "PANTRY_ITEM" -> pantryItems.add(json.decodeFromString(payloadStr))
+                        "SHOPPING_LIST" -> shoppingLists.add(json.decodeFromString(payloadStr))
+                        "SHOPPING_ITEM" -> shoppingItems.add(json.decodeFromString(payloadStr))
+                        "PRICE_ENTRY" -> priceEntries.add(json.decodeFromString(payloadStr))
+                        "MOVEMENT", "PANTRY_MOVEMENT" -> movements.add(json.decodeFromString(payloadStr))
+                        "BUDGET", "MONTHLY_BUDGET" -> budgets.add(json.decodeFromString(payloadStr))
+                    }
+                }
             }
+
             val pushPayload = SyncPushRequestDto(
                 clientTimestamp = syncClock.now(),
                 localVersion = currentCursor,
                 mutations = mutationDtos,
+                categories = categories,
+                products = products,
+                shoppingLists = shoppingLists,
+                shoppingItems = shoppingItems,
+                pantryItems = pantryItems,
+                priceEntries = priceEntries,
+                movements = movements,
+                budgets = budgets,
             )
 
             val pushResponse = syncRemoteDataSource.push(activeHouseholdId, pushPayload).getOrThrow()
@@ -113,7 +147,7 @@ class RoomSyncRepository(
         syncClock.calibrate(pullResponse.serverTimestamp)
 
         // 3. Apply pulled entities atomically
-        applyPulledEntities(pullResponse.entities)
+        applyPulledEntities(pullResponse.effectiveEntities)
 
         // 4. Update cursor
         database.appKeyValueDao().put(

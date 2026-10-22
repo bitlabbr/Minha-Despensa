@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.data.remote.dto
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -48,6 +49,7 @@ data class UserDto(
     val id: String,
     val name: String,
     val email: String,
+    val defaultHouseholdId: String? = null,
 )
 
 @Serializable
@@ -55,8 +57,8 @@ data class HouseholdMemberDto(
     val userId: String,
     val name: String,
     val email: String,
-    val role: String,
-    val joinedAt: Long,
+    val role: String = "MEMBER",
+    val joinedAt: Long = 0L,
 )
 
 @Serializable
@@ -75,9 +77,11 @@ data class AuthResponseDto(
     val accessToken: String,
     val refreshToken: String,
     val tokenType: String = "Bearer",
-    val expiresIn: Long,
+    @SerialName("expiresInSeconds")
+    val expiresIn: Long = 86400L,
     val user: UserDto,
-    val household: HouseholdDto,
+    @SerialName("activeHousehold")
+    val household: HouseholdDto? = null,
 )
 
 @Serializable

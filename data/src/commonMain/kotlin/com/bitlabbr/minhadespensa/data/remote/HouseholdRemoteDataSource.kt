@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.data.remote
 
+import com.bitlabbr.minhadespensa.data.remote.dto.ApiErrorResponseDto
+import com.bitlabbr.minhadespensa.data.remote.dto.ApiResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.CreateHouseholdRequestDto
 import com.bitlabbr.minhadespensa.data.remote.dto.HouseholdDto
 import com.bitlabbr.minhadespensa.data.remote.dto.InviteCodeResponseDto
@@ -34,6 +36,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -57,17 +60,19 @@ class KtorHouseholdRemoteDataSource(
     override suspend fun listHouseholds(): Result<List<HouseholdDto>> = runCatching {
         val response = httpClient.get("${config.baseUrl}/api/v1/households")
         if (!response.status.isSuccess()) {
-            throw RuntimeException("List households failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "List households failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<List<HouseholdDto>>>()
+        envelope.data ?: emptyList()
     }
 
     override suspend fun getHousehold(id: String): Result<HouseholdDto> = runCatching {
         val response = httpClient.get("${config.baseUrl}/api/v1/households/$id")
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Get household failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Get household failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<HouseholdDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Household not found")
     }
 
     override suspend fun createHousehold(name: String): Result<HouseholdDto> = runCatching {
@@ -76,9 +81,10 @@ class KtorHouseholdRemoteDataSource(
             setBody(CreateHouseholdRequestDto(name = name))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Create household failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Create household failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<HouseholdDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Create household failed: empty data")
     }
 
     override suspend fun updateHousehold(id: String, name: String): Result<HouseholdDto> = runCatching {
@@ -87,9 +93,10 @@ class KtorHouseholdRemoteDataSource(
             setBody(CreateHouseholdRequestDto(name = name))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Update household failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Update household failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<HouseholdDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Update household failed: empty data")
     }
 
     override suspend fun joinHousehold(inviteCode: String): Result<HouseholdDto> = runCatching {
@@ -98,31 +105,39 @@ class KtorHouseholdRemoteDataSource(
             setBody(JoinHouseholdRequestDto(inviteCode = inviteCode))
         }
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Join household failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Join household failed: HTTP ${response.status.value}"))
         }
-        response.body()
+        val envelope = response.body<ApiResponseDto<HouseholdDto>>()
+        envelope.data ?: throw RuntimeException(envelope.message ?: "Join household failed: empty data")
     }
 
     override suspend fun leaveHousehold(id: String): Result<Unit> = runCatching {
         val response = httpClient.delete("${config.baseUrl}/api/v1/households/$id/leave")
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Leave household failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Leave household failed: HTTP ${response.status.value}"))
         }
     }
 
     override suspend fun regenerateInviteCode(id: String): Result<String> = runCatching {
         val response = httpClient.post("${config.baseUrl}/api/v1/households/$id/regenerate-invite-code")
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Regenerate invite code failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Regenerate invite code failed: HTTP ${response.status.value}"))
         }
-        val body = response.body<InviteCodeResponseDto>()
-        body.inviteCode
+        val envelope = response.body<ApiResponseDto<InviteCodeResponseDto>>()
+        envelope.data?.inviteCode ?: throw RuntimeException(envelope.message ?: "Regenerate invite code failed: empty data")
     }
 
     override suspend fun removeMember(householdId: String, memberUserId: String): Result<Unit> = runCatching {
         val response = httpClient.delete("${config.baseUrl}/api/v1/households/$householdId/members/$memberUserId")
         if (!response.status.isSuccess()) {
-            throw RuntimeException("Remove member failed: HTTP ${response.status.value}")
+            throw RuntimeException(extractErrorMessage(response, "Remove member failed: HTTP ${response.status.value}"))
         }
+    }
+
+    private suspend fun extractErrorMessage(response: HttpResponse, fallback: String): String {
+        return runCatching {
+            val errorDto = response.body<ApiErrorResponseDto>()
+            errorDto.message ?: fallback
+        }.getOrDefault(fallback)
     }
 }
