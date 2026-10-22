@@ -43,4 +43,10 @@ interface ProductMediaDao {
 
     @Query("SELECT * FROM product_media WHERE productId = :productId")
     fun getByProductIdFlow(productId: String): Flow<ProductMediaEntity?>
+
+    @Query("SELECT * FROM product_media")
+    suspend fun getAllSnapshot(): List<ProductMediaEntity>
+
+    @Query("UPDATE product_media SET productId = :newProductId WHERE productId = :oldProductId")
+    suspend fun remapProductId(oldProductId: String, newProductId: String): Int
 }

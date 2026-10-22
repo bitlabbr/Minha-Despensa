@@ -72,6 +72,12 @@ interface CatalogProductDao {
     @Query("SELECT * FROM catalog_products WHERE id = :id")
     fun findById(id: String): Flow<CatalogProductEntity?>
 
+    @Query("SELECT * FROM catalog_products WHERE id = :id LIMIT 1")
+    suspend fun findSnapshotById(id: String): CatalogProductEntity?
+
+    @Query("UPDATE catalog_products SET ean = NULL WHERE id = :id")
+    suspend fun clearEan(id: String): Int
+
     @Query(
         """
         SELECT * FROM catalog_products 
@@ -117,6 +123,9 @@ interface CatalogProductDao {
 
     @Query("SELECT * FROM catalog_products WHERE isDeleted = 0")
     suspend fun getAllActiveSnapshot(): List<CatalogProductEntity>
+
+    @Query("SELECT * FROM catalog_products")
+    suspend fun getAllSnapshot(): List<CatalogProductEntity>
 
     @Query(
         """

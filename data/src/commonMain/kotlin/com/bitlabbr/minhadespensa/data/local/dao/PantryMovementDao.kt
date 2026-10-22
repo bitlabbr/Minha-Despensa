@@ -101,4 +101,10 @@ interface PantryMovementDao {
         """
     )
     suspend fun findMonthlyExpenses(startOfMonth: Long, endOfMonth: Long): Long
+
+    @Query("SELECT * FROM pantry_movements")
+    suspend fun getAllSnapshot(): List<PantryMovementEntity>
+
+    @Query("UPDATE pantry_movements SET productId = :newProductId WHERE productId = :oldProductId")
+    suspend fun remapProductId(oldProductId: String, newProductId: String): Int
 }

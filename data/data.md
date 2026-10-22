@@ -57,8 +57,8 @@ Platform-specific source sets:
 ## 4. Key Components
 
 ### 4.1. Room Database (`local/AppDatabase.kt`)
-*   **Entities**: `CatalogProductEntity`, `ProductCategoryEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`, `MonthlyBudgetEntity`, `PantryMovementEntity`.
-*   **Version**: `8`.
+*   **Entities**: `CatalogProductEntity`, `ProductCategoryEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`, `MonthlyBudgetEntity`, `PantryMovementEntity`, `PendingSyncEntryEntity`, `AppKeyValueEntity`.
+*   **Version**: `10`.
 *   **Driver**: `BundledSQLiteDriver()`.
 *   **Platform Initialization**: Uses `expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>` to instantiate platform SQLite drivers.
 
@@ -66,26 +66,33 @@ Platform-specific source sets:
 
 ### 4.2. Database Entities (`local/entity/`)
 *   **`CatalogProductEntity`** (`catalog_products`):
-    *   *Columns*: `id` (PK), `ean` (Unique Index), `name`, `brand`, `measure_unit`, `net_weight`, `thumbnail_url`, `updated_at`, `is_deleted`, `manually_added`, `category`, `notes`.
+    *   *Columns*: `id` (PK), `ean` (Unique Index), `name`, `brand`, `measureUnit`, `netWeight`, `thumbnailUrl`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`, `notes`, `imageHash`.
 *   **`ProductCategoryEntity`** (`product_categories`):
-    *   *Columns*: `id` (PK), `name` (Indexed), `is_default`, `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `name` (Indexed), `isDefault`, `updatedAt`, `isDeleted`.
 *   **`PantryItemEntity`** (`pantry_items`):
-    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `quantity`, `expiration_date`, `batch_number`, `unit_price_in_cents`, `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `productId` (FK to `catalog_products.id` on delete cascade), `quantity`, `expirationDate`, `batchNumber`, `unit_price_in_cents`, `updatedAt`, `isDeleted`.
 *   **`PriceEntryEntity`** (`price_entries`):
-    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `price_in_cents`, `store_name`, `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `productId` (FK to `catalog_products.id` on delete cascade), `priceInCents`, `storeName`, `updatedAt`, `isDeleted`.
 *   **`ProductMediaEntity`** (`product_media`):
-    *   *Columns*: `product_id` (PK and FK to `catalog_products.id` on delete cascade), `blob` (`ByteArray`), `updated_at`.
+    *   *Columns*: `productId` (PK and FK to `catalog_products.id` on delete cascade), `blob` (`ByteArray`), `updatedAt`.
 *   **`ShoppingItemEntity`** (`shopping_items`):
     *   *Columns*: `id` (PK), `list_id` (FK to `shopping_lists.id` on delete cascade), `product_id` (FK to `catalog_products.id` on delete set null), `raw_text`, `quantity`, `price_at_time`, `is_checked`, `updated_at`, `is_deleted`.
 *   **`ShoppingListEntity`** (`shopping_lists`):
-    *   *Columns*: `id` (PK), `name`, `list_type`, `list_status`, `budget_in_cents` (Kotlin alias `budgedInCents`), `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `name`, `list_type`, `list_status`, `budget_in_cents`, `updated_at`, `is_deleted`.
 *   **`ShoppingListWithItems`**:
     *   Room relation data class holding `ShoppingListEntity` with `@Relation` child `List<ShoppingItemEntity>`.
 *   **`MonthlyBudgetEntity`** (`monthly_budgets`):
-    *   *Columns*: `year` (PK), `month` (PK), `budgetInCents`, `updatedAt`. Composite primary key `(year, month)`.
+    *   *Columns*: `year` (PK), `month` (PK), `budgetInCents`, `updatedAt`, `isDeleted`. Composite primary key `(year, month)`.
 *   **`PantryMovementEntity`** (`pantry_movements`):
     *   *Columns*: `id` (PK), `pantry_item_id`, `productId` (FK to `catalog_products.id` on delete cascade), `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `updatedAt`, `store_or_reason`, `is_deleted`.
     *   *Indices*: `productId`, `(type, updatedAt)`, `updatedAt`.
+*   **`PendingSyncEntryEntity`** (`pending_sync_entries`):
+    *   Outbox queue for offline mutations awaiting push to remote backend.
+    *   *Columns*: `id` (PK auto-increment), `entityType`, `entityId`, `operation` (`UPSERT`, `DELETE`), `payload` (JSON string or null), `updatedAt`, `retryCount`, `createdAt`.
+    *   *Indices*: `(entityType, entityId)`, `createdAt`.
+*   **`AppKeyValueEntity`** (`app_key_values`):
+    *   Local key-value storage for sync cursors, session metadata, and active household tracking.
+    *   *Columns*: `key` (PK), `value`, `updatedAt`.
 
 ---
 
@@ -106,7 +113,12 @@ Platform-specific source sets:
     *   Creates `product_categories` table (`id`, `name`, `is_default`, `updated_at`, `is_deleted`), creates `index_product_categories_name`, seeds the 9 default categories with deterministic IDs (`00000000-0000-0000-0000-000000000001`..`009`), and backfills any custom categories already present on active `catalog_products`.
 *   **`MIGRATION_8_9`**:
     *   Standardizes `pantry_movements` to use `updatedAt` instead of `timestamp` (matching all CRDT entities), renames column `timestamp` to `updatedAt`, drops old indices and recreates `index_pantry_movements_type_updatedAt` and `index_pantry_movements_updatedAt`.
-*   **Direct Upgrade Paths**: `MIGRATION_1_7`..`MIGRATION_5_7`, `MIGRATION_1_8`..`MIGRATION_6_8`, and `MIGRATION_1_9`..`MIGRATION_7_9`.
+*   **`MIGRATION_9_10`**:
+    *   Adds `imageHash TEXT DEFAULT NULL` column to `catalog_products`.
+    *   Adds `isDeleted INTEGER NOT NULL DEFAULT 0` column to `monthly_budgets`.
+    *   Creates outbox table `pending_sync_entries` with composite index `(entityType, entityId)` and `createdAt` index.
+    *   Creates local key-value table `app_key_values` (`key` PK, `value`, `updatedAt`).
+*   **Direct Upgrade Paths**: `MIGRATION_1_7`..`MIGRATION_5_7`, `MIGRATION_1_8`..`MIGRATION_6_8`, `MIGRATION_1_9`..`MIGRATION_7_9`, and `MIGRATION_1_10`..`MIGRATION_8_10`.
 *   **`ALL_MIGRATIONS`**: Exported migration array consumed by Koin's database builder.
 
 ---
@@ -181,6 +193,10 @@ Centralized and decoupled from repositories:
 *   **`ShoppingListDao`**:
     *   `getAllActiveShoppingLists` (returns `@Transaction Flow<List<ShoppingListWithItems>>`), `getShoppingListById`.
     *   `insertShoppingList`, `insertItems`, `forceUpdateForShoppingList`, `updateShoppingListIfNewer` (LWW including `type` and `status`), `updateTimestamp`, `markShoppingListAsDeleted`, `deleteShoppingListById`.
+*   **`PendingSyncDao`**:
+    *   `insert`, `insertAll`, `getAllPending`, `observePendingCount`, `getPendingCount`, `deleteById`, `deleteByIds`, `deleteByEntity`, `clearAll`.
+*   **`AppKeyValueDao`**:
+    *   `get`, `observe`, `put`, `delete`, `clearAll`.
 
 ---
 
@@ -223,7 +239,7 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 
 Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
-*   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`.
+*   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`, `pendingSyncDao`, `appKeyValueDao`.
 *   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
 *   Networking & Invoice: `InvoiceServerConfig` (configurable base URL), `HttpClient(createPlatformHttpClientEngine())` (with `ContentNegotiation`, `json()`, and platform-specific engine providing SSL/TLS custom trust for `*.domus.arpa` and local development hosts on Android), and `InvoiceRemoteDataSource` (`KtorInvoiceRemoteDataSource`).
 *   Use Case Factories: Registers all 21 domain use cases (`SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`).
@@ -233,7 +249,7 @@ Configures singletons and use case factories via Koin:
 ## 5. Testing & Verification
 
 The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/` using an in-memory SQLite database (`createInMemoryDatabase(getTestDatabaseBuilder())`):
-*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v8 to v9, verifying table creation (`monthly_budgets`, `pantry_movements`, `product_categories`), column evolution (`updatedAt`), composite keys, indices, and data preservation.
+*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v9 to v10, verifying table creation (`monthly_budgets`, `pantry_movements`, `product_categories`, `pending_sync_entries`, `app_key_values`), column evolution (`updatedAt`, `imageHash`, `isDeleted`), composite keys, indices, and 100% data preservation across all 9 tables.
 *   **`PantryMovementDaoTest`**: Tests CRUD operations for `PantryMovementEntity`, timestamp range filtering, top consumed products aggregation, and reactive monthly expense tracking.
 *   **`MonthlyBudgetDaoTest`**: Tests CRUD operations for `MonthlyBudgetEntity`, composite key updates, annual queries, and reactive monthly expense aggregation joins across shopping lists, items, and pantry entries.
 *   **`RoomBudgetRepositoryTest`**: Tests domain boundary enforcement, monthly budget retrieval/updates, reactive expense aggregation, and full 12-month annual summaries.

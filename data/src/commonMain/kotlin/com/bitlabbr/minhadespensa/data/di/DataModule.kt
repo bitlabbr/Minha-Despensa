@@ -94,6 +94,8 @@ val dataModule = module {
     single { get<AppDatabase>().budgetDao() }
     single { get<AppDatabase>().movementDao() }
     single { get<AppDatabase>().categoryDao() }
+    single { get<AppDatabase>().pendingSyncDao() }
+    single { get<AppDatabase>().appKeyValueDao() }
 
     single<CatalogRepository> {
         RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))

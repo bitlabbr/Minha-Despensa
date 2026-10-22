@@ -128,6 +128,12 @@ interface PantryItemDao {
     """
     )
     fun getExpiringPantryItems(now: Long, expirationThreshold: Long): Flow<List<PantryItemWithCategoryDaoResult>>
+
+    @Query("SELECT * FROM pantry_items")
+    suspend fun getAllSnapshot(): List<PantryItemEntity>
+
+    @Query("UPDATE pantry_items SET productId = :newProductId WHERE productId = :oldProductId")
+    suspend fun remapProductId(oldProductId: String, newProductId: String): Int
 }
 
 typealias PantryRepositoryDao = PantryItemDao

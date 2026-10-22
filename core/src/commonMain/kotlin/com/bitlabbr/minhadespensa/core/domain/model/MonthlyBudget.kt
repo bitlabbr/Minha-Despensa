@@ -30,5 +30,6 @@ data class MonthlyBudget(
     val year: Int,
     val month: Int,
     val budgetInCents: Long,
-    val updatedAt: Long
+    val updatedAt: Long,
+    val isDeleted: Boolean = false
 )
