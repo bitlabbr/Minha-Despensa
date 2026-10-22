@@ -61,12 +61,17 @@ kotlin {
 
             // Ktor Client
             implementation(libs.ktor.client.core)
+            implementation(libs.ktor.client.auth)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.kotlinx.json)
+
+            // Okio (SHA-256 Multiplatform)
+            implementation(libs.okio)
         }
 
         androidMain.dependencies {
             api(libs.ktor.client.okhttp)
+            implementation(libs.androidx.work.runtime)
         }
 
         iosMain.dependencies {
