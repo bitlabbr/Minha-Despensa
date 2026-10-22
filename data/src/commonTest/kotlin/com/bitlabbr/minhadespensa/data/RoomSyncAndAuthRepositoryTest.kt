@@ -32,6 +32,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.MonthlyBudgetEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.getTestDatabaseBuilder
 import com.bitlabbr.minhadespensa.data.remote.AuthRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.HouseholdRemoteDataSource
@@ -119,6 +120,7 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
     }
 
     private var lastPushedPayload: SyncPushRequestDto? = null
+    private var pushResponseToReturn: SyncPushResponseDto? = null
     private var pullResponseToReturn = SyncPullResponseDto(
         serverTimestamp = 2000L,
         currentVersion = 5L,
@@ -129,7 +131,7 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
         override suspend fun push(householdId: String, payload: SyncPushRequestDto): Result<SyncPushResponseDto> {
             lastPushedPayload = payload
             return Result.success(
-                SyncPushResponseDto(
+                pushResponseToReturn ?: SyncPushResponseDto(
                     serverTimestamp = 1500L,
                     serverVersion = 2L,
                     processedCount = payload.mutations.size,
@@ -259,6 +261,13 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
                 isDeleted = false,
             ),
         )
+        db.productMediaDao().insertOrUpdate(
+            ProductMediaEntity(
+                productId = "old-local-uuid",
+                blob = byteArrayOf(1, 2, 3),
+                updatedAt = 1000L,
+            ),
+        )
 
         // Enqueue outbox mutation
         syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
@@ -313,6 +322,89 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
         val pulledPantry = db.pantryDao().findPantryItemById("pantry-remote-2")
         assertNotNull(pulledPantry)
         assertEquals(10.0, pulledPantry.quantity)
+
+        // Product media successfully remapped to canonical ID without UNIQUE constraint error
+        val remappedMedia = db.productMediaDao().getByProductId("canonical-uuid-5")
+        assertNotNull(remappedMedia)
+        assertTrue(byteArrayOf(1, 2, 3).contentEquals(remappedMedia.blob))
+        assertNull(db.productMediaDao().getByProductId("old-local-uuid"))
+    }
+
+    @Test
+    fun syncRepository_sync_reconcilesProductIdMappings_whenNewMediaAlreadyExists() = runTest {
+        authRepository.register("Maria", "maria@teste.com", "senha123").getOrThrow()
+
+        // Local product 1 (old UUID)
+        db.catalogDao().insert(
+            CatalogProductEntity(
+                id = "temp-prod-1",
+                ean = null,
+                name = "Feijao",
+                category = "Grãos",
+                brand = null,
+                measureUnit = "KILOGRAM",
+                netWeight = 1.0,
+                thumbnailUrl = null,
+                updatedAt = 1000L,
+                isDeleted = false,
+                manuallyAdded = true,
+                notes = null,
+            ),
+        )
+        // Canonical product already has media
+        db.catalogDao().insert(
+            CatalogProductEntity(
+                id = "canonical-prod-1",
+                ean = "7891234567890",
+                name = "Feijao Canônico",
+                category = "Grãos",
+                brand = null,
+                measureUnit = "KILOGRAM",
+                netWeight = 1.0,
+                thumbnailUrl = null,
+                updatedAt = 2000L,
+                isDeleted = false,
+                manuallyAdded = false,
+                notes = null,
+            ),
+        )
+        db.productMediaDao().insertOrUpdate(
+            ProductMediaEntity(
+                productId = "temp-prod-1",
+                blob = byteArrayOf(9, 9, 9),
+                updatedAt = 1000L,
+            ),
+        )
+        db.productMediaDao().insertOrUpdate(
+            ProductMediaEntity(
+                productId = "canonical-prod-1",
+                blob = byteArrayOf(8, 8, 8),
+                updatedAt = 2000L,
+            ),
+        )
+
+        syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
+
+        pushResponseToReturn = SyncPushResponseDto(
+            serverTimestamp = 2500L,
+            serverVersion = 5L,
+            processedCount = 1,
+            productIdMappings = mapOf("temp-prod-1" to "canonical-prod-1"),
+        )
+        pullResponseToReturn = SyncPullResponseDto(
+            serverTimestamp = 2500L,
+            currentVersion = 5L,
+            entities = SyncEntitiesDto(),
+        )
+
+        val result = syncRepository.sync()
+        assertTrue(result.isSuccess)
+
+        // Newer media on canonical-prod-1 should be retained, temp-prod-1 media deleted
+        val canonicalMedia = db.productMediaDao().getByProductId("canonical-prod-1")
+        assertNotNull(canonicalMedia)
+        assertTrue(byteArrayOf(8, 8, 8).contentEquals(canonicalMedia.blob))
+        assertNull(db.productMediaDao().getByProductId("temp-prod-1"))
     }
 
     @Test

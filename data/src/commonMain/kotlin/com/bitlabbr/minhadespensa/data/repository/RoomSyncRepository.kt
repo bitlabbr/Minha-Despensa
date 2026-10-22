@@ -195,7 +195,16 @@ class RoomSyncRepository(
                     database.priceDao().remapProductId(oldId, newId)
                     database.shoppingItemDao().remapProductId(oldId, newId)
                     database.movementDao().remapProductId(oldId, newId)
-                    database.productMediaDao().remapProductId(oldId, newId)
+
+                    // Safely reconcile 1:1 product media primary key without unique constraint conflict
+                    val oldMedia = database.productMediaDao().getByProductId(oldId)
+                    if (oldMedia != null) {
+                        val newMedia = database.productMediaDao().getByProductId(newId)
+                        if (newMedia == null || oldMedia.updatedAt > newMedia.updatedAt) {
+                            database.productMediaDao().insertOrUpdate(oldMedia.copy(productId = newId))
+                        }
+                        database.productMediaDao().deleteByProductId(oldId)
+                    }
 
                     // Safely delete old parent row
                     database.catalogDao().deleteProductById(oldId)
