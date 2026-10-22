@@ -521,6 +521,9 @@
     <string name="sync_status_success">Sincronizado</string>
     <string name="sync_status_error">Falha ao sincronizar</string>
     <string name="sync_status_offline">Modo local (Offline)</string>
+    <string name="sync_status_session_expired">Sessão expirada</string>
+    <string name="sync_session_expired_banner_title">Sessão Expirada</string>
+    <string name="sync_session_expired_banner_desc">Faça login novamente para retomar o backup e a sincronização em nuvem.</string>
     <string name="sync_button_sync_now">Sincronizar Agora</string>
     <string name="sync_topbar_sync_desc">Status da sincronização</string>
     <string name="sync_topbar_account_desc">Minha Conta e Despensas</string>

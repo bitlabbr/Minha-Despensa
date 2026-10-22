@@ -55,6 +55,7 @@ import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Logout
 import androidx.compose.material.icons.rounded.Sync
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -82,6 +83,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGla
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaDialog
+import com.bitlabbr.minhadespensa.uisystem.components.core.feedback.rememberHapticFeedbackManager
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
@@ -126,9 +128,12 @@ import minhadespensa.uisystem.generated.resources.household_role_member
 import minhadespensa.uisystem.generated.resources.household_role_owner
 import minhadespensa.uisystem.generated.resources.register_product_form_back_button_desc
 import minhadespensa.uisystem.generated.resources.sync_button_sync_now
+import minhadespensa.uisystem.generated.resources.sync_session_expired_banner_desc
+import minhadespensa.uisystem.generated.resources.sync_session_expired_banner_title
 import minhadespensa.uisystem.generated.resources.sync_status_error
 import minhadespensa.uisystem.generated.resources.sync_status_idle
 import minhadespensa.uisystem.generated.resources.sync_status_offline
+import minhadespensa.uisystem.generated.resources.sync_status_session_expired
 import minhadespensa.uisystem.generated.resources.sync_status_success
 import minhadespensa.uisystem.generated.resources.sync_status_syncing
 import minhadespensa.uisystem.generated.resources.sync_topbar_sync_desc
@@ -148,6 +153,7 @@ fun HouseholdAccountScreen(
     val dimens = MinhaDespensaTheme.dimens
     val typography = MinhaDespensaTheme.typography
     val clipboardManager = LocalClipboardManager.current
+    val hapticFeedbackManager = rememberHapticFeedbackManager()
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -224,6 +230,7 @@ fun HouseholdAccountScreen(
                     onSyncClick = viewModel::triggerSync,
                     onCopyInviteCode = { code ->
                         clipboardManager.setText(AnnotatedString(code))
+                        hapticFeedbackManager.performSuccessFeedback()
                         notificationManager.showSuccess(UiText.Resource(Res.string.household_invite_code_copied))
                     },
                     onOpenJoinDialog = viewModel::openJoinDialog,
@@ -542,6 +549,42 @@ private fun AuthenticatedContent(
         }
     }
 
+    if (uiState.syncState == SyncState.SESSION_EXPIRED) {
+        ItemContainerGlassCard(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(dimens.paddingSmall),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.WarningAmber,
+                    contentDescription = null,
+                    tint = colors.error,
+                )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    MinhaDespensaText(
+                        text = stringResource(Res.string.sync_session_expired_banner_title),
+                        fontStyle = typography.bodyLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.error,
+                    )
+                    MinhaDespensaText(
+                        text = stringResource(Res.string.sync_session_expired_banner_desc),
+                        fontStyle = typography.bodySmall,
+                        color = colors.onSecondaryContainer,
+                    )
+                }
+            }
+        }
+    }
+
     PrimaryContainerGlassCard(
         modifier = Modifier.fillMaxWidth(),
     ) {
@@ -677,7 +720,7 @@ private fun AuthenticatedContent(
                         SyncState.SUCCESS -> Triple(Icons.Rounded.CloudDone, stringResource(Res.string.sync_status_success), colors.primary)
                         SyncState.ERROR -> Triple(Icons.Rounded.CloudOff, stringResource(Res.string.sync_status_error), colors.error)
                         SyncState.OFFLINE_UNAUTHENTICATED -> Triple(Icons.Rounded.CloudOff, stringResource(Res.string.sync_status_offline), colors.onSecondaryContainer)
-                        SyncState.SESSION_EXPIRED -> Triple(Icons.Rounded.CloudOff, "Sessão expirada", colors.error)
+                        SyncState.SESSION_EXPIRED -> Triple(Icons.Rounded.CloudOff, stringResource(Res.string.sync_status_session_expired), colors.error)
                         SyncState.IDLE -> Triple(Icons.Rounded.CloudDone, stringResource(Res.string.sync_status_idle), colors.onSecondaryContainer)
                     }
 

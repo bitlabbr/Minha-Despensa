@@ -159,8 +159,8 @@ Manages family household sharing, individual authentication (JWT login/register)
 - **Unauthenticated Flow:** Displays tabbed Login / Register form (`AuthTab.LOGIN` / `AuthTab.REGISTER`) with inline field validation, password masking, and educational banner regarding cloud backup and family sharing benefits.
 - **Authenticated Flow:**
   - **User Profile Banner:** Displays current user name, email, and logout action with confirmation dialog.
-  - **Active Household GlassCard:** Highlights current active household name, member role badge (`Proprietário` vs `Membro`), and 8-character Crockford base32 invite code with one-tap copy to system clipboard.
-  - **Sync State & Manual Trigger:** Live sync status indicator (`IDLE`, `SYNCING`, `SUCCESS`, `ERROR`, `OFFLINE`) with immediate manual sync trigger button.
+  - **Active Household GlassCard:** Highlights current active household name, member role badge (`Proprietário` vs `Membro`), and 8-character Crockford base32 invite code with one-tap copy triggering native haptic feedback (`rememberHapticFeedbackManager().performSuccessFeedback()`) and system clipboard.
+  - **Sync State & Manual Trigger:** Live sync status indicator (`IDLE`, `SYNCING`, `SUCCESS`, `ERROR`, `OFFLINE`, `SESSION_EXPIRED`) with dedicated visual warning card banner for `SESSION_EXPIRED` prompting re-login, and immediate manual sync trigger button.
   - **Household Members List:** Lists all family members with name, email, joined date, and role badge (`HouseholdMemberCard`).
   - **Multi-Household Switching:** Displays other user households with one-tap "Ativar" switcher invoking `SwitchActiveHouseholdUseCase`.
 - **Dialogs (`JoinHouseholdDialog`, `CreateHouseholdDialog`):** Modals for joining a family pantry via 8-char invite code or creating a new shared household (capped at 80 characters).
