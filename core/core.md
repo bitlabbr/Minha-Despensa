@@ -171,6 +171,22 @@ The `:core` module defines 21 use cases encapsulating discrete application busin
     *   Validates that the scanned QR code content is not blank, invokes `InvoiceRepository.parseInvoiceFromQrCode()` to retrieve the parsed invoice, and consolidates duplicate product entries (`consolidateDuplicateItems()`) by summing quantities and total prices.
 *   **`ImportInvoiceToPantryUseCase`**:
     *   Validates non-blank store name, non-empty selection of invoice items, positive quantities and non-negative unit prices, delegating bulk atomic import to `InvoiceRepository.importInvoiceToPantry()`.
+*   **`RegisterUserUseCase`**:
+    *   Validates user name length (capped at 80 characters), valid email regex, and password length (minimum 8 characters).
+    *   Creates user account, registers auth session, and immediately queues all local pre-existing entities (`enqueueAllLocalEntitiesForInitialSync`) to prevent data loss.
+*   **`LoginUserUseCase`**:
+    *   Validates email and non-empty password, authenticates against backend, and triggers outbox enqueue of pre-existing entities.
+*   **`LogoutUserUseCase`**:
+    *   Terminates active auth session and clears credentials.
+*   **`JoinHouseholdByInviteCodeUseCase`**:
+    *   Validates 8-character Crockford base32 invite code, links user to household, switches active household, and queues local data for initial sync.
+*   **`SwitchActiveHouseholdUseCase`**:
+    *   Verifies pending unsynced changes via `flushOutboxBeforeSwitch(forceDiscard)`.
+    *   Clears previous household local cache, switches active household ID, and triggers initial pull sync.
+*   **`ManageHouseholdUseCase`**:
+    *   Orchestrates household management operations: `createHousehold` (with 80 chars max name validation), `updateHousehold`, `leaveHousehold`, `regenerateInviteCode`, and `removeMember`.
+*   **`SyncHouseholdDataUseCase`**:
+    *   Coordinates synchronization for the currently active household, verifying authentication and active household presence.
 
 ---
 
@@ -296,6 +312,10 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `now()`: Corrected wall-clock timestamp accounting for server offset.
     *   `calibrate(serverTimestamp: Long, rttMillis: Long)`: Calibrates local clock with remote server time.
     *   `nextTimestampAfter(existingTimestamp: Long)`: Guarantees strict monotonic increase (`max(now(), existing + 1)`) to enforce LWW tie-breaking without regression.
+*   **`SyncCoordinator.kt`**: Single-flight synchronization coordinator backed by coroutine `Mutex`:
+    *   `status`: StateFlow of `SyncState` (`IDLE`, `SYNCING`, `SUCCESS`, `ERROR`).
+    *   `triggerSync()`: Executes single-flight sync, bypassing overlapping requests.
+    *   `startAutoSync(scope, debounceMillis)`: Observes pending changes count and automatically triggers debounced sync.
 
 ---
 
@@ -304,6 +324,8 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
 The `:core` module contains comprehensive unit tests located in `core/src/commonTest/`:
 *   `DeterministicIdGeneratorTest`: Validates RFC 4122 UUIDv5 determinism, canonical string format, accent folding, and EAN uniqueness.
 *   `SyncClockTest`: Verifies RTT/2 server offset calibration and monotonic `nextTimestampAfter` progression preventing clock regression.
+*   `AuthAndHouseholdUseCasesTest`: Validates `RegisterUserUseCase`, `LoginUserUseCase`, `LogoutUserUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `ManageHouseholdUseCase`, and `SyncHouseholdDataUseCase` validations, session lifecycles, and data loss prevention outbox queueing.
+*   `SyncCoordinatorTest`: Tests single-flight mutex synchronization, state transitions, and debounced auto-sync trigger.
 *   `CatalogAndPantryUseCasesTest`: Validates `SaveCatalogProductUseCase`, `AddPantryItemUseCase`, and `UpdatePantryItemUseCase` business rules, constraints, and error handling.
 *   `ProductCategoryUseCasesTest`: Validates `SaveProductCategoryUseCase` and `DeleteProductCategoryUseCase` creation, whitespace trimming, length bounds, accent/case-insensitive duplicate rejection, cascading rename, soft-delete fallback to `"Outros"`, and protection of `"Outros"`.
 *   `ShoppingUseCasesTest`: Validates shopping session lifecycles, list creations, cart transitions, item replacements, and deletions.
