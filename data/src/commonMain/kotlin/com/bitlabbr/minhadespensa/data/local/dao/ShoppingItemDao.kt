@@ -87,4 +87,7 @@ interface ShoppingItemDao {
 
     @Query("UPDATE shopping_items SET product_id = :newProductId WHERE product_id = :oldProductId")
     suspend fun remapProductId(oldProductId: String, newProductId: String): Int
+
+    @Query("DELETE FROM shopping_items")
+    suspend fun clearAll(): Int
 }

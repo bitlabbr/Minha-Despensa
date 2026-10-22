@@ -134,6 +134,9 @@ interface PantryItemDao {
 
     @Query("UPDATE pantry_items SET productId = :newProductId WHERE productId = :oldProductId")
     suspend fun remapProductId(oldProductId: String, newProductId: String): Int
+
+    @Query("DELETE FROM pantry_items")
+    suspend fun clearAll(): Int
 }
 
 typealias PantryRepositoryDao = PantryItemDao

@@ -68,4 +68,19 @@ interface ProductCategoryDao {
         """
     )
     suspend fun markAsDeleted(id: String, updatedAt: Long): Int
+
+    @Query(
+        """
+        UPDATE product_categories 
+        SET name = :name, isDefault = :isDefault, updatedAt = :updatedAt, isDeleted = :isDeleted 
+        WHERE id = :id AND updatedAt <= :updatedAt
+        """
+    )
+    suspend fun updateIfNewer(
+        id: String,
+        name: String,
+        isDefault: Boolean,
+        updatedAt: Long,
+        isDeleted: Boolean,
+    ): Int
 }

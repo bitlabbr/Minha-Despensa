@@ -232,6 +232,22 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase` and logger as private members.
     *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice` with automatic consolidation of duplicate product lines.
     *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing consolidated bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, groups items matching the same `targetProductId`, and persists a single consolidated `PantryItemEntity`, a single `PriceEntryEntity`, and a single `PantryMovementEntity` (`ENTRY_PURCHASE`) per unique product.
+*   **`RoomAuthRepository`**:
+    *   Implements `AuthRepository`: `register`, `login`, `logout`, `refreshToken`, `clearSession`.
+    *   Persists JWT tokens and active `AuthSession` in `AppKeyValueDao`.
+*   **`RoomHouseholdRepository`**:
+    *   Implements `HouseholdRepository`: `observeActiveHousehold`, `getActiveHousehold`, `getUserHouseholds`, `createHousehold`, `updateHousehold`, `joinHousehold`, `leaveHousehold`, `regenerateInviteCode`, `removeMember`, `switchActiveHousehold`.
+*   **`RoomSyncRepository`**:
+    *   Implements `SyncRepository` with 6-step bidirectional CRDT/LWW synchronization:
+        1. Outbox Push: Collects pending outbox mutations and pushes to `/api/v1/sync/push`.
+        2. ID Remapping: Atomically remaps product IDs received from server (`productIdMappings`), safely repointing all child tables (`pantry_items`, `price_entries`, `shopping_items`, `pantry_movements`, `product_media`) without triggering `ON DELETE CASCADE`.
+        3. Pull: Fetches delta updates since cursor via `/api/v1/sync/pull?since={cursor}`.
+        4. Ingestion: Atomically upserts pulled entities using LWW timestamp checks.
+        5. Cursor Advancement: Updates `sync_cursor_{householdId}`.
+        6. Outbox Drain: Deletes successfully pushed mutations from `pending_sync_entries`.
+    *   `enqueueAllLocalEntitiesForInitialSync()`: Backfills all local pre-existing entities into outbox for initial synchronization when user binds/creates an account.
+    *   `flushOutboxBeforeSwitch()`: Detects unsynced changes to prevent silent data loss when switching active household.
+    *   `clearLocalDataForHouseholdSwitch()`: Atomically wipes tenant-scoped tables while preserving global catalog products and outbox.
 
 ---
 
@@ -240,9 +256,9 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
 *   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`, `pendingSyncDao`, `appKeyValueDao`.
-*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
-*   Networking & Invoice: `InvoiceServerConfig` (configurable base URL), `HttpClient(createPlatformHttpClientEngine())` (with `ContentNegotiation`, `json()`, and platform-specific engine providing SSL/TLS custom trust for `*.domus.arpa` and local development hosts on Android), and `InvoiceRemoteDataSource` (`KtorInvoiceRemoteDataSource`).
-*   Use Case Factories: Registers all 21 domain use cases (`SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`).
+*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, `RoomAuthRepository`, `RoomHouseholdRepository`, `RoomSyncRepository`.
+*   Networking: `SyncServerConfig`, `SyncClock`, `KtorAuthRemoteDataSource`, `KtorHouseholdRemoteDataSource`, `KtorSyncRemoteDataSource`.
+*   Use Case Factories: Registers all 29 domain use cases and `SyncCoordinator`.
 
 ---
 
@@ -261,6 +277,7 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`KtorInvoiceRemoteDataSourceTest`**: Tests HTTP JSON request payload serialization, endpoint routing, and error status handling using Ktor's `MockEngine`.
 *   **`AndroidHttpClientEngineTest`**: Tests Android platform OkHttp engine instantiation, custom `X509TrustManager` fallback for `*.domus.arpa` and development CAs, and dev hostname verification.
 *   **`InvoiceMapperTest`**: Tests mapping between remote DTOs and domain models (`Invoice`, `InvoiceItem`) and measurement unit normalization (`parseMeasureUnit`).
+*   **`RoomSyncAndAuthRepositoryTest`**: Tests `RoomAuthRepository` session lifecycle, `RoomHouseholdRepository` tenant management, and `RoomSyncRepository` bidirectional sync: outbox initial queueing, atomic product ID remapping protecting child foreign keys from `ON DELETE CASCADE`, LWW pulled entity application, outbox flushing before switch, and multi-tenant cache cleanup.
 *   **`DataConsistencyTest`**: Cross-repository integration tests validating database cascade deletions, foreign key enforcement, and end-to-end multi-table transactions.
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
 *   **`AndroidImageProcessorTest` & `IosImageProcessorTest`**: Platform-specific thumbnail processing tests.

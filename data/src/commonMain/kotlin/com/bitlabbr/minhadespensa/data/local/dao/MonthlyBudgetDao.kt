@@ -76,4 +76,7 @@ interface MonthlyBudgetDao {
         """
     )
     suspend fun findMonthlyExpenses(startOfMonth: Long, endOfMonth: Long): Long
+
+    @Query("DELETE FROM monthly_budgets")
+    suspend fun clearAll(): Int
 }

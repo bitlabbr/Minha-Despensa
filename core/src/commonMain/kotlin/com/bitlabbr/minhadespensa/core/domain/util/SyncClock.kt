@@ -35,7 +35,11 @@ class SyncClock(
 
     fun now(): Long = timeProvider() + serverOffsetMillis
 
-    fun calibrate(serverTimestamp: Long, requestSentAt: Long, responseReceivedAt: Long) {
+    fun calibrate(
+        serverTimestamp: Long,
+        requestSentAt: Long = timeProvider(),
+        responseReceivedAt: Long = timeProvider(),
+    ) {
         val rtt = maxOf(0L, responseReceivedAt - requestSentAt)
         val estimatedServerNow = serverTimestamp + (rtt / 2)
         serverOffsetMillis = estimatedServerNow - responseReceivedAt

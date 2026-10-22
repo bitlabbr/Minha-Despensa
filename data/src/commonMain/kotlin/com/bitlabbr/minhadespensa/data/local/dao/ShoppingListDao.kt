@@ -96,4 +96,7 @@ interface ShoppingListDao {
 
     @Query("SELECT * FROM shopping_lists")
     suspend fun getAllSnapshot(): List<ShoppingListEntity>
+
+    @Query("DELETE FROM shopping_lists")
+    suspend fun clearAll(): Int
 }

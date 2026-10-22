@@ -107,4 +107,7 @@ interface PantryMovementDao {
 
     @Query("UPDATE pantry_movements SET productId = :newProductId WHERE productId = :oldProductId")
     suspend fun remapProductId(oldProductId: String, newProductId: String): Int
+
+    @Query("DELETE FROM pantry_movements")
+    suspend fun clearAll(): Int
 }
