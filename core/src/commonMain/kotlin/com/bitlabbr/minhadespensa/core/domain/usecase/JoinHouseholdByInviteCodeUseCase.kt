@@ -33,8 +33,16 @@ class JoinHouseholdByInviteCodeUseCase(
     private val syncRepository: SyncRepository,
 ) {
     suspend operator fun invoke(inviteCode: String): Result<HouseholdDetail> = runCatching {
-        val normalizedCode = inviteCode.trim().uppercase()
-        require(normalizedCode.length == CoreConstants.Household.INVITE_CODE_LENGTH) {
+        val clean = inviteCode.trim().uppercase()
+        val normalizedCode = if (clean.startsWith(CoreConstants.Household.INVITE_CODE_PREFIX)) {
+            clean
+        } else {
+            "${CoreConstants.Household.INVITE_CODE_PREFIX}$clean"
+        }
+        require(
+            normalizedCode.length == CoreConstants.Household.INVITE_CODE_LENGTH &&
+                normalizedCode.startsWith(CoreConstants.Household.INVITE_CODE_PREFIX)
+        ) {
             CoreConstants.Validation.ERROR_INVITE_CODE_INVALID
         }
 

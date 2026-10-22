@@ -505,9 +505,9 @@
     <string name="household_other_households_title">Outras Despensas</string>
     
     <string name="household_dialog_join_title">Entrar em uma Despensa</string>
-    <string name="household_dialog_join_desc">Informe o código de 8 caracteres recebido de quem criou a despensa compartilhada.</string>
+    <string name="household_dialog_join_desc">Informe o código recebido de quem criou a despensa compartilhada (ex: CASA-AB12CD34).</string>
     <string name="household_dialog_join_input_label">Código de Convite</string>
-    <string name="household_dialog_join_input_placeholder">Ex: ABC12345</string>
+    <string name="household_dialog_join_input_placeholder">Ex: CASA-AB12CD34</string>
     <string name="household_dialog_join_confirm">Entrar na Despensa</string>
 
     <string name="household_dialog_create_title">Criar Nova Despensa</string>

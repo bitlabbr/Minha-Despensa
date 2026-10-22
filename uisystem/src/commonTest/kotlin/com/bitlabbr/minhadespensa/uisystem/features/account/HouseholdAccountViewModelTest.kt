@@ -264,10 +264,14 @@ class HouseholdAccountViewModelTest {
             assertTrue(s2.isJoinDialogOpen)
             assertEquals("ABCDEFGH", s2.joinInviteCode)
 
-            viewModel.dismissJoinDialog()
+            viewModel.onJoinInviteCodeChange("casa-xga92ts7")
             val s3 = awaitItem()
-            assertFalse(s3.isJoinDialogOpen)
-            assertEquals("", s3.joinInviteCode)
+            assertEquals("CASA-XGA92TS7", s3.joinInviteCode)
+
+            viewModel.dismissJoinDialog()
+            val s4 = awaitItem()
+            assertFalse(s4.isJoinDialogOpen)
+            assertEquals("", s4.joinInviteCode)
             cancelAndIgnoreRemainingEvents()
         }
     }

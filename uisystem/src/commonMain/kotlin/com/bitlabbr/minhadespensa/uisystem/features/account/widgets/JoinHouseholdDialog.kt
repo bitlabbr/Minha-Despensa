@@ -88,10 +88,15 @@ fun JoinHouseholdDialog(
                     modifier = Modifier.weight(1f),
                 )
 
+                val trimmedCode = inviteCode.trim().uppercase()
+                val isCodeValid = trimmedCode.length == CoreConstants.Household.INVITE_CODE_RAW_LENGTH ||
+                    (trimmedCode.length == CoreConstants.Household.INVITE_CODE_LENGTH &&
+                        trimmedCode.startsWith(CoreConstants.Household.INVITE_CODE_PREFIX))
+
                 MinhaDespensaPrimaryButton(
                     text = stringResource(Res.string.household_dialog_join_confirm),
                     onClick = onConfirm,
-                    enabled = inviteCode.trim().length == CoreConstants.Household.INVITE_CODE_LENGTH && !isLoading,
+                    enabled = isCodeValid && !isLoading,
                     isLoading = isLoading,
                     modifier = Modifier.weight(1f),
                 )

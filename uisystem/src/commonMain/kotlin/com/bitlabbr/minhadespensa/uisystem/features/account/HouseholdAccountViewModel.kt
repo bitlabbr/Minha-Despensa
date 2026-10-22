@@ -38,6 +38,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.ManageHouseholdUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.RegisterUserUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SwitchActiveHouseholdUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.SyncCoordinator
 import com.bitlabbr.minhadespensa.uisystem.features.account.model.AuthTab
 import com.bitlabbr.minhadespensa.uisystem.features.account.model.HouseholdAccountUiState
@@ -289,7 +290,7 @@ class HouseholdAccountViewModel(
     }
 
     fun onJoinInviteCodeChange(code: String) {
-        _joinInviteCode.value = code.uppercase().take(8)
+        _joinInviteCode.value = code.uppercase().take(CoreConstants.Household.INVITE_CODE_LENGTH)
     }
 
     fun joinHousehold() {

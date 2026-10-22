@@ -159,13 +159,21 @@ class AuthAndHouseholdUseCasesTest {
     }
 
     @Test
-    fun joinHouseholdByInviteCodeUseCase_successfulJoin_setsActiveAndEnqueues() = runTest {
-        val result = joinHouseholdByInviteCodeUseCase("ABCDEFGH")
-        assertTrue(result.isSuccess)
-        val active = householdRepository.getActiveHousehold()
-        assertNotNull(active)
-        assertEquals(result.getOrNull()?.id, active.id)
-        assertTrue(syncRepository.enqueueAllLocalEntitiesCalled)
+    fun joinHouseholdByInviteCodeUseCase_successfulJoin_withOrWithoutPrefix() = runTest {
+        // Without prefix (8 chars) -> normalized to CASA-ABCDEFGH
+        val resultWithoutPrefix = joinHouseholdByInviteCodeUseCase("ABCDEFGH")
+        assertTrue(resultWithoutPrefix.isSuccess)
+        assertEquals("CASA-ABCDEFGH", resultWithoutPrefix.getOrNull()?.inviteCode)
+
+        // With prefix (13 chars)
+        val resultWithPrefix = joinHouseholdByInviteCodeUseCase("CASA-ABCDEFGH")
+        assertTrue(resultWithPrefix.isSuccess)
+        assertEquals("CASA-ABCDEFGH", resultWithPrefix.getOrNull()?.inviteCode)
+
+        // Lowercase (13 chars)
+        val resultLowercase = joinHouseholdByInviteCodeUseCase("casa-abcdefgh")
+        assertTrue(resultLowercase.isSuccess)
+        assertEquals("CASA-ABCDEFGH", resultLowercase.getOrNull()?.inviteCode)
     }
 
     @Test

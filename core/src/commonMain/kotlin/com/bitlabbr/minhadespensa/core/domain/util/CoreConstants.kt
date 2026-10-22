@@ -61,7 +61,9 @@ object CoreConstants {
 
     object Household {
         const val NAME_MAX_LENGTH = 80
-        const val INVITE_CODE_LENGTH = 8
+        const val INVITE_CODE_PREFIX = "CASA-"
+        const val INVITE_CODE_RAW_LENGTH = 8
+        const val INVITE_CODE_LENGTH = 13
     }
 
     object Validation {
@@ -88,7 +90,7 @@ object CoreConstants {
         const val ERROR_PASSWORD_TOO_SHORT = "A senha deve ter no mínimo 8 caracteres"
         const val ERROR_HOUSEHOLD_NAME_BLANK = "O nome da despensa compartilhada não pode ser vazio"
         const val ERROR_HOUSEHOLD_NAME_TOO_LONG = "O nome da despensa compartilhada não pode exceder 80 caracteres"
-        const val ERROR_INVITE_CODE_INVALID = "Código de convite deve conter exatamente 8 caracteres alfanuméricos"
+        const val ERROR_INVITE_CODE_INVALID = "Código de convite deve conter 8 caracteres ou formato CASA-XXXXXXXX"
         const val ERROR_NO_ACTIVE_HOUSEHOLD = "Nenhuma despensa ativa selecionada"
     }
 
