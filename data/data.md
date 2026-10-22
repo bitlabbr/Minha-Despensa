@@ -33,7 +33,7 @@ data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/
 ```
 
 Platform-specific source sets:
-*   `data/src/androidMain/`: Android `actual` implementation of `ImageProcessor` utilizing Android `Bitmap` and `ExifInterface`.
+*   `data/src/androidMain/`: Android `actual` implementation of `ImageProcessor` utilizing Android `Bitmap` and `ExifInterface`; `PeriodicSyncWorker` background sync scheduler via AndroidX WorkManager (configured with `NetworkType.CONNECTED` and `setRequiresBatteryNotLow(true)` constraints).
 *   `data/src/iosMain/`: iOS `actual` implementation of `ImageProcessor` utilizing `UIKit` and `CoreGraphics`.
 
 ---

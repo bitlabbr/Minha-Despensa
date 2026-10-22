@@ -62,6 +62,7 @@ class PeriodicSyncWorker(
         fun schedule(context: Context, repeatIntervalMinutes: Long = 15L) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiresBatteryNotLow(true)
                 .build()
 
             val request = PeriodicWorkRequestBuilder<PeriodicSyncWorker>(
