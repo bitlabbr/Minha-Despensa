@@ -185,6 +185,18 @@ class KtorAuthAndSyncRemoteDataSourceTest {
                     "updatedAt": 1729617000000,
                     "isDeleted": false
                   }
+                ],
+                "shoppingLists": [
+                  {
+                    "id": "list-1",
+                    "name": "Compras da Semana",
+                    "type": "PLANNED",
+                    "status": "DRAFT",
+                    "budgetInCents": 15000,
+                    "updatedAt": 1729617000000,
+                    "serverVersion": 42,
+                    "isDeleted": false
+                  }
                 ]
               },
               "timestamp": "2026-10-22T19:35:20.118Z"
@@ -202,6 +214,10 @@ class KtorAuthAndSyncRemoteDataSourceTest {
         assertEquals("Bebidas", pull.effectiveEntities.categories[0].name)
         assertEquals(1, pull.effectiveEntities.products.size)
         assertEquals("Suco de Uva", pull.effectiveEntities.products[0].name)
+        assertEquals(1, pull.effectiveEntities.shoppingLists.size)
+        assertEquals("Compras da Semana", pull.effectiveEntities.shoppingLists[0].name)
+        assertEquals("PLANNED", pull.effectiveEntities.shoppingLists[0].listType)
+        assertEquals("DRAFT", pull.effectiveEntities.shoppingLists[0].listStatus)
     }
 
     @Test

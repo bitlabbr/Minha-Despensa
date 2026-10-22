@@ -128,8 +128,10 @@ data class PantryMovementSyncDto(
 data class ShoppingListSyncDto(
     val id: String,
     val name: String,
-    val listType: String,
-    val listStatus: String,
+    @SerialName("type")
+    val listType: String = "PLANNED",
+    @SerialName("status")
+    val listStatus: String = "DRAFT",
     val budgetInCents: Long? = null,
     val updatedAt: Long,
     val isDeleted: Boolean = false,

@@ -220,23 +220,45 @@ class RoomSyncRepository(
                 val existing = database.catalogDao().findSnapshotById(p.id)
                 val unit = runCatching { MeasureUnit.valueOf(p.measureUnit) }.getOrDefault(MeasureUnit.UNIT)
                 if (existing == null) {
-                    database.catalogDao().insert(
-                        CatalogProductEntity(
+                    val existingByEan = if (!p.ean.isNullOrBlank()) database.catalogDao().findSnapshotByEan(p.ean) else null
+                    if (existingByEan != null && existingByEan.id != p.id) {
+                        applyProductIdMappings(mapOf(existingByEan.id to p.id))
+                    }
+                    val existingAfterRemap = database.catalogDao().findSnapshotById(p.id)
+                    if (existingAfterRemap == null) {
+                        database.catalogDao().insert(
+                            CatalogProductEntity(
+                                id = p.id,
+                                ean = p.ean,
+                                name = p.name,
+                                category = p.category,
+                                brand = p.brand,
+                                measureUnit = p.measureUnit,
+                                netWeight = p.netWeight,
+                                thumbnailUrl = p.thumbnailUrl,
+                                updatedAt = p.updatedAt,
+                                isDeleted = p.isDeleted,
+                                manuallyAdded = p.manuallyAdded,
+                                notes = p.notes,
+                                imageHash = p.imageHash,
+                            ),
+                        )
+                    } else {
+                        database.catalogDao().updateProductIfNewer(
                             id = p.id,
-                            ean = p.ean,
                             name = p.name,
-                            category = p.category,
+                            ean = p.ean,
                             brand = p.brand,
-                            measureUnit = p.measureUnit,
-                            netWeight = p.netWeight,
+                            category = p.category,
+                            measureUnit = unit,
                             thumbnailUrl = p.thumbnailUrl,
+                            netWeight = p.netWeight,
                             updatedAt = p.updatedAt,
                             isDeleted = p.isDeleted,
                             manuallyAdded = p.manuallyAdded,
                             notes = p.notes,
-                            imageHash = p.imageHash,
-                        ),
-                    )
+                        )
+                    }
                 } else {
                     database.catalogDao().updateProductIfNewer(
                         id = p.id,
