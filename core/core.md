@@ -29,6 +29,7 @@ Key technologies and architectural characteristics include:
 *   `api(libs.kotlinx.datetime)`: Exposed to consumers for date/time operations.
 *   `implementation(libs.kotlinx.coroutines.core)`: Core coroutine primitives and Flows.
 *   `implementation(libs.kotlinx.serialization.json)`: JSON serialization support.
+*   `implementation(libs.okio)`: Okio byte string primitives and hashing (SHA-1 for deterministic UUIDv5).
 *   `implementation(libs.kotlin.test)`: Multiplatform test framework (`commonTest`).
 *   `implementation(libs.kotlinx.coroutines.test)`: Test dispatchers and `runTest` utilities.
 
@@ -61,7 +62,22 @@ com.bitlabbr.minhadespensa.core.domain/
 All domain models are plain Kotlin data classes or enums annotated with `@Serializable`:
 
 *   **`CatalogProduct`**: Represents a product in the global/local catalog.
-    *   *Fields*: `id`, `name`, `brand`, `measureUnit`, `netWeight`, `thumbnailUrl`, `updatedAt`, `isDeleted`, `manuallyAdded`, `ean`, `category`, `notes`.
+    *   *Fields*: `id`, `name`, `brand`, `measureUnit`, `netWeight`, `thumbnailUrl`, `updatedAt`, `isDeleted`, `manuallyAdded`, `ean`, `category`, `notes`, `imageHash`.
+*   **`User`**: Individual user entity representing an authenticated account.
+    *   *Fields*: `id`, `name`, `email`, `createdAt`.
+*   **`AuthTokens`**: JWT access and refresh token pair with expiration timestamps.
+    *   *Fields*: `accessToken`, `refreshToken`, `tokenType`, `expiresInSeconds`, `issuedAtMillis`.
+*   **`AuthSession`**: Active authentication session state (`user`, `tokens`).
+*   **`Household`**: Shared multi-tenant home/family grouping for products, pantries, and shopping lists.
+    *   *Fields*: `id`, `name`, `inviteCode`, `ownerId`, `syncVersion`, `createdAt`, `updatedAt`, `members`.
+*   **`HouseholdMember`**: Membership link between a user and a household.
+    *   *Fields*: `userId`, `householdId`, `userName`, `userEmail`, `role` (`OWNER`, `ADMIN`, `MEMBER`, `VIEWER`), `joinedAt`.
+*   **`SyncModels`**: Bidirectional CRDT/LWW sync protocol definitions:
+    *   `SyncEntityType`: `PRODUCT`, `PRODUCT_MEDIA`, `CATEGORY`, `PANTRY_ITEM`, `PANTRY_MOVEMENT`, `SHOPPING_LIST`, `SHOPPING_ITEM`, `PRICE_ENTRY`, `MONTHLY_BUDGET`.
+    *   `SyncMutationDto`: Single queued mutation with operation (`UPSERT`, `DELETE`), deterministic timestamp, payload JSON, and retry tracking.
+    *   `SyncPushPayloadDto`: Push request payload sending client mutations and local cursor.
+    *   `SyncPullResponseDto`: Pull response payload delivering server changes, cursor, server timestamp, and product ID remaps (`productIdMappings`).
+    *   `SyncResult`: Result summary of a synchronization round (`SUCCESS`, `NO_OP`, `CONFLICT_RESOLVED`, `NETWORK_ERROR`, `AUTH_ERROR`).
 *   **`MeasureUnit`**: Supported physical measurement units: `UNIT`, `KILOGRAM`, `GRAM`, `LITER`, `MILLILITER`, `PACKAGE`. Provides `toLabel()` extensions in UI.
 *   **`PantryItem`**: Represents product stock in the user's pantry.
     *   *Fields*: `id`, `productId`, `quantity`, `expirationDate`, `batchNumber`, `unitPriceInCents`, `updatedAt`, `isDeleted`.
@@ -229,6 +245,28 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
 *   **`InvoiceRepository`**:
     *   `parseInvoiceFromQrCode(qrCodeContent: String): Result<Invoice>`
     *   `importInvoiceToPantry(storeName: String, items: List<InvoiceItem>): Result<Int>`
+*   **`AuthRepository`**:
+    *   `login(email: String, password: String): Result<AuthSession>`
+    *   `register(name: String, email: String, password: String): Result<AuthSession>`
+    *   `logout(): Result<Unit>`
+    *   `refreshToken(): Result<AuthTokens>`
+    *   `getAuthState(): Flow<AuthSession?>`
+    *   `getCurrentUser(): User?`
+*   **`HouseholdRepository`**:
+    *   `createHousehold(name: String): Result<Household>`
+    *   `joinHouseholdByInviteCode(inviteCode: String): Result<Household>`
+    *   `listUserHouseholds(): Flow<List<Household>>`
+    *   `getActiveHousehold(): Flow<Household?>`
+    *   `setActiveHousehold(householdId: String): Result<Unit>`
+    *   `regenerateInviteCode(householdId: String): Result<String>`
+    *   `removeMember(householdId: String, userId: String): Result<Unit>`
+    *   `updateMemberRole(householdId: String, userId: String, role: HouseholdRole): Result<Unit>`
+*   **`SyncRepository`**:
+    *   `sync(householdId: String): Result<SyncResult>`
+    *   `enqueueMutation(mutation: SyncMutationDto)`
+    *   `getPendingMutationsCount(): Flow<Int>`
+    *   `clearLocalDataOnLogout()`
+    *   `enqueueAllLocalEntitiesForInitialSync()`
 
 ---
 
@@ -249,12 +287,23 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `getMonthTimeRange(year: Int, month: Int, timeZone: TimeZone)`: Calculates exact epoch milliseconds range `[startOfMonth, endOfMonth]` for financial and monthly aggregations using `kotlinx.datetime.LocalDate`.
 *   **`ImageProcessor`**: Multiplatform `expect` interface for scaling and compressing raw image bytes to WebP thumbnails.
 *   **`TextNormalizer.kt`**: Multiplatform text normalization extensions (`unaccent()`, `normalizeForSearch()`, `matchesSearchQuery()`) for accent- and case-insensitive search queries across products, brands, and categories.
+*   **`DeterministicIdGenerator.kt`**: Hybrid deterministic UUIDv5 identifier generator conforming to RFC 4122 namespace hashing:
+    *   `generateProductIdByEan(ean: String)`: `UUIDv5(NAMESPACE_PRODUCT, "ean:${ean.trim()}")`.
+    *   `generateProductIdByNameAndUnit(name: String, unit: MeasureUnit)`: `UUIDv5(NAMESPACE_PRODUCT, "name:${unaccent(name)}:${unit.name}")`.
+    *   `generateCategoryId(name: String)`: `UUIDv5(NAMESPACE_CATEGORY, unaccent(name))`.
+    *   `generateMonthlyBudgetId(year: Int, month: Int)`: `"$year-$month"`.
+*   **`SyncClock.kt`**: Monotonic logical clock provider with RTT/2 server offset calibration:
+    *   `now()`: Corrected wall-clock timestamp accounting for server offset.
+    *   `calibrate(serverTimestamp: Long, rttMillis: Long)`: Calibrates local clock with remote server time.
+    *   `nextTimestampAfter(existingTimestamp: Long)`: Guarantees strict monotonic increase (`max(now(), existing + 1)`) to enforce LWW tie-breaking without regression.
 
 ---
 
 ## 5. Testing & Verification
 
 The `:core` module contains comprehensive unit tests located in `core/src/commonTest/`:
+*   `DeterministicIdGeneratorTest`: Validates RFC 4122 UUIDv5 determinism, canonical string format, accent folding, and EAN uniqueness.
+*   `SyncClockTest`: Verifies RTT/2 server offset calibration and monotonic `nextTimestampAfter` progression preventing clock regression.
 *   `CatalogAndPantryUseCasesTest`: Validates `SaveCatalogProductUseCase`, `AddPantryItemUseCase`, and `UpdatePantryItemUseCase` business rules, constraints, and error handling.
 *   `ProductCategoryUseCasesTest`: Validates `SaveProductCategoryUseCase` and `DeleteProductCategoryUseCase` creation, whitespace trimming, length bounds, accent/case-insensitive duplicate rejection, cascading rename, soft-delete fallback to `"Outros"`, and protection of `"Outros"`.
 *   `ShoppingUseCasesTest`: Validates shopping session lifecycles, list creations, cart transitions, item replacements, and deletions.

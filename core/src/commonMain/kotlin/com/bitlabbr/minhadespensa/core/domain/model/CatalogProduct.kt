@@ -40,4 +40,5 @@ data class CatalogProduct(
     val isDeleted: Boolean = false,
     val manuallyAdded: Boolean = true,
     val notes: String? = null,
+    val imageHash: String? = null,
 ) 
