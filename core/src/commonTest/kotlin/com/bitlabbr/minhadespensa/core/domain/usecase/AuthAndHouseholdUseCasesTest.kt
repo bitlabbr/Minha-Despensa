@@ -239,7 +239,12 @@ class AuthAndHouseholdUseCasesTest {
 
         val successResult = manageHouseholdUseCase.createHousehold("Casa Principal")
         assertTrue(successResult.isSuccess)
-        assertEquals("Casa Principal", successResult.getOrNull()?.name)
+        val created = successResult.getOrThrow()
+        assertEquals("Casa Principal", created.name)
+        assertTrue(syncRepository.clearLocalDataCalled)
+        assertFalse(syncRepository.enqueueAllLocalEntitiesCalled)
+        assertTrue(syncRepository.syncCallCount > 0)
+        assertEquals(created.id, householdRepository.getActiveHousehold()?.id)
     }
 
     @Test
@@ -273,6 +278,6 @@ class AuthAndHouseholdUseCasesTest {
         val household = manageHouseholdUseCase.createHousehold("Casa").getOrThrow()
         val result = syncHouseholdDataUseCase()
         assertTrue(result.isSuccess)
-        assertEquals(1, syncRepository.syncCallCount)
+        assertEquals(2, syncRepository.syncCallCount)
     }
 }

@@ -39,9 +39,12 @@ class ManageHouseholdUseCase(
             CoreConstants.Validation.ERROR_HOUSEHOLD_NAME_TOO_LONG
         }
 
+        syncRepository.flushOutboxBeforeSwitch(forceDiscard = false)
+
         val household = householdRepository.createHousehold(trimmed).getOrThrow()
+        syncRepository.clearLocalDataForHouseholdSwitch()
         householdRepository.switchActiveHousehold(household.id).getOrThrow()
-        syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
+        syncRepository.sync().getOrThrow()
 
         household
     }

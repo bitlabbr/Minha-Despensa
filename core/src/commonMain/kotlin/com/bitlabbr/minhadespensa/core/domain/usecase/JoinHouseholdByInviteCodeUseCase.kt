@@ -46,6 +46,8 @@ class JoinHouseholdByInviteCodeUseCase(
             CoreConstants.Validation.ERROR_INVITE_CODE_INVALID
         }
 
+        syncRepository.flushOutboxBeforeSwitch(forceDiscard = false)
+
         val household = householdRepository.joinHousehold(normalizedCode).getOrThrow()
         syncRepository.clearLocalDataForHouseholdSwitch()
         householdRepository.switchActiveHousehold(household.id).getOrThrow()

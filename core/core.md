@@ -179,12 +179,14 @@ The `:core` module defines 21 use cases encapsulating discrete application busin
 *   **`LogoutUserUseCase`**:
     *   Terminates active auth session and clears credentials.
 *   **`JoinHouseholdByInviteCodeUseCase`**:
-    *   Validates 8-character Crockford base32 invite code, links user to household, switches active household, and queues local data for initial sync.
+    *   Flushes pending outbox mutations via `flushOutboxBeforeSwitch(forceDiscard = false)`, validates 8-character Crockford base32 invite code, links user to household, clears local cache via `clearLocalDataForHouseholdSwitch()`, switches active household, and triggers initial pull sync.
 *   **`SwitchActiveHouseholdUseCase`**:
     *   Verifies pending unsynced changes via `flushOutboxBeforeSwitch(forceDiscard)`.
-    *   Clears previous household local cache, switches active household ID, and triggers initial pull sync.
+    *   Clears previous household local cache via `clearLocalDataForHouseholdSwitch()`, switches active household ID, and triggers initial pull sync.
 *   **`ManageHouseholdUseCase`**:
-    *   Orchestrates household management operations: `createHousehold` (with 80 chars max name validation), `updateHousehold`, `leaveHousehold`, `regenerateInviteCode`, and `removeMember`.
+    *   Orchestrates household management operations:
+        *   `createHousehold`: Flushes pending outbox mutations from previous household, validates 80-char name constraint, creates remote household, clears previous household local cache via `clearLocalDataForHouseholdSwitch()`, switches active household ID, and triggers clean pull sync for the new workspace.
+        *   `updateHousehold`, `leaveHousehold`, `regenerateInviteCode`, and `removeMember`.
 *   **`SyncHouseholdDataUseCase`**:
     *   Coordinates synchronization for the currently active household, verifying authentication and active household presence.
 
