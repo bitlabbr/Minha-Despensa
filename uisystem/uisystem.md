@@ -175,7 +175,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
   - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, `SyncCoordinator`, logger, notification manager.
-  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `SyncRepository`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, notification manager, logger.
+  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `SyncRepository`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, `AppUpdateRepository?`, notification manager, logger.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases (`CheckEanStatusUseCase`, `AddPantryItemUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`), logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
@@ -202,7 +202,7 @@ All unit tests reside in `uisystem/src/commonTest` and execute across multiplatf
 | `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
 | `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
-| `HouseholdAccountViewModelTest` | Auth state transitions (login/register/logout), form validation, invite code normalization, household creation & switching, member list synchronization, manual sync triggering, dialog lifecycles. |
+| `HouseholdAccountViewModelTest` | Auth state transitions (login/register/logout), form validation, invite code normalization, household creation & switching, member list synchronization, manual sync triggering, in-app update checks and download/install triggers, dialog lifecycles. |
 | `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, pantry stock value calculation (with priced/unpriced/deleted items), yearly analytics aggregations (12 monthly bars, elapsed month averages, purchase/stock unit costs), dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog & FinancialAnalyticsDialog lifecycles and validation. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |

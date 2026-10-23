@@ -79,6 +79,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
+import com.bitlabbr.minhadespensa.uisystem.features.account.widgets.AppUpdateSection
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
@@ -243,6 +244,12 @@ fun HouseholdAccountScreen(
                     onSwitchHousehold = viewModel::switchActiveHousehold,
                 )
             }
+
+            AppUpdateSection(
+                uiState = uiState,
+                onCheckUpdate = viewModel::checkForUpdates,
+                onDownloadAndInstall = viewModel::downloadAndInstallUpdate,
+            )
 
             Spacer(Modifier.height(dimens.paddingLarge))
         }

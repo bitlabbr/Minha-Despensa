@@ -58,6 +58,8 @@ import minhadespensa.uisystem.generated.resources.account_household_switched_suc
 import minhadespensa.uisystem.generated.resources.account_login_success
 import minhadespensa.uisystem.generated.resources.account_logout_success
 import minhadespensa.uisystem.generated.resources.account_register_success
+import minhadespensa.uisystem.generated.resources.app_update_error
+import minhadespensa.uisystem.generated.resources.app_update_up_to_date
 import minhadespensa.uisystem.generated.resources.sync_status_error
 
 class HouseholdAccountViewModel(
@@ -71,6 +73,7 @@ class HouseholdAccountViewModel(
     private val loginUserUseCase: LoginUserUseCase,
     private val registerUserUseCase: RegisterUserUseCase,
     private val logoutUserUseCase: LogoutUserUseCase,
+    private val appUpdateRepository: com.bitlabbr.minhadespensa.core.domain.repository.AppUpdateRepository? = null,
     private val notificationManager: AppNotificationManager,
     private val logger: AppLogger? = null,
 ) : ViewModel() {
@@ -100,6 +103,10 @@ class HouseholdAccountViewModel(
     private val _isMergeDecisionDialogOpen = MutableStateFlow(false)
     private var pendingAuthAction: PendingAuthAction? = null
     private val _userHouseholds = MutableStateFlow<List<HouseholdDetail>>(emptyList())
+    private val _isCheckingUpdate = MutableStateFlow(false)
+    private val _isDownloadingUpdate = MutableStateFlow(false)
+    private val _downloadProgress = MutableStateFlow(0f)
+    private val _availableUpdate = MutableStateFlow<com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo?>(null)
 
     init {
         refreshHouseholds()
@@ -120,6 +127,10 @@ class HouseholdAccountViewModel(
         val isLogoutConfirmDialogOpen: Boolean,
         val isSwitchingHousehold: Boolean,
         val isMergeDecisionDialogOpen: Boolean,
+        val isCheckingUpdate: Boolean,
+        val isDownloadingUpdate: Boolean,
+        val downloadProgress: Float,
+        val availableUpdate: com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo?,
     )
 
     private val formStateFlow = combine(
@@ -148,8 +159,16 @@ class HouseholdAccountViewModel(
             _isMergeDecisionDialogOpen,
         ) { createName, logoutOpen, switching, mergeOpen ->
             Tuple4(createName, logoutOpen, switching, mergeOpen)
+        },
+        combine(
+            _isCheckingUpdate,
+            _isDownloadingUpdate,
+            _downloadProgress,
+            _availableUpdate,
+        ) { checking, downloading, progress, available ->
+            Tuple4(checking, downloading, progress, available)
         }
-    ) { part1, part2, part3 ->
+    ) { part1, part2, part3, part4 ->
         FormState(
             selectedTab = part1.v1,
             loginEmail = part1.v2,
@@ -165,6 +184,10 @@ class HouseholdAccountViewModel(
             isLogoutConfirmDialogOpen = part3.v2,
             isSwitchingHousehold = part3.v3,
             isMergeDecisionDialogOpen = part3.v4,
+            isCheckingUpdate = part4.v1,
+            isDownloadingUpdate = part4.v2,
+            downloadProgress = part4.v3,
+            availableUpdate = part4.v4,
         )
     }
 
@@ -197,11 +220,21 @@ class HouseholdAccountViewModel(
             isLogoutConfirmDialogOpen = form.isLogoutConfirmDialogOpen,
             isSwitchingHousehold = form.isSwitchingHousehold,
             isMergeDecisionDialogOpen = form.isMergeDecisionDialogOpen,
+            isSelfUpdateSupported = appUpdateRepository?.isSelfUpdateSupported() ?: false,
+            appVersionName = appUpdateRepository?.getCurrentVersionName() ?: "",
+            isCheckingUpdate = form.isCheckingUpdate,
+            isDownloadingUpdate = form.isDownloadingUpdate,
+            downloadProgress = form.downloadProgress,
+            availableUpdate = form.availableUpdate,
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = HouseholdAccountUiState(isLoading = true)
+        initialValue = HouseholdAccountUiState(
+            isLoading = true,
+            isSelfUpdateSupported = appUpdateRepository?.isSelfUpdateSupported() ?: false,
+            appVersionName = appUpdateRepository?.getCurrentVersionName() ?: "",
+        )
     )
 
     fun onTabSelected(tab: AuthTab) {
@@ -464,6 +497,61 @@ class HouseholdAccountViewModel(
             householdRepository.getUserHouseholds().onSuccess { list ->
                 _userHouseholds.value = list
             }
+        }
+    }
+
+    fun checkForUpdates() {
+        if (appUpdateRepository == null) return
+        viewModelScope.launch {
+            _isCheckingUpdate.value = true
+            logger?.i(TAG, "Checking for app updates...")
+            appUpdateRepository.checkForUpdates().fold(
+                onSuccess = { updateInfo ->
+                    _isCheckingUpdate.value = false
+                    _availableUpdate.value = updateInfo
+                    if (updateInfo == null) {
+                        logger?.i(TAG, "Application is up to date.")
+                        notificationManager.showSuccess(UiText.Resource(Res.string.app_update_up_to_date))
+                    } else {
+                        logger?.i(TAG, "Update available: ${updateInfo.versionName} (${updateInfo.versionCode})")
+                    }
+                },
+                onFailure = { error ->
+                    _isCheckingUpdate.value = false
+                    logger?.w(TAG, "Check for update failed: ${error.message}", error)
+                    notificationManager.showError(UiText.Resource(Res.string.app_update_error))
+                }
+            )
+        }
+    }
+
+    fun downloadAndInstallUpdate() {
+        val repo = appUpdateRepository ?: return
+        val update = _availableUpdate.value ?: return
+        if (_isDownloadingUpdate.value) return
+
+        viewModelScope.launch {
+            _isDownloadingUpdate.value = true
+            _downloadProgress.value = 0f
+            logger?.i(TAG, "Starting download and install for version: ${update.versionName}")
+
+            repo.downloadAndInstall(
+                versionInfo = update,
+                onProgress = { progress ->
+                    _downloadProgress.value = progress
+                }
+            ).fold(
+                onSuccess = {
+                    _isDownloadingUpdate.value = false
+                    _downloadProgress.value = 1f
+                    logger?.i(TAG, "Installer triggered successfully.")
+                },
+                onFailure = { error ->
+                    _isDownloadingUpdate.value = false
+                    logger?.e(TAG, "Download and install failed: ${error.message}", error)
+                    notificationManager.showError(UiText.Resource(Res.string.app_update_error))
+                }
+            )
         }
     }
 
