@@ -178,6 +178,8 @@ The `:core` module defines 21 use cases encapsulating discrete application busin
     *   Validates email and non-empty password, authenticates against backend, and triggers outbox enqueue of pre-existing entities.
 *   **`LogoutUserUseCase`**:
     *   Terminates active auth session and clears credentials.
+*   **`CheckForAppUpdateUseCase`**:
+    *   Verifies whether in-app self-update is supported by the current platform (Android) and queries `AppUpdateRepository` for newer software versions and changelogs.
 *   **`JoinHouseholdByInviteCodeUseCase`**:
     *   Flushes pending outbox mutations via `flushOutboxBeforeSwitch(forceDiscard = false)`, validates 8-character Crockford base32 invite code, links user to household, clears local cache via `clearLocalDataForHouseholdSwitch()`, switches active household, and triggers initial pull sync.
 *   **`SwitchActiveHouseholdUseCase`**:
