@@ -508,11 +508,12 @@ class HouseholdAccountViewModel(
             appUpdateRepository.checkForUpdates().fold(
                 onSuccess = { updateInfo ->
                     _isCheckingUpdate.value = false
-                    _availableUpdate.value = updateInfo
-                    if (updateInfo == null) {
+                    if (updateInfo == null || !updateInfo.isUpdateAvailable) {
+                        _availableUpdate.value = null
                         logger?.i(TAG, "Application is up to date.")
                         notificationManager.showSuccess(UiText.Resource(Res.string.app_update_up_to_date))
                     } else {
+                        _availableUpdate.value = updateInfo
                         logger?.i(TAG, "Update available: ${updateInfo.versionName} (${updateInfo.versionCode})")
                     }
                 },

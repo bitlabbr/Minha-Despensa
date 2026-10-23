@@ -439,6 +439,33 @@ class HouseholdAccountViewModelTest {
     }
 
     @Test
+    fun `checkForUpdates when app is already up to date triggers success notification and resets availableUpdate`() = runTest(testDispatcher) {
+        val sameVersion = AppVersionInfo(
+            platform = "android",
+            versionName = "1.1.1-alpha",
+            versionCode = 3L,
+            minRequiredVersion = 1L,
+            releaseNotes = "No changes",
+            downloadUrl = "https://despensa.domus.arpa/api/v1/app/download/latest",
+            sha256Checksum = "fakehash",
+            fileSizeInBytes = 25_000_000L,
+            releasedAt = 1700000000000L,
+            isUpdateAvailable = false,
+        )
+        appUpdateRepository.updateResult = Result.success(sameVersion)
+
+        viewModel.checkForUpdates()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isCheckingUpdate)
+            assertNull(state.availableUpdate)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `checkForUpdates when update is available updates availableUpdate state`() = runTest(testDispatcher) {
         val newVersion = AppVersionInfo(
             platform = "android",
