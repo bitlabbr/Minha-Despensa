@@ -33,7 +33,7 @@ data/src/commonMain/kotlin/com/bitlabbr/minhadespensa/data/
 ```
 
 Platform-specific source sets:
-*   `data/src/androidMain/`: Android `actual` implementation of `ImageProcessor` utilizing Android `Bitmap` and `ExifInterface`.
+*   `data/src/androidMain/`: Android `actual` implementation of `ImageProcessor` utilizing Android `Bitmap` and `ExifInterface`; `PeriodicSyncWorker` background sync scheduler via AndroidX WorkManager (configured with `NetworkType.CONNECTED` and `setRequiresBatteryNotLow(true)` constraints).
 *   `data/src/iosMain/`: iOS `actual` implementation of `ImageProcessor` utilizing `UIKit` and `CoreGraphics`.
 
 ---
@@ -57,8 +57,8 @@ Platform-specific source sets:
 ## 4. Key Components
 
 ### 4.1. Room Database (`local/AppDatabase.kt`)
-*   **Entities**: `CatalogProductEntity`, `ProductCategoryEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`, `MonthlyBudgetEntity`, `PantryMovementEntity`.
-*   **Version**: `8`.
+*   **Entities**: `CatalogProductEntity`, `ProductCategoryEntity`, `PantryItemEntity`, `PriceEntryEntity`, `ShoppingItemEntity`, `ProductMediaEntity`, `ShoppingListEntity`, `MonthlyBudgetEntity`, `PantryMovementEntity`, `PendingSyncEntryEntity`, `AppKeyValueEntity`.
+*   **Version**: `10`.
 *   **Driver**: `BundledSQLiteDriver()`.
 *   **Platform Initialization**: Uses `expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase>` to instantiate platform SQLite drivers.
 
@@ -66,26 +66,33 @@ Platform-specific source sets:
 
 ### 4.2. Database Entities (`local/entity/`)
 *   **`CatalogProductEntity`** (`catalog_products`):
-    *   *Columns*: `id` (PK), `ean` (Unique Index), `name`, `brand`, `measure_unit`, `net_weight`, `thumbnail_url`, `updated_at`, `is_deleted`, `manually_added`, `category`, `notes`.
+    *   *Columns*: `id` (PK), `ean` (Unique Index), `name`, `brand`, `measureUnit`, `netWeight`, `thumbnailUrl`, `updatedAt`, `isDeleted`, `manuallyAdded`, `category`, `notes`, `imageHash`.
 *   **`ProductCategoryEntity`** (`product_categories`):
-    *   *Columns*: `id` (PK), `name` (Indexed), `is_default`, `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `name` (Indexed), `isDefault`, `updatedAt`, `isDeleted`.
 *   **`PantryItemEntity`** (`pantry_items`):
-    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `quantity`, `expiration_date`, `batch_number`, `unit_price_in_cents`, `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `productId` (FK to `catalog_products.id` on delete cascade), `quantity`, `expirationDate`, `batchNumber`, `unit_price_in_cents`, `updatedAt`, `isDeleted`.
 *   **`PriceEntryEntity`** (`price_entries`):
-    *   *Columns*: `id` (PK), `product_id` (FK to `catalog_products.id` on delete cascade), `price_in_cents`, `store_name`, `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `productId` (FK to `catalog_products.id` on delete cascade), `priceInCents`, `storeName`, `updatedAt`, `isDeleted`.
 *   **`ProductMediaEntity`** (`product_media`):
-    *   *Columns*: `product_id` (PK and FK to `catalog_products.id` on delete cascade), `blob` (`ByteArray`), `updated_at`.
+    *   *Columns*: `productId` (PK and FK to `catalog_products.id` on delete cascade), `blob` (`ByteArray`), `updatedAt`.
 *   **`ShoppingItemEntity`** (`shopping_items`):
     *   *Columns*: `id` (PK), `list_id` (FK to `shopping_lists.id` on delete cascade), `product_id` (FK to `catalog_products.id` on delete set null), `raw_text`, `quantity`, `price_at_time`, `is_checked`, `updated_at`, `is_deleted`.
 *   **`ShoppingListEntity`** (`shopping_lists`):
-    *   *Columns*: `id` (PK), `name`, `list_type`, `list_status`, `budget_in_cents` (Kotlin alias `budgedInCents`), `updated_at`, `is_deleted`.
+    *   *Columns*: `id` (PK), `name`, `list_type`, `list_status`, `budget_in_cents`, `updated_at`, `is_deleted`.
 *   **`ShoppingListWithItems`**:
     *   Room relation data class holding `ShoppingListEntity` with `@Relation` child `List<ShoppingItemEntity>`.
 *   **`MonthlyBudgetEntity`** (`monthly_budgets`):
-    *   *Columns*: `year` (PK), `month` (PK), `budgetInCents`, `updatedAt`. Composite primary key `(year, month)`.
+    *   *Columns*: `year` (PK), `month` (PK), `budgetInCents`, `updatedAt`, `isDeleted`. Composite primary key `(year, month)`.
 *   **`PantryMovementEntity`** (`pantry_movements`):
     *   *Columns*: `id` (PK), `pantry_item_id`, `productId` (FK to `catalog_products.id` on delete cascade), `type`, `quantity`, `unit_price_in_cents`, `total_price_in_cents`, `updatedAt`, `store_or_reason`, `is_deleted`.
     *   *Indices*: `productId`, `(type, updatedAt)`, `updatedAt`.
+*   **`PendingSyncEntryEntity`** (`pending_sync_entries`):
+    *   Outbox queue for offline mutations awaiting push to remote backend.
+    *   *Columns*: `id` (PK auto-increment), `entityType`, `entityId`, `operation` (`UPSERT`, `DELETE`), `payload` (JSON string or null), `updatedAt`, `retryCount`, `createdAt`.
+    *   *Indices*: `(entityType, entityId)`, `createdAt`.
+*   **`AppKeyValueEntity`** (`app_key_values`):
+    *   Local key-value storage for sync cursors, session metadata, and active household tracking.
+    *   *Columns*: `key` (PK), `value`, `updatedAt`.
 
 ---
 
@@ -106,7 +113,12 @@ Platform-specific source sets:
     *   Creates `product_categories` table (`id`, `name`, `is_default`, `updated_at`, `is_deleted`), creates `index_product_categories_name`, seeds the 9 default categories with deterministic IDs (`00000000-0000-0000-0000-000000000001`..`009`), and backfills any custom categories already present on active `catalog_products`.
 *   **`MIGRATION_8_9`**:
     *   Standardizes `pantry_movements` to use `updatedAt` instead of `timestamp` (matching all CRDT entities), renames column `timestamp` to `updatedAt`, drops old indices and recreates `index_pantry_movements_type_updatedAt` and `index_pantry_movements_updatedAt`.
-*   **Direct Upgrade Paths**: `MIGRATION_1_7`..`MIGRATION_5_7`, `MIGRATION_1_8`..`MIGRATION_6_8`, and `MIGRATION_1_9`..`MIGRATION_7_9`.
+*   **`MIGRATION_9_10`**:
+    *   Adds `imageHash TEXT DEFAULT NULL` column to `catalog_products`.
+    *   Adds `isDeleted INTEGER NOT NULL DEFAULT 0` column to `monthly_budgets`.
+    *   Creates outbox table `pending_sync_entries` with composite index `(entityType, entityId)` and `createdAt` index.
+    *   Creates local key-value table `app_key_values` (`key` PK, `value`, `updatedAt`).
+*   **Direct Upgrade Paths**: `MIGRATION_1_7`..`MIGRATION_5_7`, `MIGRATION_1_8`..`MIGRATION_6_8`, `MIGRATION_1_9`..`MIGRATION_7_9`, and `MIGRATION_1_10`..`MIGRATION_8_10`.
 *   **`ALL_MIGRATIONS`**: Exported migration array consumed by Koin's database builder.
 
 ---
@@ -181,41 +193,71 @@ Centralized and decoupled from repositories:
 *   **`ShoppingListDao`**:
     *   `getAllActiveShoppingLists` (returns `@Transaction Flow<List<ShoppingListWithItems>>`), `getShoppingListById`.
     *   `insertShoppingList`, `insertItems`, `forceUpdateForShoppingList`, `updateShoppingListIfNewer` (LWW including `type` and `status`), `updateTimestamp`, `markShoppingListAsDeleted`, `deleteShoppingListById`.
+*   **`PendingSyncDao`**:
+    *   `insert`, `insertAll`, `getAllPending`, `observePendingCount`, `getPendingCount`, `deleteById`, `deleteByIds`, `deleteByEntity`, `clearAll`.
+*   **`AppKeyValueDao`**:
+    *   `get`, `observe`, `put`, `delete`, `deleteByPrefix`, `clearAll`.
 
 ---
 
 ### 4.7. Repositories (`repository/`)
 
-Implement domain contracts with encapsulated state, logging, input validation, and atomic transactions:
+Implement domain contracts with encapsulated state, logging, input validation, atomic transactions, and automatic outbox enqueuing for multi-device sync:
 
+*   **`OutboxEnqueuer` (`sync/OutboxEnqueuer.kt`)**:
+    *   Encapsulates atomic serialization and upsert/delete operations into `pending_sync_entries` (`PendingSyncDao`).
+    *   Provides typed enqueuing methods for `CatalogProduct`, `ProductCategory`, `PantryItem`, `PriceEntry`, `ShoppingList`, `ShoppingItem`, `MonthlyBudget`, and `PantryMovement`.
+    *   Provides `enqueueAllLocalEntities(database)` to populate the outbox with all pre-existing local data on initial registration/login or safety net recovery.
 *   **`RoomCatalogRepository`**:
-    *   Encapsulates DAOs (`productDao`, `mediaDao`, `categoryDao`).
+    *   Encapsulates DAOs (`productDao`, `mediaDao`, `categoryDao`) and `OutboxEnqueuer`.
+    *   Automatically enqueues outbox mutations (`UPSERT`/`DELETE`) on product and category insertions, updates, and soft deletes.
     *   `searchProductsByNameOrBrand`: Executes accent- and case-insensitive search by filtering active products with `matchesSearchQuery`, supporting unaccented and multi-word token queries.
     *   Executes `insertProduct`, `forceUpdateProduct`, and `updateProductIfNewer`. Handles image addition/update via `ProductMediaEntity` or physical deletion via `mediaDao.deleteByProductId` when `removeImage = true`, and automatically registers any custom product category in `product_categories`.
     *   Category Management (`getAllActiveCategories`, `getCategories`, `saveCategory`, `renameCategory`, `deleteCategory`): Seeds `DEFAULT_CATEGORIES` once when `product_categories` is empty (`countAll() == 0`), performs accent- and case-insensitive duplicate resolution, and executes atomic cascading updates on `catalog_products` inside `useWriterConnection` transactions when renaming or deleting a category (reassigning deleted categories' products to `"Outros"` and protecting `"Outros"` from deletion).
 *   **`RoomPantryRepository`**:
-    *   Encapsulates database and DAO as private members.
+    *   Encapsulates database, DAOs, and `OutboxEnqueuer` as private members.
+    *   Automatically enqueues outbox mutations for pantry items, prices, and movements on insertion, update, consumption, and deletion.
     *   `insertPantryItem`: Persists the pantry item directly via DAO (ensuring Room's `InvalidationTracker` notifies active Flow query collectors) and automatically records a `PriceEntry` with `id = item.id` and `storeName = "Entrada na Despensa"` when `unitPriceInCents != null`, keeping product price history updated.
     *   `updatePantryItemIfNewer`: Updates pantry stock with LWW conflict resolution directly via DAO (notifying active Flow collectors) and updates the associated `PriceEntry` (`id = item.id`) in-place via `forceUpdatePriceEntry`, creating it if absent or soft-deleting it if the price was cleared, ensuring financial metrics (lowest/highest/average price) remain accurate without ghost duplicate entries.
     *   `consumePantryItem` and `consumeBatch`: Atomically validates stock, prevents consumption of soft-deleted items, and updates quantities inside an immediate transaction.
     *   `getExpiringPantryItems`: Accurately separates active non-expired items approaching the threshold from already expired items.
 *   **`RoomPriceRepository`**:
-    *   Encapsulates DAO as private member.
-    *   Manages price history entries with LWW conflict protection.
+    *   Encapsulates DAO and `OutboxEnqueuer` as private members.
+    *   Manages price history entries with LWW conflict protection and automatic outbox enqueuing.
 *   **`RoomShoppingListRepository`**:
-    *   Encapsulates database and DAOs as private members.
-    *   `insertShoppingList`: Atomically saves list entity and its associated items.
-    *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries (repassing `unitPriceInCents = item.priceAtTime`), records `PriceEntry` sharing the same ID as the pantry item when prices are present, unchecks items, and updates the list timestamp to `COMPLETED`.
+    *   Encapsulates database, DAOs, and `OutboxEnqueuer` as private members.
+    *   `insertShoppingList`: Atomically saves list entity and its associated items, enqueuing them to outbox.
+    *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries (repassing `unitPriceInCents = item.priceAtTime`), records `PriceEntry` sharing the same ID as the pantry item when prices are present, unchecks items, updates the list timestamp to `COMPLETED`, and enqueues all resultant mutations to outbox.
 *   **`RoomBudgetRepository`**:
-    *   Encapsulates `AppDatabase` and `MonthlyBudgetDao` as private members.
+    *   Encapsulates `AppDatabase`, `MonthlyBudgetDao`, and `OutboxEnqueuer` as private members.
     *   `getBudgetForMonth`: Emits `MonthlyBudget` domain model mapped from `MonthlyBudgetEntity` for a given `(year, month)`.
-    *   `setBudgetForMonth`: Validates year, month, and non-negative budget value, persisting via `budgetDao.insertOrUpdate` with current epoch timestamp.
+    *   `setBudgetForMonth`: Validates year, month, and non-negative budget value, persisting via `budgetDao.insertOrUpdate` with current epoch timestamp and enqueuing to outbox.
     *   `getMonthlyExpenses`: Emits total cents spent in the month using reactive Flow aggregation of completed shopping lists + pantry direct entries, with `distinctUntilChanged` protection.
     *   `getYearlySummary`: Combines 12 individual reactive monthly expense flows with the annual budgets query into an immutable, reactive list of 12 `MonthlyFinancialSummary` items ordered from January (month 1) to December (month 12).
+*   **`RoomPantryMovementRepository`**:
+    *   Encapsulates `movementDao` and `OutboxEnqueuer`, automatically enqueuing recorded movements to outbox.
 *   **`RoomInvoiceRepository`**:
-    *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase` and logger as private members.
+    *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase`, `OutboxEnqueuer`, and logger as private members.
     *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice` with automatic consolidation of duplicate product lines.
-    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing consolidated bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, groups items matching the same `targetProductId`, and persists a single consolidated `PantryItemEntity`, a single `PriceEntryEntity`, and a single `PantryMovementEntity` (`ENTRY_PURCHASE`) per unique product.
+    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing consolidated bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, groups items matching the same `targetProductId`, persists a single consolidated `PantryItemEntity`, a single `PriceEntryEntity`, and a single `PantryMovementEntity` (`ENTRY_PURCHASE`) per unique product, and enqueues all created entities to `pending_sync_entries` via `OutboxEnqueuer`.
+*   **`RoomAuthRepository`**:
+    *   Implements `AuthRepository`: `register`, `login`, `logout`, `refreshToken`, `clearSession`.
+    *   Persists JWT tokens and active `AuthSession` in `AppKeyValueDao`.
+*   **`RoomHouseholdRepository`**:
+    *   Implements `HouseholdRepository`: `observeActiveHousehold`, `getActiveHousehold`, `getUserHouseholds`, `createHousehold`, `updateHousehold`, `joinHousehold`, `leaveHousehold`, `regenerateInviteCode`, `removeMember`, `switchActiveHousehold`.
+*   **`RoomSyncRepository`**:
+    *   Implements `SyncRepository` with 6-step bidirectional CRDT/LWW synchronization:
+        1. Outbox Push: Collects pending outbox mutations and pushes to `/api/v1/sync/push` in a loop until all pending mutations are drained.
+        2. ID Remapping: Atomically remaps product IDs received from server (`productIdMappings`), safely repointing all child tables (`pantry_items`, `price_entries`, `shopping_items`, `pantry_movements`, `product_media`) without triggering `ON DELETE CASCADE`.
+        3. Pull: Fetches delta updates since cursor via `/api/v1/sync/pull?since={cursor}`.
+        4. Ingestion: Atomically upserts pulled entities using LWW timestamp checks.
+        5. Media Sync: Bidirectional photo sync with SHA-256 hash tracking via `app_key_values` (`synced_media_hash_{productId}`). Local photos are uploaded to `/api/v1/media/products/{id}` when unrecorded or hash changed; remote photos are downloaded to `product_media` when local media hash differs from catalog `imageHash`.
+        6. Workspace State Management: Provides `hasLocalData()` to detect pre-existing offline content and `clearLocalDataForHouseholdSwitch()` to purge all tenant data (catalog, media, custom categories, pantry, shopping lists, budgets, prices, pending outbox) during household switches or cloud restore.
+        5. Cursor Advancement: Updates `sync_cursor_{householdId}`.
+        6. Outbox Drain: Deletes successfully pushed mutations from `pending_sync_entries`.
+    *   `enqueueAllLocalEntitiesForInitialSync()`: Backfills all local pre-existing entities into outbox for initial synchronization when user binds/creates an account.
+    *   `flushOutboxBeforeSwitch()`: Detects unsynced changes to prevent silent data loss when switching active household.
+    *   `clearLocalDataForHouseholdSwitch()`: Atomically wipes tenant-scoped tables while preserving global catalog products and outbox.
 
 ---
 
@@ -223,17 +265,17 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 
 Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
-*   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`.
-*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, injected with `AppDatabase` and `DiQualifiers.DATA_LOGGER`.
-*   Networking & Invoice: `InvoiceServerConfig` (configurable base URL), `HttpClient(createPlatformHttpClientEngine())` (with `ContentNegotiation`, `json()`, and platform-specific engine providing SSL/TLS custom trust for `*.domus.arpa` and local development hosts on Android), and `InvoiceRemoteDataSource` (`KtorInvoiceRemoteDataSource`).
-*   Use Case Factories: Registers all 21 domain use cases (`SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, `CheckEanStatusUseCase`, `AddPantryItemUseCase`, `UpdatePantryItemUseCase`, `CreatePlannedShoppingListUseCase`, `CreateQuickShoppingListUseCase`, `AddCatalogItemToShoppingListUseCase`, `AddOrUpdateCartItemUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`, `StartShoppingSessionUseCase`, `FinalizeShoppingSessionUseCase`, `SetMonthlyBudgetUseCase`, `GetMonthlyFinancialSummaryUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`).
+*   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`, `pendingSyncDao`, `appKeyValueDao`.
+*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, `RoomAuthRepository`, `RoomHouseholdRepository`, `RoomSyncRepository`.
+*   Networking: `SyncServerConfig`, `SyncClock`, `KtorAuthRemoteDataSource`, `KtorHouseholdRemoteDataSource`, `KtorSyncRemoteDataSource`.
+*   Use Case Factories: Registers all 29 domain use cases and `SyncCoordinator`.
 
 ---
 
 ## 5. Testing & Verification
 
 The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/` using an in-memory SQLite database (`createInMemoryDatabase(getTestDatabaseBuilder())`):
-*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v8 to v9, verifying table creation (`monthly_budgets`, `pantry_movements`, `product_categories`), column evolution (`updatedAt`), composite keys, indices, and data preservation.
+*   **`AppDatabaseMigrationTest`**: Validates schema upgrades from v1..v9 to v10, verifying table creation (`monthly_budgets`, `pantry_movements`, `product_categories`, `pending_sync_entries`, `app_key_values`), column evolution (`updatedAt`, `imageHash`, `isDeleted`), composite keys, indices, and 100% data preservation across all 9 tables.
 *   **`PantryMovementDaoTest`**: Tests CRUD operations for `PantryMovementEntity`, timestamp range filtering, top consumed products aggregation, and reactive monthly expense tracking.
 *   **`MonthlyBudgetDaoTest`**: Tests CRUD operations for `MonthlyBudgetEntity`, composite key updates, annual queries, and reactive monthly expense aggregation joins across shopping lists, items, and pantry entries.
 *   **`RoomBudgetRepositoryTest`**: Tests domain boundary enforcement, monthly budget retrieval/updates, reactive expense aggregation, and full 12-month annual summaries.
@@ -244,7 +286,9 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`RoomInvoiceRepositoryTest`**: Tests invoice QR code parsing delegation and atomic bulk pantry import with SQLite in-memory: creating new catalog products, reusing existing products by matching EAN or name, inserting pantry items, recording latest price history and purchase movements in `pantry_movements`.
 *   **`KtorInvoiceRemoteDataSourceTest`**: Tests HTTP JSON request payload serialization, endpoint routing, and error status handling using Ktor's `MockEngine`.
 *   **`AndroidHttpClientEngineTest`**: Tests Android platform OkHttp engine instantiation, custom `X509TrustManager` fallback for `*.domus.arpa` and development CAs, and dev hostname verification.
+*   **`KtorAuthAndSyncRemoteDataSourceTest`**: Tests HTTP JSON request and response envelope serialization (`ApiResponseDto<T>`), endpoint routing, error status extraction (`ApiErrorResponseDto`), and delta pull/push parsing with Ktor `MockEngine`.
 *   **`InvoiceMapperTest`**: Tests mapping between remote DTOs and domain models (`Invoice`, `InvoiceItem`) and measurement unit normalization (`parseMeasureUnit`).
+*   **`RoomSyncAndAuthRepositoryTest`**: Tests `RoomAuthRepository` session lifecycle, `RoomHouseholdRepository` tenant management, and `RoomSyncRepository` bidirectional sync: outbox initial queueing, atomic product ID remapping protecting child foreign keys from `ON DELETE CASCADE`, LWW pulled entity application, outbox flushing before switch, and multi-tenant cache cleanup.
 *   **`DataConsistencyTest`**: Cross-repository integration tests validating database cascade deletions, foreign key enforcement, and end-to-end multi-table transactions.
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
 *   **`AndroidImageProcessorTest` & `IosImageProcessorTest`**: Platform-specific thumbnail processing tests.

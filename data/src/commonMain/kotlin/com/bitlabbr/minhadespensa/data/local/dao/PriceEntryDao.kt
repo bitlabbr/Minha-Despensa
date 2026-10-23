@@ -74,4 +74,13 @@ interface PriceEntryDao {
         updatedAt: Long,
         isDeleted: Boolean
     ): Int
+
+    @Query("SELECT * FROM price_entries")
+    suspend fun getAllSnapshot(): List<PriceEntryEntity>
+
+    @Query("UPDATE price_entries SET productId = :newProductId WHERE productId = :oldProductId")
+    suspend fun remapProductId(oldProductId: String, newProductId: String): Int
+
+    @Query("DELETE FROM price_entries")
+    suspend fun clearAll(): Int
 }

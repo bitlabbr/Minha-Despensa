@@ -30,12 +30,14 @@ fun MonthlyBudgetEntity.toDomain(): MonthlyBudget = MonthlyBudget(
     year = year,
     month = month,
     budgetInCents = budgetInCents,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    isDeleted = isDeleted,
 )
 
 fun MonthlyBudget.toEntity(): MonthlyBudgetEntity = MonthlyBudgetEntity(
     year = year,
     month = month,
     budgetInCents = budgetInCents,
-    updatedAt = updatedAt
+    updatedAt = updatedAt,
+    isDeleted = isDeleted,
 )

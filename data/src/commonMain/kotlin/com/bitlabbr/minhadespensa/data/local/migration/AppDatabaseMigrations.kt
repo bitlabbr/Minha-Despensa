@@ -723,6 +723,110 @@ val MIGRATION_1_9 = object : Migration(1, 9) {
     }
 }
 
+val MIGRATION_9_10 = object : Migration(9, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        if (tableExists(connection, "catalog_products")) {
+            if (!hasColumn(connection, "catalog_products", "imageHash")) {
+                connection.execSQL("ALTER TABLE `catalog_products` ADD COLUMN `imageHash` TEXT DEFAULT NULL")
+            }
+        }
+
+        if (tableExists(connection, "monthly_budgets")) {
+            if (!hasColumn(connection, "monthly_budgets", "isDeleted")) {
+                connection.execSQL("ALTER TABLE `monthly_budgets` ADD COLUMN `isDeleted` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        if (!tableExists(connection, "pending_sync_entries")) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `pending_sync_entries` (
+                    `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    `entityType` TEXT NOT NULL,
+                    `entityId` TEXT NOT NULL,
+                    `operation` TEXT NOT NULL,
+                    `payload` TEXT,
+                    `updatedAt` INTEGER NOT NULL,
+                    `retryCount` INTEGER NOT NULL,
+                    `createdAt` INTEGER NOT NULL
+                )
+                """.trimIndent()
+            )
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pending_sync_entries_entityType_entityId` ON `pending_sync_entries` (`entityType`, `entityId`)")
+            connection.execSQL("CREATE INDEX IF NOT EXISTS `index_pending_sync_entries_createdAt` ON `pending_sync_entries` (`createdAt`)")
+        }
+
+        if (!tableExists(connection, "app_key_values")) {
+            connection.execSQL(
+                """
+                CREATE TABLE IF NOT EXISTS `app_key_values` (
+                    `key` TEXT NOT NULL,
+                    `value` TEXT NOT NULL,
+                    `updatedAt` INTEGER NOT NULL,
+                    PRIMARY KEY(`key`)
+                )
+                """.trimIndent()
+            )
+        }
+    }
+}
+
+val MIGRATION_8_10 = object : Migration(8, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_8_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
+val MIGRATION_7_10 = object : Migration(7, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_7_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
+val MIGRATION_6_10 = object : Migration(6, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_6_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
+val MIGRATION_5_10 = object : Migration(5, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_5_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
+val MIGRATION_4_10 = object : Migration(4, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_4_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
+val MIGRATION_3_10 = object : Migration(3, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_3_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
+val MIGRATION_2_10 = object : Migration(2, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_2_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
+val MIGRATION_1_10 = object : Migration(1, 10) {
+    override fun migrate(connection: SQLiteConnection) {
+        MIGRATION_1_9.migrate(connection)
+        MIGRATION_9_10.migrate(connection)
+    }
+}
+
 val ALL_MIGRATIONS = arrayOf(
     MIGRATION_1_2,
     MIGRATION_2_3,
@@ -759,4 +863,13 @@ val ALL_MIGRATIONS = arrayOf(
     MIGRATION_3_9,
     MIGRATION_2_9,
     MIGRATION_1_9,
+    MIGRATION_9_10,
+    MIGRATION_8_10,
+    MIGRATION_7_10,
+    MIGRATION_6_10,
+    MIGRATION_5_10,
+    MIGRATION_4_10,
+    MIGRATION_3_10,
+    MIGRATION_2_10,
+    MIGRATION_1_10,
 )

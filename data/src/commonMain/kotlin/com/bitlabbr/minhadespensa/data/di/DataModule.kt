@@ -25,11 +25,15 @@ package com.bitlabbr.minhadespensa.data.di
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.bitlabbr.minhadespensa.core.domain.repository.AuthRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.BudgetRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.HouseholdRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.PantryMovementRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.SyncRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddCatalogItemToShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
@@ -39,29 +43,49 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.CreateQuickShoppingListUse
 import com.bitlabbr.minhadespensa.core.domain.usecase.DeleteProductCategoryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.FinalizeShoppingSessionUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetMonthlyFinancialSummaryUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.GetMostConsumedProductsUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetPantryTotalValueUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.GetYearlyFinancialSummaryUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ImportInvoiceToPantryUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.JoinHouseholdByInviteCodeUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.LoginUserUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.LogoutUserUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ManageHouseholdUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ParseInvoiceQrCodeUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.RegisterUserUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.RemoveCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.ReplaceCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveCatalogProductUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SaveProductCategoryUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SetMonthlyBudgetUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.StartShoppingSessionUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SwitchActiveHouseholdUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SyncHouseholdDataUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.UpdatePantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
+import com.bitlabbr.minhadespensa.core.domain.util.SyncClock
+import com.bitlabbr.minhadespensa.core.domain.util.SyncCoordinator
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
+import com.bitlabbr.minhadespensa.data.remote.AppKeyAuthTokenProvider
+import com.bitlabbr.minhadespensa.data.remote.AuthRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.AuthTokenProvider
+import com.bitlabbr.minhadespensa.data.remote.HouseholdRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.KtorAuthRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.KtorHouseholdRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.KtorSyncRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.SyncRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.SyncServerConfig
+import com.bitlabbr.minhadespensa.data.repository.RoomAuthRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomBudgetRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
+import com.bitlabbr.minhadespensa.data.repository.RoomHouseholdRepository
+import com.bitlabbr.minhadespensa.data.repository.RoomPantryMovementRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
-import com.bitlabbr.minhadespensa.core.domain.repository.PantryMovementRepository
-import com.bitlabbr.minhadespensa.core.domain.usecase.GetMostConsumedProductsUseCase
-import com.bitlabbr.minhadespensa.data.repository.RoomPantryMovementRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
-
+import com.bitlabbr.minhadespensa.data.repository.RoomSyncRepository
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import com.bitlabbr.minhadespensa.core.domain.repository.InvoiceRepository
-import com.bitlabbr.minhadespensa.core.domain.usecase.ImportInvoiceToPantryUseCase
-import com.bitlabbr.minhadespensa.core.domain.usecase.ParseInvoiceQrCodeUseCase
 import com.bitlabbr.minhadespensa.data.remote.InvoiceRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.InvoiceServerConfig
 import com.bitlabbr.minhadespensa.data.remote.KtorInvoiceRemoteDataSource
@@ -94,32 +118,100 @@ val dataModule = module {
     single { get<AppDatabase>().budgetDao() }
     single { get<AppDatabase>().movementDao() }
     single { get<AppDatabase>().categoryDao() }
+    single { get<AppDatabase>().pendingSyncDao() }
+    single { get<AppDatabase>().appKeyValueDao() }
+
+    single {
+        OutboxEnqueuer(
+            pendingSyncDao = get(),
+            syncClock = get(),
+        )
+    }
 
     single<CatalogRepository> {
-        RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<PantryRepository> {
-        RoomPantryRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomPantryRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<PriceRepository> {
-        RoomPriceRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomPriceRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<ShoppingListRepository> {
-        RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<BudgetRepository> {
-        RoomBudgetRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomBudgetRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<PantryMovementRepository> {
-        RoomPantryMovementRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomPantryMovementRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single { InvoiceServerConfig() }
+    single { SyncServerConfig() }
+    single { SyncClock() }
+
+    single<AuthTokenProvider> {
+        AppKeyAuthTokenProvider(appKeyValueDao = get())
+    }
+
+    single<AuthRemoteDataSource> {
+        KtorAuthRemoteDataSource(
+            httpClient = get(),
+            config = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    single<HouseholdRemoteDataSource> {
+        KtorHouseholdRemoteDataSource(
+            httpClient = get(),
+            config = get(),
+            authTokenProvider = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    single<SyncRemoteDataSource> {
+        KtorSyncRemoteDataSource(
+            httpClient = get(),
+            config = get(),
+            authTokenProvider = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    single<AuthRepository> {
+        RoomAuthRepository(
+            authRemoteDataSource = get(),
+            appKeyValueDao = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    single<HouseholdRepository> {
+        RoomHouseholdRepository(
+            householdRemoteDataSource = get(),
+            appKeyValueDao = get(),
+            authRepository = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    single<SyncRepository> {
+        RoomSyncRepository(
+            database = get(),
+            syncRemoteDataSource = get(),
+            syncClock = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+            authRepository = get(),
+        )
+    }
 
     single {
         HttpClient(createPlatformHttpClientEngine()) {
@@ -148,6 +240,7 @@ val dataModule = module {
             remoteDataSource = get(),
             db = get(),
             logger = get(named(DiQualifiers.DATA_LOGGER)),
+            outboxEnqueuer = get(),
         )
     }
 
@@ -172,4 +265,18 @@ val dataModule = module {
     factory { GetYearlyFinancialSummaryUseCase(budgetRepository = get()) }
     factory { ParseInvoiceQrCodeUseCase(invoiceRepository = get()) }
     factory { ImportInvoiceToPantryUseCase(invoiceRepository = get()) }
+    factory { RegisterUserUseCase(authRepository = get(), syncRepository = get()) }
+    factory { LoginUserUseCase(authRepository = get(), syncRepository = get()) }
+    factory { LogoutUserUseCase(authRepository = get()) }
+    factory { JoinHouseholdByInviteCodeUseCase(householdRepository = get(), syncRepository = get()) }
+    factory { SwitchActiveHouseholdUseCase(householdRepository = get(), syncRepository = get()) }
+    factory { ManageHouseholdUseCase(householdRepository = get(), syncRepository = get()) }
+    factory { SyncHouseholdDataUseCase(householdRepository = get(), syncRepository = get()) }
+    single {
+        SyncCoordinator(
+            syncHouseholdDataUseCase = get(),
+            syncRepository = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
 }

@@ -153,6 +153,19 @@ Enables adding items to the pantry in bulk by scanning state tax invoice QR Code
 - **Selective Review Sheet (`InvoiceReviewBottomSheet` / `InvoiceItemRow`):** Compact header displaying store name, emission date, dynamic selected item counter and total price (cents-accurate), bulk select/deselect all toggle (`onToggleAllItems`), and full-height scrollable product list with dynamic measure unit price labels.
 - **Atomic Bulk Import (`ImportInvoiceToPantryUseCase`):** Automatically registers missing catalog products, creates pantry stock batches, logs unit price history, and creates purchase movement ledger entries in a single database transaction.
 
+### 4.9. Household Account, Multi-User Sharing & Cloud Sync (`HouseholdAccountScreen`)
+Manages family household sharing, individual authentication (JWT login/register), and bidirectional cloud synchronization:
+- **`HouseholdAccountViewModel`:** Injects auth, household, and sync repositories (`SyncRepository`), `SyncCoordinator`, session use cases (`LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`), and household management use cases (`ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`). Detects pre-existing unauthenticated data via `syncRepository.hasLocalData()` and manages the Merge Decision Dialog lifecycle (`isMergeDecisionDialogOpen`).
+- **Unauthenticated Flow:** Displays tabbed Login / Register form (`AuthTab.LOGIN` / `AuthTab.REGISTER`) with inline field validation, password masking, and educational banner regarding cloud backup and family sharing benefits. Prompts user with Merge Decision Dialog (Opção A: Mesclar com nuvem / Opção B: Excluir locais e baixar da nuvem) whenever local offline data exists prior to authentication.
+- **Authenticated Flow:**
+  - **User Profile Banner:** Displays current user name, email, and logout action with confirmation dialog.
+  - **Active Household GlassCard:** Highlights current active household name, member role badge (`Proprietário` vs `Membro`), and 8-character Crockford base32 invite code with one-tap copy triggering native haptic feedback (`rememberHapticFeedbackManager().performSuccessFeedback()`) and system clipboard.
+  - **Sync State & Manual Trigger:** Live sync status indicator (`IDLE`, `SYNCING`, `SUCCESS`, `ERROR`, `OFFLINE`, `SESSION_EXPIRED`) with dedicated visual warning card banner for `SESSION_EXPIRED` prompting re-login, and immediate manual sync trigger button.
+  - **Household Members List:** Lists all family members with name, email, joined date, and role badge (`HouseholdMemberCard`).
+  - **Multi-Household Switching:** Displays other user households with one-tap "Ativar" switcher invoking `SwitchActiveHouseholdUseCase`.
+- **Dialogs (`JoinHouseholdDialog`, `CreateHouseholdDialog`):** Modals for joining a family pantry via 8-char invite code or creating a new shared household (capped at 80 characters).
+- **Home Top Bar Shortcut:** `HomeScreen` features real-time cloud sync status indicator and profile shortcut navigating to `HouseholdAccountRoute`.
+
 ---
 
 ## 5. Dependency Injection (`UiModule`)
@@ -161,7 +174,8 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Logger:** `AppLogger` qualifier `DiQualifiers.UI_LOGGER` bound to `ConsoleLogger("UISystem")`.
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
-  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, logger, notification manager.
+  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, `SyncCoordinator`, logger, notification manager.
+  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `SyncRepository`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, notification manager, logger.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases (`CheckEanStatusUseCase`, `AddPantryItemUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`), logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
@@ -174,7 +188,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies (183 tests):
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -188,6 +202,7 @@ All unit tests reside in `uisystem/src/commonTest` and execute across multiplatf
 | `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
 | `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
+| `HouseholdAccountViewModelTest` | Auth state transitions (login/register/logout), form validation, invite code normalization, household creation & switching, member list synchronization, manual sync triggering, dialog lifecycles. |
 | `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, pantry stock value calculation (with priced/unpriced/deleted items), yearly analytics aggregations (12 monthly bars, elapsed month averages, purchase/stock unit costs), dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog & FinancialAnalyticsDialog lifecycles and validation. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |

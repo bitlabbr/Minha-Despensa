@@ -36,14 +36,20 @@ interface MonthlyBudgetDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrUpdate(budget: MonthlyBudgetEntity)
 
-    @Query("SELECT * FROM monthly_budgets WHERE year = :year AND month = :month")
+    @Query("SELECT * FROM monthly_budgets WHERE year = :year AND month = :month AND isDeleted = 0")
     fun getBudget(year: Int, month: Int): Flow<MonthlyBudgetEntity?>
 
-    @Query("SELECT * FROM monthly_budgets WHERE year = :year AND month = :month")
+    @Query("SELECT * FROM monthly_budgets WHERE year = :year AND month = :month AND isDeleted = 0")
     suspend fun findBudget(year: Int, month: Int): MonthlyBudgetEntity?
 
-    @Query("SELECT * FROM monthly_budgets WHERE year = :year ORDER BY month ASC")
+    @Query("SELECT * FROM monthly_budgets WHERE year = :year AND isDeleted = 0 ORDER BY month ASC")
     fun getBudgetsForYear(year: Int): Flow<List<MonthlyBudgetEntity>>
+
+    @Query("SELECT * FROM monthly_budgets")
+    suspend fun getAllSnapshot(): List<MonthlyBudgetEntity>
+
+    @Query("UPDATE monthly_budgets SET isDeleted = 1, updatedAt = :updatedAt WHERE year = :year AND month = :month AND updatedAt <= :updatedAt")
+    suspend fun markAsDeleted(year: Int, month: Int, updatedAt: Long): Int
 
     @Query(
         """
@@ -70,4 +76,7 @@ interface MonthlyBudgetDao {
         """
     )
     suspend fun findMonthlyExpenses(startOfMonth: Long, endOfMonth: Long): Long
+
+    @Query("DELETE FROM monthly_budgets")
+    suspend fun clearAll(): Int
 }

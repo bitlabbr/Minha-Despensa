@@ -44,7 +44,7 @@ interface CatalogProductDao {
     @Query(
         """
     UPDATE catalog_products 
-    SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, notes = :notes, updatedAt = :updatedAt, isDeleted = :isDeleted
+    SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, notes = :notes, imageHash = :imageHash, updatedAt = :updatedAt, isDeleted = :isDeleted
     WHERE id = :id AND (
         updatedAt < :updatedAt
         OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
@@ -64,13 +64,23 @@ interface CatalogProductDao {
         isDeleted: Boolean,
         manuallyAdded: Boolean,
         notes: String?,
+        imageHash: String? = null,
     ): Int
+
+    @Query("UPDATE catalog_products SET imageHash = :imageHash WHERE id = :id")
+    suspend fun updateImageHash(id: String, imageHash: String?): Int
 
     @Query("SELECT EXISTS(SELECT 1 FROM catalog_products WHERE id = :id)")
     fun exists(id: String): Flow<Boolean>
 
     @Query("SELECT * FROM catalog_products WHERE id = :id")
     fun findById(id: String): Flow<CatalogProductEntity?>
+
+    @Query("SELECT * FROM catalog_products WHERE id = :id LIMIT 1")
+    suspend fun findSnapshotById(id: String): CatalogProductEntity?
+
+    @Query("UPDATE catalog_products SET ean = NULL WHERE id = :id")
+    suspend fun clearEan(id: String): Int
 
     @Query(
         """
@@ -118,6 +128,9 @@ interface CatalogProductDao {
     @Query("SELECT * FROM catalog_products WHERE isDeleted = 0")
     suspend fun getAllActiveSnapshot(): List<CatalogProductEntity>
 
+    @Query("SELECT * FROM catalog_products")
+    suspend fun getAllSnapshot(): List<CatalogProductEntity>
+
     @Query(
         """
         UPDATE catalog_products 
@@ -142,4 +155,7 @@ interface CatalogProductDao {
 
     @Query("DELETE FROM catalog_products WHERE id = :id")
     suspend fun deleteProductById(id: String): Int
+
+    @Query("DELETE FROM catalog_products")
+    suspend fun clearAll(): Int
 }

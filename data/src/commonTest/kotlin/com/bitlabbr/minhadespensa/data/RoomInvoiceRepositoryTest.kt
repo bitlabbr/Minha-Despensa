@@ -143,6 +143,14 @@ class RoomInvoiceRepositoryTest : BaseTest() {
         assertEquals(450L, movements[0].unitPriceInCents)
         assertEquals(1350L, movements[0].totalPriceInCents)
         assertEquals("Nota Fiscal: Supermercado Central", movements[0].storeOrReason)
+
+        // 5. Check Pending Sync Outbox (must enqueue PRODUCT, PANTRY_ITEM, PRICE_ENTRY, MOVEMENT)
+        val pending = db.pendingSyncDao().getAllPending(20)
+        assertEquals(4, pending.size)
+        assertTrue(pending.any { it.entityType == "PRODUCT" && it.entityId == product.id })
+        assertTrue(pending.any { it.entityType == "PANTRY_ITEM" && it.entityId == pantryItems[0].id })
+        assertTrue(pending.any { it.entityType == "PRICE_ENTRY" && it.entityId == priceEntry.id })
+        assertTrue(pending.any { it.entityType == "MOVEMENT" && it.entityId == movements[0].id })
     }
 
     @Test

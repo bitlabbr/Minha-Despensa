@@ -81,4 +81,16 @@ interface ShoppingItemDao {
 
     @Query("DELETE FROM shopping_items WHERE id = :id")
     suspend fun deleteById(id: String): Int
+
+    @Query("SELECT * FROM shopping_items WHERE id = :id")
+    suspend fun findSnapshotById(id: String): ShoppingItemEntity?
+
+    @Query("SELECT * FROM shopping_items")
+    suspend fun getAllSnapshot(): List<ShoppingItemEntity>
+
+    @Query("UPDATE shopping_items SET product_id = :newProductId WHERE product_id = :oldProductId")
+    suspend fun remapProductId(oldProductId: String, newProductId: String): Int
+
+    @Query("DELETE FROM shopping_items")
+    suspend fun clearAll(): Int
 }

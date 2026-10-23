@@ -62,6 +62,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.snackbar.GlobalNotificationHost
+import com.bitlabbr.minhadespensa.uisystem.features.account.HouseholdAccountScreen
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogScreen
 import com.bitlabbr.minhadespensa.uisystem.features.details.ProductDetailsScreen
 import com.bitlabbr.minhadespensa.uisystem.features.home.HomeScreen
@@ -73,6 +74,7 @@ import com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist.QuickList
 import com.bitlabbr.minhadespensa.uisystem.navigation.BottomNavItem
 import com.bitlabbr.minhadespensa.uisystem.navigation.CreatePlannedListRoute
 import com.bitlabbr.minhadespensa.uisystem.navigation.HomeScreenRoute
+import com.bitlabbr.minhadespensa.uisystem.navigation.HouseholdAccountRoute
 import com.bitlabbr.minhadespensa.uisystem.navigation.PantryScreenRoute
 import com.bitlabbr.minhadespensa.uisystem.navigation.ProductCatalogRoute
 import com.bitlabbr.minhadespensa.uisystem.navigation.ProductDetailsRoute
@@ -139,7 +141,19 @@ private fun AppNavHost(
         }
 
         composable<HomeScreenRoute> {
-            HomeScreen(bottomPadding = bottomPadding)
+            HomeScreen(
+                bottomPadding = bottomPadding,
+                onNavigateToAccount = {
+                    navController.navigate(HouseholdAccountRoute)
+                },
+            )
+        }
+
+        composable<HouseholdAccountRoute> {
+            HouseholdAccountScreen(
+                onNavigateBack = { navController.popBackStack() },
+                bottomPadding = bottomPadding,
+            )
         }
 
         composable<ProductCatalogRoute> {

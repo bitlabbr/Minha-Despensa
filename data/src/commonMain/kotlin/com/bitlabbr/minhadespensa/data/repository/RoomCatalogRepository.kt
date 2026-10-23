@@ -38,16 +38,19 @@ import com.bitlabbr.minhadespensa.data.local.entity.ProductCategoryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import okio.Buffer
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class RoomCatalogRepository(
     private val db: AppDatabase,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : CatalogRepository {
     private val productDao = db.catalogDao()
     private val mediaDao = db.productMediaDao()
@@ -84,23 +87,23 @@ class RoomCatalogRepository(
             it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
         }
         if (softDeletedMatch != null) {
-            categoryDao.insertOrUpdate(
-                softDeletedMatch.copy(
-                    name = trimmed,
-                    isDeleted = false,
-                    updatedAt = maxOf(updatedAt, softDeletedMatch.updatedAt),
-                )
+            val updated = softDeletedMatch.copy(
+                name = trimmed,
+                isDeleted = false,
+                updatedAt = maxOf(updatedAt, softDeletedMatch.updatedAt),
             )
+            categoryDao.insertOrUpdate(updated)
+            outboxEnqueuer.enqueueCategory(updated)
         } else {
-            categoryDao.insertOrUpdate(
-                ProductCategoryEntity(
-                    id = Uuid.random().toString(),
-                    name = trimmed,
-                    isDefault = false,
-                    updatedAt = updatedAt,
-                    isDeleted = false,
-                )
+            val created = ProductCategoryEntity(
+                id = Uuid.random().toString(),
+                name = trimmed,
+                isDefault = false,
+                updatedAt = updatedAt,
+                isDeleted = false,
             )
+            categoryDao.insertOrUpdate(created)
+            outboxEnqueuer.enqueueCategory(created)
         }
     }
 
@@ -142,7 +145,10 @@ class RoomCatalogRepository(
         validateImage(imageBytes)
         validateProduct(product)
         ensureCategoryRegistered(product.category, product.updatedAt)
-        productDao.insert(product.toEntity())
+        val computedHash = imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
+        val entity = product.toEntity().copy(imageHash = computedHash)
+        productDao.insert(entity)
+        outboxEnqueuer.enqueueProduct(entity)
         if (imageBytes != null) {
             mediaDao.insertOrUpdate(
                 ProductMediaEntity(
@@ -163,7 +169,10 @@ class RoomCatalogRepository(
         validateImage(imageBytes)
         validateProduct(product)
         ensureCategoryRegistered(product.category, product.updatedAt)
-        productDao.forceUpdateForProduct(product.toEntity())
+        val computedHash = if (removeImage) null else imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
+        val entity = product.toEntity().copy(imageHash = computedHash)
+        productDao.forceUpdateForProduct(entity)
+        outboxEnqueuer.enqueueProduct(entity)
         if (removeImage) {
             mediaDao.deleteByProductId(product.id)
         } else if (imageBytes != null) {
@@ -189,6 +198,7 @@ class RoomCatalogRepository(
         logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
+        val computedHash = if (removeImage) null else imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
         val rowsAffected = productDao.updateProductIfNewer(
             id = product.id,
             name = product.name,
@@ -201,9 +211,12 @@ class RoomCatalogRepository(
             updatedAt = product.updatedAt,
             isDeleted = product.isDeleted,
             manuallyAdded = product.manuallyAdded,
-            notes = product.notes
+            notes = product.notes,
+            imageHash = computedHash,
         )
         if (rowsAffected > 0) {
+            val entity = product.toEntity().copy(imageHash = computedHash)
+            outboxEnqueuer.enqueueProduct(entity)
             if (!product.isDeleted) {
                 ensureCategoryRegistered(product.category, product.updatedAt)
             }
@@ -224,10 +237,12 @@ class RoomCatalogRepository(
     override suspend fun markProductAsDeleted(id: String, updatedAt: Long) {
         logger.d(TAG, "markProductAsDeleted id: $id, updatedAt: $updatedAt")
         productDao.markAsDeleted(id, updatedAt)
+        productDao.findSnapshotById(id)?.let { outboxEnqueuer.enqueueProduct(it.copy(isDeleted = true, updatedAt = updatedAt)) }
     }
 
     override suspend fun deleteProductById(id: String) {
         logger.d(TAG, "deleteProduct id:  $id")
+        productDao.findSnapshotById(id)?.let { outboxEnqueuer.enqueueProduct(it.copy(isDeleted = true)) }
         productDao.deleteProductById(id)
     }
 
@@ -273,29 +288,29 @@ class RoomCatalogRepository(
             !it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
         }
         if (activeMatch != null) {
-            categoryDao.insertOrUpdate(
-                activeMatch.copy(
-                    name = trimmedName,
-                    updatedAt = maxOf(category.updatedAt, activeMatch.updatedAt),
-                )
+            val updated = activeMatch.copy(
+                name = trimmedName,
+                updatedAt = maxOf(category.updatedAt, activeMatch.updatedAt),
             )
+            categoryDao.insertOrUpdate(updated)
+            outboxEnqueuer.enqueueCategory(updated)
             return
         }
         val matchingDeleted = allExisting.firstOrNull {
             it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
         }
         if (matchingDeleted != null) {
-            categoryDao.insertOrUpdate(
-                matchingDeleted.copy(
-                    name = trimmedName,
-                    isDeleted = false,
-                    updatedAt = maxOf(category.updatedAt, matchingDeleted.updatedAt),
-                )
+            val updated = matchingDeleted.copy(
+                name = trimmedName,
+                isDeleted = false,
+                updatedAt = maxOf(category.updatedAt, matchingDeleted.updatedAt),
             )
+            categoryDao.insertOrUpdate(updated)
+            outboxEnqueuer.enqueueCategory(updated)
         } else {
-            categoryDao.insertOrUpdate(
-                category.copy(name = trimmedName, isDeleted = false).toEntity()
-            )
+            val entity = category.copy(name = trimmedName, isDeleted = false).toEntity()
+            categoryDao.insertOrUpdate(entity)
+            outboxEnqueuer.enqueueCategory(entity)
         }
     }
 
@@ -326,25 +341,25 @@ class RoomCatalogRepository(
                 if (matchingCategories.isNotEmpty()) {
                     matchingCategories.forEach { cat ->
                         if (cat.updatedAt <= updatedAt) {
-                            categoryDao.insertOrUpdate(
-                                cat.copy(
-                                    name = trimmedNew,
-                                    isDeleted = false,
-                                    updatedAt = updatedAt,
-                                )
+                            val updated = cat.copy(
+                                name = trimmedNew,
+                                isDeleted = false,
+                                updatedAt = updatedAt,
                             )
+                            categoryDao.insertOrUpdate(updated)
+                            outboxEnqueuer.enqueueCategory(updated)
                         }
                     }
                 } else {
-                    categoryDao.insertOrUpdate(
-                        ProductCategoryEntity(
-                            id = id,
-                            name = trimmedNew,
-                            isDefault = false,
-                            updatedAt = updatedAt,
-                            isDeleted = false,
-                        )
+                    val created = ProductCategoryEntity(
+                        id = id,
+                        name = trimmedNew,
+                        isDefault = false,
+                        updatedAt = updatedAt,
+                        isDeleted = false,
                     )
+                    categoryDao.insertOrUpdate(created)
+                    outboxEnqueuer.enqueueCategory(created)
                 }
 
                 val activeProducts = productDao.getAllActiveSnapshot()
@@ -356,6 +371,12 @@ class RoomCatalogRepository(
                             id = product.id,
                             newCategory = trimmedNew,
                             updatedAt = effectiveTimestamp,
+                        )
+                        outboxEnqueuer.enqueueProduct(
+                            product.copy(
+                                category = trimmedNew,
+                                updatedAt = effectiveTimestamp,
+                            ),
                         )
                     }
             }
@@ -388,7 +409,9 @@ class RoomCatalogRepository(
                     it.id == id || (!it.isDeleted && it.name.normalizeForSearch() == normalizedTarget)
                 }
                 matchingCategories.forEach { cat ->
-                    categoryDao.markAsDeleted(cat.id, maxOf(updatedAt, cat.updatedAt))
+                    val effectiveTs = maxOf(updatedAt, cat.updatedAt)
+                    categoryDao.markAsDeleted(cat.id, effectiveTs)
+                    outboxEnqueuer.enqueueCategory(cat.copy(isDeleted = true, updatedAt = effectiveTs))
                 }
 
                 val activeProducts = productDao.getAllActiveSnapshot()
@@ -400,6 +423,12 @@ class RoomCatalogRepository(
                             id = product.id,
                             newCategory = trimmedFallback,
                             updatedAt = effectiveTimestamp,
+                        )
+                        outboxEnqueuer.enqueueProduct(
+                            product.copy(
+                                category = trimmedFallback,
+                                updatedAt = effectiveTimestamp,
+                            ),
                         )
                     }
             }

@@ -51,3 +51,6 @@ data class ProductDetailsRoute(
     val productId: String,
     val fromPantry: Boolean = false,
 )
+
+@Serializable
+data object HouseholdAccountRoute

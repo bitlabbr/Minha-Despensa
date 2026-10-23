@@ -471,4 +471,74 @@
     <string name="category_renamed_success">Categoria renomeada com sucesso!</string>
     <string name="category_deleted_success">Categoria excluída! Produtos movidos para 'Outros'.</string>
 
+    <!-- Household & Account -->
+    <string name="account_screen_title">Minha Conta &amp; Despensa</string>
+    <string name="account_tab_login">Entrar</string>
+    <string name="account_tab_register">Criar Conta</string>
+    <string name="account_auth_banner_title">Sincronização em Nuvem</string>
+    <string name="account_auth_banner_desc">Crie sua conta ou faça login para compartilhar a despensa com sua família e manter tudo sincronizado.</string>
+    <string name="account_input_name_label">Nome Completo</string>
+    <string name="account_input_name_placeholder">Ex: Willian Santos</string>
+    <string name="account_input_email_label">E-mail</string>
+    <string name="account_input_email_placeholder">Ex: usuario@email.com</string>
+    <string name="account_input_password_label">Senha</string>
+    <string name="account_input_password_placeholder">Mínimo 8 caracteres</string>
+    <string name="account_button_login">Entrar</string>
+    <string name="account_button_register">Criar Conta</string>
+    <string name="account_button_logout">Sair da Conta</string>
+    <string name="account_logout_dialog_title">Sair da Conta?</string>
+    <string name="account_logout_dialog_desc">Ao sair, a sincronização em nuvem será pausada. Seus dados locais permanecerão salvos neste aparelho.</string>
+    <string name="account_logout_dialog_confirm">Sim, Sair</string>
+    <string name="account_logout_dialog_cancel">Cancelar</string>
+
+    <string name="account_merge_dialog_title">Dados Locais Encontrados</string>
+    <string name="account_merge_dialog_desc">Existem itens cadastrados neste aparelho antes de entrar na conta. Como você deseja sincronizar?</string>
+    <string name="account_merge_option_merge">Opção A: Mesclar dados locais com a nuvem</string>
+    <string name="account_merge_option_discard">Opção B: Excluir dados locais e baixar da nuvem</string>
+
+    <string name="household_active_title">Despensa Ativa</string>
+    <string name="household_invite_code_label">Código de Convite da Família</string>
+    <string name="household_invite_code_desc">Compartilhe este código de 8 caracteres para que outras pessoas entrem nesta despensa.</string>
+    <string name="household_invite_code_copied">Código de convite copiado!</string>
+    <string name="household_role_owner">Proprietário</string>
+    <string name="household_role_member">Membro</string>
+    <string name="household_members_title">Membros da Despensa</string>
+    <string name="household_members_count">%1$d membros</string>
+    <string name="household_action_join">Entrar com Código</string>
+    <string name="household_action_create">Criar Nova Despensa</string>
+    <string name="household_action_switch">Ativar</string>
+    <string name="household_other_households_title">Outras Despensas</string>
+    
+    <string name="household_dialog_join_title">Entrar em uma Despensa</string>
+    <string name="household_dialog_join_desc">Informe o código recebido de quem criou a despensa compartilhada (ex: CASA-AB12CD34).</string>
+    <string name="household_dialog_join_input_label">Código de Convite</string>
+    <string name="household_dialog_join_input_placeholder">Ex: CASA-AB12CD34</string>
+    <string name="household_dialog_join_confirm">Entrar na Despensa</string>
+
+    <string name="household_dialog_create_title">Criar Nova Despensa</string>
+    <string name="household_dialog_create_desc">Dê um nome para a sua nova despensa (máx. 80 caracteres).</string>
+    <string name="household_dialog_create_input_label">Nome da Despensa</string>
+    <string name="household_dialog_create_input_placeholder">Ex: Casa de Praia, Sítio...</string>
+    <string name="household_dialog_create_confirm">Criar Despensa</string>
+
+    <string name="sync_status_idle">Pronto para sincronizar</string>
+    <string name="sync_status_syncing">Sincronizando dados...</string>
+    <string name="sync_status_success">Sincronizado</string>
+    <string name="sync_status_error">Falha ao sincronizar</string>
+    <string name="sync_status_offline">Modo local (Offline)</string>
+    <string name="sync_status_session_expired">Sessão expirada</string>
+    <string name="sync_session_expired_banner_title">Sessão Expirada</string>
+    <string name="sync_session_expired_banner_desc">Faça login novamente para retomar o backup e a sincronização em nuvem.</string>
+    <string name="sync_button_sync_now">Sincronizar Agora</string>
+    <string name="sync_topbar_sync_desc">Status da sincronização</string>
+    <string name="sync_topbar_account_desc">Minha Conta e Despensas</string>
+    
+    <string name="account_login_success">Login realizado com sucesso!</string>
+    <string name="account_register_success">Conta criada com sucesso! Despensa sincronizada.</string>
+    <string name="account_household_join_success">Você entrou na despensa com sucesso!</string>
+    <string name="account_household_create_success">Nova despensa criada com sucesso!</string>
+    <string name="account_household_switched_success">Despensa ativa alterada com sucesso!</string>
+    <string name="account_logout_success">Sessão encerrada com sucesso.</string>
+
+
 </resources>

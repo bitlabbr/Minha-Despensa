@@ -24,6 +24,7 @@
 package com.bitlabbr.minhadespensa.uisystem.features.home.model
 
 import androidx.compose.runtime.Immutable
+import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ExpiringItemCard
 
 @Immutable
@@ -80,6 +81,7 @@ data class HomeUiState(
     val yearlyAnalytics: HomeYearlyAnalyticsUiModel = HomeYearlyAnalyticsUiModel(),
     val expiringItems: List<ExpiringItemCard> = emptyList(),
     val consumptionTrends: List<ConsumptionTrendItemUiModel> = emptyList(),
+    val syncState: SyncState = SyncState.IDLE,
     val isSetBudgetDialogOpen: Boolean = false,
     val isSavingBudget: Boolean = false,
     val isFinancialAnalyticsDialogOpen: Boolean = false,

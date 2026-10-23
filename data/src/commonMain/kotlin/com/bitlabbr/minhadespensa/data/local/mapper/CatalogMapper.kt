@@ -40,6 +40,7 @@ fun CatalogProductEntity.toDomain(): CatalogProduct = CatalogProduct(
     isDeleted = this.isDeleted,
     manuallyAdded = this.manuallyAdded,
     notes = this.notes,
+    imageHash = this.imageHash,
 )
 
 fun CatalogProduct.toEntity(): CatalogProductEntity = CatalogProductEntity(
@@ -55,4 +56,5 @@ fun CatalogProduct.toEntity(): CatalogProductEntity = CatalogProductEntity(
     isDeleted = this.isDeleted,
     manuallyAdded = this.manuallyAdded,
     notes = this.notes,
+    imageHash = this.imageHash,
 )
