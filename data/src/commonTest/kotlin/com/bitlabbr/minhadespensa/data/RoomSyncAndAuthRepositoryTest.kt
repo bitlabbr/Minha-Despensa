@@ -706,4 +706,57 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
         assertFalse(syncRepository.hasLocalData())
         assertEquals(0, db.catalogDao().getAllSnapshot().size)
     }
+
+    @Test
+    fun syncRepository_initialSyncBackfillsAllLocalEntitiesEvenWhenOutboxIsPartiallyPopulated() = runTest {
+        authRepository.register("Owner", "owner@test.com", "pass123").getOrThrow()
+        db.pendingSyncDao().clearAll()
+
+        val now = getCurrentTime()
+        val p1 = CatalogProductEntity(
+            id = "00000000-0000-0000-0000-000000000501",
+            ean = "7890000000501",
+            name = "Item Sem Foto (SEFAZ)",
+            category = "Mercearia",
+            brand = null,
+            measureUnit = "UNIT",
+            netWeight = 1.0,
+            thumbnailUrl = null,
+            updatedAt = now,
+            isDeleted = false,
+            manuallyAdded = false,
+            notes = null,
+        )
+        val p2 = CatalogProductEntity(
+            id = "00000000-0000-0000-0000-000000000502",
+            ean = "7890000000502",
+            name = "Item Com Foto",
+            category = "Mercearia",
+            brand = null,
+            measureUnit = "UNIT",
+            netWeight = 1.0,
+            thumbnailUrl = null,
+            updatedAt = now,
+            isDeleted = false,
+            manuallyAdded = false,
+            notes = null,
+            imageHash = "hash-502",
+        )
+        db.catalogDao().insert(p1)
+        db.catalogDao().insert(p2)
+
+        // Only enqueue p2 in outbox (simulating a partial outbox on initial sync when cursor == 0)
+        val outboxEnqueuer = com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer(db.pendingSyncDao(), syncClock)
+        outboxEnqueuer.enqueueProduct(p2)
+        assertEquals(1, db.pendingSyncDao().getPendingCount())
+
+        lastPushedPayload = null
+        syncRepository.sync().getOrThrow()
+
+        // Both p1 and p2 must have been backfilled and pushed!
+        assertNotNull(lastPushedPayload)
+        assertEquals(2, lastPushedPayload!!.products.size)
+        assertTrue(lastPushedPayload!!.products.any { it.id == p1.id })
+        assertTrue(lastPushedPayload!!.products.any { it.id == p2.id })
+    }
 }

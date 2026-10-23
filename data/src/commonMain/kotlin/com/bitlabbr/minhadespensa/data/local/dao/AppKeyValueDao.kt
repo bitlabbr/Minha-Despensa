@@ -45,6 +45,9 @@ interface AppKeyValueDao {
     @Query("DELETE FROM app_key_values WHERE `key` = :key")
     suspend fun delete(key: String)
 
+    @Query("DELETE FROM app_key_values WHERE `key` LIKE :prefix || '%'")
+    suspend fun deleteByPrefix(prefix: String)
+
     @Query("DELETE FROM app_key_values")
     suspend fun clearAll()
 }

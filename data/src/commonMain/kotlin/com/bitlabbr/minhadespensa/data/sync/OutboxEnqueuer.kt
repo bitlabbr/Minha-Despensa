@@ -235,38 +235,14 @@ class OutboxEnqueuer(
 
     suspend fun enqueueAllLocalEntities(database: AppDatabase): Int {
         var count = 0
-        for (p in database.catalogDao().getAllSnapshot()) {
-            enqueueProduct(p)
-            count++
-        }
-        for (c in database.categoryDao().getAllSnapshot()) {
-            enqueueCategory(c)
-            count++
-        }
-        for (pi in database.pantryDao().getAllSnapshot()) {
-            enqueuePantryItem(pi)
-            count++
-        }
-        for (l in database.shoppingListDao().getAllSnapshot()) {
-            enqueueShoppingList(l)
-            count++
-        }
-        for (i in database.shoppingItemDao().getAllSnapshot()) {
-            enqueueShoppingItem(i)
-            count++
-        }
-        for (pe in database.priceDao().getAllSnapshot()) {
-            enqueuePriceEntry(pe)
-            count++
-        }
-        for (m in database.movementDao().getAllSnapshot()) {
-            enqueueMovement(m)
-            count++
-        }
-        for (b in database.budgetDao().getAllSnapshot()) {
-            enqueueBudget(b)
-            count++
-        }
+        database.categoryDao().getAllSnapshot().forEach { enqueueCategory(it); count++ }
+        database.catalogDao().getAllSnapshot().forEach { enqueueProduct(it); count++ }
+        database.pantryDao().getAllSnapshot().forEach { enqueuePantryItem(it); count++ }
+        database.shoppingListDao().getAllSnapshot().forEach { enqueueShoppingList(it); count++ }
+        database.shoppingItemDao().getAllSnapshot().forEach { enqueueShoppingItem(it); count++ }
+        database.priceDao().getAllSnapshot().forEach { enqueuePriceEntry(it); count++ }
+        database.movementDao().getAllSnapshot().forEach { enqueueMovement(it); count++ }
+        database.budgetDao().getAllSnapshot().forEach { enqueueBudget(it); count++ }
         return count
     }
 }

@@ -240,6 +240,7 @@ val dataModule = module {
             remoteDataSource = get(),
             db = get(),
             logger = get(named(DiQualifiers.DATA_LOGGER)),
+            outboxEnqueuer = get(),
         )
     }
 

@@ -91,11 +91,11 @@ class RoomSyncRepository(
         val currentCursor = database.appKeyValueDao().get(cursorKey)?.toLongOrNull() ?: 0L
         logger?.i("Sync", "Starting bidirectional sync for household=$activeHouseholdId (cursor=$currentCursor)")
 
-        // 1. Process pending outbox mutations (push)
-        if (currentCursor == 0L && database.pendingSyncDao().getPendingCount() == 0) {
+        // 1. Push local outbox (if initial sync for this household and local data exists, backfill all local entities)
+        if (currentCursor == 0L && hasLocalData()) {
             val backfilled = outboxEnqueuer.enqueueAllLocalEntities(database)
             if (backfilled > 0) {
-                logger?.i("Sync", "Backfilled $backfilled local pre-existing entities into outbox for initial push")
+                logger?.i("Sync", "Initial sync backfill enqueued $backfilled existing local entities")
             }
         }
 
@@ -168,7 +168,10 @@ class RoomSyncRepository(
             pendingEntries = database.pendingSyncDao().getAllPending(100)
         }
 
-        // 2. Pull remote updates
+        // 2. Upload local product media before pulling so serverVersion reflects any media updates
+        uploadLocalProductMedia(activeHouseholdId)
+
+        // 3. Pull remote updates
         var pullCursor = currentCursor
         if (pullCursor > 0 && database.shoppingListDao().getAllSnapshot().isEmpty()) {
             logger?.i("Sync", "Local shopping lists empty with cursor=$pullCursor; pulling from 0 to backfill missing data")
@@ -179,7 +182,7 @@ class RoomSyncRepository(
         val pullResponse = withAuthRetry { syncRemoteDataSource.pull(activeHouseholdId, pullCursor, 100) }.getOrThrow()
         syncClock.calibrate(pullResponse.serverTimestamp)
 
-        // 3. Apply pulled entities atomically
+        // 4. Apply pulled entities atomically
         val entities = pullResponse.effectiveEntities
         logger?.i(
             "Sync",
@@ -188,10 +191,10 @@ class RoomSyncRepository(
         )
         applyPulledEntities(entities)
 
-        // 4. Sync product media (photos)
-        syncProductMedia(activeHouseholdId)
+        // 5. Download missing remote product media (photos)
+        downloadRemoteProductMedia(activeHouseholdId)
 
-        // 5. Update cursor
+        // 6. Update cursor
         database.appKeyValueDao().put(
             AppKeyValueEntity(
                 key = cursorKey,
@@ -501,8 +504,7 @@ class RoomSyncRepository(
         return initial
     }
 
-    private suspend fun syncProductMedia(householdId: String) {
-        // A. Upload local media that is not yet synced or whose hash differs from recorded synced hash
+    private suspend fun uploadLocalProductMedia(householdId: String) {
         val allLocalMedia = database.productMediaDao().getAllSnapshot()
         for (media in allLocalMedia) {
             val hash = Buffer().write(media.blob).readByteString().sha256().hex()
@@ -528,8 +530,9 @@ class RoomSyncRepository(
                 }
             }
         }
+    }
 
-        // B. Download missing remote media for products that have imageHash
+    private suspend fun downloadRemoteProductMedia(householdId: String) {
         val productsWithRemoteMedia = database.catalogDao().getAllSnapshot().filter { !it.imageHash.isNullOrBlank() }
         for (product in productsWithRemoteMedia) {
             val localMedia = database.productMediaDao().getByProductId(product.id)
@@ -575,6 +578,8 @@ class RoomSyncRepository(
         database.catalogDao().clearAll()
         database.categoryDao().clearCustomCategories()
         database.pendingSyncDao().clearAll()
+        database.appKeyValueDao().deleteByPrefix("sync_cursor_")
+        database.appKeyValueDao().deleteByPrefix("synced_media_hash_")
     }
 
     override suspend fun hasLocalData(): Boolean {
@@ -585,6 +590,8 @@ class RoomSyncRepository(
         val hasShopping = database.shoppingListDao().getAllSnapshot().any { !it.isDeleted }
         if (hasShopping) return true
         val hasBudgets = database.budgetDao().getAllSnapshot().isNotEmpty()
-        return hasBudgets
+        if (hasBudgets) return true
+        val hasCustomCategories = database.categoryDao().getAllSnapshot().any { !it.isDefault && !it.isDeleted }
+        return hasCustomCategories
     }
 }

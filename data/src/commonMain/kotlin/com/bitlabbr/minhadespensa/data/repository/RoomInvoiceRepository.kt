@@ -42,6 +42,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
 import com.bitlabbr.minhadespensa.data.remote.InvoiceRemoteDataSource
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlin.math.roundToLong
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -50,6 +51,7 @@ class RoomInvoiceRepository(
     private val remoteDataSource: InvoiceRemoteDataSource,
     private val db: AppDatabase,
     private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : InvoiceRepository {
 
     override suspend fun parseInvoiceFromQrCode(qrCodeContent: String): Result<Invoice> = runCatching {
@@ -107,6 +109,7 @@ class RoomInvoiceRepository(
                             notes = notes,
                         )
                         db.catalogDao().insert(newProduct)
+                        outboxEnqueuer.enqueueProduct(newProduct)
                         logger.d(TAG, "importInvoiceToPantry: Created new catalog product id=$newId, name='$sanitizedName', ean='${item.ean}'")
                         newId
                     }
@@ -124,33 +127,33 @@ class RoomInvoiceRepository(
                     }
 
                     val pantryItemId = Uuid.random().toString()
-                    db.pantryDao().insertPantryItem(
-                        PantryItem(
-                            id = pantryItemId,
-                            productId = targetProductId,
-                            quantity = totalQuantity,
-                            unitPriceInCents = unitPriceInCents,
-                            updatedAt = now,
-                            isDeleted = false,
-                            expirationDate = null,
-                            batchNumber = null,
-                        ).toEntity()
-                    )
+                    val pantryEntity = PantryItem(
+                        id = pantryItemId,
+                        productId = targetProductId,
+                        quantity = totalQuantity,
+                        unitPriceInCents = unitPriceInCents,
+                        updatedAt = now,
+                        isDeleted = false,
+                        expirationDate = null,
+                        batchNumber = null,
+                    ).toEntity()
+                    db.pantryDao().insertPantryItem(pantryEntity)
+                    outboxEnqueuer.enqueuePantryItem(pantryEntity)
 
                     unitPriceInCents?.let { price ->
-                        db.priceDao().insertPriceEntry(
-                            PriceEntry(
-                                id = pantryItemId,
-                                productId = targetProductId,
-                                priceInCents = price,
-                                updatedAt = now,
-                                isDeleted = false,
-                                storeName = storeName,
-                            ).toEntity()
-                        )
+                        val priceEntry = PriceEntry(
+                            id = pantryItemId,
+                            productId = targetProductId,
+                            priceInCents = price,
+                            updatedAt = now,
+                            isDeleted = false,
+                            storeName = storeName,
+                        ).toEntity()
+                        db.priceDao().insertPriceEntry(priceEntry)
+                        outboxEnqueuer.enqueuePriceEntry(priceEntry)
                     }
 
-                    val movement = PantryMovement(
+                    val movementEntity = PantryMovement(
                         id = Uuid.random().toString(),
                         pantryItemId = pantryItemId,
                         productId = targetProductId,
@@ -161,8 +164,9 @@ class RoomInvoiceRepository(
                         updatedAt = now,
                         storeOrReason = "Nota Fiscal: $storeName",
                         isDeleted = false,
-                    )
-                    db.movementDao().insertMovement(movement.toEntity())
+                    ).toEntity()
+                    db.movementDao().insertMovement(movementEntity)
+                    outboxEnqueuer.enqueueMovement(movementEntity)
 
                     importedCount++
                 }

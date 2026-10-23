@@ -372,6 +372,12 @@ class RoomCatalogRepository(
                             newCategory = trimmedNew,
                             updatedAt = effectiveTimestamp,
                         )
+                        outboxEnqueuer.enqueueProduct(
+                            product.copy(
+                                category = trimmedNew,
+                                updatedAt = effectiveTimestamp,
+                            ),
+                        )
                     }
             }
         }
@@ -417,6 +423,12 @@ class RoomCatalogRepository(
                             id = product.id,
                             newCategory = trimmedFallback,
                             updatedAt = effectiveTimestamp,
+                        )
+                        outboxEnqueuer.enqueueProduct(
+                            product.copy(
+                                category = trimmedFallback,
+                                updatedAt = effectiveTimestamp,
+                            ),
                         )
                     }
             }

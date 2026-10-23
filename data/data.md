@@ -196,7 +196,7 @@ Centralized and decoupled from repositories:
 *   **`PendingSyncDao`**:
     *   `insert`, `insertAll`, `getAllPending`, `observePendingCount`, `getPendingCount`, `deleteById`, `deleteByIds`, `deleteByEntity`, `clearAll`.
 *   **`AppKeyValueDao`**:
-    *   `get`, `observe`, `put`, `delete`, `clearAll`.
+    *   `get`, `observe`, `put`, `delete`, `deleteByPrefix`, `clearAll`.
 
 ---
 
@@ -237,9 +237,9 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 *   **`RoomPantryMovementRepository`**:
     *   Encapsulates `movementDao` and `OutboxEnqueuer`, automatically enqueuing recorded movements to outbox.
 *   **`RoomInvoiceRepository`**:
-    *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase` and logger as private members.
+    *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase`, `OutboxEnqueuer`, and logger as private members.
     *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice` with automatic consolidation of duplicate product lines.
-    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing consolidated bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, groups items matching the same `targetProductId`, and persists a single consolidated `PantryItemEntity`, a single `PriceEntryEntity`, and a single `PantryMovementEntity` (`ENTRY_PURCHASE`) per unique product.
+    *   `importInvoiceToPantry`: Executes immediate atomic SQLite transaction `useWriterConnection { connection.withTransaction(IMMEDIATE) }` performing consolidated bulk insert: resolves existing products by EAN/name or creates new `CatalogProductEntity` entries, groups items matching the same `targetProductId`, persists a single consolidated `PantryItemEntity`, a single `PriceEntryEntity`, and a single `PantryMovementEntity` (`ENTRY_PURCHASE`) per unique product, and enqueues all created entities to `pending_sync_entries` via `OutboxEnqueuer`.
 *   **`RoomAuthRepository`**:
     *   Implements `AuthRepository`: `register`, `login`, `logout`, `refreshToken`, `clearSession`.
     *   Persists JWT tokens and active `AuthSession` in `AppKeyValueDao`.
