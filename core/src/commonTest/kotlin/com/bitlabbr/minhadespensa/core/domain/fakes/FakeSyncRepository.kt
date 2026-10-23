@@ -34,6 +34,7 @@ class FakeSyncRepository : SyncRepository {
     var syncCallCount = 0
     var enqueueAllLocalEntitiesCalled = false
     var clearLocalDataCalled = false
+    var hasLocalDataResult: Boolean = false
     var shouldFail: Boolean = false
     var failureException: Throwable = RuntimeException("Sync failed")
     var hasUnsyncedChangesOnSwitch: Boolean = false
@@ -65,4 +66,6 @@ class FakeSyncRepository : SyncRepository {
         clearLocalDataCalled = true
         pendingCountFlow.value = 0
     }
+
+    override suspend fun hasLocalData(): Boolean = hasLocalDataResult
 }

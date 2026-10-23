@@ -47,8 +47,9 @@ class JoinHouseholdByInviteCodeUseCase(
         }
 
         val household = householdRepository.joinHousehold(normalizedCode).getOrThrow()
+        syncRepository.clearLocalDataForHouseholdSwitch()
         householdRepository.switchActiveHousehold(household.id).getOrThrow()
-        syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
+        syncRepository.sync().getOrThrow()
 
         household
     }

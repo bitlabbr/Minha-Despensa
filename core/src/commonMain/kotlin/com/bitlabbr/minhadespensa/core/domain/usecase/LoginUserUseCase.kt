@@ -35,6 +35,7 @@ class LoginUserUseCase(
     suspend operator fun invoke(
         email: String,
         password: String,
+        keepLocalData: Boolean = true,
     ): Result<AuthSession> = runCatching {
         val trimmedEmail = email.trim().lowercase()
         require(CoreConstants.Auth.EMAIL_REGEX.matches(trimmedEmail)) {
@@ -44,12 +45,20 @@ class LoginUserUseCase(
             CoreConstants.Validation.ERROR_PASSWORD_TOO_SHORT
         }
 
+        if (!keepLocalData) {
+            syncRepository.clearLocalDataForHouseholdSwitch()
+        }
+
         val session = authRepository.login(
             email = trimmedEmail,
             password = password,
         ).getOrThrow()
 
-        syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
+        if (keepLocalData) {
+            syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
+        }
+
+        syncRepository.sync().getOrThrow()
 
         session
     }

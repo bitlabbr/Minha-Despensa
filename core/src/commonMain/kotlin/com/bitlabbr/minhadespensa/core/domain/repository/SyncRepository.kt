@@ -33,4 +33,5 @@ interface SyncRepository {
     suspend fun enqueueAllLocalEntitiesForInitialSync(): Result<Int>
     suspend fun flushOutboxBeforeSwitch(forceDiscard: Boolean): WorkspaceSwitchCheckResult
     suspend fun clearLocalDataForHouseholdSwitch()
+    suspend fun hasLocalData(): Boolean
 }

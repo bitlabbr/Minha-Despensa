@@ -33,6 +33,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -117,12 +118,28 @@ class AuthAndHouseholdUseCasesTest {
             name = "Valid Name",
             email = "USER@test.com",
             password = "password123",
+            keepLocalData = true,
         )
         assertTrue(result.isSuccess)
         val session = result.getOrNull()
         assertNotNull(session)
         assertEquals("user@test.com", session.user.email)
         assertTrue(syncRepository.enqueueAllLocalEntitiesCalled)
+        assertEquals(1, syncRepository.syncCallCount)
+    }
+
+    @Test
+    fun registerUserUseCase_withDiscardLocalData_clearsLocalDataAndSyncs() = runTest {
+        val result = registerUserUseCase(
+            name = "Valid Name",
+            email = "discard@test.com",
+            password = "password123",
+            keepLocalData = false,
+        )
+        assertTrue(result.isSuccess)
+        assertTrue(syncRepository.clearLocalDataCalled)
+        assertFalse(syncRepository.enqueueAllLocalEntitiesCalled)
+        assertEquals(1, syncRepository.syncCallCount)
     }
 
     @Test
@@ -135,10 +152,21 @@ class AuthAndHouseholdUseCasesTest {
     }
 
     @Test
-    fun loginUserUseCase_successfulLogin_enqueuesLocalEntities() = runTest {
-        val result = loginUserUseCase("valid@test.com", "password123")
+    fun loginUserUseCase_successfulLogin_enqueuesLocalEntitiesAndSyncs() = runTest {
+        val result = loginUserUseCase("valid@test.com", "password123", keepLocalData = true)
         assertTrue(result.isSuccess)
         assertTrue(syncRepository.enqueueAllLocalEntitiesCalled)
+        assertFalse(syncRepository.clearLocalDataCalled)
+        assertEquals(1, syncRepository.syncCallCount)
+    }
+
+    @Test
+    fun loginUserUseCase_withDiscardLocalData_clearsLocalDataAndSyncs() = runTest {
+        val result = loginUserUseCase("valid@test.com", "password123", keepLocalData = false)
+        assertTrue(result.isSuccess)
+        assertTrue(syncRepository.clearLocalDataCalled)
+        assertFalse(syncRepository.enqueueAllLocalEntitiesCalled)
+        assertEquals(1, syncRepository.syncCallCount)
     }
 
     @Test
@@ -164,11 +192,19 @@ class AuthAndHouseholdUseCasesTest {
         val resultWithoutPrefix = joinHouseholdByInviteCodeUseCase("ABCDEFGH")
         assertTrue(resultWithoutPrefix.isSuccess)
         assertEquals("CASA-ABCDEFGH", resultWithoutPrefix.getOrNull()?.inviteCode)
+        assertTrue(syncRepository.clearLocalDataCalled)
+        assertEquals(1, syncRepository.syncCallCount)
+
+        // Reset fake counters
+        syncRepository.clearLocalDataCalled = false
+        syncRepository.syncCallCount = 0
 
         // With prefix (13 chars)
         val resultWithPrefix = joinHouseholdByInviteCodeUseCase("CASA-ABCDEFGH")
         assertTrue(resultWithPrefix.isSuccess)
         assertEquals("CASA-ABCDEFGH", resultWithPrefix.getOrNull()?.inviteCode)
+        assertTrue(syncRepository.clearLocalDataCalled)
+        assertEquals(1, syncRepository.syncCallCount)
 
         // Lowercase (13 chars)
         val resultLowercase = joinHouseholdByInviteCodeUseCase("casa-abcdefgh")

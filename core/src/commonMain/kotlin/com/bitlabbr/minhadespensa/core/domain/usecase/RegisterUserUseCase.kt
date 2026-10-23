@@ -36,6 +36,7 @@ class RegisterUserUseCase(
         name: String,
         email: String,
         password: String,
+        keepLocalData: Boolean = true,
     ): Result<AuthSession> = runCatching {
         require(name.isNotBlank()) { CoreConstants.Validation.ERROR_USER_NAME_BLANK }
         require(name.trim().length <= CoreConstants.Auth.NAME_MAX_LENGTH) {
@@ -49,13 +50,21 @@ class RegisterUserUseCase(
             CoreConstants.Validation.ERROR_PASSWORD_TOO_SHORT
         }
 
+        if (!keepLocalData) {
+            syncRepository.clearLocalDataForHouseholdSwitch()
+        }
+
         val session = authRepository.register(
             name = name.trim(),
             email = trimmedEmail,
             password = password,
         ).getOrThrow()
 
-        syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
+        if (keepLocalData) {
+            syncRepository.enqueueAllLocalEntitiesForInitialSync().getOrThrow()
+        }
+
+        syncRepository.sync().getOrThrow()
 
         session
     }
