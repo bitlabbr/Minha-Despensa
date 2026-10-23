@@ -64,6 +64,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -624,5 +625,85 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
         val localMedia = db.productMediaDao().getByProductId(prodId)
         assertNotNull(localMedia)
         assertTrue(testImageBytes.contentEquals(localMedia.blob))
+    }
+
+    @Test
+    fun syncRepository_syncProductMedia_uploadsLocalMediaAndPersistsSyncedHash() = runTest {
+        authRepository.register("Test Media", "media@test.com", "pass123").getOrThrow()
+        db.pendingSyncDao().clearAll()
+
+        val prodId = "00000000-0000-0000-0000-000000000401"
+        val now = getCurrentTime()
+        val imageBytes = byteArrayOf(9, 8, 7, 6)
+
+        // Insert product and local media
+        db.catalogDao().insert(
+            CatalogProductEntity(
+                id = prodId,
+                ean = "7890000000401",
+                name = "Café Gourmet",
+                category = "Mercearia",
+                brand = "Marca X",
+                measureUnit = "UNIT",
+                netWeight = 1.0,
+                thumbnailUrl = null,
+                updatedAt = now,
+                isDeleted = false,
+                manuallyAdded = true,
+                notes = null,
+                imageHash = "some-local-hash",
+            ),
+        )
+        db.productMediaDao().insertOrUpdate(
+            ProductMediaEntity(
+                productId = prodId,
+                blob = imageBytes,
+                updatedAt = now,
+            ),
+        )
+
+        fakeSyncRemote.remoteMediaStorage.clear()
+
+        // Sync triggers upload because synced_media_hash_prodId is not recorded
+        syncRepository.sync().getOrThrow()
+
+        // Verify media was uploaded to remote storage
+        assertNotNull(fakeSyncRemote.remoteMediaStorage[prodId])
+        assertTrue(imageBytes.contentEquals(fakeSyncRemote.remoteMediaStorage[prodId]))
+
+        // Verify synced_media_hash key was stored
+        val syncedHash = db.appKeyValueDao().get("synced_media_hash_$prodId")
+        assertNotNull(syncedHash)
+    }
+
+    @Test
+    fun syncRepository_hasLocalData_and_clearLocalDataForHouseholdSwitch() = runTest {
+        // Initially empty
+        assertFalse(syncRepository.hasLocalData())
+
+        // Insert a product
+        val prodId = "prod-test-has-data"
+        db.catalogDao().insert(
+            CatalogProductEntity(
+                id = prodId,
+                ean = "7890000000999",
+                name = "Arroz",
+                category = "Mercearia",
+                brand = null,
+                measureUnit = "UNIT",
+                netWeight = 1.0,
+                thumbnailUrl = null,
+                updatedAt = getCurrentTime(),
+                isDeleted = false,
+                manuallyAdded = true,
+                notes = null,
+            ),
+        )
+        assertTrue(syncRepository.hasLocalData())
+
+        // Clear local data
+        syncRepository.clearLocalDataForHouseholdSwitch()
+        assertFalse(syncRepository.hasLocalData())
+        assertEquals(0, db.catalogDao().getAllSnapshot().size)
     }
 }

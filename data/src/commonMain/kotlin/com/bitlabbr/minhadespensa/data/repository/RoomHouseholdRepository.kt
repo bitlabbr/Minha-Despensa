@@ -106,7 +106,11 @@ class RoomHouseholdRepository(
 
     override suspend fun switchActiveHousehold(householdId: String): Result<Unit> = runCatching {
         val current = authRepository.getCurrentSession() ?: throw IllegalStateException("No active session")
-        val householdDetail = householdRemoteDataSource.getHousehold(householdId).getOrThrow()
+        val householdDetail = householdRemoteDataSource.getHousehold(householdId)
+            .recoverCatching {
+                householdRemoteDataSource.listHouseholds().getOrThrow().first { it.id == householdId }
+            }
+            .getOrThrow()
         val newHousehold = Household(
             id = householdDetail.id,
             name = householdDetail.name,

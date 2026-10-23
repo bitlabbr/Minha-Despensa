@@ -502,18 +502,26 @@ class RoomSyncRepository(
     }
 
     private suspend fun syncProductMedia(householdId: String) {
-        // A. Upload local media that is not yet synced or whose hash differs from catalog
+        // A. Upload local media that is not yet synced or whose hash differs from recorded synced hash
         val allLocalMedia = database.productMediaDao().getAllSnapshot()
         for (media in allLocalMedia) {
             val hash = Buffer().write(media.blob).readByteString().sha256().hex()
-            val product = database.catalogDao().findSnapshotById(media.productId)
-            if (product != null && product.imageHash != hash) {
+            val syncedHashKey = "synced_media_hash_${media.productId}"
+            val recordedSyncedHash = database.appKeyValueDao().get(syncedHashKey)
+            if (recordedSyncedHash != hash) {
                 runCatching {
                     val serverHash = withAuthRetry {
                         syncRemoteDataSource.uploadProductMedia(householdId, media.productId, media.blob)
                     }.getOrThrow()
                     val finalHash = if (serverHash.isNotBlank()) serverHash else hash
                     database.catalogDao().updateImageHash(media.productId, finalHash)
+                    database.appKeyValueDao().put(
+                        AppKeyValueEntity(
+                            key = syncedHashKey,
+                            value = finalHash,
+                            updatedAt = syncClock.now(),
+                        ),
+                    )
                     logger?.i("Sync", "Uploaded media for product ${media.productId} (hash=$finalHash)")
                 }.onFailure { err ->
                     logger?.w("Sync", "Failed to upload media for product ${media.productId}: ${err.message}")
@@ -539,6 +547,14 @@ class RoomSyncRepository(
                                 updatedAt = product.updatedAt,
                             ),
                         )
+                        val downloadedHash = Buffer().write(bytes).readByteString().sha256().hex()
+                        database.appKeyValueDao().put(
+                            AppKeyValueEntity(
+                                key = "synced_media_hash_${product.id}",
+                                value = downloadedHash,
+                                updatedAt = syncClock.now(),
+                            ),
+                        )
                         logger?.i("Sync", "Downloaded media for product ${product.id} (${bytes.size} bytes)")
                     }
                 }.onFailure { err ->
@@ -555,6 +571,20 @@ class RoomSyncRepository(
         database.shoppingListDao().clearAll()
         database.budgetDao().clearAll()
         database.priceDao().clearAll()
+        database.productMediaDao().clearAll()
+        database.catalogDao().clearAll()
+        database.categoryDao().clearCustomCategories()
         database.pendingSyncDao().clearAll()
+    }
+
+    override suspend fun hasLocalData(): Boolean {
+        val hasProducts = database.catalogDao().getAllSnapshot().any { !it.isDeleted }
+        if (hasProducts) return true
+        val hasPantry = database.pantryDao().getAllSnapshot().any { !it.isDeleted }
+        if (hasPantry) return true
+        val hasShopping = database.shoppingListDao().getAllSnapshot().any { !it.isDeleted }
+        if (hasShopping) return true
+        val hasBudgets = database.budgetDao().getAllSnapshot().isNotEmpty()
+        return hasBudgets
     }
 }

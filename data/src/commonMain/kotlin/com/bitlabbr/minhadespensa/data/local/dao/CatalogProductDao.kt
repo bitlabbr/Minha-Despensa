@@ -155,4 +155,7 @@ interface CatalogProductDao {
 
     @Query("DELETE FROM catalog_products WHERE id = :id")
     suspend fun deleteProductById(id: String): Int
+
+    @Query("DELETE FROM catalog_products")
+    suspend fun clearAll(): Int
 }

@@ -83,4 +83,7 @@ interface ProductCategoryDao {
         updatedAt: Long,
         isDeleted: Boolean,
     ): Int
+
+    @Query("DELETE FROM product_categories WHERE isDefault = 0")
+    suspend fun clearCustomCategories(): Int
 }
