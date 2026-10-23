@@ -143,6 +143,7 @@ val uiModule = module {
             authRepository = get(),
             householdRepository = get(),
             syncCoordinator = get(),
+            syncRepository = get(),
             manageHouseholdUseCase = get(),
             joinHouseholdByInviteCodeUseCase = get(),
             switchActiveHouseholdUseCase = get(),

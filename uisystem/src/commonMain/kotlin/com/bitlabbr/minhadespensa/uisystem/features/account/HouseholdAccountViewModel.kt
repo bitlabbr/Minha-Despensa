@@ -31,6 +31,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.HouseholdDetail
 import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.core.domain.repository.AuthRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.HouseholdRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.SyncRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.JoinHouseholdByInviteCodeUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.LoginUserUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.LogoutUserUseCase
@@ -63,6 +64,7 @@ class HouseholdAccountViewModel(
     private val authRepository: AuthRepository,
     private val householdRepository: HouseholdRepository,
     private val syncCoordinator: SyncCoordinator,
+    private val syncRepository: SyncRepository,
     private val manageHouseholdUseCase: ManageHouseholdUseCase,
     private val joinHouseholdByInviteCodeUseCase: JoinHouseholdByInviteCodeUseCase,
     private val switchActiveHouseholdUseCase: SwitchActiveHouseholdUseCase,
@@ -75,6 +77,11 @@ class HouseholdAccountViewModel(
 
     companion object {
         private const val TAG = "HouseholdAccountViewModel"
+    }
+
+    private enum class PendingAuthAction {
+        LOGIN,
+        REGISTER,
     }
 
     private val _selectedTab = MutableStateFlow(AuthTab.LOGIN)
@@ -90,6 +97,8 @@ class HouseholdAccountViewModel(
     private val _createHouseholdName = MutableStateFlow("")
     private val _isLogoutConfirmDialogOpen = MutableStateFlow(false)
     private val _isSwitchingHousehold = MutableStateFlow(false)
+    private val _isMergeDecisionDialogOpen = MutableStateFlow(false)
+    private var pendingAuthAction: PendingAuthAction? = null
     private val _userHouseholds = MutableStateFlow<List<HouseholdDetail>>(emptyList())
 
     init {
@@ -110,6 +119,7 @@ class HouseholdAccountViewModel(
         val createHouseholdName: String,
         val isLogoutConfirmDialogOpen: Boolean,
         val isSwitchingHousehold: Boolean,
+        val isMergeDecisionDialogOpen: Boolean,
     )
 
     private val formStateFlow = combine(
@@ -135,8 +145,9 @@ class HouseholdAccountViewModel(
             _createHouseholdName,
             _isLogoutConfirmDialogOpen,
             _isSwitchingHousehold,
-        ) { createName, logoutOpen, switching ->
-            Triple(createName, logoutOpen, switching)
+            _isMergeDecisionDialogOpen,
+        ) { createName, logoutOpen, switching, mergeOpen ->
+            Tuple4(createName, logoutOpen, switching, mergeOpen)
         }
     ) { part1, part2, part3 ->
         FormState(
@@ -150,9 +161,10 @@ class HouseholdAccountViewModel(
             isJoinDialogOpen = part2.v3,
             joinInviteCode = part2.v4,
             isCreateDialogOpen = part2.v5,
-            createHouseholdName = part3.first,
-            isLogoutConfirmDialogOpen = part3.second,
-            isSwitchingHousehold = part3.third,
+            createHouseholdName = part3.v1,
+            isLogoutConfirmDialogOpen = part3.v2,
+            isSwitchingHousehold = part3.v3,
+            isMergeDecisionDialogOpen = part3.v4,
         )
     }
 
@@ -184,6 +196,7 @@ class HouseholdAccountViewModel(
             createHouseholdName = form.createHouseholdName,
             isLogoutConfirmDialogOpen = form.isLogoutConfirmDialogOpen,
             isSwitchingHousehold = form.isSwitchingHousehold,
+            isMergeDecisionDialogOpen = form.isMergeDecisionDialogOpen,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -217,10 +230,56 @@ class HouseholdAccountViewModel(
 
     fun login() {
         viewModelScope.launch {
+            if (syncRepository.hasLocalData()) {
+                pendingAuthAction = PendingAuthAction.LOGIN
+                _isMergeDecisionDialogOpen.value = true
+            } else {
+                executeLogin(keepLocalData = true)
+            }
+        }
+    }
+
+    fun register() {
+        viewModelScope.launch {
+            if (syncRepository.hasLocalData()) {
+                pendingAuthAction = PendingAuthAction.REGISTER
+                _isMergeDecisionDialogOpen.value = true
+            } else {
+                executeRegister(keepLocalData = true)
+            }
+        }
+    }
+
+    fun onConfirmMergeData() {
+        val action = pendingAuthAction ?: PendingAuthAction.LOGIN
+        dismissMergeDecisionDialog()
+        when (action) {
+            PendingAuthAction.LOGIN -> executeLogin(keepLocalData = true)
+            PendingAuthAction.REGISTER -> executeRegister(keepLocalData = true)
+        }
+    }
+
+    fun onConfirmDiscardLocalData() {
+        val action = pendingAuthAction ?: PendingAuthAction.LOGIN
+        dismissMergeDecisionDialog()
+        when (action) {
+            PendingAuthAction.LOGIN -> executeLogin(keepLocalData = false)
+            PendingAuthAction.REGISTER -> executeRegister(keepLocalData = false)
+        }
+    }
+
+    fun dismissMergeDecisionDialog() {
+        _isMergeDecisionDialogOpen.value = false
+        pendingAuthAction = null
+    }
+
+    private fun executeLogin(keepLocalData: Boolean) {
+        viewModelScope.launch {
             _isLoading.value = true
             loginUserUseCase(
                 email = _loginEmail.value,
                 password = _loginPassword.value,
+                keepLocalData = keepLocalData,
             ).fold(
                 onSuccess = {
                     notificationManager.showSuccess(UiText.Resource(Res.string.account_login_success))
@@ -237,13 +296,14 @@ class HouseholdAccountViewModel(
         }
     }
 
-    fun register() {
+    private fun executeRegister(keepLocalData: Boolean) {
         viewModelScope.launch {
             _isLoading.value = true
             registerUserUseCase(
                 name = _registerName.value,
                 email = _registerEmail.value,
                 password = _registerPassword.value,
+                keepLocalData = keepLocalData,
             ).fold(
                 onSuccess = {
                     notificationManager.showSuccess(UiText.Resource(Res.string.account_register_success))
@@ -406,6 +466,13 @@ class HouseholdAccountViewModel(
             }
         }
     }
+
+    private data class Tuple4<A, B, C, D>(
+        val v1: A,
+        val v2: B,
+        val v3: C,
+        val v4: D,
+    )
 
     private data class Tuple5<A, B, C, D, E>(
         val v1: A,

@@ -56,6 +56,7 @@ data class HouseholdAccountUiState(
     val createHouseholdName: String = "",
     val isLogoutConfirmDialogOpen: Boolean = false,
     val isSwitchingHousehold: Boolean = false,
+    val isMergeDecisionDialogOpen: Boolean = false,
 ) {
     val isAuthenticated: Boolean
         get() = session != null

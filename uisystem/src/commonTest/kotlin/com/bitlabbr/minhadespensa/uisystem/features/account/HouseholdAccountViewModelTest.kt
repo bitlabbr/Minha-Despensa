@@ -101,6 +101,7 @@ class HouseholdAccountViewModelTest {
             authRepository = authRepository,
             householdRepository = householdRepository,
             syncCoordinator = syncCoordinator,
+            syncRepository = syncRepository,
             manageHouseholdUseCase = manageHouseholdUseCase,
             joinHouseholdByInviteCodeUseCase = joinHouseholdByInviteCodeUseCase,
             switchActiveHouseholdUseCase = switchActiveHouseholdUseCase,
@@ -355,6 +356,79 @@ class HouseholdAccountViewModelTest {
             val state = awaitLoadedState()
             val activeDetail = state.userHouseholds.find { it.id == h.id }
             assertEquals("NEWCODE1", activeDetail?.inviteCode)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `login with local data opens merge decision dialog and confirm merge keeps local data`() = runTest(testDispatcher) {
+        syncRepository.hasLocalDataResult = true
+        viewModel.onLoginEmailChange("merge@example.com")
+        viewModel.onLoginPasswordChange("pass12345")
+
+        viewModel.login()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertTrue(state.isMergeDecisionDialogOpen)
+            assertFalse(state.isAuthenticated)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.onConfirmMergeData()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isMergeDecisionDialogOpen)
+            assertTrue(state.isAuthenticated)
+            assertEquals("merge@example.com", state.session?.user?.email)
+            assertTrue(syncRepository.enqueueAllLocalEntitiesCalled)
+            assertFalse(syncRepository.clearLocalDataCalled)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `login with local data and confirm discard wipes local data before sync`() = runTest(testDispatcher) {
+        syncRepository.hasLocalDataResult = true
+        viewModel.onLoginEmailChange("discard@example.com")
+        viewModel.onLoginPasswordChange("pass12345")
+
+        viewModel.login()
+        advanceUntilIdle()
+
+        viewModel.onConfirmDiscardLocalData()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isMergeDecisionDialogOpen)
+            assertTrue(state.isAuthenticated)
+            assertEquals("discard@example.com", state.session?.user?.email)
+            assertTrue(syncRepository.clearLocalDataCalled)
+            assertFalse(syncRepository.enqueueAllLocalEntitiesCalled)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `dismiss merge decision dialog cancels login attempt`() = runTest(testDispatcher) {
+        syncRepository.hasLocalDataResult = true
+        viewModel.onLoginEmailChange("cancel@example.com")
+        viewModel.onLoginPasswordChange("pass12345")
+
+        viewModel.login()
+        advanceUntilIdle()
+
+        viewModel.dismissMergeDecisionDialog()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isMergeDecisionDialogOpen)
+            assertFalse(state.isAuthenticated)
             cancelAndIgnoreRemainingEvents()
         }
     }

@@ -491,6 +491,11 @@
     <string name="account_logout_dialog_confirm">Sim, Sair</string>
     <string name="account_logout_dialog_cancel">Cancelar</string>
 
+    <string name="account_merge_dialog_title">Dados Locais Encontrados</string>
+    <string name="account_merge_dialog_desc">Existem itens cadastrados neste aparelho antes de entrar na conta. Como você deseja sincronizar?</string>
+    <string name="account_merge_option_merge">Opção A: Mesclar dados locais com a nuvem</string>
+    <string name="account_merge_option_discard">Opção B: Excluir dados locais e baixar da nuvem</string>
+
     <string name="household_active_title">Despensa Ativa</string>
     <string name="household_invite_code_label">Código de Convite da Família</string>
     <string name="household_invite_code_desc">Compartilhe este código de 8 caracteres para que outras pessoas entrem nesta despensa.</string>

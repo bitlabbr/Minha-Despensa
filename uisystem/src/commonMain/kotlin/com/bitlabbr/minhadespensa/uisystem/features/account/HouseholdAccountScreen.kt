@@ -112,6 +112,10 @@ import minhadespensa.uisystem.generated.resources.account_logout_dialog_cancel
 import minhadespensa.uisystem.generated.resources.account_logout_dialog_confirm
 import minhadespensa.uisystem.generated.resources.account_logout_dialog_desc
 import minhadespensa.uisystem.generated.resources.account_logout_dialog_title
+import minhadespensa.uisystem.generated.resources.account_merge_dialog_desc
+import minhadespensa.uisystem.generated.resources.account_merge_dialog_title
+import minhadespensa.uisystem.generated.resources.account_merge_option_discard
+import minhadespensa.uisystem.generated.resources.account_merge_option_merge
 import minhadespensa.uisystem.generated.resources.account_screen_title
 import minhadespensa.uisystem.generated.resources.account_tab_login
 import minhadespensa.uisystem.generated.resources.account_tab_register
@@ -286,6 +290,33 @@ fun HouseholdAccountScreen(
                     onClick = viewModel::logout,
                     isLoading = uiState.isLoading,
                     modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+
+    if (uiState.isMergeDecisionDialogOpen) {
+        MinhaDespensaDialog(
+            onDismissRequest = viewModel::dismissMergeDecisionDialog,
+            title = stringResource(Res.string.account_merge_dialog_title),
+            description = stringResource(Res.string.account_merge_dialog_desc),
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(dimens.paddingSmall),
+            ) {
+                MinhaDespensaPrimaryButton(
+                    text = stringResource(Res.string.account_merge_option_merge),
+                    onClick = viewModel::onConfirmMergeData,
+                    isLoading = uiState.isLoading,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+
+                MinhaDespensaSecondaryButton(
+                    text = stringResource(Res.string.account_merge_option_discard),
+                    onClick = viewModel::onConfirmDiscardLocalData,
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
