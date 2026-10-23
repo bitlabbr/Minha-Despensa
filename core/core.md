@@ -278,11 +278,13 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `removeMember(householdId: String, userId: String): Result<Unit>`
     *   `updateMemberRole(householdId: String, userId: String, role: HouseholdRole): Result<Unit>`
 *   **`SyncRepository`**:
-    *   `sync(householdId: String): Result<SyncResult>`
-    *   `enqueueMutation(mutation: SyncMutationDto)`
-    *   `getPendingMutationsCount(): Flow<Int>`
-    *   `clearLocalDataOnLogout()`
-    *   `enqueueAllLocalEntitiesForInitialSync()`
+    *   `observePendingChangesCount(): Flow<Int>`
+    *   `getPendingChangesCount(): Int`
+    *   `sync(): Result<Unit>`
+    *   `enqueueAllLocalEntitiesForInitialSync(): Result<Int>`
+    *   `flushOutboxBeforeSwitch(forceDiscard: Boolean): WorkspaceSwitchCheckResult`
+    *   `clearLocalDataForHouseholdSwitch()`
+    *   `hasLocalData(): Boolean`
 
 ---
 

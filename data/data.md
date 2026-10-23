@@ -251,6 +251,8 @@ Implement domain contracts with encapsulated state, logging, input validation, a
         2. ID Remapping: Atomically remaps product IDs received from server (`productIdMappings`), safely repointing all child tables (`pantry_items`, `price_entries`, `shopping_items`, `pantry_movements`, `product_media`) without triggering `ON DELETE CASCADE`.
         3. Pull: Fetches delta updates since cursor via `/api/v1/sync/pull?since={cursor}`.
         4. Ingestion: Atomically upserts pulled entities using LWW timestamp checks.
+        5. Media Sync: Bidirectional photo sync with SHA-256 hash tracking via `app_key_values` (`synced_media_hash_{productId}`). Local photos are uploaded to `/api/v1/media/products/{id}` when unrecorded or hash changed; remote photos are downloaded to `product_media` when local media hash differs from catalog `imageHash`.
+        6. Workspace State Management: Provides `hasLocalData()` to detect pre-existing offline content and `clearLocalDataForHouseholdSwitch()` to purge all tenant data (catalog, media, custom categories, pantry, shopping lists, budgets, prices, pending outbox) during household switches or cloud restore.
         5. Cursor Advancement: Updates `sync_cursor_{householdId}`.
         6. Outbox Drain: Deletes successfully pushed mutations from `pending_sync_entries`.
     *   `enqueueAllLocalEntitiesForInitialSync()`: Backfills all local pre-existing entities into outbox for initial synchronization when user binds/creates an account.

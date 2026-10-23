@@ -155,8 +155,8 @@ Enables adding items to the pantry in bulk by scanning state tax invoice QR Code
 
 ### 4.9. Household Account, Multi-User Sharing & Cloud Sync (`HouseholdAccountScreen`)
 Manages family household sharing, individual authentication (JWT login/register), and bidirectional cloud synchronization:
-- **`HouseholdAccountViewModel`:** Injects auth and household repositories, `SyncCoordinator`, session use cases (`LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`), and household management use cases (`ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`).
-- **Unauthenticated Flow:** Displays tabbed Login / Register form (`AuthTab.LOGIN` / `AuthTab.REGISTER`) with inline field validation, password masking, and educational banner regarding cloud backup and family sharing benefits.
+- **`HouseholdAccountViewModel`:** Injects auth, household, and sync repositories (`SyncRepository`), `SyncCoordinator`, session use cases (`LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`), and household management use cases (`ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`). Detects pre-existing unauthenticated data via `syncRepository.hasLocalData()` and manages the Merge Decision Dialog lifecycle (`isMergeDecisionDialogOpen`).
+- **Unauthenticated Flow:** Displays tabbed Login / Register form (`AuthTab.LOGIN` / `AuthTab.REGISTER`) with inline field validation, password masking, and educational banner regarding cloud backup and family sharing benefits. Prompts user with Merge Decision Dialog (Opção A: Mesclar com nuvem / Opção B: Excluir locais e baixar da nuvem) whenever local offline data exists prior to authentication.
 - **Authenticated Flow:**
   - **User Profile Banner:** Displays current user name, email, and logout action with confirmation dialog.
   - **Active Household GlassCard:** Highlights current active household name, member role badge (`Proprietário` vs `Membro`), and 8-character Crockford base32 invite code with one-tap copy triggering native haptic feedback (`rememberHapticFeedbackManager().performSuccessFeedback()`) and system clipboard.
@@ -175,7 +175,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
   - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, `SyncCoordinator`, logger, notification manager.
-  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, notification manager, logger.
+  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `SyncRepository`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, notification manager, logger.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases (`CheckEanStatusUseCase`, `AddPantryItemUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`), logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
