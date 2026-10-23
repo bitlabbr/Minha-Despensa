@@ -58,6 +58,8 @@ import com.bitlabbr.minhadespensa.data.remote.dto.SyncMutationRequestDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPushRequestDto
 import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okio.Buffer
@@ -72,6 +74,7 @@ class RoomSyncRepository(
 ) : SyncRepository {
 
     private val json = Json { ignoreUnknownKeys = true }
+    private val syncMutex = Mutex()
 
     override fun observePendingChangesCount(): Flow<Int> =
         database.pendingSyncDao().observePendingCount()
@@ -79,7 +82,8 @@ class RoomSyncRepository(
     override suspend fun getPendingChangesCount(): Int =
         database.pendingSyncDao().getPendingCount()
 
-    override suspend fun sync(): Result<Unit> = runCatching {
+    override suspend fun sync(): Result<Unit> = syncMutex.withLock {
+        runCatching {
         val startTime = getCurrentTime()
         val activeHouseholdId = database.appKeyValueDao().get(RoomAuthRepository.KEY_ACTIVE_HOUSEHOLD_ID)
         if (activeHouseholdId.isNullOrBlank()) {
@@ -204,6 +208,7 @@ class RoomSyncRepository(
         )
         val durationMs = getCurrentTime() - startTime
         logger?.i("Sync", "Bidirectional sync completed successfully in ${durationMs}ms")
+        }
     }
 
     private suspend fun applyProductIdMappings(mappings: Map<String, String>) {

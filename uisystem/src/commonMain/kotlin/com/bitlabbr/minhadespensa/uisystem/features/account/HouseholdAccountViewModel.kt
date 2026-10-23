@@ -183,7 +183,7 @@ class HouseholdAccountViewModel(
             userHouseholds = userHouseholds,
             syncState = syncState,
             isLoading = form.isLoading,
-            isSyncing = syncState == SyncState.SYNCING,
+            isSyncing = syncState == SyncState.SYNCING || form.isLoading,
             selectedTab = form.selectedTab,
             loginEmail = form.loginEmail,
             loginPassword = form.loginPassword,
