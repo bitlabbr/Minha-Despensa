@@ -54,6 +54,7 @@ import com.bitlabbr.minhadespensa.data.remote.dto.ShoppingItemSyncDto
 import com.bitlabbr.minhadespensa.data.remote.dto.ShoppingListSyncDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncMutationRequestDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPushRequestDto
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -63,6 +64,7 @@ class RoomSyncRepository(
     private val syncRemoteDataSource: SyncRemoteDataSource,
     private val syncClock: SyncClock,
     private val logger: AppLogger? = null,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(database.pendingSyncDao(), syncClock),
 ) : SyncRepository {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -86,8 +88,15 @@ class RoomSyncRepository(
         logger?.i("Sync", "Starting bidirectional sync for household=$activeHouseholdId (cursor=$currentCursor)")
 
         // 1. Process pending outbox mutations (push)
-        val pendingEntries = database.pendingSyncDao().getAllPending(100)
-        if (pendingEntries.isNotEmpty()) {
+        if (currentCursor == 0L && database.pendingSyncDao().getPendingCount() == 0) {
+            val backfilled = outboxEnqueuer.enqueueAllLocalEntities(database)
+            if (backfilled > 0) {
+                logger?.i("Sync", "Backfilled $backfilled local pre-existing entities into outbox for initial push")
+            }
+        }
+
+        var pendingEntries = database.pendingSyncDao().getAllPending(100)
+        while (pendingEntries.isNotEmpty()) {
             logger?.d("Sync", "Processing ${pendingEntries.size} pending outbox mutations...")
             val mutationDtos = mutableListOf<SyncMutationRequestDto>()
             val categories = mutableListOf<CategorySyncDto>()
@@ -151,6 +160,8 @@ class RoomSyncRepository(
             // Delete processed entries from outbox
             database.pendingSyncDao().deleteByIds(pendingEntries.map { it.id })
             logger?.d("Sync", "Drained ${pendingEntries.size} processed entries from local outbox")
+
+            pendingEntries = database.pendingSyncDao().getAllPending(100)
         }
 
         // 2. Pull remote updates
@@ -397,188 +408,7 @@ class RoomSyncRepository(
     }
 
     override suspend fun enqueueAllLocalEntitiesForInitialSync(): Result<Int> = runCatching {
-        var count = 0
-        val now = syncClock.now()
-
-        // 1. Products
-        val products = database.catalogDao().getAllSnapshot()
-        for (p in products) {
-            val dto = CatalogProductSyncDto(
-                id = p.id,
-                ean = p.ean,
-                name = p.name,
-                category = p.category,
-                brand = p.brand,
-                measureUnit = p.measureUnit,
-                netWeight = p.netWeight,
-                thumbnailUrl = p.thumbnailUrl,
-                updatedAt = p.updatedAt,
-                isDeleted = p.isDeleted,
-                manuallyAdded = p.manuallyAdded,
-                notes = p.notes,
-                imageHash = p.imageHash,
-            )
-            database.pendingSyncDao().insert(
-                PendingSyncEntryEntity(
-                    entityType = "PRODUCT",
-                    entityId = p.id,
-                    operation = if (p.isDeleted) "DELETE" else "UPSERT",
-                    payload = json.encodeToString(dto),
-                    updatedAt = p.updatedAt,
-                    createdAt = now,
-                ),
-            )
-            count++
-        }
-
-        // 2. Categories
-        val categories = database.categoryDao().getAllSnapshot()
-        for (c in categories) {
-            val dto = CategorySyncDto(
-                id = c.id,
-                name = c.name,
-                isDefault = c.isDefault,
-                updatedAt = c.updatedAt,
-                isDeleted = c.isDeleted,
-            )
-            database.pendingSyncDao().insert(
-                PendingSyncEntryEntity(
-                    entityType = "CATEGORY",
-                    entityId = c.id,
-                    operation = if (c.isDeleted) "DELETE" else "UPSERT",
-                    payload = json.encodeToString(dto),
-                    updatedAt = c.updatedAt,
-                    createdAt = now,
-                ),
-            )
-            count++
-        }
-
-        // 3. Pantry Items
-        val pantryItems = database.pantryDao().getAllSnapshot()
-        for (pi in pantryItems) {
-            val dto = PantryItemSyncDto(
-                id = pi.id,
-                productId = pi.productId,
-                quantity = pi.quantity,
-                expirationDate = pi.expirationDate,
-                batchNumber = pi.batchNumber,
-                unitPriceInCents = pi.unitPriceInCents,
-                updatedAt = pi.updatedAt,
-                isDeleted = pi.isDeleted,
-            )
-            database.pendingSyncDao().insert(
-                PendingSyncEntryEntity(
-                    entityType = "PANTRY_ITEM",
-                    entityId = pi.id,
-                    operation = if (pi.isDeleted) "DELETE" else "UPSERT",
-                    payload = json.encodeToString(dto),
-                    updatedAt = pi.updatedAt,
-                    createdAt = now,
-                ),
-            )
-            count++
-        }
-
-        // 4. Shopping Lists & Items
-        val lists = database.shoppingListDao().getAllSnapshot()
-        for (l in lists) {
-            val dto = ShoppingListSyncDto(
-                id = l.id,
-                name = l.name,
-                listType = l.type,
-                listStatus = l.status,
-                budgetInCents = l.budgedInCents,
-                updatedAt = l.updatedAt,
-                isDeleted = l.isDeleted,
-            )
-            database.pendingSyncDao().insert(
-                PendingSyncEntryEntity(
-                    entityType = "SHOPPING_LIST",
-                    entityId = l.id,
-                    operation = if (l.isDeleted) "DELETE" else "UPSERT",
-                    payload = json.encodeToString(dto),
-                    updatedAt = l.updatedAt,
-                    createdAt = now,
-                ),
-            )
-            count++
-        }
-
-        val items = database.shoppingItemDao().getAllSnapshot()
-        for (i in items) {
-            val dto = ShoppingItemSyncDto(
-                id = i.id,
-                listId = i.listId,
-                productId = i.productId,
-                rawText = i.rawText,
-                quantity = i.quantity,
-                priceAtTime = i.priceAtTime,
-                isChecked = i.isChecked,
-                updatedAt = i.updatedAt,
-                isDeleted = i.isDeleted,
-            )
-            database.pendingSyncDao().insert(
-                PendingSyncEntryEntity(
-                    entityType = "SHOPPING_ITEM",
-                    entityId = i.id,
-                    operation = if (i.isDeleted) "DELETE" else "UPSERT",
-                    payload = json.encodeToString(dto),
-                    updatedAt = i.updatedAt,
-                    createdAt = now,
-                ),
-            )
-            count++
-        }
-
-        // 5. Price Entries
-        val prices = database.priceDao().getAllSnapshot()
-        for (pe in prices) {
-            val dto = PriceEntrySyncDto(
-                id = pe.id,
-                productId = pe.productId,
-                priceInCents = pe.priceInCents,
-                storeName = pe.storeName,
-                updatedAt = pe.updatedAt,
-                isDeleted = pe.isDeleted,
-            )
-            database.pendingSyncDao().insert(
-                PendingSyncEntryEntity(
-                    entityType = "PRICE_ENTRY",
-                    entityId = pe.id,
-                    operation = if (pe.isDeleted) "DELETE" else "UPSERT",
-                    payload = json.encodeToString(dto),
-                    updatedAt = pe.updatedAt,
-                    createdAt = now,
-                ),
-            )
-            count++
-        }
-
-        // 6. Monthly Budgets
-        val budgets = database.budgetDao().getAllSnapshot()
-        for (b in budgets) {
-            val dto = MonthlyBudgetSyncDto(
-                year = b.year,
-                month = b.month,
-                budgetInCents = b.budgetInCents,
-                updatedAt = b.updatedAt,
-                isDeleted = b.isDeleted,
-            )
-            database.pendingSyncDao().insert(
-                PendingSyncEntryEntity(
-                    entityType = "MONTHLY_BUDGET",
-                    entityId = "${b.year}-${b.month}",
-                    operation = if (b.isDeleted) "DELETE" else "UPSERT",
-                    payload = json.encodeToString(dto),
-                    updatedAt = b.updatedAt,
-                    createdAt = now,
-                ),
-            )
-            count++
-        }
-
-        count
+        outboxEnqueuer.enqueueAllLocalEntities(database)
     }
 
     override suspend fun flushOutboxBeforeSwitch(forceDiscard: Boolean): WorkspaceSwitchCheckResult {

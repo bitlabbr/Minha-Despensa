@@ -32,6 +32,7 @@ import com.bitlabbr.minhadespensa.core.domain.util.getMonthTimeRange
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.MonthlyBudgetEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.map
 class RoomBudgetRepository(
     private val db: AppDatabase,
     private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : BudgetRepository {
 
     private val TAG = "RoomBudgetRepository"
@@ -64,6 +66,7 @@ class RoomBudgetRepository(
             updatedAt = now,
         )
         dao.insertOrUpdate(entity)
+        outboxEnqueuer.enqueueBudget(entity)
         logger.d(TAG, "setBudgetForMonth: Successfully saved budget for $year-$month ($budgetInCents cents)")
     }
 

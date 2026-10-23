@@ -84,6 +84,7 @@ import com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomPriceRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomShoppingListRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomSyncRepository
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import com.bitlabbr.minhadespensa.core.domain.repository.InvoiceRepository
 import com.bitlabbr.minhadespensa.data.remote.InvoiceRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.InvoiceServerConfig
@@ -120,28 +121,35 @@ val dataModule = module {
     single { get<AppDatabase>().pendingSyncDao() }
     single { get<AppDatabase>().appKeyValueDao() }
 
+    single {
+        OutboxEnqueuer(
+            pendingSyncDao = get(),
+            syncClock = get(),
+        )
+    }
+
     single<CatalogRepository> {
-        RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomCatalogRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<PantryRepository> {
-        RoomPantryRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomPantryRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<PriceRepository> {
-        RoomPriceRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomPriceRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<ShoppingListRepository> {
-        RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomShoppingListRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<BudgetRepository> {
-        RoomBudgetRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomBudgetRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single<PantryMovementRepository> {
-        RoomPantryMovementRepository(get(), get(named(DiQualifiers.DATA_LOGGER)))
+        RoomPantryMovementRepository(get(), get(named(DiQualifiers.DATA_LOGGER)), get())
     }
 
     single { InvoiceServerConfig() }

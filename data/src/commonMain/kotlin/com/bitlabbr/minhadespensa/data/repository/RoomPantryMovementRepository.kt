@@ -29,12 +29,14 @@ import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 class RoomPantryMovementRepository(
     private val db: AppDatabase,
     private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : PantryMovementRepository {
 
     private val TAG = "RoomPantryMovementRepo"
@@ -42,12 +44,16 @@ class RoomPantryMovementRepository(
 
     override suspend fun recordMovement(movement: PantryMovement) {
         logger.d(TAG, "recordMovement: id=${movement.id}, type=${movement.type}, quantity=${movement.quantity}")
-        dao.insertMovement(movement.toEntity())
+        val entity = movement.toEntity()
+        dao.insertMovement(entity)
+        outboxEnqueuer.enqueueMovement(entity)
     }
 
     override suspend fun recordMovements(movements: List<PantryMovement>) {
         logger.d(TAG, "recordMovements: count=${movements.size}")
-        dao.insertMovements(movements.map { it.toEntity() })
+        val entities = movements.map { it.toEntity() }
+        dao.insertMovements(entities)
+        entities.forEach { outboxEnqueuer.enqueueMovement(it) }
     }
 
     override fun getMovementsForPeriod(startTimestamp: Long, endTimestamp: Long): Flow<List<PantryMovement>> {

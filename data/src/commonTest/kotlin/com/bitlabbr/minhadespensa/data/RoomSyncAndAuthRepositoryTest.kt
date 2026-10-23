@@ -23,8 +23,13 @@
 
 package com.bitlabbr.minhadespensa.data
 
+import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
+import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.WorkspaceSwitchCheckResult
+import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.SyncClock
+import com.bitlabbr.minhadespensa.core.domain.util.getCurrentTime
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.BaseTest
 import com.bitlabbr.minhadespensa.data.local.createInMemoryDatabase
@@ -453,5 +458,65 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
 
         val budget = db.budgetDao().findBudget(2026, 10)
         assertNull(budget)
+    }
+
+    @Test
+    fun catalogAndPantryRepositories_mutationsAutomaticallyEnqueueToOutboxAndPushOnSync() = runTest {
+        val fakeLogger = object : AppLogger {
+            override fun d(tag: String, message: String) {}
+            override fun i(tag: String, message: String) {}
+            override fun w(tag: String, message: String, error: Throwable?) {}
+            override fun e(tag: String, message: String, error: Throwable?) {}
+        }
+        val outboxEnqueuer = com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer(db.pendingSyncDao(), syncClock)
+        val catalogRepo = com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository(db, fakeLogger, outboxEnqueuer)
+        val pantryRepo = com.bitlabbr.minhadespensa.data.repository.RoomPantryRepository(db, fakeLogger, outboxEnqueuer)
+
+        authRepository.register("Test", "test@example.com", "pass123").getOrThrow()
+        db.pendingSyncDao().clearAll()
+
+        val prodId = "00000000-0000-0000-0000-000000000101"
+        val pantryId = "00000000-0000-0000-0000-000000000201"
+        val now = getCurrentTime()
+
+        // Insert product through domain repository
+        catalogRepo.insertProduct(
+            CatalogProduct(
+                id = prodId,
+                ean = "7891234567890",
+                name = "Café Especial",
+                category = "Mercearia",
+                measureUnit = MeasureUnit.UNIT,
+                updatedAt = now,
+            ),
+            imageBytes = null,
+        )
+
+        // Insert pantry item through domain repository
+        pantryRepo.insertPantryItem(
+            PantryItem(
+                id = pantryId,
+                productId = prodId,
+                quantity = 2.0,
+                expirationDate = null,
+                updatedAt = now,
+                unitPriceInCents = 1500L,
+            ),
+        )
+
+        // Verify outbox automatically populated
+        val pending = db.pendingSyncDao().getAllPending(10)
+        assertTrue(pending.any { it.entityType == "PRODUCT" && it.entityId == prodId })
+        assertTrue(pending.any { it.entityType == "PANTRY_ITEM" && it.entityId == pantryId })
+
+        // Trigger sync
+        syncRepository.sync().getOrThrow()
+
+        // Verify last pushed payload received the product and pantry item!
+        assertNotNull(lastPushedPayload)
+        assertEquals(1, lastPushedPayload!!.products.size)
+        assertEquals("Café Especial", lastPushedPayload!!.products[0].name)
+        assertEquals(1, lastPushedPayload!!.pantryItems.size)
+        assertEquals(pantryId, lastPushedPayload!!.pantryItems[0].id)
     }
 }

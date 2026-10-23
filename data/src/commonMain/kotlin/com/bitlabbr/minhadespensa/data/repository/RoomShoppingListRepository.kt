@@ -42,6 +42,7 @@ import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -53,6 +54,7 @@ import kotlin.uuid.Uuid
 class RoomShoppingListRepository(
     private val db: AppDatabase,
     private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : ShoppingListRepository {
 
     private val listDao = db.shoppingListDao()
@@ -73,14 +75,19 @@ class RoomShoppingListRepository(
     override suspend fun insertShoppingList(shoppingList: ShoppingList) {
         logger.d(TAG, "insertShoppingList: ${shoppingList.name}")
         validateShoppingList(shoppingList)
+        val listEntity = shoppingList.toEntity()
         val itemEntities = shoppingList.items.map { it.toEntity() }
-        listDao.insertShoppingListWithItems(shoppingList.toEntity(), itemEntities)
+        listDao.insertShoppingListWithItems(listEntity, itemEntities)
+        outboxEnqueuer.enqueueShoppingList(listEntity)
+        itemEntities.forEach { outboxEnqueuer.enqueueShoppingItem(it) }
     }
 
     override suspend fun forceUpdateShoppingList(shoppingList: ShoppingList) {
         logger.d(TAG, "forceUpdateForShoppingList: ${shoppingList.name}")
         validateShoppingList(shoppingList)
-        listDao.forceUpdateForShoppingList(shoppingList.toEntity())
+        val entity = shoppingList.toEntity()
+        listDao.forceUpdateForShoppingList(entity)
+        outboxEnqueuer.enqueueShoppingList(entity)
     }
 
     override suspend fun updateShoppingListIfNewer(list: ShoppingList) {
@@ -99,29 +106,36 @@ class RoomShoppingListRepository(
             logger.d(TAG, "Update for list ${list.id} ignored: local data is newer or identical.")
         } else {
             logger.d(TAG, "List ${list.id} successfully updated using LWW strategy.")
+            outboxEnqueuer.enqueueShoppingList(list.toEntity())
         }
     }
 
     override suspend fun markShoppingListAsDeleted(listId: String, updatedAt: Long) {
         logger.d(TAG, "markShoppingListAsDeleted listId:$listId")
         listDao.markShoppingListAsDeleted(listId, updatedAt)
+        listDao.findSnapshotById(listId)?.let { outboxEnqueuer.enqueueShoppingList(it.copy(isDeleted = true, updatedAt = updatedAt)) }
     }
 
     override suspend fun deleteShoppingListById(listId: String) {
         logger.d(TAG, "deleteShoppingListById listId:$listId")
+        listDao.findSnapshotById(listId)?.let { outboxEnqueuer.enqueueShoppingList(it.copy(isDeleted = true)) }
         listDao.deleteShoppingListById(listId)
     }
 
     override suspend fun insertShoppingItem(item: ShoppingItem) {
         logger.d(TAG, "insertShoppingItem itemId: ${item.id}")
         validateShoppingItem(item)
-        itemDao.insertShoppingItem(item.toEntity())
+        val entity = item.toEntity()
+        itemDao.insertShoppingItem(entity)
+        outboxEnqueuer.enqueueShoppingItem(entity)
     }
 
     override suspend fun forceUpdateShoppingItem(item: ShoppingItem) {
         logger.d(TAG, "forceUpdateForShoppingItem itemId: ${item.id}")
         validateShoppingItem(item)
-        itemDao.forceUpdateItem(item.toEntity())
+        val entity = item.toEntity()
+        itemDao.forceUpdateItem(entity)
+        outboxEnqueuer.enqueueShoppingItem(entity)
     }
 
     override suspend fun updateShoppingItemIfNewer(item: ShoppingItem) {
@@ -139,21 +153,27 @@ class RoomShoppingListRepository(
         )
         if (rowsAffected == 0) {
             logger.d(TAG, "Update for item ${item.id} ignored: local version is newer.")
+        } else {
+            outboxEnqueuer.enqueueShoppingItem(item.toEntity())
         }
     }
 
     override suspend fun toggleItemCheck(itemId: String, isChecked: Boolean) {
         logger.d(TAG, "toggleItemCheck itemId:$itemId isChecked:$isChecked")
-        itemDao.updateCheckStatus(itemId, isChecked, getCurrentTime())
+        val now = getCurrentTime()
+        itemDao.updateCheckStatus(itemId, isChecked, now)
+        itemDao.findSnapshotById(itemId)?.let { outboxEnqueuer.enqueueShoppingItem(it) }
     }
 
     override suspend fun markShoppingItemAsDeleted(itemId: String, updatedAt: Long) {
         logger.d(TAG, "markShoppingItemAsDeleted itemId:$itemId, updatedAt:$updatedAt")
         itemDao.markAsDeleted(itemId, updatedAt)
+        itemDao.findSnapshotById(itemId)?.let { outboxEnqueuer.enqueueShoppingItem(it.copy(isDeleted = true, updatedAt = updatedAt)) }
     }
 
     override suspend fun deleteShoppingItemById(itemId: String) {
         logger.d(TAG, "deleteShoppingItemById itemId:$itemId")
+        itemDao.findSnapshotById(itemId)?.let { outboxEnqueuer.enqueueShoppingItem(it.copy(isDeleted = true)) }
         itemDao.deleteById(itemId)
     }
 
@@ -204,6 +224,7 @@ class RoomShoppingListRepository(
                                 notes = notes,
                             )
                             db.catalogDao().insert(newProduct)
+                            outboxEnqueuer.enqueueProduct(newProduct)
                             itemDao.updateProductId(item.id, newProductId, now)
                             newProductId
                         }
@@ -213,31 +234,31 @@ class RoomShoppingListRepository(
 
                     if (targetProductId != null) {
                         val pantryItemId = Uuid.random().toString()
-                        db.pantryDao().insertPantryItem(
-                            PantryItem(
-                                id = pantryItemId,
-                                productId = targetProductId,
-                                quantity = item.quantity,
-                                unitPriceInCents = item.priceAtTime,
-                                updatedAt = now,
-                                isDeleted = false,
-                                expirationDate = null,
-                                batchNumber = null,
-                            ).toEntity()
-                        )
+                        val pantryEntity = PantryItem(
+                            id = pantryItemId,
+                            productId = targetProductId,
+                            quantity = item.quantity,
+                            unitPriceInCents = item.priceAtTime,
+                            updatedAt = now,
+                            isDeleted = false,
+                            expirationDate = null,
+                            batchNumber = null,
+                        ).toEntity()
+                        db.pantryDao().insertPantryItem(pantryEntity)
+                        outboxEnqueuer.enqueuePantryItem(pantryEntity)
                         logger.d(TAG, "finalizePurchase: Restocked pantry item $pantryItemId with unitPriceInCents=${item.priceAtTime}")
 
                         item.priceAtTime?.let { price ->
-                            db.priceDao().insertPriceEntry(
-                                PriceEntry(
-                                    id = pantryItemId,
-                                    productId = targetProductId,
-                                    priceInCents = price,
-                                    updatedAt = now,
-                                    isDeleted = false,
-                                    storeName = "Compra: ${listWithItems.list.name}",
-                                ).toEntity()
-                            )
+                            val priceEntry = PriceEntry(
+                                id = pantryItemId,
+                                productId = targetProductId,
+                                priceInCents = price,
+                                updatedAt = now,
+                                isDeleted = false,
+                                storeName = "Compra: ${listWithItems.list.name}",
+                            ).toEntity()
+                            db.priceDao().insertPriceEntry(priceEntry)
+                            outboxEnqueuer.enqueuePriceEntry(priceEntry)
                             logger.d(TAG, "finalizePurchase: Created price entry $pantryItemId with price=$price")
                         }
 
@@ -253,8 +274,9 @@ class RoomShoppingListRepository(
                             updatedAt = now,
                             storeOrReason = "Compra: ${listWithItems.list.name}",
                             isDeleted = false,
-                        )
-                        db.movementDao().insertMovement(movement.toEntity())
+                        ).toEntity()
+                        db.movementDao().insertMovement(movement)
+                        outboxEnqueuer.enqueueMovement(movement)
                         logger.d(TAG, "finalizePurchase: Recorded purchase movement id=${movement.id} for pantryItemId=$pantryItemId")
                     }
                 }
@@ -262,9 +284,11 @@ class RoomShoppingListRepository(
                 // Uncheck all items processed during checkout
                 checkedItems.forEach { item ->
                     itemDao.updateCheckStatus(item.id, false, now)
+                    itemDao.findSnapshotById(item.id)?.let { outboxEnqueuer.enqueueShoppingItem(it) }
                 }
 
                 listDao.updateStatus(listId, ShoppingListStatus.COMPLETED.name, now)
+                listDao.findSnapshotById(listId)?.let { outboxEnqueuer.enqueueShoppingList(it) }
                 logger.d(TAG, "Checkout finalized. [${checkedItems.size}] items processed.")
             }
         }

@@ -82,6 +82,9 @@ interface ShoppingItemDao {
     @Query("DELETE FROM shopping_items WHERE id = :id")
     suspend fun deleteById(id: String): Int
 
+    @Query("SELECT * FROM shopping_items WHERE id = :id")
+    suspend fun findSnapshotById(id: String): ShoppingItemEntity?
+
     @Query("SELECT * FROM shopping_items")
     suspend fun getAllSnapshot(): List<ShoppingItemEntity>
 

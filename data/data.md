@@ -202,32 +202,40 @@ Centralized and decoupled from repositories:
 
 ### 4.7. Repositories (`repository/`)
 
-Implement domain contracts with encapsulated state, logging, input validation, and atomic transactions:
+Implement domain contracts with encapsulated state, logging, input validation, atomic transactions, and automatic outbox enqueuing for multi-device sync:
 
+*   **`OutboxEnqueuer` (`sync/OutboxEnqueuer.kt`)**:
+    *   Encapsulates atomic serialization and upsert/delete operations into `pending_sync_entries` (`PendingSyncDao`).
+    *   Provides typed enqueuing methods for `CatalogProduct`, `ProductCategory`, `PantryItem`, `PriceEntry`, `ShoppingList`, `ShoppingItem`, `MonthlyBudget`, and `PantryMovement`.
+    *   Provides `enqueueAllLocalEntities(database)` to populate the outbox with all pre-existing local data on initial registration/login or safety net recovery.
 *   **`RoomCatalogRepository`**:
-    *   Encapsulates DAOs (`productDao`, `mediaDao`, `categoryDao`).
+    *   Encapsulates DAOs (`productDao`, `mediaDao`, `categoryDao`) and `OutboxEnqueuer`.
+    *   Automatically enqueues outbox mutations (`UPSERT`/`DELETE`) on product and category insertions, updates, and soft deletes.
     *   `searchProductsByNameOrBrand`: Executes accent- and case-insensitive search by filtering active products with `matchesSearchQuery`, supporting unaccented and multi-word token queries.
     *   Executes `insertProduct`, `forceUpdateProduct`, and `updateProductIfNewer`. Handles image addition/update via `ProductMediaEntity` or physical deletion via `mediaDao.deleteByProductId` when `removeImage = true`, and automatically registers any custom product category in `product_categories`.
     *   Category Management (`getAllActiveCategories`, `getCategories`, `saveCategory`, `renameCategory`, `deleteCategory`): Seeds `DEFAULT_CATEGORIES` once when `product_categories` is empty (`countAll() == 0`), performs accent- and case-insensitive duplicate resolution, and executes atomic cascading updates on `catalog_products` inside `useWriterConnection` transactions when renaming or deleting a category (reassigning deleted categories' products to `"Outros"` and protecting `"Outros"` from deletion).
 *   **`RoomPantryRepository`**:
-    *   Encapsulates database and DAO as private members.
+    *   Encapsulates database, DAOs, and `OutboxEnqueuer` as private members.
+    *   Automatically enqueues outbox mutations for pantry items, prices, and movements on insertion, update, consumption, and deletion.
     *   `insertPantryItem`: Persists the pantry item directly via DAO (ensuring Room's `InvalidationTracker` notifies active Flow query collectors) and automatically records a `PriceEntry` with `id = item.id` and `storeName = "Entrada na Despensa"` when `unitPriceInCents != null`, keeping product price history updated.
     *   `updatePantryItemIfNewer`: Updates pantry stock with LWW conflict resolution directly via DAO (notifying active Flow collectors) and updates the associated `PriceEntry` (`id = item.id`) in-place via `forceUpdatePriceEntry`, creating it if absent or soft-deleting it if the price was cleared, ensuring financial metrics (lowest/highest/average price) remain accurate without ghost duplicate entries.
     *   `consumePantryItem` and `consumeBatch`: Atomically validates stock, prevents consumption of soft-deleted items, and updates quantities inside an immediate transaction.
     *   `getExpiringPantryItems`: Accurately separates active non-expired items approaching the threshold from already expired items.
 *   **`RoomPriceRepository`**:
-    *   Encapsulates DAO as private member.
-    *   Manages price history entries with LWW conflict protection.
+    *   Encapsulates DAO and `OutboxEnqueuer` as private members.
+    *   Manages price history entries with LWW conflict protection and automatic outbox enqueuing.
 *   **`RoomShoppingListRepository`**:
-    *   Encapsulates database and DAOs as private members.
-    *   `insertShoppingList`: Atomically saves list entity and its associated items.
-    *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries (repassing `unitPriceInCents = item.priceAtTime`), records `PriceEntry` sharing the same ID as the pantry item when prices are present, unchecks items, and updates the list timestamp to `COMPLETED`.
+    *   Encapsulates database, DAOs, and `OutboxEnqueuer` as private members.
+    *   `insertShoppingList`: Atomically saves list entity and its associated items, enqueuing them to outbox.
+    *   `finalizePurchase`: Atomically converts checked shopping items into new `PantryItem` inventory entries (repassing `unitPriceInCents = item.priceAtTime`), records `PriceEntry` sharing the same ID as the pantry item when prices are present, unchecks items, updates the list timestamp to `COMPLETED`, and enqueues all resultant mutations to outbox.
 *   **`RoomBudgetRepository`**:
-    *   Encapsulates `AppDatabase` and `MonthlyBudgetDao` as private members.
+    *   Encapsulates `AppDatabase`, `MonthlyBudgetDao`, and `OutboxEnqueuer` as private members.
     *   `getBudgetForMonth`: Emits `MonthlyBudget` domain model mapped from `MonthlyBudgetEntity` for a given `(year, month)`.
-    *   `setBudgetForMonth`: Validates year, month, and non-negative budget value, persisting via `budgetDao.insertOrUpdate` with current epoch timestamp.
+    *   `setBudgetForMonth`: Validates year, month, and non-negative budget value, persisting via `budgetDao.insertOrUpdate` with current epoch timestamp and enqueuing to outbox.
     *   `getMonthlyExpenses`: Emits total cents spent in the month using reactive Flow aggregation of completed shopping lists + pantry direct entries, with `distinctUntilChanged` protection.
     *   `getYearlySummary`: Combines 12 individual reactive monthly expense flows with the annual budgets query into an immutable, reactive list of 12 `MonthlyFinancialSummary` items ordered from January (month 1) to December (month 12).
+*   **`RoomPantryMovementRepository`**:
+    *   Encapsulates `movementDao` and `OutboxEnqueuer`, automatically enqueuing recorded movements to outbox.
 *   **`RoomInvoiceRepository`**:
     *   Encapsulates `InvoiceRemoteDataSource`, `AppDatabase` and logger as private members.
     *   `parseInvoiceFromQrCode`: Communicates with external dedicated invoice parsing backend via `InvoiceRemoteDataSource.parseInvoice()` and maps DTOs to domain `Invoice` with automatic consolidation of duplicate product lines.
@@ -239,7 +247,7 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   Implements `HouseholdRepository`: `observeActiveHousehold`, `getActiveHousehold`, `getUserHouseholds`, `createHousehold`, `updateHousehold`, `joinHousehold`, `leaveHousehold`, `regenerateInviteCode`, `removeMember`, `switchActiveHousehold`.
 *   **`RoomSyncRepository`**:
     *   Implements `SyncRepository` with 6-step bidirectional CRDT/LWW synchronization:
-        1. Outbox Push: Collects pending outbox mutations and pushes to `/api/v1/sync/push`.
+        1. Outbox Push: Collects pending outbox mutations and pushes to `/api/v1/sync/push` in a loop until all pending mutations are drained.
         2. ID Remapping: Atomically remaps product IDs received from server (`productIdMappings`), safely repointing all child tables (`pantry_items`, `price_entries`, `shopping_items`, `pantry_movements`, `product_media`) without triggering `ON DELETE CASCADE`.
         3. Pull: Fetches delta updates since cursor via `/api/v1/sync/pull?since={cursor}`.
         4. Ingestion: Atomically upserts pulled entities using LWW timestamp checks.
