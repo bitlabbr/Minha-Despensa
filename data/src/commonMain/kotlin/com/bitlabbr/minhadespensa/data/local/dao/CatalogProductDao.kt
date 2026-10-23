@@ -44,7 +44,7 @@ interface CatalogProductDao {
     @Query(
         """
     UPDATE catalog_products 
-    SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, notes = :notes, updatedAt = :updatedAt, isDeleted = :isDeleted
+    SET name = :name, ean = :ean, category = :category, netWeight = :netWeight, thumbnailUrl = :thumbnailUrl, measureUnit = :measureUnit, manuallyAdded = :manuallyAdded, brand = :brand, notes = :notes, imageHash = :imageHash, updatedAt = :updatedAt, isDeleted = :isDeleted
     WHERE id = :id AND (
         updatedAt < :updatedAt
         OR (updatedAt = :updatedAt AND isDeleted = 0 AND :isDeleted = 1)
@@ -64,7 +64,11 @@ interface CatalogProductDao {
         isDeleted: Boolean,
         manuallyAdded: Boolean,
         notes: String?,
+        imageHash: String? = null,
     ): Int
+
+    @Query("UPDATE catalog_products SET imageHash = :imageHash WHERE id = :id")
+    suspend fun updateImageHash(id: String, imageHash: String?): Int
 
     @Query("SELECT EXISTS(SELECT 1 FROM catalog_products WHERE id = :id)")
     fun exists(id: String): Flow<Boolean>

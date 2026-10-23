@@ -28,6 +28,7 @@ import androidx.sqlite.SQLiteConnection
 import androidx.sqlite.execSQL
 import com.bitlabbr.minhadespensa.core.domain.model.MeasureUnit
 import com.bitlabbr.minhadespensa.core.domain.model.WorkspaceSwitchCheckResult
+import com.bitlabbr.minhadespensa.core.domain.repository.AuthRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.SyncRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.SyncClock
@@ -41,6 +42,7 @@ import com.bitlabbr.minhadespensa.data.local.entity.PantryMovementEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PendingSyncEntryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductCategoryEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
 import com.bitlabbr.minhadespensa.data.remote.SyncRemoteDataSource
@@ -58,6 +60,7 @@ import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import okio.Buffer
 
 class RoomSyncRepository(
     private val database: AppDatabase,
@@ -65,6 +68,7 @@ class RoomSyncRepository(
     private val syncClock: SyncClock,
     private val logger: AppLogger? = null,
     private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(database.pendingSyncDao(), syncClock),
+    private val authRepository: AuthRepository? = null,
 ) : SyncRepository {
 
     private val json = Json { ignoreUnknownKeys = true }
@@ -147,7 +151,7 @@ class RoomSyncRepository(
                 budgets = budgets,
             )
 
-            val pushResponse = syncRemoteDataSource.push(activeHouseholdId, pushPayload).getOrThrow()
+            val pushResponse = withAuthRetry { syncRemoteDataSource.push(activeHouseholdId, pushPayload) }.getOrThrow()
             syncClock.calibrate(pushResponse.serverTimestamp)
             logger?.i("Sync", "Outbox push completed: serverVersion=${pushResponse.serverVersion}, processed=${pushResponse.processedCount}")
 
@@ -165,8 +169,14 @@ class RoomSyncRepository(
         }
 
         // 2. Pull remote updates
-        logger?.d("Sync", "Pulling delta updates since cursor=$currentCursor...")
-        val pullResponse = syncRemoteDataSource.pull(activeHouseholdId, currentCursor, 100).getOrThrow()
+        var pullCursor = currentCursor
+        if (pullCursor > 0 && database.shoppingListDao().getAllSnapshot().isEmpty()) {
+            logger?.i("Sync", "Local shopping lists empty with cursor=$pullCursor; pulling from 0 to backfill missing data")
+            pullCursor = 0L
+        }
+
+        logger?.d("Sync", "Pulling delta updates since cursor=$pullCursor...")
+        val pullResponse = withAuthRetry { syncRemoteDataSource.pull(activeHouseholdId, pullCursor, 100) }.getOrThrow()
         syncClock.calibrate(pullResponse.serverTimestamp)
 
         // 3. Apply pulled entities atomically
@@ -178,7 +188,10 @@ class RoomSyncRepository(
         )
         applyPulledEntities(entities)
 
-        // 4. Update cursor
+        // 4. Sync product media (photos)
+        syncProductMedia(activeHouseholdId)
+
+        // 5. Update cursor
         database.appKeyValueDao().put(
             AppKeyValueEntity(
                 key = cursorKey,
@@ -268,6 +281,7 @@ class RoomSyncRepository(
                             isDeleted = p.isDeleted,
                             manuallyAdded = p.manuallyAdded,
                             notes = p.notes,
+                            imageHash = p.imageHash,
                         )
                     }
                 } else {
@@ -284,6 +298,7 @@ class RoomSyncRepository(
                         isDeleted = p.isDeleted,
                         manuallyAdded = p.manuallyAdded,
                         notes = p.notes,
+                        imageHash = p.imageHash,
                     )
                 }
             }
@@ -354,42 +369,87 @@ class RoomSyncRepository(
 
             // Shopping Lists
             for (sl in entities.shoppingLists) {
-                val existing = database.shoppingListDao().getShoppingListById(sl.id)
-                database.shoppingListDao().updateShoppingListIfNewer(
-                    id = sl.id,
-                    name = sl.name,
-                    type = sl.listType,
-                    status = sl.listStatus,
-                    budgetInCents = sl.budgetInCents,
-                    updatedAt = sl.updatedAt,
-                    isDeleted = sl.isDeleted,
-                )
+                val existing = database.shoppingListDao().findSnapshotById(sl.id)
+                if (existing == null) {
+                    database.shoppingListDao().insertShoppingList(
+                        ShoppingListEntity(
+                            id = sl.id,
+                            name = sl.name,
+                            type = sl.listType,
+                            status = sl.listStatus,
+                            budgedInCents = sl.budgetInCents,
+                            updatedAt = sl.updatedAt,
+                            isDeleted = sl.isDeleted,
+                        ),
+                    )
+                } else {
+                    database.shoppingListDao().updateShoppingListIfNewer(
+                        id = sl.id,
+                        name = sl.name,
+                        type = sl.listType,
+                        status = sl.listStatus,
+                        budgetInCents = sl.budgetInCents,
+                        updatedAt = sl.updatedAt,
+                        isDeleted = sl.isDeleted,
+                    )
+                }
             }
 
             // Shopping Items
             for (si in entities.shoppingItems) {
-                database.shoppingItemDao().updateItemIfNewer(
-                    id = si.id,
-                    productId = si.productId,
-                    rawText = si.rawText,
-                    quantity = si.quantity,
-                    priceAtTime = si.priceAtTime,
-                    isChecked = si.isChecked,
-                    updatedAt = si.updatedAt,
-                    isDeleted = si.isDeleted,
-                )
+                val existing = database.shoppingItemDao().findSnapshotById(si.id)
+                if (existing == null) {
+                    database.shoppingItemDao().insertShoppingItem(
+                        ShoppingItemEntity(
+                            id = si.id,
+                            listId = si.listId,
+                            productId = si.productId,
+                            rawText = si.rawText,
+                            quantity = si.quantity,
+                            priceAtTime = si.priceAtTime,
+                            isChecked = si.isChecked,
+                            updatedAt = si.updatedAt,
+                            isDeleted = si.isDeleted,
+                        ),
+                    )
+                } else {
+                    database.shoppingItemDao().updateItemIfNewer(
+                        id = si.id,
+                        productId = si.productId,
+                        rawText = si.rawText,
+                        quantity = si.quantity,
+                        priceAtTime = si.priceAtTime,
+                        isChecked = si.isChecked,
+                        updatedAt = si.updatedAt,
+                        isDeleted = si.isDeleted,
+                    )
+                }
             }
 
             // Price Entries
             for (pe in entities.priceEntries) {
-                database.priceDao().updatePriceEntryIfNewer(
-                    id = pe.id,
-                    productId = pe.productId,
-                    priceInCents = pe.priceInCents,
-                    storeName = pe.storeName,
-                    updatedAt = pe.updatedAt,
-                    isDeleted = pe.isDeleted,
-                )
+                val existing = database.priceDao().findEntryById(pe.id)
+                if (existing == null) {
+                    database.priceDao().insertPriceEntry(
+                        PriceEntryEntity(
+                            id = pe.id,
+                            productId = pe.productId,
+                            priceInCents = pe.priceInCents,
+                            storeName = pe.storeName,
+                            updatedAt = pe.updatedAt,
+                            isDeleted = pe.isDeleted,
+                        ),
+                    )
+                } else {
+                    database.priceDao().updatePriceEntryIfNewer(
+                        id = pe.id,
+                        productId = pe.productId,
+                        priceInCents = pe.priceInCents,
+                        storeName = pe.storeName,
+                        updatedAt = pe.updatedAt,
+                        isDeleted = pe.isDeleted,
+                    )
+                }
             }
 
             // Monthly Budgets
@@ -420,6 +480,72 @@ class RoomSyncRepository(
             database.pendingSyncDao().clearAll()
         }
         return WorkspaceSwitchCheckResult.Ready
+    }
+
+    private suspend fun <T> withAuthRetry(block: suspend () -> Result<T>): Result<T> {
+        val initial = block()
+        if (initial.isFailure) {
+            val err = initial.exceptionOrNull()
+            val is401 = err?.message?.contains("401") == true || err?.message?.contains("Unauthorized") == true
+            if (is401 && authRepository != null) {
+                logger?.i("Sync", "Detected 401 Unauthorized; attempting session refresh...")
+                val refreshResult = authRepository.refreshSession()
+                if (refreshResult.isSuccess) {
+                    logger?.i("Sync", "Session refreshed successfully; retrying sync operation")
+                    return block()
+                } else {
+                    logger?.w("Sync", "Session refresh failed: ${refreshResult.exceptionOrNull()?.message}")
+                }
+            }
+        }
+        return initial
+    }
+
+    private suspend fun syncProductMedia(householdId: String) {
+        // A. Upload local media that is not yet synced or whose hash differs from catalog
+        val allLocalMedia = database.productMediaDao().getAllSnapshot()
+        for (media in allLocalMedia) {
+            val hash = Buffer().write(media.blob).readByteString().sha256().hex()
+            val product = database.catalogDao().findSnapshotById(media.productId)
+            if (product != null && product.imageHash != hash) {
+                runCatching {
+                    val serverHash = withAuthRetry {
+                        syncRemoteDataSource.uploadProductMedia(householdId, media.productId, media.blob)
+                    }.getOrThrow()
+                    val finalHash = if (serverHash.isNotBlank()) serverHash else hash
+                    database.catalogDao().updateImageHash(media.productId, finalHash)
+                    logger?.i("Sync", "Uploaded media for product ${media.productId} (hash=$finalHash)")
+                }.onFailure { err ->
+                    logger?.w("Sync", "Failed to upload media for product ${media.productId}: ${err.message}")
+                }
+            }
+        }
+
+        // B. Download missing remote media for products that have imageHash
+        val productsWithRemoteMedia = database.catalogDao().getAllSnapshot().filter { !it.imageHash.isNullOrBlank() }
+        for (product in productsWithRemoteMedia) {
+            val localMedia = database.productMediaDao().getByProductId(product.id)
+            val currentLocalHash = localMedia?.let { Buffer().write(it.blob).readByteString().sha256().hex() }
+            if (currentLocalHash != product.imageHash) {
+                runCatching {
+                    val bytes = withAuthRetry {
+                        syncRemoteDataSource.downloadProductMedia(householdId, product.id)
+                    }.getOrThrow()
+                    if (bytes != null && bytes.isNotEmpty()) {
+                        database.productMediaDao().insertOrUpdate(
+                            ProductMediaEntity(
+                                productId = product.id,
+                                blob = bytes,
+                                updatedAt = product.updatedAt,
+                            ),
+                        )
+                        logger?.i("Sync", "Downloaded media for product ${product.id} (${bytes.size} bytes)")
+                    }
+                }.onFailure { err ->
+                    logger?.w("Sync", "Failed to download media for product ${product.id}: ${err.message}")
+                }
+            }
+        }
     }
 
     override suspend fun clearLocalDataForHouseholdSwitch() {

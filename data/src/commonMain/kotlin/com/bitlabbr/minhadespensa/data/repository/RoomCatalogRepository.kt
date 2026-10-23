@@ -43,6 +43,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
+import okio.Buffer
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -144,7 +145,8 @@ class RoomCatalogRepository(
         validateImage(imageBytes)
         validateProduct(product)
         ensureCategoryRegistered(product.category, product.updatedAt)
-        val entity = product.toEntity()
+        val computedHash = imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
+        val entity = product.toEntity().copy(imageHash = computedHash)
         productDao.insert(entity)
         outboxEnqueuer.enqueueProduct(entity)
         if (imageBytes != null) {
@@ -167,7 +169,8 @@ class RoomCatalogRepository(
         validateImage(imageBytes)
         validateProduct(product)
         ensureCategoryRegistered(product.category, product.updatedAt)
-        val entity = product.toEntity()
+        val computedHash = if (removeImage) null else imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
+        val entity = product.toEntity().copy(imageHash = computedHash)
         productDao.forceUpdateForProduct(entity)
         outboxEnqueuer.enqueueProduct(entity)
         if (removeImage) {
@@ -195,6 +198,7 @@ class RoomCatalogRepository(
         logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
+        val computedHash = if (removeImage) null else imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
         val rowsAffected = productDao.updateProductIfNewer(
             id = product.id,
             name = product.name,
@@ -207,10 +211,11 @@ class RoomCatalogRepository(
             updatedAt = product.updatedAt,
             isDeleted = product.isDeleted,
             manuallyAdded = product.manuallyAdded,
-            notes = product.notes
+            notes = product.notes,
+            imageHash = computedHash,
         )
         if (rowsAffected > 0) {
-            val entity = product.toEntity()
+            val entity = product.toEntity().copy(imageHash = computedHash)
             outboxEnqueuer.enqueueProduct(entity)
             if (!product.isDeleted) {
                 ensureCategoryRegistered(product.category, product.updatedAt)

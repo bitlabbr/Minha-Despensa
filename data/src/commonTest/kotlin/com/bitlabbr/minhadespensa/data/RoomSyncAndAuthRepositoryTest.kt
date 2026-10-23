@@ -46,6 +46,9 @@ import com.bitlabbr.minhadespensa.data.remote.dto.AuthResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.CatalogProductSyncDto
 import com.bitlabbr.minhadespensa.data.remote.dto.HouseholdDto
 import com.bitlabbr.minhadespensa.data.remote.dto.PantryItemSyncDto
+import com.bitlabbr.minhadespensa.data.remote.dto.PriceEntrySyncDto
+import com.bitlabbr.minhadespensa.data.remote.dto.ShoppingItemSyncDto
+import com.bitlabbr.minhadespensa.data.remote.dto.ShoppingListSyncDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncEntitiesDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPullResponseDto
 import com.bitlabbr.minhadespensa.data.remote.dto.SyncPushRequestDto
@@ -150,6 +153,24 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
             sinceVersion: Long,
             limit: Int,
         ): Result<SyncPullResponseDto> = Result.success(pullResponseToReturn)
+
+        val remoteMediaStorage = mutableMapOf<String, ByteArray>()
+
+        override suspend fun uploadProductMedia(
+            householdId: String,
+            productId: String,
+            bytes: ByteArray,
+        ): Result<String> {
+            remoteMediaStorage[productId] = bytes
+            return Result.success("hash-$productId")
+        }
+
+        override suspend fun downloadProductMedia(
+            householdId: String,
+            productId: String,
+        ): Result<ByteArray?> {
+            return Result.success(remoteMediaStorage[productId])
+        }
     }
 
     @BeforeTest
@@ -518,5 +539,90 @@ class RoomSyncAndAuthRepositoryTest : BaseTest() {
         assertEquals("Café Especial", lastPushedPayload!!.products[0].name)
         assertEquals(1, lastPushedPayload!!.pantryItems.size)
         assertEquals(pantryId, lastPushedPayload!!.pantryItems[0].id)
+    }
+
+    @Test
+    fun pulledShoppingListsAndPriceEntriesAndMedia_areProperlyInsertedAndDownloadedWhenNotPresentLocally() = runTest {
+        authRepository.register("Test", "test@example.com", "pass123").getOrThrow()
+        db.pendingSyncDao().clearAll()
+
+        val listId = "00000000-0000-0000-0000-000000000301"
+        val itemId = "00000000-0000-0000-0000-000000000302"
+        val priceId = "00000000-0000-0000-0000-000000000303"
+        val prodId = "00000000-0000-0000-0000-000000000304"
+        val now = getCurrentTime()
+
+        // Prepare remote media in fake
+        val testImageBytes = byteArrayOf(1, 2, 3, 4, 5)
+        fakeSyncRemote.remoteMediaStorage[prodId] = testImageBytes
+
+        pullResponseToReturn = SyncPullResponseDto(
+            serverTimestamp = now,
+            currentVersion = 10L,
+            products = listOf(
+                CatalogProductSyncDto(
+                    id = prodId,
+                    name = "Bolo de Cenoura",
+                    category = "Padaria",
+                    measureUnit = "UNIT",
+                    netWeight = 1.0,
+                    updatedAt = now,
+                    imageHash = "hash-$prodId",
+                ),
+            ),
+            shoppingLists = listOf(
+                ShoppingListSyncDto(
+                    id = listId,
+                    name = "Lista de Sábado",
+                    listType = "PLANNED",
+                    listStatus = "DRAFT",
+                    budgetInCents = 10000L,
+                    updatedAt = now,
+                ),
+            ),
+            shoppingItems = listOf(
+                ShoppingItemSyncDto(
+                    id = itemId,
+                    listId = listId,
+                    productId = prodId,
+                    quantity = 3.0,
+                    priceAtTime = 1200L,
+                    updatedAt = now,
+                ),
+            ),
+            priceEntries = listOf(
+                PriceEntrySyncDto(
+                    id = priceId,
+                    productId = prodId,
+                    priceInCents = 1200L,
+                    storeName = "Padaria Central",
+                    updatedAt = now,
+                ),
+            ),
+        )
+
+        // Trigger sync to pull
+        syncRepository.sync().getOrThrow()
+
+        // Verify shopping list, shopping item, and price entry are inserted in local DB!
+        val localList = db.shoppingListDao().findSnapshotById(listId)
+        assertNotNull(localList)
+        assertEquals("Lista de Sábado", localList.name)
+        assertEquals(10000L, localList.budgetInCents)
+
+        val localItem = db.shoppingItemDao().findSnapshotById(itemId)
+        assertNotNull(localItem)
+        assertEquals(3.0, localItem.quantity)
+        assertEquals(listId, localItem.listId)
+
+        val localPrice = db.priceDao().findEntryById(priceId)
+        assertNotNull(localPrice)
+        assertEquals(1200L, localPrice.priceInCents)
+        assertEquals("Padaria Central", localPrice.storeName)
+
+        // Verify media was downloaded and inserted into local product_media!
+        val localMedia = db.productMediaDao().getByProductId(prodId)
+        assertNotNull(localMedia)
+        assertTrue(testImageBytes.contentEquals(localMedia.blob))
     }
 }

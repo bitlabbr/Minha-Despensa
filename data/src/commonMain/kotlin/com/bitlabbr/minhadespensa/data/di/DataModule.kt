@@ -209,6 +209,7 @@ val dataModule = module {
             syncRemoteDataSource = get(),
             syncClock = get(),
             logger = get(named(DiQualifiers.DATA_LOGGER)),
+            authRepository = get(),
         )
     }
 
