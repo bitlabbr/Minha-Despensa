@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.data.di
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.bitlabbr.minhadespensa.core.domain.repository.AppUpdateRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.AuthRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.BudgetRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
@@ -35,6 +36,7 @@ import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.SyncRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddCatalogItemToShoppingListUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.CheckForAppUpdateUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
@@ -67,14 +69,17 @@ import com.bitlabbr.minhadespensa.core.domain.util.SyncClock
 import com.bitlabbr.minhadespensa.core.domain.util.SyncCoordinator
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.remote.AppKeyAuthTokenProvider
+import com.bitlabbr.minhadespensa.data.remote.AppUpdateRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.AuthRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.AuthTokenProvider
 import com.bitlabbr.minhadespensa.data.remote.HouseholdRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.KtorAppUpdateRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorAuthRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorHouseholdRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorSyncRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.SyncRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.SyncServerConfig
+import com.bitlabbr.minhadespensa.data.repository.RealAppUpdateRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomAuthRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomBudgetRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
@@ -243,6 +248,25 @@ val dataModule = module {
             outboxEnqueuer = get(),
         )
     }
+
+    single<AppUpdateRemoteDataSource> {
+        KtorAppUpdateRemoteDataSource(
+            httpClient = get(),
+            config = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    single<AppUpdateRepository> {
+        RealAppUpdateRepository(
+            remoteDataSource = get(),
+            platformInfoProvider = get(),
+            packageInstaller = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    factory { CheckForAppUpdateUseCase(appUpdateRepository = get()) }
 
     factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }
