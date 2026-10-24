@@ -23,12 +23,15 @@ Todos os modelos residem em `com.bitlabbr.minhadespensa.core.domain.model` e sã
 *   **`MonthlyFinancialSummary`**: Modelo de saúde financeira combinando orçamento, total gasto, saldo restante, progresso e status de estouro.
 *   **`PantryMovement`**: Ledger imutável de movimentações de estoque e despesas (`ENTRY_MANUAL`, `ENTRY_PURCHASE`, `CONSUMPTION`, `EXPIRATION_DISCARD`, `ADJUSTMENT`).
 *   **`PantryStockValue`**: Valoração patrimonial da despensa com valor total em centavos, quantidade de itens com valor e custo médio unitário.
+*   **`AuthSession` & `User`**: Sessão do usuário logado e perfil (`id`, `name`, `email`).
+*   **`Household` & `HouseholdMember`**: Agrupamento multi-tenant familiar, integrantes e permissões (`OWNER`, `MEMBER`).
+*   **`AppVersionInfo`**: Metadados de release e atualização autônoma OTA (`versionName`, `versionCode`, `releaseNotes`, `downloadUrl`, `sha256Checksum`, `isUpdateAvailable`).
 
 ---
 
 ## ⚡ Casos de Uso (Use Cases)
 
-A camada de domínio orquestra as regras da aplicação em 17 casos de uso atômicos:
+A camada de domínio orquestra as regras da aplicação em 28 casos de uso atômicos:
 
 1. **`SaveCatalogProductUseCase`**: Validação de limites de caracteres (30 chars), formato numérico de EAN (8, 12, 13, 14 dígitos) e salvamento com foto.
 2. **`CheckEanStatusUseCase`**: Verificação instantânea de unicidade e existência de código de barras.
@@ -47,9 +50,20 @@ A camada de domínio orquestra as regras da aplicação em 17 casos de uso atôm
 15. **`GetMostConsumedProductsUseCase`**: Identificação dos produtos com maior volume de consumo em um período.
 16. **`GetPantryTotalValueUseCase`**: Cálculo monetário do patrimônio estocado na despensa (`PantryStockValue`).
 17. **`GetYearlyFinancialSummaryUseCase`**: Agregação histórica de 12 meses de despesas versus orçamento para analytics anual.
+18. **`LoginUserUseCase`**: Autenticação com e-mail/senha e obtenção de token JWT.
+19. **`RegisterUserUseCase`**: Cadastro de nova conta, geração da despensa principal e enfileiramento de dados locais.
+20. **`LogoutUserUseCase`**: Encerramento seguro de sessão e revogação de tokens.
+21. **`ManageHouseholdUseCase`**: Criação de novas despensas e gerenciamento de membros.
+22. **`JoinHouseholdByInviteCodeUseCase`**: Ingresso em despensa via código Crockford Base32.
+23. **`SwitchActiveHouseholdUseCase`**: Alternância de contexto de despensa ativa com flush seguro de outbox.
+24. **`SyncHouseholdDataUseCase`**: Orquestração da sincronização bidirecional de dados.
+25. **`CheckForAppUpdateUseCase`**: Verificação de novas versões do aplicativo direto no servidor Domus.
+26. **`ParseInvoiceQrCodeUseCase`**: Validação e parsing de QR Code de nota fiscal eletrônica SEFAZ.
+27. **`ImportInvoiceToPantryUseCase`**: Importação transacional de itens da nota fiscal diretamente para a despensa.
+28. **`SaveProductCategoryUseCase` & `DeleteProductCategoryUseCase`**: Gerenciamento de categorias customizadas e proteção de `"Outros"`.
 
 ---
 
 ## 🧪 Testes no Módulo (:core)
 
-Possui **102 testes unitários** executados via `./gradlew :core:test`, cobrindo tolerância a desvios de relógio (`clock-drift`), serialização JSON, valoração de estoque, use cases financeiros e todas as validações de regras e limites.
+Possui **103 testes unitários** executados via `./gradlew :core:testDebugUnitTest`, cobrindo tolerância a desvios de relógio (`clock-drift`), serialização JSON, valoração de estoque, use cases financeiros, verificação de atualizações OTA e todas as validações de regras e limites.

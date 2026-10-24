@@ -150,6 +150,7 @@ val uiModule = module {
             loginUserUseCase = get(),
             registerUserUseCase = get(),
             logoutUserUseCase = get(),
+            appUpdateRepository = getOrNull(),
             notificationManager = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
         )

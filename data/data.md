@@ -245,6 +245,11 @@ Implement domain contracts with encapsulated state, logging, input validation, a
     *   Persists JWT tokens and active `AuthSession` in `AppKeyValueDao`.
 *   **`RoomHouseholdRepository`**:
     *   Implements `HouseholdRepository`: `observeActiveHousehold`, `getActiveHousehold`, `getUserHouseholds`, `createHousehold`, `updateHousehold`, `joinHousehold`, `leaveHousehold`, `regenerateInviteCode`, `removeMember`, `switchActiveHousehold`.
+*   **`RealAppUpdateRepository` (`repository/RealAppUpdateRepository.kt`)**:
+    *   Implements `AppUpdateRepository` orchestrating in-app software distribution checks and downloads:
+        *   `isSelfUpdateSupported()`: Delegates to platform provider (`true` on Android, `false` on iOS).
+        *   `checkForUpdates()`: Calls `AppUpdateRemoteDataSource.getLatestVersion()`, compares `versionCode > currentVersionCode`, and returns `AppVersionInfo` with `isUpdateAvailable`.
+        *   `downloadAndInstall()`: Streams APK chunks via `ByteReadChannel` through `packageInstaller.openApkFile()`, tracking download percentage and invoking the platform package installer.
 *   **`RoomSyncRepository`**:
     *   Implements `SyncRepository` with 6-step bidirectional CRDT/LWW synchronization:
         1. Outbox Push: Collects pending outbox mutations and pushes to `/api/v1/sync/push` in a loop until all pending mutations are drained.
@@ -288,6 +293,7 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`AndroidHttpClientEngineTest`**: Tests Android platform OkHttp engine instantiation, custom `X509TrustManager` fallback for `*.domus.arpa` and development CAs, and dev hostname verification.
 *   **`KtorAuthAndSyncRemoteDataSourceTest`**: Tests HTTP JSON request and response envelope serialization (`ApiResponseDto<T>`), endpoint routing, error status extraction (`ApiErrorResponseDto`), and delta pull/push parsing with Ktor `MockEngine`.
 *   **`InvoiceMapperTest`**: Tests mapping between remote DTOs and domain models (`Invoice`, `InvoiceItem`) and measurement unit normalization (`parseMeasureUnit`).
+*   **`RealAppUpdateRepositoryTest`**: Tests in-app update check logic, platform support gating, remote version parsing and comparison against local version code, APK chunk streaming with download progress callback assertions, and package installer invocation.
 *   **`RoomSyncAndAuthRepositoryTest`**: Tests `RoomAuthRepository` session lifecycle, `RoomHouseholdRepository` tenant management, and `RoomSyncRepository` bidirectional sync: outbox initial queueing, atomic product ID remapping protecting child foreign keys from `ON DELETE CASCADE`, LWW pulled entity application, outbox flushing before switch, and multi-tenant cache cleanup.
 *   **`DataConsistencyTest`**: Cross-repository integration tests validating database cascade deletions, foreign key enforcement, and end-to-end multi-table transactions.
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.

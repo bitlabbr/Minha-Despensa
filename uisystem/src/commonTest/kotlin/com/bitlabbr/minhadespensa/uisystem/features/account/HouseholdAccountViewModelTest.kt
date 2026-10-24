@@ -25,6 +25,7 @@ package com.bitlabbr.minhadespensa.uisystem.features.account
 
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
+import com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo
 import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.core.domain.usecase.JoinHouseholdByInviteCodeUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.LoginUserUseCase
@@ -35,6 +36,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.SwitchActiveHouseholdUseCa
 import com.bitlabbr.minhadespensa.core.domain.usecase.SyncHouseholdDataUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.SyncCoordinator
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
+import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppUpdateRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAuthRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeHouseholdRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeSyncRepository
@@ -65,6 +67,7 @@ class HouseholdAccountViewModelTest {
     private lateinit var authRepository: FakeAuthRepository
     private lateinit var householdRepository: FakeHouseholdRepository
     private lateinit var syncRepository: FakeSyncRepository
+    private lateinit var appUpdateRepository: FakeAppUpdateRepository
     private lateinit var notificationManager: AppNotificationManager
     private lateinit var logger: FakeAppLogger
 
@@ -85,6 +88,7 @@ class HouseholdAccountViewModelTest {
         authRepository = FakeAuthRepository()
         householdRepository = FakeHouseholdRepository()
         syncRepository = FakeSyncRepository()
+        appUpdateRepository = FakeAppUpdateRepository()
         notificationManager = AppNotificationManager()
         logger = FakeAppLogger()
 
@@ -108,6 +112,7 @@ class HouseholdAccountViewModelTest {
             loginUserUseCase = loginUserUseCase,
             registerUserUseCase = registerUserUseCase,
             logoutUserUseCase = logoutUserUseCase,
+            appUpdateRepository = appUpdateRepository,
             notificationManager = notificationManager,
             logger = logger,
         )
@@ -429,6 +434,93 @@ class HouseholdAccountViewModelTest {
             val state = awaitLoadedState()
             assertFalse(state.isMergeDecisionDialogOpen)
             assertFalse(state.isAuthenticated)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `checkForUpdates when app is already up to date triggers success notification and resets availableUpdate`() = runTest(testDispatcher) {
+        val sameVersion = AppVersionInfo(
+            platform = "android",
+            versionName = "1.1.1-alpha",
+            versionCode = 3L,
+            minRequiredVersion = 1L,
+            releaseNotes = "No changes",
+            downloadUrl = "https://despensa.domus.arpa/api/v1/app/download/latest",
+            sha256Checksum = "fakehash",
+            fileSizeInBytes = 25_000_000L,
+            releasedAt = 1700000000000L,
+            isUpdateAvailable = false,
+        )
+        appUpdateRepository.updateResult = Result.success(sameVersion)
+
+        viewModel.checkForUpdates()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isCheckingUpdate)
+            assertNull(state.availableUpdate)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `checkForUpdates when update is available updates availableUpdate state`() = runTest(testDispatcher) {
+        val newVersion = AppVersionInfo(
+            platform = "android",
+            versionName = "2.1.0",
+            versionCode = 210L,
+            minRequiredVersion = 100L,
+            releaseNotes = "Novas funcionalidades e correções.",
+            downloadUrl = "https://despensa.domus.arpa/api/v1/app/download/latest",
+            sha256Checksum = "fakehash",
+            fileSizeInBytes = 25_000_000L,
+            releasedAt = 1700000000000L,
+            isUpdateAvailable = true,
+        )
+        appUpdateRepository.updateResult = Result.success(newVersion)
+
+        viewModel.checkForUpdates()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isCheckingUpdate)
+            assertEquals(newVersion, state.availableUpdate)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `downloadAndInstallUpdate calls repository and updates downloadProgress`() = runTest(testDispatcher) {
+        val newVersion = AppVersionInfo(
+            platform = "android",
+            versionName = "2.1.0",
+            versionCode = 210L,
+            minRequiredVersion = 100L,
+            releaseNotes = "Correções",
+            downloadUrl = "https://despensa.domus.arpa/api/v1/app/download/latest",
+            sha256Checksum = "fakehash",
+            fileSizeInBytes = 25_000_000L,
+            releasedAt = 1700000000000L,
+            isUpdateAvailable = true,
+        )
+        appUpdateRepository.updateResult = Result.success(newVersion)
+
+        viewModel.checkForUpdates()
+        advanceUntilIdle()
+
+        viewModel.downloadAndInstallUpdate()
+        advanceUntilIdle()
+
+        assertTrue(appUpdateRepository.downloadAndInstallCalled)
+        assertEquals(newVersion, appUpdateRepository.lastInstalledVersion)
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isDownloadingUpdate)
+            assertEquals(1f, state.downloadProgress)
             cancelAndIgnoreRemainingEvents()
         }
     }

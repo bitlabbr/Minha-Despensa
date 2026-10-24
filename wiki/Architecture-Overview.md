@@ -19,14 +19,45 @@ O projeto é dividido em módulos Gradle independentes, garantindo isolamento de
 └───────────────────────┬───────────────────────┘
                         ▼
 ┌───────────────────────────────────────────────┐
-│                     :core                     │  Domínio puro: Modelos, 11 Use Cases, Contratos
+│                     :core                     │  Domínio puro: Modelos, 30 Use Cases, Contratos
 │                                               │  Zero dependências em UI ou Banco de Dados
 └───────────────────────▲───────────────────────┘
                         │ implementa
 ┌───────────────────────┴───────────────────────┐
-│                     :data                     │  Room KMP v4, SQLite Bundled Driver,
-│                                               │  DAOs, Entidades, Mappers, Migrations
+│                     :data                     │  Room KMP (Schema v9), SQLite Bundled Driver,
+│                                               │  DAOs, Entidades, Mappers, Migrations,
+│                                               │  Ktor Remote Data Sources, OTA & Sync
 └───────────────────────────────────────────────┘
+```
+
+---
+
+## 🌐 Sincronização em Nuvem & Atualização OTA
+
+Além do banco de dados local Room, a camada `:data` integra-se de forma resiliente com o servidor Domus:
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│                   Dispositivo Móvel (Android / iOS)                    │
+│                                                                        │
+│   ┌─────────────────────┐                 ┌────────────────────────┐   │
+│   │   Room SQLite       │◄───(LWW)────────┤ SyncCoordinator        │   │
+│   │   (Schema v9)       ├───(Outbox)─────►│ (Push/Pull Bidirecional│   │
+│   └─────────────────────┘                 └───────────┬────────────┘   │
+│                                                       │                │
+│   ┌─────────────────────┐                             │ Ktor HTTP/2    │
+│   │ Android Installer   │◄──(Stream APK)──────────────┤ (TLS/VPN)      │
+│   │ (FileProvider)      │                             │                │
+│   └─────────────────────┘                             │                │
+└───────────────────────────────────────────────────────┼────────────────┘
+                                                        ▼
+                        ┌────────────────────────────────────────────────┐
+                        │        Servidor Domus (Spring Boot 4)          │
+                        │                                                │
+                        │ • Motor de Sincronização v2.1 (/api/v1/sync)   │
+                        │ • Repositório de Releases OTA (/api/v1/app)    │
+                        │ • Autenticação & Casas (/api/v1/auth, /house)  │
+                        └────────────────────────────────────────────────┘
 ```
 
 ---

@@ -57,6 +57,12 @@ data class HouseholdAccountUiState(
     val isLogoutConfirmDialogOpen: Boolean = false,
     val isSwitchingHousehold: Boolean = false,
     val isMergeDecisionDialogOpen: Boolean = false,
+    val isSelfUpdateSupported: Boolean = false,
+    val appVersionName: String = "",
+    val isCheckingUpdate: Boolean = false,
+    val isDownloadingUpdate: Boolean = false,
+    val downloadProgress: Float = 0f,
+    val availableUpdate: com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo? = null,
 ) {
     val isAuthenticated: Boolean
         get() = session != null
