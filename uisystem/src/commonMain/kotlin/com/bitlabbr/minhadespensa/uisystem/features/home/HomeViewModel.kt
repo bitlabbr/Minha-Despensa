@@ -31,6 +31,7 @@ import com.bitlabbr.minhadespensa.core.domain.model.PantryItemWithCategory
 import com.bitlabbr.minhadespensa.core.domain.model.PantryMovement
 import com.bitlabbr.minhadespensa.core.domain.model.MovementType
 import com.bitlabbr.minhadespensa.core.domain.model.PantryStockValue
+import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryMovementRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
@@ -41,6 +42,7 @@ import com.bitlabbr.minhadespensa.core.domain.usecase.GetYearlyFinancialSummaryU
 import com.bitlabbr.minhadespensa.core.domain.usecase.SetMonthlyBudgetUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
+import com.bitlabbr.minhadespensa.core.domain.util.SyncCoordinator
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.ConsumptionTrendItemUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeFinancialUiModel
 import com.bitlabbr.minhadespensa.uisystem.features.home.model.HomeMonthlyBarUiModel
@@ -57,6 +59,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -86,6 +89,7 @@ class HomeViewModel(
     private val pantryRepository: PantryRepository,
     private val pantryMovementRepository: PantryMovementRepository,
     private val catalogRepository: CatalogRepository,
+    private val syncCoordinator: SyncCoordinator? = null,
     private val logger: AppLogger? = null,
     private val notificationManager: AppNotificationManager? = null,
     private val clock: Clock = Clock.System,
@@ -168,13 +172,30 @@ class HomeViewModel(
         )
     }
 
-    val uiState: StateFlow<HomeUiState> = combine(
-        homeDataFlow,
-        homeAnalyticsFlow,
+    private data class HomeDialogsState(
+        val isSetBudgetDialogOpen: Boolean,
+        val isSavingBudget: Boolean,
+        val isFinancialAnalyticsDialogOpen: Boolean,
+    )
+
+    private val dialogsStateFlow = combine(
         _isSetBudgetDialogOpen,
         _isSavingBudget,
         _isFinancialAnalyticsDialogOpen,
-    ) { data, analyticsData, isDialogOpen, isSaving, isAnalyticsDialogOpen ->
+    ) { isDialogOpen, isSaving, isAnalyticsDialogOpen ->
+        HomeDialogsState(
+            isSetBudgetDialogOpen = isDialogOpen,
+            isSavingBudget = isSaving,
+            isFinancialAnalyticsDialogOpen = isAnalyticsDialogOpen,
+        )
+    }
+
+    val uiState: StateFlow<HomeUiState> = combine(
+        homeDataFlow,
+        homeAnalyticsFlow,
+        syncCoordinator?.status ?: flowOf(SyncState.IDLE),
+        dialogsStateFlow,
+    ) { data, analyticsData, syncState, dialogs ->
         val productsMap = data.products.associateBy { it.id }
 
         val budgetCents = data.financial.budgetInCents
@@ -219,9 +240,10 @@ class HomeViewModel(
             yearlyAnalytics = yearlyAnalyticsModel,
             expiringItems = expiringList,
             consumptionTrends = trendList,
-            isSetBudgetDialogOpen = isDialogOpen,
-            isSavingBudget = isSaving,
-            isFinancialAnalyticsDialogOpen = isAnalyticsDialogOpen,
+            syncState = syncState,
+            isSetBudgetDialogOpen = dialogs.isSetBudgetDialogOpen,
+            isSavingBudget = dialogs.isSavingBudget,
+            isFinancialAnalyticsDialogOpen = dialogs.isFinancialAnalyticsDialogOpen,
             isLoading = false,
             error = null,
         )
@@ -230,6 +252,12 @@ class HomeViewModel(
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = HomeUiState(isLoading = true)
     )
+
+    fun triggerSync() {
+        viewModelScope.launch {
+            syncCoordinator?.triggerSync()
+        }
+    }
 
     private fun mapExpiringItem(
         itemWithCat: PantryItemWithCategory,
@@ -327,7 +355,7 @@ class HomeViewModel(
     }
 
     fun saveMonthlyBudgetText(budgetText: String) {
-        val clean = budgetText.trim().replace(".", "").replace(",", ".")
+        val clean = budgetText.replace("R$", "", ignoreCase = true).trim().replace(".", "").replace(",", ".")
         val valueInDouble = clean.toDoubleOrNull()
         if (valueInDouble != null && valueInDouble >= 0.0) {
             val cents = (valueInDouble * 100).roundToLong()

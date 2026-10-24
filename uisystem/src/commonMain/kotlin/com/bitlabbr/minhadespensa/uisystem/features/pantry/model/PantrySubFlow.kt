@@ -23,6 +23,7 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.pantry.model
 
+import com.bitlabbr.minhadespensa.core.domain.model.invoice.Invoice
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.model.CatalogProductUiModel
 
 sealed interface PantrySubFlow {
@@ -32,4 +33,6 @@ sealed interface PantrySubFlow {
     data class CreateCatalogProduct(val initialEan: String? = null) : PantrySubFlow
     data class AddItemDetails(val product: CatalogProductUiModel) : PantrySubFlow
     data object QuickList : PantrySubFlow
+    data object InvoiceScanner : PantrySubFlow
+    data class InvoiceReview(val invoice: Invoice, val isImporting: Boolean = false) : PantrySubFlow
 }

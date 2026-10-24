@@ -83,10 +83,7 @@ fun FinancialWidget(
         modifier = modifier
             .fillMaxWidth()
             .clickable(enabled = data.hasBudget) { onCardClick() }
-            .padding(
-                horizontal = appDimens.paddingSmall,
-                vertical = appDimens.paddingSmall,
-            ),
+            .padding(horizontal = appDimens.paddingSmall),
         content = {
             SecondaryContainerHeader(
                 text = stringResource(Res.string.financial_card_title),
@@ -96,7 +93,6 @@ fun FinancialWidget(
             )
 
             if (!data.hasBudget) {
-                // Estado Convidativo quando não há meta orçamentária definida
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -140,7 +136,6 @@ fun FinancialWidget(
                     )
                 }
             } else {
-                // Estado Normal com Gauge e Valores
                 InverseAnchoredGauge(
                     progress = data.consumptionProgress,
                     gaugeHeight = 35.dp,

@@ -8,7 +8,7 @@ The `:uisystem` module is a Compose Multiplatform (Android & iOS) design system 
 2. **Domain-Specific Molecules & Sheets:** Reusable cards, filter bars, camera-driven barcode scanners, and a unified product registration sheet.
 3. **Feature Screens & State Machines:** Reactive screens managing pantry inventory, product catalog, product details & price history, quick & planned shopping lists, and a live in-store shopping assistant.
 4. **App Notification Manager:** Decoupled transient notifications via `AppNotificationManager` and `MinhaDespensaSnackbar`.
-5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (149 tests).
+5. **Multiplatform Test Suite:** 100% Kotlin Multiplatform unit tests for ViewModels, state machines, and utility formatters (169 tests).
 
 ---
 
@@ -58,13 +58,12 @@ uisystem/src/
 │   │   ├── pantry/                # PantryScreen, PantryViewModel
 │   │   │   ├── model/             # PantryUiState, PantrySubFlow state machine
 │   │   │   └── widgets/           # Subflow sheets (AddPantryItemOptionsSheet, AddPantryItemDetailsSheet, BarcodeScanner)
-│   │   ├── shopping/              # Shopping suite
-│   │   │   ├── overview/          # ShoppingListsScreen, ShoppingListsViewModel
-│   │   │   ├── assistant/         # ShoppingAssistantScreen, ShoppingAssistantViewModel
-│   │   │   │   └── widgets/       # ReplaceItemOptionsSheet, AddCartItemDetailsSheet, etc.
-│   │   │   ├── planned/           # CreatePlannedListScreen, PlannedListViewModel
-│   │   │   └── quicklist/         # QuickListScreen, QuickListViewModel
-│   │   └── settings/              # SettingsScreen
+│   │   └── shopping/              # Shopping suite
+│   │       ├── overview/          # ShoppingListsScreen, ShoppingListsViewModel
+│   │       ├── assistant/         # ShoppingAssistantScreen, ShoppingAssistantViewModel
+│   │       │   └── widgets/       # ReplaceItemOptionsSheet, AddCartItemDetailsSheet, etc.
+│   │       ├── planned/           # CreatePlannedListScreen, PlannedListViewModel
+│   │       └── quicklist/         # QuickListScreen, QuickListViewModel
 │   ├── manager/                   # AppNotificationManager (SharedFlow event bus)
 │   ├── mapper/                    # MeasureUnitMapper (Domain enum <-> UI Resource)
 │   ├── model/                     # UiText, Deprecated aliases for backwards compat
@@ -95,9 +94,11 @@ uisystem/src/
   - `priceLabel`: Monetary values and currency display.
 - **UiText Pattern:** Eliminates raw hardcoded strings in ViewModels. Uses `UiText.DynamicString` for runtime messages and `UiText.Resource` for localized Compose Multiplatform strings.
 
-### 4.2. Unified Product Registration (`RegisterProductBottomSheet`)
-Product registration was consolidated to eliminate duplicate code across screens:
+### 4.2. Unified Product Registration (`RegisterProductBottomSheet`) & Category Management
+Product registration and category management are unified across catalog and pantry flows:
 - **`RegisterProductFormContent`:** Encapsulates the form fields (Name, Brand, Category, Net Weight, Measure Unit, Barcode, Photo capture) with inline validation via `ProductFormValidator` and debounced EAN verification.
+- **Inline Category Creation (`ProductDropdownField` + `QuickCreateCategoryDialog`):** Both `RegisterProductFormContent` and `ProductEditSection` (`ProductDetailsScreen`) display a highlighted `+ Nova categoria...` action in the category dropdown, opening `QuickCreateCategoryDialog` to create and immediately select a custom category.
+- **Centralized Category Management (`ManageCategoriesDialog`):** Triggered via the `Categorias` action chip in `CategorizedContainerGlassCard` on `CatalogScreen`, allowing users to create new categories, rename existing categories (with automatic cascading updates to products), and delete categories (moving linked products to the protected `"Outros"` category).
 - **`RegisterProductBottomSheet`:**
   - *Controlled Overload:* Accepts `formState: ProductFormState`, `onFormChange`, `onSave`, and `onDismiss`. Ideal for parent ViewModels (like `CatalogViewModel`, `PantryViewModel`, or `ProductDetailsViewModel`).
   - *Self-Contained Overload:* Instantiates and binds directly to `CatalogViewModel`, simplifying one-off registration triggers.
@@ -142,9 +143,28 @@ The home screen connects the user's live inventory, movement ledger, and monthly
 - **Financial Analytics Dialog (`FinancialAnalyticsDialog`):** Interactive modal showcasing pantry inventory valuation (`StockValueCard`), annual indicators (total year spent, monthly average, weighted unit item price), and a 12-month evolution list with budget status badges ("Estourado", "Na meta", "Sem meta") and progress bars.
 - **Pantry Stock Valuation (`HomePantryStockUiModel`):** Aggregates the total monetary value of all active pantry items (`sum(quantity * unitPriceInCents)`), formatted currency strings, item count with price, and average unit price.
 - **Yearly Analytics (`HomeYearlyAnalyticsUiModel`):** Prepares 12 monthly bars comparing actual spend vs. budget ceiling, total annual spending, average monthly spend, and weighted average item/purchase price.
-- **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`.
+- **Set Monthly Budget Dialog (`SetMonthlyBudgetDialog`):** Interactive glassmorphism dialog enabling immediate setting or updating of the current month's budget via `SetMonthlyBudgetUseCase`. Supports live real-time currency formatting mask with thousand separators and currency symbol (`R$ 1.500,00`).
 - **Expiring Soon (`ExpiringSoonWidget`):** Monitors pantry stock with dynamic labels ("Vence hoje", "Vence amanhã", "Vence em X dias", "Vencido há X dias") with gauge urgency and an elegant empty state ("Tudo em dia na sua despensa!").
-- **Consumption Trends (`ConsumptionTrendWidget`):** Highlights top consumed products during the current month with unit resolution and empty state.
+### 4.8. NFC-e Invoice QR Code Scanning & Bulk Import
+Enables adding items to the pantry in bulk by scanning state tax invoice QR Codes (SEFAZ-PE / NFC-e):
+- **Entry Point (`AddPantryItemOptionsSheet`):** Adds a dedicated "Escanear Nota Fiscal (QR Code)" action option.
+- **Scanner Modal (`PantrySubFlow.InvoiceScanner`):** Configures `BarcodeScannerModal` with a square reticle (`isSquareReticle = true`) and dedicated instruction text ("Aponte para o QR Code da Nota Fiscal").
+- **Backend Resolution (`ParseInvoiceQrCodeUseCase`):** Consults the dedicated backend service to parse the HTML and extract items with name, EAN, quantity, unit price, and measure unit.
+- **Selective Review Sheet (`InvoiceReviewBottomSheet` / `InvoiceItemRow`):** Compact header displaying store name, emission date, dynamic selected item counter and total price (cents-accurate), bulk select/deselect all toggle (`onToggleAllItems`), and full-height scrollable product list with dynamic measure unit price labels.
+- **Atomic Bulk Import (`ImportInvoiceToPantryUseCase`):** Automatically registers missing catalog products, creates pantry stock batches, logs unit price history, and creates purchase movement ledger entries in a single database transaction.
+
+### 4.9. Household Account, Multi-User Sharing & Cloud Sync (`HouseholdAccountScreen`)
+Manages family household sharing, individual authentication (JWT login/register), and bidirectional cloud synchronization:
+- **`HouseholdAccountViewModel`:** Injects auth, household, and sync repositories (`SyncRepository`), `SyncCoordinator`, session use cases (`LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`), and household management use cases (`ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`). Detects pre-existing unauthenticated data via `syncRepository.hasLocalData()` and manages the Merge Decision Dialog lifecycle (`isMergeDecisionDialogOpen`).
+- **Unauthenticated Flow:** Displays tabbed Login / Register form (`AuthTab.LOGIN` / `AuthTab.REGISTER`) with inline field validation, password masking, and educational banner regarding cloud backup and family sharing benefits. Prompts user with Merge Decision Dialog (Opção A: Mesclar com nuvem / Opção B: Excluir locais e baixar da nuvem) whenever local offline data exists prior to authentication.
+- **Authenticated Flow:**
+  - **User Profile Banner:** Displays current user name, email, and logout action with confirmation dialog.
+  - **Active Household GlassCard:** Highlights current active household name, member role badge (`Proprietário` vs `Membro`), and 8-character Crockford base32 invite code with one-tap copy triggering native haptic feedback (`rememberHapticFeedbackManager().performSuccessFeedback()`) and system clipboard.
+  - **Sync State & Manual Trigger:** Live sync status indicator (`IDLE`, `SYNCING`, `SUCCESS`, `ERROR`, `OFFLINE`, `SESSION_EXPIRED`) with dedicated visual warning card banner for `SESSION_EXPIRED` prompting re-login, and immediate manual sync trigger button.
+  - **Household Members List:** Lists all family members with name, email, joined date, and role badge (`HouseholdMemberCard`).
+  - **Multi-Household Switching:** Displays other user households with one-tap "Ativar" switcher invoking `SwitchActiveHouseholdUseCase`.
+- **Dialogs (`JoinHouseholdDialog`, `CreateHouseholdDialog`):** Modals for joining a family pantry via 8-char invite code or creating a new shared household (capped at 80 characters).
+- **Home Top Bar Shortcut:** `HomeScreen` features real-time cloud sync status indicator and profile shortcut navigating to `HouseholdAccountRoute`.
 
 ---
 
@@ -154,9 +174,10 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Logger:** `AppLogger` qualifier `DiQualifiers.UI_LOGGER` bound to `ConsoleLogger("UISystem")`.
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
-  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, logger, notification manager.
-  - `PantryViewModel`: Injects pantry & catalog repositories, use cases, logger, notification manager.
-  - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
+  - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, `SyncCoordinator`, logger, notification manager.
+  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `SyncRepository`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, `AppUpdateRepository?`, notification manager, logger.
+  - `PantryViewModel`: Injects pantry & catalog repositories, use cases (`CheckEanStatusUseCase`, `AddPantryItemUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`), logger, notification manager.
+  - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
   - `PlannedListViewModel`: Injects `CreatePlannedShoppingListUseCase`, catalog repository, logger.
   - `ShoppingAssistantViewModel`: Injects session use cases (`StartShoppingSessionUseCase`, `AddOrUpdateCartItemUseCase`, `FinalizeShoppingSessionUseCase`, `CheckEanStatusUseCase`, `ReplaceCartItemUseCase`, `RemoveCartItemUseCase`), repositories, logger.
@@ -167,7 +188,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All 149 unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies:
+All unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies (183 tests):
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -181,13 +202,14 @@ All 149 unit tests reside in `uisystem/src/commonTest` and execute across multip
 | `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
 | `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
+| `HouseholdAccountViewModelTest` | Auth state transitions (login/register/logout), form validation, invite code normalization, household creation & switching, member list synchronization, manual sync triggering, in-app update checks and download/install triggers, dialog lifecycles. |
 | `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, pantry stock value calculation (with priced/unpriced/deleted items), yearly analytics aggregations (12 monthly bars, elapsed month averages, purchase/stock unit costs), dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog & FinancialAnalyticsDialog lifecycles and validation. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
 | `PlannedListViewModelTest` | Budget input sanitization, product quantity increments/decrements, catalog filtering by name/brand/category (with accent insensitivity), save delegation. |
 | `ShoppingAssistantViewModelTest` | Live cart session loading, item checking/unchecking, subtotal calculation, accent-insensitive search by name/category/brand, duplicate item detection and consolidation, barcode scanner subflows, item replacement, purchase finalization. |
-| `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case. |
-| `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, notification dispatch. |
+| `CatalogViewModelTest` | Debounced EAN uniqueness validation, category filtering, accent-insensitive search suggestions, form saving with use case, custom category creation, renaming (with active filter & product cascade), and deletion (with fallback to `"Outros"`). |
+| `PantryViewModelTest` | Category filtering, accent-insensitive search query filtering by name, brand, and compound name+brand, barcode scanned transitions, pantry item persistence, invoice QR code scanning, parsing, selective item toggling, bulk pantry import, notification dispatch. |
 | `ProductDetailsViewModelTest` | Product detail resolution, price history stream, pantry batches join, quantity increments, batch price mapping and calculation, in-place price recalculation (min/max/average), checkout stock price display, batch editing subflow and updates, add to shopping list. |
 
 ### Running the Tests

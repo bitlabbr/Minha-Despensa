@@ -1,14 +1,14 @@
-# 🧪 Guia do Testador Alpha (Release v1.1.1-alpha)
+# 🧪 Guia do Testador Alpha (Release v1.2.0-alpha)
 
-Seja bem-vindo ao programa de testes da versão **v1.1.1-alpha** do **Minha Despensa**! 🛒✨
+Seja bem-vindo ao programa de testes da versão **v1.2.0-alpha** do **Minha Despensa**! 🛒✨
 
-Este documento é o roteiro oficial passo a passo para validar tanto as funcionalidades consolidadas de catálogo, despensa e listas, quanto as grandes novidades de **Gestão Financeira Familiar**, **Orçamento Mensal**, **Valoração de Estoque em Reais** e **Analytics Anual de 12 Meses**.
+Este documento é o roteiro oficial passo a passo para validar tanto as funcionalidades consolidadas de catálogo, despensa, listas e finanças, quanto as grandes novidades de **Sincronização em Nuvem (Cloud Sync v2.1)**, **Despensas Familiares Compartilhadas (`Household`) com Códigos de Convite**, e **Distribuição de Atualizações de Software In-App (Self-Hosted OTA Android)**.
 
 ---
 
 ## 📲 Como Instalar e Configurar no Android
 
-1. Baixe o pacote oficial **`composeApp-release.apk`** na página da [Release v1.1.1-alpha](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.1.1-alpha).
+1. Baixe o pacote oficial **`composeApp-release.apk`** na página da [Release v1.2.0-alpha](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.2.0-alpha).
 2. No celular Android (compatível com Android 8.0 / API 26 ou superior), toque na notificação de download ou abra o arquivo pelo gerenciador de arquivos.
 3. Se o sistema exibir um aviso de segurança sobre fontes desconhecidas, autorize a instalação para o navegador ou gerenciador utilizado.
 4. Conclua a instalação e abra o aplicativo **Minha Despensa**.
@@ -27,6 +27,9 @@ Este documento é o roteiro oficial passo a passo para validar tanto as funciona
 * **[Cenário 7: Valoração da Despensa & Analytics Financeiro Anual (12 Meses)](#-cenário-7-valoração-da-despensa--analytics-financeiro-anual)**
 * **[Cenário 8: Edição de Lote e Preço Unitário na Despensa / Detalhes](#-cenário-8-edição-de-lote-e-preço-unitário-na-despensa--detalhes)**
 * **[Cenário 9: Alertas de Vencimento e Tendências de Consumo na Home](#-cenário-9-alertas-de-vencimento-e-tendências-de-consumo-na-home)**
+* **[Cenário 10: Autenticação, Criação e Troca de Despensa Familiar](#-cenário-10-autenticação-criação-e-troca-de-despensa-familiar)**
+* **[Cenário 11: Sincronização Bidirecional em Nuvem (Cloud Sync & Multi-dispositivo)](#-cenário-11-sincronização-bidirecional-em-nuvem-cloud-sync)**
+* **[Cenário 12: Atualização de Software In-App Direta (Self-Hosted OTA Android)](#-cenário-12-atualização-de-software-in-app-direta-ota-android)**
 
 ---
 
@@ -284,6 +287,68 @@ Este documento é o roteiro oficial passo a passo para validar tanto as funciona
      * O card deve listar os produtos de maior saída no mês corrente, indicando a quantidade e unidade consumida.
    * Se não houver movimentações de consumo no mês:
      * Exibe o estado informativo de ausência de dados.
+
+---
+
+### 👥 Cenário 10: Autenticação, Criação e Troca de Despensa Familiar
+
+**Objetivo:** Validar o gerenciamento de sessões de usuário, criação de despensas compartilhadas e entrada em despensas via código de convite amigável.
+
+#### 1. Registro e Login
+1. Acesse a tela de configurações/conta tocando no ícone de perfil no topo da tela.
+2. Na aba **Registrar**, informe seu nome, email e senha.
+3. Toque em **`Criar Conta`**.
+4. **O que validar:**
+   * O aplicativo realiza o login automático, gera sua despensa principal e sincroniza os dados locais para a nuvem.
+   * O nome e e-mail do usuário passam a ser exibidos no card de perfil superior.
+
+#### 2. Código de Convite & Compartilhamento
+1. No card da despensa ativa, localize a seção **Código de Convite da Família**.
+2. Toque no card com o código no formato `CASA-XXXXXXXX` para copiá-lo para a área de transferência.
+3. Compartilhe esse código com outro membro da família.
+4. No dispositivo do outro membro (ou em uma conta secundária), acesse a tela de conta, toque em **`Entrar com Código`**, cole o código e confirme.
+5. **O que validar:**
+   * O usuário secundário passa a integrar a despensa compartilhada, listando todos os membros atualizados.
+
+#### 3. Criação de Múltiplas Despensas e Alternância
+1. Toque em **`Criar Nova Despensa`** (ex.: *"Casa de Praia"*).
+2. Na listagem de "Outras Despensas", toque em **`Ativar`** para alternar o contexto de trabalho.
+3. **O que validar:**
+   * O catálogo, despensa e listas de compras passam a refletir exclusivamente os dados da despensa selecionada, com total isolamento multi-tenant.
+
+---
+
+### ☁️ Cenário 11: Sincronização Bidirecional em Nuvem (Cloud Sync)
+
+**Objetivo:** Validar o envio e recebimento de dados entre múltiplos dispositivos com protocolo Local-First e resolução de conflitos Last-Write-Wins (LWW).
+
+1. Adicione um produto ao catálogo ou registre um item na despensa no Dispositivo A.
+2. Toque no botão de sincronização no topo da tela (ou no botão **`Sincronizar Agora`** na tela de Conta).
+3. No Dispositivo B (conectado à mesma despensa), acione a sincronização.
+4. **O que validar:**
+   * O status de sincronização indica *"Sincronizando dados..."* e atualiza para *"Sincronizado"*.
+   * O produto ou lote inserido no Dispositivo A aparece imediatamente no Dispositivo B, sem duplicações.
+   * Modificações simultâneas no mesmo produto convergem preservando a alteração mais recente.
+
+---
+
+### 🔄 Cenário 12: Atualização de Software In-App Direta (OTA Android)
+
+**Objetivo:** Validar a verificação de versões, exibição de novidades (changelog) e atualização autônoma sem dependência de lojas comerciais.
+
+1. No celular Android, acesse a tela de Conta/Configurações.
+2. Role até a seção **`Atualização de Software`**.
+3. Verifique a indicação de **`Versão instalada: v1.2.0-alpha`**.
+4. Toque no botão **`Verificar Atualizações`**.
+5. **O que validar:**
+   * Se o app estiver na versão mais recente:
+     * O botão exibe estado de verificação rápida e apresenta o alerta verde: *"O aplicativo já está atualizado!"*.
+   * Quando uma nova versão (ex.: `v1.2.1-alpha`) for disponibilizada no servidor Domus:
+     * Surge um card destacado informando a nova versão e o resumo das novidades (*Changelog*).
+     * Ao tocar em **`Baixar e Atualizar`**, a barra de progresso linear exibe o percentual do download em tempo real (`Baixando atualização (X%)...`).
+     * Ao término do download, o instalador nativo do Android é disparado solicitando a confirmação de atualização do aplicativo.
+   * No iPhone (iOS):
+     * A seção de Atualização de Software permanece 100% invisível.
 
 ---
 

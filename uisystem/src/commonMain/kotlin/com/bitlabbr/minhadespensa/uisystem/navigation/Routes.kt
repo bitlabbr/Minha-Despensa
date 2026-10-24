@@ -32,10 +32,6 @@ data object HomeScreenRoute
 data object PantryScreenRoute
 
 @Serializable
-data object SettingsRoute
-
-
-@Serializable
 data object ProductCatalogRoute
 
 @Serializable
@@ -55,3 +51,6 @@ data class ProductDetailsRoute(
     val productId: String,
     val fromPantry: Boolean = false,
 )
+
+@Serializable
+data object HouseholdAccountRoute

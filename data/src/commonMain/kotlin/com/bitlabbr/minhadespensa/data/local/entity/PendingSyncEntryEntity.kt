@@ -1,0 +1,47 @@
+/*
+ *   Copyright (c) 2026 Willian Santos
+ *
+ *   This work is licensed under the Creative Commons
+ *   Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0).
+ *
+ *   You are free to:
+ *     - Share  — copy and redistribute the material in any medium or format
+ *     - Adapt  — remix, transform, and build upon the material
+ *
+ *   Under the following terms:
+ *     - Attribution    — You must give appropriate credit, provide a link to
+ *                        the license, and indicate if changes were made.
+ *     - NonCommercial  — You may not use the material for commercial purposes.
+ *
+ *   Owner rights:
+ *     - Willian Santos retains all commercial rights.
+ *    - The copyright holder may use, sell, sublicense, or relicense this
+ *       work under different terms at any time.
+ *
+ *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
+ */
+
+package com.bitlabbr.minhadespensa.data.local.entity
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+
+@Entity(
+    tableName = "pending_sync_entries",
+    indices = [
+        Index(value = ["entityType", "entityId"]),
+        Index(value = ["createdAt"]),
+    ],
+)
+data class PendingSyncEntryEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val entityType: String,
+    val entityId: String,
+    val operation: String,
+    val payload: String?,
+    val updatedAt: Long,
+    val retryCount: Int = 0,
+    val createdAt: Long = 0L,
+)

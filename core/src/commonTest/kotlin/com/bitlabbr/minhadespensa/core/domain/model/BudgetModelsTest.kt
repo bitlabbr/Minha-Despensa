@@ -102,7 +102,7 @@ class BudgetModelsTest {
     }
 
     @Test
-    fun `MonthlyFinancialSummary with null budget (sem orcamento definido)`() {
+    fun `MonthlyFinancialSummary with null budget sem orcamento definido`() {
         val summary = MonthlyFinancialSummary(
             year = 2026,
             month = 10,
@@ -116,7 +116,7 @@ class BudgetModelsTest {
     }
 
     @Test
-    fun `MonthlyFinancialSummary with zero expenses (gastos zerados)`() {
+    fun `MonthlyFinancialSummary with zero expenses gastos zerados`() {
         val summary = MonthlyFinancialSummary(
             year = 2026,
             month = 10,
@@ -130,7 +130,7 @@ class BudgetModelsTest {
     }
 
     @Test
-    fun `MonthlyFinancialSummary with zero budget (orcamento zero)`() {
+    fun `MonthlyFinancialSummary with zero budget orcamento zero`() {
         val summary = MonthlyFinancialSummary(
             year = 2026,
             month = 10,

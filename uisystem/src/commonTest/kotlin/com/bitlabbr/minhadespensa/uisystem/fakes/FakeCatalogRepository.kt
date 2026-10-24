@@ -24,15 +24,31 @@
 package com.bitlabbr.minhadespensa.uisystem.fakes
 
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.model.ProductCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
+import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
+import com.bitlabbr.minhadespensa.core.domain.util.normalizeForSearch
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 class FakeCatalogRepository : CatalogRepository {
     val products = MutableStateFlow<Map<String, CatalogProduct>>(emptyMap())
     val productImages = MutableStateFlow<Map<String, ByteArray?>>(emptyMap())
+    val categories = MutableStateFlow<Map<String, ProductCategory>>(
+        CoreConstants.CatalogCategories.DEFAULT_CATEGORIES.mapIndexed { index, name ->
+            val id = "default-${index + 1}"
+            id to ProductCategory(
+                id = id,
+                name = name,
+                isDefault = true,
+                updatedAt = 0L,
+                isDeleted = false,
+            )
+        }.toMap()
+    )
 
     override fun getProductById(id: String): Flow<CatalogProduct?> = products.map { it[id] }
 
@@ -55,8 +71,61 @@ class FakeCatalogRepository : CatalogRepository {
 
     override fun existsById(id: String): Flow<Boolean> = products.map { it.containsKey(id) }
 
+    override fun getAllActiveCategories(): Flow<List<ProductCategory>> =
+        categories.map { map ->
+            map.values.filter { !it.isDeleted }.sortedBy { it.name.lowercase() }
+        }
+
     override fun getCategories(): Flow<List<String>> =
-        products.map { it.values.map { p -> p.category }.distinct() }
+        combine(categories, products) { catMap, prodMap ->
+            val activeCategoryNames = catMap.values.filter { !it.isDeleted }.map { it.name.trim() }
+            val activeProductCategories = prodMap.values.filter { !it.isDeleted }.map { it.category.trim() }
+            (activeCategoryNames + activeProductCategories)
+                .filter { it.isNotBlank() }
+                .distinct()
+                .sorted()
+        }
+
+    override suspend fun saveCategory(category: ProductCategory) {
+        categories.value += (category.id to category)
+    }
+
+    override suspend fun renameCategory(id: String, oldName: String, newName: String, updatedAt: Long) {
+        val current = categories.value[id]
+            ?: throw IllegalArgumentException("Categoria não encontrada")
+        val trimmed = newName.trim()
+        val oldNormalized = oldName.normalizeForSearch()
+        categories.value += (id to current.copy(name = trimmed, updatedAt = updatedAt, isDeleted = false))
+        products.value = products.value.mapValues { (_, prod) ->
+            if (!prod.isDeleted && prod.category.normalizeForSearch() == oldNormalized) {
+                prod.copy(category = trimmed, updatedAt = updatedAt)
+            } else {
+                prod
+            }
+        }
+    }
+
+    override suspend fun deleteCategory(
+        id: String,
+        categoryName: String,
+        fallbackCategory: String,
+        updatedAt: Long,
+    ) {
+        val current = categories.value[id]
+            ?: throw IllegalArgumentException("Categoria não encontrada")
+        if (categoryName.normalizeForSearch() == CoreConstants.Product.DEFAULT_CATEGORY.normalizeForSearch()) {
+            throw IllegalArgumentException("A categoria 'Outros' não pode ser excluída")
+        }
+        val oldNormalized = categoryName.normalizeForSearch()
+        categories.value += (id to current.copy(isDeleted = true, updatedAt = updatedAt))
+        products.value = products.value.mapValues { (_, prod) ->
+            if (!prod.isDeleted && prod.category.normalizeForSearch() == oldNormalized) {
+                prod.copy(category = fallbackCategory, updatedAt = updatedAt)
+            } else {
+                prod
+            }
+        }
+    }
 
     override fun getProductImage(productId: String): Flow<ByteArray?> =
         productImages.map { it[productId] }

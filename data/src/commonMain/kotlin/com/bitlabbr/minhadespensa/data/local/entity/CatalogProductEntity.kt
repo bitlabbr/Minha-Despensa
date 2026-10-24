@@ -42,5 +42,6 @@ data class CatalogProductEntity(
     val updatedAt: Long,
     val isDeleted: Boolean,
     val manuallyAdded: Boolean,
-    val notes: String?
+    val notes: String?,
+    val imageHash: String? = null
 )

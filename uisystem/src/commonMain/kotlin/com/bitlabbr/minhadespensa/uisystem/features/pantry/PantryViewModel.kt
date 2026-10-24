@@ -32,6 +32,8 @@ import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.EanStatus
+import com.bitlabbr.minhadespensa.core.domain.usecase.ImportInvoiceToPantryUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.ParseInvoiceQrCodeUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
@@ -42,14 +44,15 @@ import com.bitlabbr.minhadespensa.uisystem.model.UiText
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
-import minhadespensa.uisystem.generated.resources.Res
-import minhadespensa.uisystem.generated.resources.pantry_item_added_success
+import minhadespensa.uisystem.generated.resources.*
 
 class PantryViewModel(
     private val pantryRepository: PantryRepository,
     private val catalogRepository: CatalogRepository,
     private val checkEanStatusUseCase: CheckEanStatusUseCase,
     private val addPantryItemUseCase: AddPantryItemUseCase,
+    private val parseInvoiceQrCodeUseCase: ParseInvoiceQrCodeUseCase,
+    private val importInvoiceToPantryUseCase: ImportInvoiceToPantryUseCase,
     private val logger: AppLogger,
     private val notificationManager: AppNotificationManager,
 ) : ViewModel() {
@@ -65,10 +68,13 @@ class PantryViewModel(
     val uiState: StateFlow<PantryUiState> = combine(
         pantryRepository.getAllActivePantryItemsWithCategory(),
         pantryRepository.getExpiringPantryItems(EXPIRATION_THRESHOLD_DAYS),
-        catalogRepository.getAllActiveProducts(),
+        combine(
+            catalogRepository.getAllActiveProducts(),
+            catalogRepository.getCategories(),
+        ) { products, categories -> products to categories },
         combine(_searchQuery, _selectedCategory) { query, category -> query to category },
         _activeSubFlow,
-    ) { allItems, expiringItems, catalogProducts, (query, selectedCategory), subFlow ->
+    ) { allItems, expiringItems, (catalogProducts, repoCategories), (query, selectedCategory), subFlow ->
 
         val catalogMap = catalogProducts.associateBy { it.id }
         val allUiItems = aggregatePantryItems(allItems, catalogMap)
@@ -79,8 +85,14 @@ class PantryViewModel(
             "uiState recomputed: allItems=${allItems.size}, allUiItems=${allUiItems.size}, expiring=${expiringItems.size}, query='$query', category=$selectedCategory"
         )
 
+        val baseCategories = if (repoCategories.isNotEmpty()) {
+            repoCategories.map { it.trim() }
+        } else {
+            CoreConstants.CatalogCategories.DEFAULT_CATEGORIES
+        }
+
         val dynamicCategories =
-            (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allUiItems.map { it.category.trim() })
+            (baseCategories + allUiItems.map { it.category.trim() })
                 .filter { it.isNotBlank() }
                 .distinct()
                 .sorted()
@@ -178,6 +190,81 @@ class PantryViewModel(
 
     fun onDismissSubFlow() {
         _activeSubFlow.value = null
+    }
+
+    fun onStartInvoiceScanFlow() {
+        _activeSubFlow.value = PantrySubFlow.InvoiceScanner
+    }
+
+    fun onInvoiceQrCodeScanned(qrCodeContent: String) {
+        viewModelScope.launch {
+            val result = parseInvoiceQrCodeUseCase(qrCodeContent)
+            result.onSuccess { invoice ->
+                logger.d(TAG, "onInvoiceQrCodeScanned: successfully parsed invoice from '${invoice.storeName}' with ${invoice.items.size} items")
+                _activeSubFlow.value = PantrySubFlow.InvoiceReview(invoice)
+            }.onFailure { error ->
+                logger.e(TAG, "Falha ao consultar nota fiscal: ${error.message}", error)
+                _activeSubFlow.value = null
+                val userMessage = error.message?.takeIf { it.isNotBlank() }
+                if (userMessage != null) {
+                    notificationManager.showError(UiText.DynamicString(userMessage))
+                } else {
+                    notificationManager.showError(UiText.Resource(Res.string.invoice_parse_error))
+                }
+            }
+        }
+    }
+
+    fun onToggleInvoiceItem(itemId: String, isSelected: Boolean) {
+        val currentSubFlow = _activeSubFlow.value
+        if (currentSubFlow is PantrySubFlow.InvoiceReview) {
+            val updatedItems = currentSubFlow.invoice.items.map { item ->
+                if (item.id == itemId) item.copy(isSelected = isSelected) else item
+            }
+            _activeSubFlow.value = currentSubFlow.copy(
+                invoice = currentSubFlow.invoice.copy(items = updatedItems)
+            )
+        }
+    }
+
+    fun onToggleAllInvoiceItems(selectAll: Boolean) {
+        val currentSubFlow = _activeSubFlow.value
+        if (currentSubFlow is PantrySubFlow.InvoiceReview) {
+            val updatedItems = currentSubFlow.invoice.items.map { it.copy(isSelected = selectAll) }
+            _activeSubFlow.value = currentSubFlow.copy(
+                invoice = currentSubFlow.invoice.copy(items = updatedItems)
+            )
+        }
+    }
+
+    fun onConfirmInvoiceImport() {
+        val currentSubFlow = _activeSubFlow.value as? PantrySubFlow.InvoiceReview ?: return
+        val selectedItems = currentSubFlow.invoice.items.filter { it.isSelected }
+        if (selectedItems.isEmpty()) {
+            notificationManager.showWarning(UiText.Resource(Res.string.invoice_no_items_selected))
+            return
+        }
+
+        _activeSubFlow.value = currentSubFlow.copy(isImporting = true)
+        viewModelScope.launch {
+            val result = importInvoiceToPantryUseCase(
+                storeName = currentSubFlow.invoice.storeName,
+                items = selectedItems,
+            )
+            result.onSuccess { count ->
+                logger.d(TAG, "onConfirmInvoiceImport: successfully imported $count items")
+                _activeSubFlow.value = null
+                notificationManager.showSuccess(
+                    UiText.Resource(Res.string.invoice_import_success, listOf(count))
+                )
+            }.onFailure { error ->
+                logger.e(TAG, "Falha ao importar nota fiscal: ${error.message}", error)
+                _activeSubFlow.value = currentSubFlow.copy(isImporting = false)
+                notificationManager.showError(
+                    UiText.Resource(Res.string.invoice_import_error)
+                )
+            }
+        }
     }
 
     fun onStartQuickListFlow() {

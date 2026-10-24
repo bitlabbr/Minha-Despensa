@@ -29,19 +29,25 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 import androidx.room.TypeConverters
 import com.bitlabbr.minhadespensa.data.local.converter.Converters
+import com.bitlabbr.minhadespensa.data.local.dao.AppKeyValueDao
 import com.bitlabbr.minhadespensa.data.local.dao.CatalogProductDao
 import com.bitlabbr.minhadespensa.data.local.dao.MonthlyBudgetDao
 import com.bitlabbr.minhadespensa.data.local.dao.PantryItemDao
 import com.bitlabbr.minhadespensa.data.local.dao.PantryMovementDao
+import com.bitlabbr.minhadespensa.data.local.dao.PendingSyncDao
 import com.bitlabbr.minhadespensa.data.local.dao.PriceEntryDao
+import com.bitlabbr.minhadespensa.data.local.dao.ProductCategoryDao
 import com.bitlabbr.minhadespensa.data.local.dao.ProductMediaDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingItemDao
 import com.bitlabbr.minhadespensa.data.local.dao.ShoppingListDao
+import com.bitlabbr.minhadespensa.data.local.entity.AppKeyValueEntity
 import com.bitlabbr.minhadespensa.data.local.entity.CatalogProductEntity
 import com.bitlabbr.minhadespensa.data.local.entity.MonthlyBudgetEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PantryMovementEntity
+import com.bitlabbr.minhadespensa.data.local.entity.PendingSyncEntryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.PriceEntryEntity
+import com.bitlabbr.minhadespensa.data.local.entity.ProductCategoryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingItemEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
@@ -55,9 +61,12 @@ import com.bitlabbr.minhadespensa.data.local.entity.ShoppingListEntity
         ProductMediaEntity::class,
         ShoppingListEntity::class,
         MonthlyBudgetEntity::class,
-        PantryMovementEntity::class
+        PantryMovementEntity::class,
+        ProductCategoryEntity::class,
+        PendingSyncEntryEntity::class,
+        AppKeyValueEntity::class,
     ],
-    version = 7
+    version = 10
 )
 @TypeConverters(Converters::class)
 @ConstructedBy(AppDatabaseConstructor::class)
@@ -70,6 +79,9 @@ abstract class AppDatabase: RoomDatabase() {
     abstract fun shoppingListDao(): ShoppingListDao
     abstract fun budgetDao(): MonthlyBudgetDao
     abstract fun movementDao(): PantryMovementDao
+    abstract fun categoryDao(): ProductCategoryDao
+    abstract fun pendingSyncDao(): PendingSyncDao
+    abstract fun appKeyValueDao(): AppKeyValueDao
 }
 
 expect object AppDatabaseConstructor : RoomDatabaseConstructor<AppDatabase> {

@@ -23,36 +23,38 @@
 
 package com.bitlabbr.minhadespensa.uisystem.features.home
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Scaffold
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.CloudDone
+import androidx.compose.material.icons.rounded.CloudOff
+import androidx.compose.material.icons.rounded.CloudSync
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
+import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.uisystem.components.core.header.PrimaryContainerHeader
-import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
+import com.bitlabbr.minhadespensa.uisystem.components.core.layout.MainScreenScaffold
 import com.bitlabbr.minhadespensa.uisystem.components.core.topbar.MinhaDespensaTopBar
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ConsumptionTrendWidget
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.ExpiringSoonWidget
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.FinancialAnalyticsDialog
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.FinancialWidget
 import com.bitlabbr.minhadespensa.uisystem.features.home.widgets.SetMonthlyBudgetDialog
-import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.general
+import minhadespensa.uisystem.generated.resources.sync_topbar_account_desc
+import minhadespensa.uisystem.generated.resources.sync_topbar_sync_desc
 import minhadespensa.uisystem.generated.resources.vision
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
@@ -60,104 +62,101 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun HomeScreen(
     bottomPadding: Dp = 0.dp,
+    onNavigateToAccount: () -> Unit = {},
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val appColors = getAppColors()
-    val appTypography = MinhaDespensaTheme.typography
-    val dimens = MinhaDespensaTheme.dimens
+    val colors = getAppColors()
 
-    Scaffold(
+    MainScreenScaffold(
+        bottomPadding = bottomPadding,
         topBar = {
             MinhaDespensaTopBar(
-                backgroundColor = Color.Transparent,
-                centerContent = {
-                    MinhaDespensaText(
-                        text = "",
-                        fontStyle = appTypography.displayMedium,
-                        color = appColors.onBackground
-                    )
-                }
-            )
-        },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        containerColor = Color.Transparent
-    ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(
-                    top = paddingValues.calculateTopPadding(),
-                    bottom = bottomPadding
-                )
-            ) {
-                item {
-                    PrimaryContainerGlassCard(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .padding(horizontal = dimens.paddingSmall, vertical = 8.dp)
+                rightContent = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(
-                                    top = dimens.paddingLarge,
-                                    bottom = dimens.paddingLarge
+                        IconButton(onClick = { viewModel.triggerSync() }) {
+                            if (uiState.syncState == SyncState.SYNCING) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.dp,
+                                    color = colors.primary,
                                 )
-                        ) {
-                            PrimaryContainerHeader(
-                                textTop = stringResource(Res.string.vision),
-                                textBottom = stringResource(Res.string.general)
-                            ) {}
+                            } else {
+                                val syncIcon = when (uiState.syncState) {
+                                    SyncState.ERROR -> Icons.Rounded.CloudOff
+                                    SyncState.SUCCESS -> Icons.Rounded.CloudDone
+                                    else -> Icons.Rounded.CloudSync
+                                }
+                                val syncTint = when (uiState.syncState) {
+                                    SyncState.ERROR -> colors.error
+                                    SyncState.SUCCESS -> colors.primary
+                                    else -> colors.onPrimaryContainer.copy(alpha = 0.8f)
+                                }
+                                Icon(
+                                    imageVector = syncIcon,
+                                    contentDescription = stringResource(Res.string.sync_topbar_sync_desc),
+                                    tint = syncTint,
+                                )
+                            }
+                        }
 
-                            // 1. Widget Financeiro Conectado a Dados Reais
-                            FinancialWidget(
-                                data = uiState.financialSummary,
-                                stockValue = uiState.pantryStockValue,
-                                onCardClick = { viewModel.openSetBudgetDialog() },
-                                onDefineBudgetClick = { viewModel.openSetBudgetDialog() },
-                                onOpenAnalytics = { viewModel.openFinancialAnalyticsDialog() },
-                            )
-
-                            // 2. Widget Itens Próximos à Validade
-                            ExpiringSoonWidget(
-                                items = uiState.expiringItems,
-                            )
-
-                            // 3. Widget Tendências de Consumo no Mês
-                            ConsumptionTrendWidget(
-                                items = uiState.consumptionTrends,
+                        IconButton(onClick = onNavigateToAccount) {
+                            Icon(
+                                imageVector = Icons.Rounded.AccountCircle,
+                                contentDescription = stringResource(Res.string.sync_topbar_account_desc),
+                                tint = colors.onPrimaryContainer,
                             )
                         }
                     }
-                }
-            }
+                },
+            )
+        },
+    ) {
+        PrimaryContainerHeader(
+            textTop = stringResource(Res.string.vision),
+            textBottom = stringResource(Res.string.general),
+        )
 
-            // Diálogo de Definição / Edição de Orçamento Mensal
-            if (uiState.isSetBudgetDialogOpen) {
-                SetMonthlyBudgetDialog(
-                    currentBudgetInCents = uiState.financialSummary.budgetInCents,
-                    isSaving = uiState.isSavingBudget,
-                    onConfirm = { budgetInCents ->
-                        viewModel.saveMonthlyBudget(budgetInCents)
-                    },
-                    onDismiss = {
-                        viewModel.dismissSetBudgetDialog()
-                    },
-                )
-            }
+        FinancialWidget(
+            data = uiState.financialSummary,
+            stockValue = uiState.pantryStockValue,
+            onCardClick = { viewModel.openSetBudgetDialog() },
+            onDefineBudgetClick = { viewModel.openSetBudgetDialog() },
+            onOpenAnalytics = { viewModel.openFinancialAnalyticsDialog() },
+        )
 
-            // Diálogo de Análise Financeira Anual e Patrimônio
-            if (uiState.isFinancialAnalyticsDialogOpen) {
-                FinancialAnalyticsDialog(
-                    stockValue = uiState.pantryStockValue,
-                    yearlyAnalytics = uiState.yearlyAnalytics,
-                    onDismiss = {
-                        viewModel.dismissFinancialAnalyticsDialog()
-                    },
-                )
-            }
-        }
+        ExpiringSoonWidget(
+            items = uiState.expiringItems,
+        )
+
+        ConsumptionTrendWidget(
+            items = uiState.consumptionTrends,
+        )
+    }
+
+    if (uiState.isSetBudgetDialogOpen) {
+        SetMonthlyBudgetDialog(
+            currentBudgetInCents = uiState.financialSummary.budgetInCents,
+            isSaving = uiState.isSavingBudget,
+            onConfirm = { budgetInCents ->
+                viewModel.saveMonthlyBudget(budgetInCents)
+            },
+            onDismiss = {
+                viewModel.dismissSetBudgetDialog()
+            },
+        )
+    }
+
+    if (uiState.isFinancialAnalyticsDialogOpen) {
+        FinancialAnalyticsDialog(
+            stockValue = uiState.pantryStockValue,
+            yearlyAnalytics = uiState.yearlyAnalytics,
+            onDismiss = {
+                viewModel.dismissFinancialAnalyticsDialog()
+            },
+        )
     }
 }

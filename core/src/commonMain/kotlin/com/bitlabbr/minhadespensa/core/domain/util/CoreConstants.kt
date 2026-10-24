@@ -53,6 +53,19 @@ object CoreConstants {
         const val EXPIRING_THRESHOLD_DAYS = 7
     }
 
+    object Auth {
+        const val NAME_MAX_LENGTH = 80
+        const val PASSWORD_MIN_LENGTH = 8
+        val EMAIL_REGEX = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+    }
+
+    object Household {
+        const val NAME_MAX_LENGTH = 80
+        const val INVITE_CODE_PREFIX = "CASA-"
+        const val INVITE_CODE_RAW_LENGTH = 8
+        const val INVITE_CODE_LENGTH = 13
+    }
+
     object Validation {
         const val ERROR_PRODUCT_CATEGORY_TOO_LONG = "A categoria ultrapassa o limite máximo de"
         const val ERROR_PRODUCT_ID_REQUIRED = "O ID do produto é obrigatório"
@@ -64,6 +77,21 @@ object CoreConstants {
         const val ERROR_PRODUCT_NET_WEIGHT_POSITIVE = "O peso ou quantidade líquida deve ser maior que zero"
         const val ERROR_EAN_INVALID_FORMAT = "Código de barras inválido. Deve conter 8, 12, 13 ou 14 dígitos numéricos"
         const val ERROR_PANTRY_UNIT_PRICE_NON_NEGATIVE = "O preço unitário não pode ser negativo"
+        const val ERROR_CATEGORY_NAME_BLANK = "O nome da categoria não pode ser vazio"
+        const val ERROR_CATEGORY_ALREADY_EXISTS = "Já existe uma categoria com este nome"
+        const val ERROR_CATEGORY_DEFAULT_IMMUTABLE = "A categoria padrão 'Outros' não pode ser alterada ou excluída"
+        const val ERROR_CATEGORY_ID_REQUIRED = "O ID da categoria é obrigatório"
+        const val ERROR_INVOICE_QR_CODE_BLANK = "O conteúdo do QR Code da nota fiscal não pode ser vazio"
+        const val ERROR_INVOICE_ITEMS_EMPTY = "Nenhum item selecionado para importação da nota fiscal"
+        const val ERROR_INVOICE_STORE_NAME_BLANK = "O nome do estabelecimento não pode ser vazio"
+        const val ERROR_USER_NAME_BLANK = "O nome do usuário não pode ser vazio"
+        const val ERROR_USER_NAME_TOO_LONG = "O nome do usuário não pode exceder 80 caracteres"
+        const val ERROR_EMAIL_INVALID = "E-mail inválido"
+        const val ERROR_PASSWORD_TOO_SHORT = "A senha deve ter no mínimo 8 caracteres"
+        const val ERROR_HOUSEHOLD_NAME_BLANK = "O nome da despensa compartilhada não pode ser vazio"
+        const val ERROR_HOUSEHOLD_NAME_TOO_LONG = "O nome da despensa compartilhada não pode exceder 80 caracteres"
+        const val ERROR_INVITE_CODE_INVALID = "Código de convite deve conter 8 caracteres ou formato CASA-XXXXXXXX"
+        const val ERROR_NO_ACTIVE_HOUSEHOLD = "Nenhuma despensa ativa selecionada"
     }
 
     object CatalogCategories {

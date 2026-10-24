@@ -88,7 +88,7 @@ class ProductDetailsViewModelTest {
     }
 
     @Test
-    fun `loading product should combine catalog, pantry stock, and price history correctly`() = runTest(testDispatcher) {
+    fun `loading product should combine catalog and pantry stock and price history correctly`() = runTest(testDispatcher) {
         viewModel.uiState.launchIn(backgroundScope)
 
         val product = CatalogProduct(

@@ -36,6 +36,7 @@ import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -45,7 +46,8 @@ import kotlin.uuid.Uuid
 
 class RoomPantryRepository(
     private val db: AppDatabase,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : PantryRepository {
 
     private val dao = db.pantryDao()
@@ -86,19 +88,21 @@ class RoomPantryRepository(
     override suspend fun insertPantryItem(item: PantryItem) {
         logger.d(TAG, "insertPantryItem item: $item")
         validatePantryItem(item)
-        dao.insertPantryItem(item.toEntity())
+        val entity = item.toEntity()
+        dao.insertPantryItem(entity)
+        outboxEnqueuer.enqueuePantryItem(entity)
         logger.d(TAG, "insertPantryItem: Successfully inserted pantry item id=${item.id}, productId=${item.productId}")
         item.unitPriceInCents?.let { price ->
-            db.priceDao().insertPriceEntry(
-                PriceEntry(
-                    id = item.id,
-                    productId = item.productId,
-                    priceInCents = price,
-                    storeName = "Entrada na Despensa",
-                    updatedAt = item.updatedAt,
-                    isDeleted = false,
-                ).toEntity()
-            )
+            val priceEntry = PriceEntry(
+                id = item.id,
+                productId = item.productId,
+                priceInCents = price,
+                storeName = "Entrada na Despensa",
+                updatedAt = item.updatedAt,
+                isDeleted = false,
+            ).toEntity()
+            db.priceDao().insertPriceEntry(priceEntry)
+            outboxEnqueuer.enqueuePriceEntry(priceEntry)
             logger.d(TAG, "insertPantryItem: Created price entry id=${item.id} for productId=${item.productId}, priceInCents=$price")
         }
 
@@ -111,18 +115,21 @@ class RoomPantryRepository(
             quantity = item.quantity,
             unitPriceInCents = item.unitPriceInCents,
             totalPriceInCents = item.unitPriceInCents?.let { (item.quantity * it).roundToLong() },
-            timestamp = item.updatedAt,
+            updatedAt = item.updatedAt,
             storeOrReason = "Entrada na Despensa",
             isDeleted = false,
-        )
-        db.movementDao().insertMovement(movement.toEntity())
+        ).toEntity()
+        db.movementDao().insertMovement(movement)
+        outboxEnqueuer.enqueueMovement(movement)
         logger.d(TAG, "insertPantryItem: Recorded entry movement id=${movement.id} for pantryItemId=${item.id}")
     }
 
     override suspend fun forceUpdatePantryItem(item: PantryItem) {
         logger.d(TAG, "forceUpdatePantryItem item: $item")
         validatePantryItem(item)
-        dao.forceUpdatePantryItem(item.toEntity())
+        val entity = item.toEntity()
+        dao.forceUpdatePantryItem(entity)
+        outboxEnqueuer.enqueuePantryItem(entity)
     }
 
     @OptIn(ExperimentalUuidApi::class)
@@ -143,34 +150,37 @@ class RoomPantryRepository(
             logger.d(TAG, "Update for pantry item ${item.id} ignored: local data is newer.")
         } else {
             logger.d(TAG, "updatePantryItemIfNewer: Successfully updated pantry item ${item.id}")
+            val entity = item.toEntity()
+            outboxEnqueuer.enqueuePantryItem(entity)
             val existingEntry = db.priceDao().findEntryById(item.id)
             val price = item.unitPriceInCents
             if (price != null) {
                 if (existingEntry != null) {
-                    db.priceDao().forceUpdatePriceEntry(
-                        existingEntry.copy(
-                            priceInCents = price,
-                            updatedAt = item.updatedAt,
-                            isDeleted = false,
-                        )
+                    val updatedPrice = existingEntry.copy(
+                        priceInCents = price,
+                        updatedAt = item.updatedAt,
+                        isDeleted = false,
                     )
+                    db.priceDao().forceUpdatePriceEntry(updatedPrice)
+                    outboxEnqueuer.enqueuePriceEntry(updatedPrice)
                     logger.d(TAG, "updatePantryItemIfNewer: Updated existing price entry ${item.id} with price=$price")
                 } else {
-                    db.priceDao().insertPriceEntry(
-                        PriceEntry(
-                            id = item.id,
-                            productId = item.productId,
-                            priceInCents = price,
-                            storeName = "Entrada na Despensa",
-                            updatedAt = item.updatedAt,
-                            isDeleted = false,
-                        ).toEntity()
-                    )
+                    val newPrice = PriceEntry(
+                        id = item.id,
+                        productId = item.productId,
+                        priceInCents = price,
+                        storeName = "Entrada na Despensa",
+                        updatedAt = item.updatedAt,
+                        isDeleted = false,
+                    ).toEntity()
+                    db.priceDao().insertPriceEntry(newPrice)
+                    outboxEnqueuer.enqueuePriceEntry(newPrice)
                     logger.d(TAG, "updatePantryItemIfNewer: Created new price entry ${item.id} with price=$price")
                 }
             } else {
                 if (existingEntry != null) {
                     db.priceDao().markPriceEntryAsDeleted(existingEntry.id, item.updatedAt)
+                    outboxEnqueuer.enqueuePriceEntry(existingEntry.copy(isDeleted = true, updatedAt = item.updatedAt))
                     logger.d(TAG, "updatePantryItemIfNewer: Marked price entry ${item.id} as deleted because price was removed")
                 }
             }
@@ -180,10 +190,12 @@ class RoomPantryRepository(
     override suspend fun markPantryItemAsDeleted(id: String, updatedAt: Long) {
         logger.d(TAG, "markPantryItemAsDeleted: id: $id updatedAt: $updatedAt")
         dao.markPantryItemAsDeleted(id, updatedAt)
+        dao.findPantryItemById(id)?.let { outboxEnqueuer.enqueuePantryItem(it.copy(isDeleted = true, updatedAt = updatedAt)) }
     }
 
     override suspend fun deletePantryItemById(id: String) {
         logger.d(TAG, "deletePantryItemById: id: $id")
+        dao.findPantryItemById(id)?.let { outboxEnqueuer.enqueuePantryItem(it.copy(isDeleted = true)) }
         dao.deletePantryItemById(id)
     }
 
@@ -208,6 +220,7 @@ class RoomPantryRepository(
             updatedAt = now
         )
         dao.forceUpdatePantryItem(updatedItem)
+        outboxEnqueuer.enqueuePantryItem(updatedItem)
 
         // Record consumption movement
         val movement = PantryMovement(
@@ -218,11 +231,12 @@ class RoomPantryRepository(
             quantity = quantityToConsume,
             unitPriceInCents = item.unitPriceInCents,
             totalPriceInCents = null,
-            timestamp = now,
+            updatedAt = now,
             storeOrReason = "Consumo na Despensa",
             isDeleted = false,
-        )
-        db.movementDao().insertMovement(movement.toEntity())
+        ).toEntity()
+        db.movementDao().insertMovement(movement)
+        outboxEnqueuer.enqueueMovement(movement)
         logger.d(TAG, "consumePantryItem: Recorded consumption movement id=${movement.id}")
     }
 
@@ -255,6 +269,7 @@ class RoomPantryRepository(
         }
 
         dao.forceUpdatePantryItems(itemsToUpdate)
+        itemsToUpdate.forEach { outboxEnqueuer.enqueuePantryItem(it) }
 
         val movements = consumptions.map { consumption ->
             val item = checkNotNull(dao.findPantryItemById(consumption.pantryItemId))
@@ -266,12 +281,13 @@ class RoomPantryRepository(
                 quantity = consumption.quantityToConsume,
                 unitPriceInCents = item.unitPriceInCents,
                 totalPriceInCents = null,
-                timestamp = now,
+                updatedAt = now,
                 storeOrReason = "Consumo em Lote",
                 isDeleted = false,
             ).toEntity()
         }
         db.movementDao().insertMovements(movements)
+        movements.forEach { outboxEnqueuer.enqueueMovement(it) }
         logger.d(TAG, "consumeBatch: Recorded ${movements.size} consumption movements")
     }
 

@@ -25,18 +25,24 @@ O **Minha Despensa** está sendo desenvolvido de forma iterativa. O objetivo da 
 - [x] Avaliação do patrimônio em estoque e analytics financeiro anual com evolução de 12 meses (#68).
 - [x] Consolidação da suíte com 412 testes unitários automatizados (100% passando).
 
-### 3. Notificações Nativas de Validade (`v1.2.0`)
+### 3. Sincronização em Nuvem, Multi-família & Distribuição OTA (`v1.2.0-alpha`) ✅ Concluída
+- [x] Autenticação de usuários via JWT com rotação de refresh token (#86).
+- [x] Gestão de múltiplas despensas familiares (`Household`) com códigos de convite Crockford Base32 (`CASA-XXXXXXXX`).
+- [x] Motor de sincronização bidirecional offline-first v2.1 com Outbox, serialização monotônica (`syncVersion`) e resolução de conflitos Last-Write-Wins (LWW).
+- [x] Deduplicação híbrida de catálogo e migração atômica de chaves estrangeiras (`productIdMappings`).
+- [x] Distribuição autônoma de novas versões in-app (Self-Hosted OTA Android) com download de APK via streaming e integração nativa ao `FileProvider`.
+- [x] Tela de Gerenciamento de Conta e Despensas (`HouseholdAccountScreen`) em Glassmorphism.
+- [x] Expansão da suíte para 553 testes unitários automatizados (100% passando).
+
+### 4. Notificações Nativas de Validade (`v1.3.0`)
 - [ ] Notificações push locais avisando sobre itens que estão a X dias de vencer.
 - [ ] Configuração personalizada do limiar de antecedência de alerta por categoria.
 
-### 4. Inteligência de Consumo & Reposição (`v1.3.0`)
+### 5. Inteligência de Consumo & Reposição (`v1.4.0`)
 - [ ] Cálculo da velocidade de consumo médio da despensa da família.
 - [ ] Sugestão automática de itens para a próxima lista de compras quando o estoque atingir níveis baixos.
 - [ ] Detecção de variações de preço para alertar se um produto está mais caro do que a média habitual.
 
-### 5. Receitas & Aproveitamento (`v1.4.0`)
+### 6. Receitas & Aproveitamento (`v1.5.0`)
 - [ ] Sugestão de receitas com base nos produtos disponíveis na despensa para evitar desperdício de itens próximos ao vencimento.
 - [ ] Adição automática dos ingredientes faltantes de uma receita diretamente na lista de compras.
-
-### 6. Sincronização em Nuvem (Cloud Sync & Multi-dispositivo)
-- [ ] Sincronização entre membros da mesma família através de arquitetura CRDT / LWW já estruturada nas entidades.

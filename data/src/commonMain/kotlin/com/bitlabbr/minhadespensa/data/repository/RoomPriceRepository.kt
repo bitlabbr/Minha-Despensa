@@ -30,6 +30,7 @@ import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlin.uuid.ExperimentalUuidApi
@@ -37,7 +38,8 @@ import kotlin.uuid.Uuid
 
 class RoomPriceRepository(
     private val db: AppDatabase,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : PriceRepository {
 
     private val dao = db.priceDao()
@@ -55,13 +57,17 @@ class RoomPriceRepository(
     override suspend fun insertPriceEntry(priceEntry: PriceEntry) {
         logger.d(TAG, "insertPriceEntry: priceEntry: $priceEntry")
         validatePriceEntry(priceEntry)
-        dao.insertPriceEntry(priceEntry.toEntity())
+        val entity = priceEntry.toEntity()
+        dao.insertPriceEntry(entity)
+        outboxEnqueuer.enqueuePriceEntry(entity)
     }
 
     override suspend fun forceUpdatePriceEntry(priceEntry: PriceEntry) {
         logger.d(TAG, "forceUpdatePriceEntry: priceEntry: $priceEntry")
         validatePriceEntry(priceEntry)
-        dao.forceUpdatePriceEntry(priceEntry.toEntity())
+        val entity = priceEntry.toEntity()
+        dao.forceUpdatePriceEntry(entity)
+        outboxEnqueuer.enqueuePriceEntry(entity)
     }
 
     override suspend fun updatePriceEntryIfNewer(priceEntry: PriceEntry) {
@@ -80,16 +86,19 @@ class RoomPriceRepository(
             logger.d(TAG, "Update for price entry ${priceEntry.id} ignored: local data is newer or identical.")
         } else {
             logger.d(TAG, "Price entry ${priceEntry.id} successfully updated using LWW strategy.")
+            outboxEnqueuer.enqueuePriceEntry(priceEntry.toEntity())
         }
     }
 
     override suspend fun markPriceEntryAsDeleted(priceEntryId: String, updatedAt: Long) {
         logger.d(TAG, "markPriceEntryAsDeleted: priceEntryId: $priceEntryId, updatedAt: $updatedAt")
         dao.markPriceEntryAsDeleted(priceEntryId, updatedAt)
+        dao.findEntryById(priceEntryId)?.let { outboxEnqueuer.enqueuePriceEntry(it.copy(isDeleted = true, updatedAt = updatedAt)) }
     }
 
     override suspend fun deletePriceEntryById(priceEntryId: String) {
         logger.d(TAG, "deletePriceEntryById: priceEntryId: $priceEntryId")
+        dao.findEntryById(priceEntryId)?.let { outboxEnqueuer.enqueuePriceEntry(it.copy(isDeleted = true)) }
         dao.deletePriceEntryById(priceEntryId)
     }
 

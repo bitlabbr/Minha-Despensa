@@ -26,6 +26,7 @@ package com.bitlabbr.minhadespensa.uisystem.di
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
+import com.bitlabbr.minhadespensa.uisystem.features.account.HouseholdAccountViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.catalog.CatalogViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.details.ProductDetailsViewModel
 import com.bitlabbr.minhadespensa.uisystem.features.home.HomeViewModel
@@ -54,6 +55,7 @@ val uiModule = module {
             pantryRepository = get(),
             pantryMovementRepository = get(),
             catalogRepository = get(),
+            syncCoordinator = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
         )
@@ -65,6 +67,8 @@ val uiModule = module {
             catalogRepository = get(),
             checkEanStatusUseCase = get(),
             addPantryItemUseCase = get(),
+            parseInvoiceQrCodeUseCase = get(),
+            importInvoiceToPantryUseCase = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
         )
@@ -77,6 +81,8 @@ val uiModule = module {
             logger = get(named(DiQualifiers.UI_LOGGER)),
             notificationManager = get(),
             checkEanStatusUseCase = get(),
+            saveCategoryUseCase = get(),
+            deleteCategoryUseCase = get(),
         )
     }
 
@@ -129,6 +135,24 @@ val uiModule = module {
             saveCatalogProductUseCase = get(),
             checkEanStatusUseCase = get(),
             updatePantryItemUseCase = get(),
+        )
+    }
+
+    viewModel {
+        HouseholdAccountViewModel(
+            authRepository = get(),
+            householdRepository = get(),
+            syncCoordinator = get(),
+            syncRepository = get(),
+            manageHouseholdUseCase = get(),
+            joinHouseholdByInviteCodeUseCase = get(),
+            switchActiveHouseholdUseCase = get(),
+            loginUserUseCase = get(),
+            registerUserUseCase = get(),
+            logoutUserUseCase = get(),
+            appUpdateRepository = getOrNull(),
+            notificationManager = get(),
+            logger = get(named(DiQualifiers.UI_LOGGER)),
         )
     }
 

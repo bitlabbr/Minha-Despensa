@@ -52,6 +52,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.media.rememberImagePi
 import com.bitlabbr.minhadespensa.uisystem.components.core.scanner.BarcodeScannerModal
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductDropdownField
 import com.bitlabbr.minhadespensa.uisystem.components.domain.catalog.ProductTextField
+import com.bitlabbr.minhadespensa.uisystem.features.catalog.widgets.categories.QuickCreateCategoryDialog
 import com.bitlabbr.minhadespensa.uisystem.mapper.toLabel
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
 import com.bitlabbr.minhadespensa.uisystem.theme.getAppColors
@@ -71,6 +72,7 @@ fun RegisterProductFormContent(
     var isExpanded by remember { mutableStateOf(false) }
     var showImageSourcePicker by remember { mutableStateOf(false) }
     var showBarcodeScanner by remember { mutableStateOf(false) }
+    var showCreateCategoryDialog by remember { mutableStateOf(false) }
 
     val imagePickerManager = rememberImagePickerManager { bytes ->
         onStateChange(state.copy(imageBytes = bytes, hasImageRemoved = false))
@@ -150,12 +152,21 @@ fun RegisterProductFormContent(
                         )
                     }
 
+                    val categoryOptions = remember(state.availableCategories, state.category) {
+                        val base = state.availableCategories
+                        if (state.category.isNotBlank() && base.none { it.equals(state.category, ignoreCase = true) }) {
+                            (base + state.category).sorted()
+                        } else {
+                            base
+                        }
+                    }
+
                     ProductDropdownField(
                         modifier = Modifier.fillMaxWidth(),
                         label = stringResource(Res.string.register_product_form_basic_info_product_category),
                         selectedOption = state.category.takeIf { it.isNotBlank() },
                         placeholder = stringResource(Res.string.register_product_form_basic_info_category_placeholder),
-                        options = state.availableCategories.filter {
+                        options = categoryOptions.filter {
                             !it.equals(
                                 stringResource(Res.string.category_filter_all),
                                 ignoreCase = true
@@ -164,6 +175,8 @@ fun RegisterProductFormContent(
                         optionLabel = { it },
                         isRequired = true,
                         errorMessage = state.categoryError?.asString(),
+                        createNewLabel = stringResource(Res.string.category_dropdown_create_new),
+                        onCreateNewClick = { showCreateCategoryDialog = true },
                         onSelected = { onStateChange(state.copy(category = it, categoryError = null)) },
                     )
                 }
@@ -294,6 +307,25 @@ fun RegisterProductFormContent(
                 showBarcodeScanner = false
             },
             onDismissRequest = { showBarcodeScanner = false },
+        )
+    }
+
+    if (showCreateCategoryDialog) {
+        QuickCreateCategoryDialog(
+            onConfirm = { newCategory ->
+                val updatedAvailable = (state.availableCategories + newCategory)
+                    .distinct()
+                    .sorted()
+                onStateChange(
+                    state.copy(
+                        category = newCategory,
+                        categoryError = null,
+                        availableCategories = updatedAvailable,
+                    )
+                )
+                showCreateCategoryDialog = false
+            },
+            onDismiss = { showCreateCategoryDialog = false },
         )
     }
 }

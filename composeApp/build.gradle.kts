@@ -53,6 +53,10 @@ kotlin {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
             implementation(libs.koin.android)
+            implementation(libs.ktor.client.okhttp)
+        }
+        iosMain.dependencies {
+            implementation(libs.ktor.client.darwin)
         }
         commonMain.dependencies {
             implementation(project(":core"))
@@ -82,8 +86,8 @@ android {
         applicationId = "com.bitlabbr.minhadespensa.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 3
-        versionName = "1.1.1-alpha"
+        versionCode = 4
+        versionName = "1.2.0-alpha"
     }
     packaging {
         resources {

@@ -25,7 +25,11 @@ package com.bitlabbr.minhadespensa.app.di
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.bitlabbr.minhadespensa.app.util.AndroidPackageInstaller
+import com.bitlabbr.minhadespensa.app.util.AndroidPlatformInfoProvider
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
+import com.bitlabbr.minhadespensa.data.util.AppPackageInstaller
+import com.bitlabbr.minhadespensa.data.util.AppPlatformInfoProvider
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -36,5 +40,13 @@ val androidDatabaseModule = module {
             context = androidContext(),
             name = dbFile.absolutePath
         )
+    }
+
+    single<AppPlatformInfoProvider> {
+        AndroidPlatformInfoProvider(context = androidContext())
+    }
+
+    single<AppPackageInstaller> {
+        AndroidPackageInstaller(context = androidContext())
     }
 }

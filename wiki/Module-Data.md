@@ -4,7 +4,7 @@ O módulo `:data` é o responsável por toda a infraestrutura de dados local da 
 
 ---
 
-## 🗃️ Base de Dados Room (Schema v7)
+## 🗃️ Base de Dados Room (Schema v9)
 
 A persistência utiliza **Room Multiplatform** com o driver nativo **`BundledSQLiteDriver`**, garantindo paridade total entre Android e iOS.
 
@@ -16,7 +16,20 @@ A persistência utiliza **Room Multiplatform** com o driver nativo **`BundledSQL
 * `shopping_lists`: Listas de compras com teto orçamentário (`budget_in_cents`).
 * `shopping_items`: Itens com chave estrangeira `ON DELETE CASCADE` para a lista e `ON DELETE SET NULL` para o produto (permitindo preservar históricos mesmo se um produto for excluído do catálogo).
 * `monthly_budgets`: Teto orçamentário mensal da família com chave primária composta `(year, month)`.
-* `pantry_movements`: Ledger e auditoria de movimentações de estoque e despesas com índices otimizados em `(type, timestamp)`, `(productId)` e `timestamp`.
+* `pantry_movements`: Ledger e auditoria de movimentações de estoque e despesas com índices otimizados em `(type, updatedAt)`, `(productId)` e `updatedAt`.
+* `product_categories`: Categorias customizadas e padrão (`id`, `name`, `is_default`, `updated_at`, `is_deleted`).
+* `pending_sync_entries`: Fila durável de Outbox para sincronização offline-first multi-dispositivo.
+* `app_key_values`: Armazenamento chave-valor para tokens JWT, sessão ativa e cursores de sincronização.
+
+---
+
+## 🌐 Sincronização em Nuvem & Distribuição OTA
+
+O módulo `:data` não é apenas persistência local, mas o motor de comunicação e resiliência:
+* **`OutboxEnqueuer`:** Intercepta todas as operações locais e enfileira mutações serializadas em `pending_sync_entries`.
+* **`RoomSyncRepository`:** Executa o ciclo de Push das mutações pendentes, remapeamento atômico de IDs canônicos (`productIdMappings`) e Pull de deltas remotos com resolução Last-Write-Wins (LWW).
+* **`RealAppUpdateRepository`:** Consulta a versão mais recente no servidor Domus (`/api/v1/app/version/latest`), compara `versionCode` e gerencia o download de APK em streaming de chunks via Ktor.
+* **`AndroidPackageInstaller`:** Escreve o pacote no diretório de cache do app e aciona a Intent nativa de instalação do Android via `FileProvider` (`content://.../updates/*.apk`).
 
 ---
 
@@ -30,7 +43,9 @@ Para suportar atualizações sem perda de dados para os usuários, o banco possu
 * **`MIGRATION_4_5`**: Adição da coluna `unit_price_in_cents` na tabela `pantry_items`.
 * **`MIGRATION_5_6`**: Criação da tabela `monthly_budgets` com chave primária composta `(year, month)`.
 * **`MIGRATION_6_7`**: Criação da tabela de auditoria e movimentações `pantry_movements`.
-* **Migrações Diretas**: Saltos diretos para a versão 7 (`MIGRATION_1_7`, `MIGRATION_2_7`, `MIGRATION_3_7`, `MIGRATION_4_7`, `MIGRATION_5_7`).
+* **`MIGRATION_7_8`**: Criação da tabela `product_categories`, indexação por `name` e seeding de categorias padrão/customizadas.
+* **`MIGRATION_8_9`**: Renomeação da coluna `timestamp` para `updatedAt` em `pantry_movements` e recriação dos índices correspondentes.
+* **Migrações Diretas**: Saltos diretos para a versão 9 (`MIGRATION_1_9` até `MIGRATION_7_9`, além das migrações intermediárias).
 
 ---
 
@@ -43,4 +58,4 @@ Para suportar atualizações sem perda de dados para os usuários, o banco possu
 
 ## 🧪 Testes no Módulo (:data)
 
-O módulo contém **160 testes automatizados** rodando com banco SQLite in-memory, cobrindo todas as migrações de versão (incluindo v6 e v7), operações LWW, agregação de despesas e transações atômicas.
+O módulo contém **161 testes automatizados** rodando com banco SQLite in-memory e Ktor MockEngine, cobrindo todas as migrações de versão, operações LWW, agregação de despesas, verificação e streaming de atualização OTA, e transações atômicas.

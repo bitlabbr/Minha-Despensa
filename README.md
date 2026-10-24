@@ -1,7 +1,7 @@
 # MinhaDespensa 🛒
 
 [![CI Check](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml/badge.svg)](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/Release-v1.1.1--alpha-00E676?logo=android&logoColor=white)](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.1.1-alpha)
+[![Release](https://img.shields.io/badge/Release-v1.2.0--alpha-00E676?logo=android&logoColor=white)](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.2.0-alpha)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpack-compose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room-KMP-3DDC84?logo=android&logoColor=white)

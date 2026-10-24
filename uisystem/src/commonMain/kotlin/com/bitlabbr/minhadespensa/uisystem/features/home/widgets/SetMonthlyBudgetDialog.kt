@@ -25,8 +25,10 @@ package com.bitlabbr.minhadespensa.uisystem.features.home.widgets
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +36,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
@@ -42,6 +45,7 @@ import com.bitlabbr.minhadespensa.uisystem.components.core.dialog.MinhaDespensaD
 import com.bitlabbr.minhadespensa.uisystem.components.core.input.MinhaDespensaTextField
 import com.bitlabbr.minhadespensa.uisystem.components.core.text.MinhaDespensaText
 import com.bitlabbr.minhadespensa.uisystem.theme.MinhaDespensaTheme
+import com.bitlabbr.minhadespensa.uisystem.util.CurrencyThousandsVisualTransformation
 import com.bitlabbr.minhadespensa.uisystem.util.formatPrice
 import minhadespensa.uisystem.generated.resources.Res
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_cancel
@@ -51,6 +55,7 @@ import minhadespensa.uisystem.generated.resources.home_financial_dialog_input_pl
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_save
 import minhadespensa.uisystem.generated.resources.home_financial_dialog_title
 import org.jetbrains.compose.resources.stringResource
+
 import kotlin.math.roundToLong
 
 @Composable
@@ -62,15 +67,28 @@ fun SetMonthlyBudgetDialog(
     isSaving: Boolean = false,
 ) {
     var budgetText by remember(currentBudgetInCents) {
-        mutableStateOf(currentBudgetInCents?.formatPrice() ?: "")
+        mutableStateOf(
+            if (currentBudgetInCents != null && currentBudgetInCents > 0L) {
+                val reais = currentBudgetInCents / 100
+                val cents = currentBudgetInCents % 100
+                if (cents == 0L) {
+                    reais.toString()
+                } else {
+                    "$reais,${cents.toString().padStart(2, '0')}"
+                }
+            } else {
+                ""
+            }
+        )
     }
 
     val parsedCents = remember(budgetText) {
-        budgetText.trim()
-            .replace(".", "")
-            .replace(",", ".")
-            .toDoubleOrNull()
-            ?.let { (it * 100).roundToLong() }
+        if (budgetText.isBlank()) {
+            null
+        } else {
+            val clean = budgetText.trim().replace(".", "").replace(",", ".")
+            clean.toDoubleOrNull()?.let { (it * 100).roundToLong() }
+        }
     }
 
     MinhaDespensaDialog(
@@ -95,20 +113,40 @@ fun SetMonthlyBudgetDialog(
                     text = stringResource(Res.string.home_financial_dialog_save),
                     modifier = Modifier.weight(1.3f),
                     isLoading = isSaving,
-                    enabled = !isSaving && parsedCents != null && parsedCents >= 0L,
+                    enabled = !isSaving && parsedCents != null && parsedCents > 0L,
                     onClick = {
                         parsedCents?.let(onConfirm)
                     },
                 )
             }
+            Spacer(Modifier.padding(vertical = MinhaDespensaTheme.dimens.paddingSmall))
         },
     ) {
         MinhaDespensaTextField(
             value = budgetText,
-            onValueChange = { budgetText = it },
+            textStyle = MinhaDespensaTheme.typography.bodyLarge,
+            prefix = {
+                MinhaDespensaText(
+                    text = "R$ ",
+                    fontStyle = MinhaDespensaTheme.typography.bodyLarge,
+                )
+            },
+            onValueChange = { input ->
+                val filtered = input.filter { it.isDigit() || it == ',' || it == '.' }
+                val normalized = filtered.replace('.', ',')
+                val commaIndex = normalized.indexOf(',')
+                budgetText = if (commaIndex != -1) {
+                    val integerPart = normalized.substring(0, commaIndex).filter { it.isDigit() }.take(8)
+                    val decimalPart = normalized.substring(commaIndex + 1).filter { it.isDigit() }.take(2)
+                    "$integerPart,$decimalPart"
+                } else {
+                    normalized.take(8)
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             label = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_label)) },
             placeholder = { MinhaDespensaText(stringResource(Res.string.home_financial_dialog_input_placeholder)) },
+            visualTransformation = remember { CurrencyThousandsVisualTransformation() },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             singleLine = true,
         )

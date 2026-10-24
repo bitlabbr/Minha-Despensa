@@ -82,8 +82,9 @@ class ProductDetailsViewModel(
                 catalogRepository.getProductById(id),
                 catalogRepository.getProductImage(id),
                 catalogRepository.getAllActiveProducts(),
-            ) { product, imageBytes, allProducts ->
-                Triple(product, imageBytes, allProducts)
+                catalogRepository.getCategories(),
+            ) { product, imageBytes, allProducts, repoCategories ->
+                Pair(product to imageBytes, allProducts to repoCategories)
             }
 
             val priceAndPantryFlow = combine(
@@ -97,11 +98,12 @@ class ProductDetailsViewModel(
             val productDataFlow = combine(
                 baseProductFlow,
                 priceAndPantryFlow,
-            ) { (product, imageBytes, allProducts), (pantryItems, priceHistory, latestPriceEntry) ->
+            ) { (productAndImage, productsAndCategories), (pantryItems, priceHistory, latestPriceEntry) ->
                 ProductCombinedData(
-                    product = product,
-                    imageBytes = imageBytes,
-                    allProducts = allProducts,
+                    product = productAndImage.first,
+                    imageBytes = productAndImage.second,
+                    allProducts = productsAndCategories.first,
+                    repoCategories = productsAndCategories.second,
                     pantryItems = pantryItems,
                     priceHistory = priceHistory,
                     latestPriceEntry = latestPriceEntry,
@@ -119,6 +121,7 @@ class ProductDetailsViewModel(
                     product = productData.product,
                     imageBytes = productData.imageBytes,
                     allProducts = productData.allProducts,
+                    repoCategories = productData.repoCategories,
                     isEditing = isEditing,
                     editForm = editForm,
                     pantryItems = productData.pantryItems,
@@ -396,6 +399,7 @@ class ProductDetailsViewModel(
         product: CatalogProduct?,
         imageBytes: ByteArray?,
         allProducts: List<CatalogProduct>,
+        repoCategories: List<String>,
         isEditing: Boolean,
         editForm: ProductFormState,
         pantryItems: List<com.bitlabbr.minhadespensa.core.domain.model.PantryItem>,
@@ -412,7 +416,13 @@ class ProductDetailsViewModel(
             )
         }
 
-        val dynamicCategories = (CoreConstants.CatalogCategories.DEFAULT_CATEGORIES + allProducts.map { it.category.trim() })
+        val baseCategories = if (repoCategories.isNotEmpty()) {
+            repoCategories.map { it.trim() }
+        } else {
+            CoreConstants.CatalogCategories.DEFAULT_CATEGORIES
+        }
+
+        val dynamicCategories = (baseCategories + allProducts.map { it.category.trim() })
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
@@ -531,6 +541,7 @@ private data class ProductCombinedData(
     val product: CatalogProduct?,
     val imageBytes: ByteArray?,
     val allProducts: List<CatalogProduct>,
+    val repoCategories: List<String>,
     val pantryItems: List<com.bitlabbr.minhadespensa.core.domain.model.PantryItem>,
     val priceHistory: List<com.bitlabbr.minhadespensa.core.domain.model.PriceEntry>,
     val latestPriceEntry: com.bitlabbr.minhadespensa.core.domain.model.PriceEntry?,

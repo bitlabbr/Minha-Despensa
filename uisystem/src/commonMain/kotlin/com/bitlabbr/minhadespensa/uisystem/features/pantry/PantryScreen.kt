@@ -47,9 +47,11 @@ import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.search.Pantry
 import com.bitlabbr.minhadespensa.uisystem.features.shopping.quicklist.QuickListScreen
 import minhadespensa.uisystem.generated.resources.Pantry
 import minhadespensa.uisystem.generated.resources.Res
+import minhadespensa.uisystem.generated.resources.invoice_scanner_instruction
 import minhadespensa.uisystem.generated.resources.maine
 import org.jetbrains.compose.resources.stringResource
 import org.koin.compose.viewmodel.koinViewModel
+import com.bitlabbr.minhadespensa.uisystem.features.pantry.widgets.invoice.InvoiceReviewBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -131,6 +133,29 @@ fun PantryScreen(
                 onScanBarcode = viewModel::onStartScanFlow,
                 onSearchCatalog = viewModel::onStartSearchCatalogFlow,
                 onCreateProduct = { viewModel.onStartManualRegisterFlow() },
+                onScanInvoice = viewModel::onStartInvoiceScanFlow,
+                onDismiss = viewModel::onDismissSubFlow,
+            )
+        }
+
+        is PantrySubFlow.InvoiceScanner -> {
+            BarcodeScannerModal(
+                onBarcodeScanned = { qrContent ->
+                    viewModel.onInvoiceQrCodeScanned(qrContent)
+                },
+                onDismissRequest = viewModel::onDismissSubFlow,
+                instructionText = stringResource(Res.string.invoice_scanner_instruction),
+                isSquareReticle = true,
+            )
+        }
+
+        is PantrySubFlow.InvoiceReview -> {
+            InvoiceReviewBottomSheet(
+                invoice = subFlow.invoice,
+                isImporting = subFlow.isImporting,
+                onToggleItem = viewModel::onToggleInvoiceItem,
+                onToggleAllItems = viewModel::onToggleAllInvoiceItems,
+                onConfirmImport = viewModel::onConfirmInvoiceImport,
                 onDismiss = viewModel::onDismissSubFlow,
             )
         }

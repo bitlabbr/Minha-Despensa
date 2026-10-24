@@ -29,8 +29,9 @@ fun Long.formatPrice(includeCurrencySymbol: Boolean = false): String {
     val isNegative = this < 0
     val absCents = abs(this)
     val reais = absCents / 100
+    val formattedReais = reais.toString().reversed().chunked(3).joinToString(".").reversed()
     val centavos = (absCents % 100).toString().padStart(2, '0')
     val sign = if (isNegative) "-" else ""
-    val formatted = "$sign$reais,$centavos"
+    val formatted = "$sign$formattedReais,$centavos"
     return if (includeCurrencySymbol) "R$ $formatted" else formatted
 }

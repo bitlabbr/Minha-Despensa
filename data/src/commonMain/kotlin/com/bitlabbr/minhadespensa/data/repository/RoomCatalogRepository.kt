@@ -23,30 +23,89 @@
 
 package com.bitlabbr.minhadespensa.data.repository
 
+import androidx.room.Transactor
+import androidx.room.useWriterConnection
 import com.bitlabbr.minhadespensa.core.domain.model.CatalogProduct
+import com.bitlabbr.minhadespensa.core.domain.model.ProductCategory
 import com.bitlabbr.minhadespensa.core.domain.repository.CatalogRepository
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.core.domain.util.isValidTimestamp
 import com.bitlabbr.minhadespensa.core.domain.util.matchesSearchQuery
+import com.bitlabbr.minhadespensa.core.domain.util.normalizeForSearch
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
+import com.bitlabbr.minhadespensa.data.local.entity.ProductCategoryEntity
 import com.bitlabbr.minhadespensa.data.local.entity.ProductMediaEntity
 import com.bitlabbr.minhadespensa.data.local.mapper.toDomain
 import com.bitlabbr.minhadespensa.data.local.mapper.toEntity
+import com.bitlabbr.minhadespensa.data.sync.OutboxEnqueuer
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
+import okio.Buffer
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
 class RoomCatalogRepository(
     private val db: AppDatabase,
-    private val logger: AppLogger
+    private val logger: AppLogger,
+    private val outboxEnqueuer: OutboxEnqueuer = OutboxEnqueuer(db.pendingSyncDao()),
 ) : CatalogRepository {
     private val productDao = db.catalogDao()
     private val mediaDao = db.productMediaDao()
+    private val categoryDao = db.categoryDao()
 
     private val defaultCategories = CoreConstants.CatalogCategories.DEFAULT_CATEGORIES
+
+    private suspend fun ensureDefaultCategoriesSeeded() {
+        if (categoryDao.countAll() == 0) {
+            val seedList = defaultCategories.mapIndexed { index, name ->
+                ProductCategoryEntity(
+                    id = "default_category_$index",
+                    name = name,
+                    isDefault = true,
+                    updatedAt = 1000L,
+                    isDeleted = false,
+                )
+            }
+            categoryDao.insertAllIgnore(seedList)
+        }
+    }
+
+    @OptIn(ExperimentalUuidApi::class)
+    private suspend fun ensureCategoryRegistered(categoryName: String, updatedAt: Long) {
+        val trimmed = categoryName.trim()
+        if (trimmed.isBlank()) return
+        ensureDefaultCategoriesSeeded()
+        val normalizedTarget = trimmed.normalizeForSearch()
+        val allCategories = categoryDao.getAllSnapshot()
+        if (allCategories.any { !it.isDeleted && it.name.normalizeForSearch() == normalizedTarget }) {
+            return
+        }
+        val softDeletedMatch = allCategories.firstOrNull {
+            it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
+        }
+        if (softDeletedMatch != null) {
+            val updated = softDeletedMatch.copy(
+                name = trimmed,
+                isDeleted = false,
+                updatedAt = maxOf(updatedAt, softDeletedMatch.updatedAt),
+            )
+            categoryDao.insertOrUpdate(updated)
+            outboxEnqueuer.enqueueCategory(updated)
+        } else {
+            val created = ProductCategoryEntity(
+                id = Uuid.random().toString(),
+                name = trimmed,
+                isDefault = false,
+                updatedAt = updatedAt,
+                isDeleted = false,
+            )
+            categoryDao.insertOrUpdate(created)
+            outboxEnqueuer.enqueueCategory(created)
+        }
+    }
 
     override fun getProductByEan(ean: String): Flow<CatalogProduct?> {
         return productDao.findByEan(ean)
@@ -85,7 +144,11 @@ class RoomCatalogRepository(
         logger.d(TAG, "insertProduct: ${product.name} (hasImage: ${imageBytes != null})")
         validateImage(imageBytes)
         validateProduct(product)
-        productDao.insert(product.toEntity())
+        ensureCategoryRegistered(product.category, product.updatedAt)
+        val computedHash = imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
+        val entity = product.toEntity().copy(imageHash = computedHash)
+        productDao.insert(entity)
+        outboxEnqueuer.enqueueProduct(entity)
         if (imageBytes != null) {
             mediaDao.insertOrUpdate(
                 ProductMediaEntity(
@@ -105,7 +168,11 @@ class RoomCatalogRepository(
         logger.d(TAG, "forceUpdateForProduct: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
-        productDao.forceUpdateForProduct(product.toEntity())
+        ensureCategoryRegistered(product.category, product.updatedAt)
+        val computedHash = if (removeImage) null else imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
+        val entity = product.toEntity().copy(imageHash = computedHash)
+        productDao.forceUpdateForProduct(entity)
+        outboxEnqueuer.enqueueProduct(entity)
         if (removeImage) {
             mediaDao.deleteByProductId(product.id)
         } else if (imageBytes != null) {
@@ -131,6 +198,7 @@ class RoomCatalogRepository(
         logger.d(TAG, "updateForProductIfNewer: ${product.name} (hasImage: ${imageBytes != null}, removeImage: $removeImage)")
         validateImage(imageBytes)
         validateProduct(product)
+        val computedHash = if (removeImage) null else imageBytes?.let { Buffer().write(it).readByteString().sha256().hex() } ?: product.imageHash
         val rowsAffected = productDao.updateProductIfNewer(
             id = product.id,
             name = product.name,
@@ -143,9 +211,15 @@ class RoomCatalogRepository(
             updatedAt = product.updatedAt,
             isDeleted = product.isDeleted,
             manuallyAdded = product.manuallyAdded,
-            notes = product.notes
+            notes = product.notes,
+            imageHash = computedHash,
         )
         if (rowsAffected > 0) {
+            val entity = product.toEntity().copy(imageHash = computedHash)
+            outboxEnqueuer.enqueueProduct(entity)
+            if (!product.isDeleted) {
+                ensureCategoryRegistered(product.category, product.updatedAt)
+            }
             if (removeImage) {
                 mediaDao.deleteByProductId(product.id)
             } else if (imageBytes != null) {
@@ -163,10 +237,12 @@ class RoomCatalogRepository(
     override suspend fun markProductAsDeleted(id: String, updatedAt: Long) {
         logger.d(TAG, "markProductAsDeleted id: $id, updatedAt: $updatedAt")
         productDao.markAsDeleted(id, updatedAt)
+        productDao.findSnapshotById(id)?.let { outboxEnqueuer.enqueueProduct(it.copy(isDeleted = true, updatedAt = updatedAt)) }
     }
 
     override suspend fun deleteProductById(id: String) {
         logger.d(TAG, "deleteProduct id:  $id")
+        productDao.findSnapshotById(id)?.let { outboxEnqueuer.enqueueProduct(it.copy(isDeleted = true)) }
         productDao.deleteProductById(id)
     }
 
@@ -175,10 +251,198 @@ class RoomCatalogRepository(
         return productDao.exists(id)
     }
 
+    override fun getAllActiveCategories(): Flow<List<ProductCategory>> {
+        return categoryDao.getAllActive()
+            .onStart { ensureDefaultCategoriesSeeded() }
+            .map { entities ->
+                entities
+                    .map { it.toDomain() }
+                    .distinctBy { it.name.normalizeForSearch() }
+                    .sortedBy { it.name.normalizeForSearch() }
+            }
+    }
+
     override fun getCategories(): Flow<List<String>> {
-        // Currently returns the default categories list via Flow.
-        // Future: productDao.getDistinctCategories().map { it.ifEmpty { defaultCategories } }
-        return flowOf(defaultCategories)
+        return combine(
+            categoryDao.getAllActive().onStart { ensureDefaultCategoriesSeeded() },
+            productDao.getAllActive(),
+        ) { categoryEntities, productEntities ->
+            val persistedNames = categoryEntities.map { it.name.trim() }
+            val productCategories = productEntities.map { it.category.trim() }
+            (persistedNames + productCategories + listOf(CoreConstants.Product.DEFAULT_CATEGORY))
+                .filter { it.isNotBlank() }
+                .distinctBy { it.normalizeForSearch() }
+                .sortedBy { it.normalizeForSearch() }
+        }
+    }
+
+    override suspend fun saveCategory(category: ProductCategory) {
+        logger.d(TAG, "saveCategory: ${category.name}")
+        val trimmedName = category.name.trim()
+        validateCategory(category.id, trimmedName, category.updatedAt)
+        ensureDefaultCategoriesSeeded()
+
+        val normalizedTarget = trimmedName.normalizeForSearch()
+        val allExisting = categoryDao.getAllSnapshot()
+        val activeMatch = allExisting.firstOrNull {
+            !it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
+        }
+        if (activeMatch != null) {
+            val updated = activeMatch.copy(
+                name = trimmedName,
+                updatedAt = maxOf(category.updatedAt, activeMatch.updatedAt),
+            )
+            categoryDao.insertOrUpdate(updated)
+            outboxEnqueuer.enqueueCategory(updated)
+            return
+        }
+        val matchingDeleted = allExisting.firstOrNull {
+            it.isDeleted && it.name.normalizeForSearch() == normalizedTarget
+        }
+        if (matchingDeleted != null) {
+            val updated = matchingDeleted.copy(
+                name = trimmedName,
+                isDeleted = false,
+                updatedAt = maxOf(category.updatedAt, matchingDeleted.updatedAt),
+            )
+            categoryDao.insertOrUpdate(updated)
+            outboxEnqueuer.enqueueCategory(updated)
+        } else {
+            val entity = category.copy(name = trimmedName, isDeleted = false).toEntity()
+            categoryDao.insertOrUpdate(entity)
+            outboxEnqueuer.enqueueCategory(entity)
+        }
+    }
+
+    override suspend fun renameCategory(
+        id: String,
+        oldName: String,
+        newName: String,
+        updatedAt: Long,
+    ) {
+        logger.d(TAG, "renameCategory: id=$id, oldName=$oldName, newName=$newName")
+        val trimmedNew = newName.trim()
+        val trimmedOld = oldName.trim()
+        validateCategory(id, trimmedNew, updatedAt)
+        require(trimmedOld.isNotBlank()) { CoreConstants.Validation.ERROR_CATEGORY_NAME_BLANK }
+        require(trimmedOld.normalizeForSearch() != CoreConstants.Product.DEFAULT_CATEGORY.normalizeForSearch()) {
+            CoreConstants.Validation.ERROR_CATEGORY_DEFAULT_IMMUTABLE
+        }
+
+        ensureDefaultCategoriesSeeded()
+        val normalizedOld = trimmedOld.normalizeForSearch()
+
+        db.useWriterConnection { transactor ->
+            transactor.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                val matchingCategories = categoryDao.getAllSnapshot().filter {
+                    it.id == id || (!it.isDeleted && it.name.normalizeForSearch() == normalizedOld)
+                }
+
+                if (matchingCategories.isNotEmpty()) {
+                    matchingCategories.forEach { cat ->
+                        if (cat.updatedAt <= updatedAt) {
+                            val updated = cat.copy(
+                                name = trimmedNew,
+                                isDeleted = false,
+                                updatedAt = updatedAt,
+                            )
+                            categoryDao.insertOrUpdate(updated)
+                            outboxEnqueuer.enqueueCategory(updated)
+                        }
+                    }
+                } else {
+                    val created = ProductCategoryEntity(
+                        id = id,
+                        name = trimmedNew,
+                        isDefault = false,
+                        updatedAt = updatedAt,
+                        isDeleted = false,
+                    )
+                    categoryDao.insertOrUpdate(created)
+                    outboxEnqueuer.enqueueCategory(created)
+                }
+
+                val activeProducts = productDao.getAllActiveSnapshot()
+                activeProducts
+                    .filter { it.category.normalizeForSearch() == normalizedOld }
+                    .forEach { product ->
+                        val effectiveTimestamp = maxOf(updatedAt, product.updatedAt + 1)
+                        productDao.updateCategoryById(
+                            id = product.id,
+                            newCategory = trimmedNew,
+                            updatedAt = effectiveTimestamp,
+                        )
+                        outboxEnqueuer.enqueueProduct(
+                            product.copy(
+                                category = trimmedNew,
+                                updatedAt = effectiveTimestamp,
+                            ),
+                        )
+                    }
+            }
+        }
+        db.invalidationTracker.refreshAsync()
+    }
+
+    override suspend fun deleteCategory(
+        id: String,
+        categoryName: String,
+        fallbackCategory: String,
+        updatedAt: Long,
+    ) {
+        logger.d(TAG, "deleteCategory: id=$id, name=$categoryName, fallback=$fallbackCategory")
+        val trimmedName = categoryName.trim()
+        val trimmedFallback = fallbackCategory.trim().ifBlank { CoreConstants.Product.DEFAULT_CATEGORY }
+        require(id.isNotBlank()) { CoreConstants.Validation.ERROR_CATEGORY_ID_REQUIRED }
+        require(trimmedName.isNotBlank()) { CoreConstants.Validation.ERROR_CATEGORY_NAME_BLANK }
+        require(isValidTimestamp(updatedAt)) { "Invalid epoch time millis" }
+        require(trimmedName.normalizeForSearch() != CoreConstants.Product.DEFAULT_CATEGORY.normalizeForSearch()) {
+            CoreConstants.Validation.ERROR_CATEGORY_DEFAULT_IMMUTABLE
+        }
+
+        ensureDefaultCategoriesSeeded()
+        val normalizedTarget = trimmedName.normalizeForSearch()
+
+        db.useWriterConnection { transactor ->
+            transactor.withTransaction(Transactor.SQLiteTransactionType.IMMEDIATE) {
+                val matchingCategories = categoryDao.getAllSnapshot().filter {
+                    it.id == id || (!it.isDeleted && it.name.normalizeForSearch() == normalizedTarget)
+                }
+                matchingCategories.forEach { cat ->
+                    val effectiveTs = maxOf(updatedAt, cat.updatedAt)
+                    categoryDao.markAsDeleted(cat.id, effectiveTs)
+                    outboxEnqueuer.enqueueCategory(cat.copy(isDeleted = true, updatedAt = effectiveTs))
+                }
+
+                val activeProducts = productDao.getAllActiveSnapshot()
+                activeProducts
+                    .filter { it.category.normalizeForSearch() == normalizedTarget }
+                    .forEach { product ->
+                        val effectiveTimestamp = maxOf(updatedAt, product.updatedAt + 1)
+                        productDao.updateCategoryById(
+                            id = product.id,
+                            newCategory = trimmedFallback,
+                            updatedAt = effectiveTimestamp,
+                        )
+                        outboxEnqueuer.enqueueProduct(
+                            product.copy(
+                                category = trimmedFallback,
+                                updatedAt = effectiveTimestamp,
+                            ),
+                        )
+                    }
+            }
+        }
+        db.invalidationTracker.refreshAsync()
+    }
+
+    private fun validateCategory(id: String, name: String, updatedAt: Long) {
+        require(id.isNotBlank()) { CoreConstants.Validation.ERROR_CATEGORY_ID_REQUIRED }
+        require(name.isNotBlank()) { CoreConstants.Validation.ERROR_CATEGORY_NAME_BLANK }
+        require(name.length <= CoreConstants.Product.CATEGORY_MAX_LENGTH) {
+            "${CoreConstants.Validation.ERROR_PRODUCT_CATEGORY_TOO_LONG}: ${CoreConstants.Product.CATEGORY_MAX_LENGTH}"
+        }
+        require(isValidTimestamp(updatedAt)) { "Invalid epoch time millis" }
     }
 
     private fun validateImage(imageBytes: ByteArray?) {

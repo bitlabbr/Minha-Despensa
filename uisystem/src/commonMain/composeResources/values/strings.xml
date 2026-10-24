@@ -82,8 +82,6 @@
     <string name="register_product_form_header_title_bottom">PRODUTO</string>
     <string name="register_product_form_header_title_desc">Adicione um produto ao catálogo</string>
     <string name="register_product_form_header_close_button_desc">Fechar formulário</string>
-    <string name="settins_section_tile_top">Outras</string>
-    <string name="settins_section_tile_bottom">Opções</string>
     <string name="product_catalog_title_top">Catálogo de</string>
     <string name="product_catalog_title_bottom">Produtos</string>
     <string name="product_catalog_item_not_found">Nenhum produto cadastrado.</string>
@@ -117,8 +115,6 @@
     <string name="category_others">Outros</string>
     <string name="search_clear">Limpar busca</string>
     <string name="minha">Minha</string>
-    <string name="settings_section_title_top">Outras</string>
-    <string name="settings_section_title_bottom">Opções</string>
     <string name="pantry_search_bar_stock_quantity">Estoque</string>
     <string name="pantry_categories_empty_message">Sua despensa está vazia\nAdicione produtos no botão abaixo!</string>
     <string name="pantry_categories_not_found">Nenhum item nesta categoria da despensa.</string>
@@ -135,6 +131,28 @@
     <string name="pantry_catalog_picker_search_placeholder">Buscar por nome, marca ou categoria...</string>
     <string name="pantry_catalog_picker_empty">Nenhum produto encontrado no catálogo.</string>
     <string name="pantry_item_added_success">Item adicionado à despensa com sucesso!</string>
+
+    <!-- Leitura de Nota Fiscal (NFC-e / SEFAZ PE) -->
+    <string name="pantry_add_option_invoice">Ler Nota Fiscal (QR Code)</string>
+    <string name="pantry_add_option_invoice_desc">Importe todos os produtos da sua compra escaneando a nota fiscal</string>
+    <string name="invoice_scanner_instruction">Aponte a câmera para o QR Code da Nota Fiscal</string>
+    <string name="invoice_review_title">Conferência da Nota Fiscal</string>
+    <string name="invoice_review_subtitle">Selecione os produtos que deseja guardar na despensa</string>
+    <string name="invoice_review_store_label">Estabelecimento</string>
+    <string name="invoice_review_date_label">Data de Emissão</string>
+    <string name="invoice_review_total_invoice">Total da Nota: %1$s</string>
+    <string name="invoice_review_total_selected">%1$d/%2$d selecionados</string>
+    <string name="invoice_review_action_import">Importar %1$d itens</string>
+    <string name="invoice_review_badge_new">Novo Produto</string>
+    <string name="invoice_review_badge_catalog">No Catálogo</string>
+    <string name="invoice_review_select_all">Selecionar todos</string>
+    <string name="invoice_review_deselect_all">Desmarcar todos</string>
+    <string name="invoice_loading_parsing">Consultando nota fiscal no servidor...</string>
+    <string name="invoice_loading_importing">Importando produtos para a despensa...</string>
+    <string name="invoice_import_success">%1$d produtos da nota fiscal adicionados à despensa com sucesso!</string>
+    <string name="invoice_parse_error">Não foi possível consultar a nota fiscal. Verifique a conexão com o servidor.</string>
+    <string name="invoice_import_error">Erro ao importar os produtos da nota fiscal.</string>
+    <string name="invoice_no_items_selected">Selecione pelo menos um item para importar.</string>
 
     <!-- Shopping Assistant -->
     <string name="shopping_assistant_title">Assistente de Compras</string>
@@ -310,7 +328,7 @@
     <string name="product_details_notes_label">Observações</string>
     <string name="product_details_no_notes">Nenhuma observação informada</string>
     <string name="product_details_price_variation_title">Variação de Preço</string>
-    <string name="product_details_price_variation_desc">%1$s%% de variação entre menor e maior</string>
+    <string name="product_details_price_variation_desc">%1$s% de variação entre menor e maior</string>
     <string name="product_details_price_difference">Diferença de %1$s</string>
     <string name="product_details_price_single_recorded">Preço único registrado</string>
     <string name="product_details_price_purchases_title">Compras Registradas</string>
@@ -357,9 +375,9 @@
     <string name="home_financial_no_budget_hint">Defina um teto para acompanhar seus gastos do mês</string>
     <string name="home_financial_dialog_title">Definir Meta do Mês</string>
     <string name="home_financial_dialog_desc">Informe o valor limite de compras para o mês atual.</string>
-    <string name="home_financial_dialog_input_label">Orçamento Mensal (R$)</string>
-    <string name="home_financial_dialog_input_placeholder">Ex: 1000,00</string>
-    <string name="home_financial_dialog_save">Salvar Orçamento</string>
+    <string name="home_financial_dialog_input_label">Orçamento Mensal</string>
+    <string name="home_financial_dialog_input_placeholder">Ex: 1500</string>
+    <string name="home_financial_dialog_save">Salvar</string>
     <string name="home_financial_dialog_cancel">Cancelar</string>
     <string name="home_financial_budget_saved_success">Orçamento mensal definido com sucesso!</string>
     <string name="home_financial_budget_saved_error">Erro ao salvar orçamento mensal</string>
@@ -421,4 +439,116 @@
 
     <string name="placeholder_empty_metric">—</string>
 
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Início</string>
+    <string name="nav_pantry">Despensa</string>
+    <string name="nav_catalog">Catálogo</string>
+    <string name="nav_shopping_lists">Listas</string>
+
+    <!-- Custom Product Categories Management -->
+    <string name="category_manage_button">Categorias</string>
+    <string name="category_manage_dialog_title">Gerenciar Categorias</string>
+    <string name="category_manage_dialog_desc">Crie novas categorias ou renomeie e exclua as existentes.</string>
+    <string name="category_manage_new_input_label">Nova Categoria</string>
+    <string name="category_manage_new_input_placeholder">Ex: Pet Shop, Suplementos...</string>
+    <string name="category_manage_add_button">Adicionar</string>
+    <string name="category_manage_close_button">Fechar</string>
+    <string name="category_manage_edit_action">Renomear categoria</string>
+    <string name="category_manage_delete_action">Excluir categoria</string>
+    <string name="category_manage_protected_badge">Protegida</string>
+    <string name="category_manage_edit_dialog_title">Renomear Categoria</string>
+    <string name="category_manage_edit_dialog_desc">Todos os produtos em '%1$s' serão atualizados automaticamente.</string>
+    <string name="category_manage_edit_input_label">Nome da Categoria</string>
+    <string name="category_manage_edit_save_button">Salvar</string>
+    <string name="category_manage_delete_dialog_title">Excluir Categoria?</string>
+    <string name="category_manage_delete_dialog_desc">Tem certeza de que deseja excluir '%1$s'? Os produtos vinculados serão movidos para 'Outros'.</string>
+    <string name="category_manage_delete_confirm_button">Sim, Excluir</string>
+    <string name="category_dropdown_create_new">Nova categoria</string>
+    <string name="category_create_dialog_title">Nova Categoria</string>
+    <string name="category_create_dialog_desc">Informe o nome da nova categoria para seus produtos.</string>
+    <string name="category_create_save_button">Criar Categoria</string>
+    <string name="category_saved_success">Categoria salva com sucesso!</string>
+    <string name="category_renamed_success">Categoria renomeada com sucesso!</string>
+    <string name="category_deleted_success">Categoria excluída! Produtos movidos para 'Outros'.</string>
+
+    <!-- Household & Account -->
+    <string name="account_screen_title">Minha Conta &amp; Despensa</string>
+    <string name="account_tab_login">Entrar</string>
+    <string name="account_tab_register">Criar Conta</string>
+    <string name="account_auth_banner_title">Sincronização em Nuvem</string>
+    <string name="account_auth_banner_desc">Crie sua conta ou faça login para compartilhar a despensa com sua família e manter tudo sincronizado.</string>
+    <string name="account_input_name_label">Nome Completo</string>
+    <string name="account_input_name_placeholder">Ex: Willian Santos</string>
+    <string name="account_input_email_label">E-mail</string>
+    <string name="account_input_email_placeholder">Ex: usuario@email.com</string>
+    <string name="account_input_password_label">Senha</string>
+    <string name="account_input_password_placeholder">Mínimo 8 caracteres</string>
+    <string name="account_button_login">Entrar</string>
+    <string name="account_button_register">Criar Conta</string>
+    <string name="account_button_logout">Sair da Conta</string>
+    <string name="account_logout_dialog_title">Sair da Conta?</string>
+    <string name="account_logout_dialog_desc">Ao sair, a sincronização em nuvem será pausada. Seus dados locais permanecerão salvos neste aparelho.</string>
+    <string name="account_logout_dialog_confirm">Sim, Sair</string>
+    <string name="account_logout_dialog_cancel">Cancelar</string>
+
+    <string name="account_merge_dialog_title">Dados Locais Encontrados</string>
+    <string name="account_merge_dialog_desc">Existem itens cadastrados neste aparelho antes de entrar na conta. Como você deseja sincronizar?</string>
+    <string name="account_merge_option_merge">Opção A: Mesclar dados locais com a nuvem</string>
+    <string name="account_merge_option_discard">Opção B: Excluir dados locais e baixar da nuvem</string>
+
+    <string name="household_active_title">Despensa Ativa</string>
+    <string name="household_invite_code_label">Código de Convite da Família</string>
+    <string name="household_invite_code_desc">Compartilhe este código de 8 caracteres para que outras pessoas entrem nesta despensa.</string>
+    <string name="household_invite_code_copied">Código de convite copiado!</string>
+    <string name="household_role_owner">Proprietário</string>
+    <string name="household_role_member">Membro</string>
+    <string name="household_members_title">Membros da Despensa</string>
+    <string name="household_members_count">%1$d membros</string>
+    <string name="household_action_join">Entrar com Código</string>
+    <string name="household_action_create">Criar Nova Despensa</string>
+    <string name="household_action_switch">Ativar</string>
+    <string name="household_other_households_title">Outras Despensas</string>
+    
+    <string name="household_dialog_join_title">Entrar em uma Despensa</string>
+    <string name="household_dialog_join_desc">Informe o código recebido de quem criou a despensa compartilhada (ex: CASA-AB12CD34).</string>
+    <string name="household_dialog_join_input_label">Código de Convite</string>
+    <string name="household_dialog_join_input_placeholder">Ex: CASA-AB12CD34</string>
+    <string name="household_dialog_join_confirm">Entrar na Despensa</string>
+
+    <string name="household_dialog_create_title">Criar Nova Despensa</string>
+    <string name="household_dialog_create_desc">Dê um nome para a sua nova despensa (máx. 80 caracteres).</string>
+    <string name="household_dialog_create_input_label">Nome da Despensa</string>
+    <string name="household_dialog_create_input_placeholder">Ex: Casa de Praia, Sítio...</string>
+    <string name="household_dialog_create_confirm">Criar Despensa</string>
+
+    <string name="sync_status_idle">Pronto para sincronizar</string>
+    <string name="sync_status_syncing">Sincronizando dados...</string>
+    <string name="sync_status_success">Sincronizado</string>
+    <string name="sync_status_error">Falha ao sincronizar</string>
+    <string name="sync_status_offline">Modo local (Offline)</string>
+    <string name="sync_status_session_expired">Sessão expirada</string>
+    <string name="sync_session_expired_banner_title">Sessão Expirada</string>
+    <string name="sync_session_expired_banner_desc">Faça login novamente para retomar o backup e a sincronização em nuvem.</string>
+    <string name="sync_button_sync_now">Sincronizar Agora</string>
+    <string name="sync_topbar_sync_desc">Status da sincronização</string>
+    <string name="sync_topbar_account_desc">Minha Conta e Despensas</string>
+    
+    <string name="account_login_success">Login realizado com sucesso!</string>
+    <string name="account_register_success">Conta criada com sucesso! Despensa sincronizada.</string>
+    <string name="account_household_join_success">Você entrou na despensa com sucesso!</string>
+    <string name="account_household_create_success">Nova despensa criada com sucesso!</string>
+    <string name="account_household_switched_success">Despensa ativa alterada com sucesso!</string>
+    <string name="account_logout_success">Sessão encerrada com sucesso.</string>
+
+    <!-- Atualização de Software (OTA) -->
+    <string name="app_update_title">Atualização de Software</string>
+    <string name="app_update_current_version_label">Versão instalada: %1$s</string>
+    <string name="app_update_button_check">Verificar Atualizações</string>
+    <string name="app_update_button_checking">Verificando...</string>
+    <string name="app_update_up_to_date">O aplicativo já está atualizado!</string>
+    <string name="app_update_available_title">Nova versão disponível: %1$s</string>
+    <string name="app_update_changelog_title">Novidades desta versão:</string>
+    <string name="app_update_button_download_install">Baixar e Atualizar</string>
+    <string name="app_update_button_downloading">Baixando atualização (%1$d%%)...</string>
+    <string name="app_update_error">Erro ao verificar ou baixar atualização.</string>
 </resources>

@@ -172,7 +172,7 @@ class HomeViewModelTest {
         assertEquals(100000L, state.financialSummary.budgetInCents)
         assertEquals(42050L, state.financialSummary.totalSpentInCents)
         assertEquals("R$ 420,50", state.financialSummary.currentConsumption)
-        assertEquals("R$ 1000,00", state.financialSummary.budget)
+        assertEquals("R$ 1.000,00", state.financialSummary.budget)
         assertEquals(0.4205f, state.financialSummary.consumptionProgress, 0.001f)
     }
 
@@ -202,7 +202,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `expiring items dynamic label calculations for today, tomorrow, future, and past`() = runTest(testDispatcher) {
+    fun `expiring items dynamic label calculations for today and tomorrow and future and past`() = runTest(testDispatcher) {
         // Base date: 2026-10-14
         val todayMillis = LocalDate(2026, 10, 14).atStartOfDayIn(fixedTimeZone).toEpochMilliseconds()
         val tomorrowMillis = LocalDate(2026, 10, 15).atStartOfDayIn(fixedTimeZone).toEpochMilliseconds()
@@ -346,7 +346,7 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun `saveMonthlyBudget updates repository, closes dialog, and updates uiState`() = runTest(testDispatcher) {
+    fun `saveMonthlyBudget updates repository closes dialog and updates uiState`() = runTest(testDispatcher) {
         val viewModel = createViewModel()
         viewModel.uiState.launchIn(backgroundScope)
         testScheduler.advanceUntilIdle()
@@ -364,7 +364,7 @@ class HomeViewModelTest {
         assertFalse(state.isSetBudgetDialogOpen)
         assertTrue(state.financialSummary.hasBudget)
         assertEquals(150000L, state.financialSummary.budgetInCents)
-        assertEquals("R$ 1500,00", state.financialSummary.budget)
+        assertEquals("R$ 1.500,00", state.financialSummary.budget)
     }
 
     @Test
@@ -381,7 +381,41 @@ class HomeViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.financialSummary.hasBudget)
         assertEquals(125050L, state.financialSummary.budgetInCents)
-        assertEquals("R$ 1250,50", state.financialSummary.budget)
+        assertEquals("R$ 1.250,50", state.financialSummary.budget)
+    }
+
+    @Test
+    fun `saveMonthlyBudgetText parses currency string with symbol correctly`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.financialSummary.hasBudget)
+
+        viewModel.saveMonthlyBudgetText("R$ 1.500,00")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.financialSummary.hasBudget)
+        assertEquals(150000L, state.financialSummary.budgetInCents)
+        assertEquals("R$ 1.500,00", state.financialSummary.budget)
+    }
+
+    @Test
+    fun `saveMonthlyBudgetText parses currency string without symbol correctly`() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        viewModel.uiState.launchIn(backgroundScope)
+        testScheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.financialSummary.hasBudget)
+
+        viewModel.saveMonthlyBudgetText("1.500,00")
+        testScheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.financialSummary.hasBudget)
+        assertEquals(150000L, state.financialSummary.budgetInCents)
+        assertEquals("R$ 1.500,00", state.financialSummary.budget)
     }
 
     @Test
@@ -545,7 +579,7 @@ class HomeViewModelTest {
                 type = MovementType.ENTRY_PURCHASE,
                 quantity = 2.0,
                 unitPriceInCents = 500L,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
             PantryMovement(
                 id = "m-2",
@@ -553,14 +587,14 @@ class HomeViewModelTest {
                 type = MovementType.ENTRY_MANUAL,
                 quantity = 3.0,
                 unitPriceInCents = 1000L,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
             PantryMovement(
                 id = "m-3",
                 productId = "prod-3",
                 type = MovementType.CONSUMPTION,
                 quantity = 1.0,
-                timestamp = timestamp2026,
+                updatedAt = timestamp2026,
             ),
         )
 
