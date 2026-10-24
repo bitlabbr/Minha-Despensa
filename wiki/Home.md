@@ -29,13 +29,13 @@ Catálogo de Produtos ──► Lista de Compras ──► Finalizar Compra (Che
 Navegue pelos tópicos usando o menu lateral ou pelos atalhos abaixo:
 
 ### 🏛️ Arquitetura & Módulos
-* **[[Visão Geral de Arquitetura|Architecture-Overview]]:** Clean Architecture, MVVM em Compose Multiplatform e fluxo reativo.
-* **[[Módulo :core|Module-Core]]:** Camada de domínio, 17 casos de uso, modelos puros de estoque e finanças e regras de validação.
-* **[[Módulo :data|Module-Data]]:** Persistência Room KMP (Schema v7), ledger de movimentações, pipeline de migrations SQLite e integridade Last-Write-Wins (LWW).
-* **[[Módulo :uisystem|Module-UISystem]]:** Design System proprietário em Glassmorphism, tokens de tipografia, widgets financeiros, máquinas de estado e telas do app.
+* **[[Visão Geral de Arquitetura|Architecture-Overview]]:** Clean Architecture, MVVM em Compose Multiplatform, sincronização em nuvem e fluxo reativo.
+* **[[Módulo :core|Module-Core]]:** Camada de domínio, 30 casos de uso, modelos puros de estoque, finanças, autenticação, casas compartilhadas e contratos de atualização.
+* **[[Módulo :data|Module-Data]]:** Persistência Room KMP (Schema v9), ledger de movimentações, pipeline de migrations SQLite, motor de sincronização Outbox/LWW e clientes Ktor.
+* **[[Módulo :uisystem|Module-UISystem]]:** Design System proprietário em Glassmorphism, tokens de tipografia, widgets financeiros, máquinas de estado, tela de conta familiar e seção de atualização de software.
 
 ### 🧪 Testes & Guias
-* **[[Guia do Testador Alpha|Alpha-Testing-Guide]]:** Instruções de instalação do APK `v1.1.1-alpha` para amigos e roteiro de testes detalhado (incluindo orçamento mensal e estoque avaliado).
+* **[[Guia do Testador Alpha|Alpha-Testing-Guide]]:** Instruções de instalação do APK `v1.2.0-alpha` e roteiro completo com 12 cenários de teste detalhados (incluindo despensas familiares, sync em nuvem e atualização OTA in-app).
 * **[[Roadmap & Próximos Passos|Roadmap]]:** Planejamento de inteligência de consumo, receitas e notificações nativas.
 
 ---
@@ -47,10 +47,11 @@ Navegue pelos tópicos usando o menu lateral ou pelos atalhos abaixo:
 | **Linguagem** | Kotlin 2.x |
 | **Multiplataforma** | Kotlin Multiplatform (KMP) |
 | **Interface** | Compose Multiplatform (Android / iOS) |
-| **Banco de Dados** | Room KMP v7 + Bundled SQLite Driver |
+| **Banco de Dados** | Room KMP v9 + Bundled SQLite Driver |
+| **Networking & OTA** | Ktor Client (CIO / OkHttp / Darwin) + SSE/Streaming |
 | **Injeção de Dependência** | Koin Multiplatform |
 | **Programação Reativa** | Kotlin Coroutines + Flow / StateFlow |
 | **Serialização** | kotlinx.serialization |
 | **Datas & Tempo** | kotlinx.datetime |
 | **Scanner de Código** | CameraX + Google ML Kit Barcode Scanning |
-| **Testes Automatizados** | 412 testes unitários (Turbine, In-Memory SQLite, Fake Repositories) |
+| **Testes Automatizados** | 553 testes unitários (Turbine, In-Memory SQLite, Fake Repositories) |

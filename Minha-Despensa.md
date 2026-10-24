@@ -32,6 +32,7 @@ Catálogo de Produtos ──► Lista de Compras ──► Finalizar Compra (Che
 2. **Ciclo Unificado e Transacional:** Ao finalizar uma compra no supermercado, os itens marcados são debitados da lista, inseridos como lotes ativos na despensa e registrados no histórico de preços por meio de uma transação SQLite imediata e atômica.
 3. **Gestão Orçamentária e Valoração:** O usuário define tetos orçamentários mensais e acompanha em tempo real o valor financeiro do estoque estocado e as despesas consolidadas do mês e ano.
 4. **Sincronização em Nuvem & Despensas Compartilhadas (Protocolo v2.1):** Arquitetura Local-First híbrida com suporte a autenticação individual (JWT login/registro), multi-despensas (`Household`) e sincronização bidirecional resiliente baseada em Outbox e Last-Write-Wins (LWW), permitindo o compartilhamento em tempo real de produtos, lotes e listas entre familiares via código de convite de 8 caracteres.
+5. **Distribuição Autônoma de Atualizações In-App (Self-Hosted OTA):** O aplicativo conta com verificação e download de novas versões (APK) hospedadas no servidor próprio Domus, com acompanhamento de progresso de download e acionamento do instalador nativo Android (`FileProvider`). No iPhone (iOS), a funcionalidade é automaticamente e completamente ocultada da interface.
 
 ---
 

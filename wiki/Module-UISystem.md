@@ -40,6 +40,13 @@ O aplicativo utiliza uma identidade visual baseada em profundidade e vidro fosco
 * Scanner de código de barras nativo acoplado via CameraX + Google ML Kit no Android.
 * Fluxo de substituição de produtos em loja via `ReplaceItemOptionsSheet`.
 
+### 5. Conta & Despensas Compartilhadas (`HouseholdAccountScreen` & `HouseholdAccountViewModel`)
+* Autenticação completa de usuário com abas dinâmicas de Login e Registro.
+* Gestão de despensa ativa, listagem de outras despensas da família e criação rápida.
+* Código de convite amigável (`CASA-XXXXXXXX`) com cópia em um toque e feedback háptico.
+* Indicador de sincronização em tempo real (`SyncState`) e acionamento manual de sincronização.
+* Seção de Atualização de Software (`AppUpdateSection`): exclusiva para Android, exibe a versão instalada, consulta a versão mais recente no servidor Domus, exibe changelog, barra de progresso linear de download do APK e dispara o instalador nativo. No iOS, a seção é ocultada automaticamente.
+
 ---
 
 ## ⚙️ Máquinas de Estados (SubFlows)
@@ -50,4 +57,4 @@ Para evitar condições de corrida na interface (ex: dois modais abrindo simulta
 
 ## 🧪 Testes no Módulo (:uisystem)
 
-Contém **155 testes unitários** usando Turbine para assertions de `StateFlow` e validação isolada de regras de UI, `HomeViewModel`, formatadores de moeda, mappers de mês internacionalizados (`MonthMapper`), validadores de formulário e estabilizadores de scanner.
+Contém **184 testes unitários** usando Turbine para assertions de `StateFlow` e validação isolada de regras de UI, `HouseholdAccountViewModel`, `HomeViewModel`, formatadores de moeda, mappers de mês internacionalizados (`MonthMapper`), validadores de formulário e estabilizadores de scanner.

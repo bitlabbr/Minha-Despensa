@@ -68,6 +68,8 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
 *   **`AuthTokens`**: JWT access and refresh token pair with expiration timestamps.
     *   *Fields*: `accessToken`, `refreshToken`, `tokenType`, `expiresInSeconds`, `issuedAtMillis`.
 *   **`AuthSession`**: Active authentication session state (`user`, `tokens`).
+*   **`AppVersionInfo`**: OTA software release information retrieved from server:
+    *   *Fields*: `platform`, `versionName`, `versionCode`, `minRequiredVersion`, `releaseNotes`, `downloadUrl`, `sha256Checksum`, `fileSizeInBytes`, `releasedAt`, `isUpdateAvailable`.
 *   **`Household`**: Shared multi-tenant home/family grouping for products, pantries, and shopping lists.
     *   *Fields*: `id`, `name`, `inviteCode`, `ownerId`, `syncVersion`, `createdAt`, `updatedAt`, `members`.
 *   **`HouseholdMember`**: Membership link between a user and a household.
@@ -289,6 +291,12 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `flushOutboxBeforeSwitch(forceDiscard: Boolean): WorkspaceSwitchCheckResult`
     *   `clearLocalDataForHouseholdSwitch()`
     *   `hasLocalData(): Boolean`
+*   **`AppUpdateRepository`**:
+    *   `isSelfUpdateSupported(): Boolean`
+    *   `getCurrentVersionName(): String`
+    *   `getCurrentVersionCode(): Long`
+    *   `checkForUpdates(): Result<AppVersionInfo?>`
+    *   `downloadAndInstall(versionInfo: AppVersionInfo, onProgress: (progress: Float) -> Unit): Result<Unit>`
 
 ---
 
@@ -328,6 +336,7 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
 ## 5. Testing & Verification
 
 The `:core` module contains comprehensive unit tests located in `core/src/commonTest/`:
+*   `CheckForAppUpdateUseCaseTest`: Validates in-app update checks, platform support guards, version comparison, and result unwrapping.
 *   `DeterministicIdGeneratorTest`: Validates RFC 4122 UUIDv5 determinism, canonical string format, accent folding, and EAN uniqueness.
 *   `SyncClockTest`: Verifies RTT/2 server offset calibration and monotonic `nextTimestampAfter` progression preventing clock regression.
 *   `AuthAndHouseholdUseCasesTest`: Validates `RegisterUserUseCase`, `LoginUserUseCase`, `LogoutUserUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `ManageHouseholdUseCase`, and `SyncHouseholdDataUseCase` validations, session lifecycles, and data loss prevention outbox queueing.

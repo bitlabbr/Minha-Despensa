@@ -18,6 +18,18 @@ A persistência utiliza **Room Multiplatform** com o driver nativo **`BundledSQL
 * `monthly_budgets`: Teto orçamentário mensal da família com chave primária composta `(year, month)`.
 * `pantry_movements`: Ledger e auditoria de movimentações de estoque e despesas com índices otimizados em `(type, updatedAt)`, `(productId)` e `updatedAt`.
 * `product_categories`: Categorias customizadas e padrão (`id`, `name`, `is_default`, `updated_at`, `is_deleted`).
+* `pending_sync_entries`: Fila durável de Outbox para sincronização offline-first multi-dispositivo.
+* `app_key_values`: Armazenamento chave-valor para tokens JWT, sessão ativa e cursores de sincronização.
+
+---
+
+## 🌐 Sincronização em Nuvem & Distribuição OTA
+
+O módulo `:data` não é apenas persistência local, mas o motor de comunicação e resiliência:
+* **`OutboxEnqueuer`:** Intercepta todas as operações locais e enfileira mutações serializadas em `pending_sync_entries`.
+* **`RoomSyncRepository`:** Executa o ciclo de Push das mutações pendentes, remapeamento atômico de IDs canônicos (`productIdMappings`) e Pull de deltas remotos com resolução Last-Write-Wins (LWW).
+* **`RealAppUpdateRepository`:** Consulta a versão mais recente no servidor Domus (`/api/v1/app/version/latest`), compara `versionCode` e gerencia o download de APK em streaming de chunks via Ktor.
+* **`AndroidPackageInstaller`:** Escreve o pacote no diretório de cache do app e aciona a Intent nativa de instalação do Android via `FileProvider` (`content://.../updates/*.apk`).
 
 ---
 
@@ -46,4 +58,4 @@ Para suportar atualizações sem perda de dados para os usuários, o banco possu
 
 ## 🧪 Testes no Módulo (:data)
 
-O módulo contém **160 testes automatizados** rodando com banco SQLite in-memory, cobrindo todas as migrações de versão (incluindo v6 e v7), operações LWW, agregação de despesas e transações atômicas.
+O módulo contém **161 testes automatizados** rodando com banco SQLite in-memory e Ktor MockEngine, cobrindo todas as migrações de versão, operações LWW, agregação de despesas, verificação e streaming de atualização OTA, e transações atômicas.
