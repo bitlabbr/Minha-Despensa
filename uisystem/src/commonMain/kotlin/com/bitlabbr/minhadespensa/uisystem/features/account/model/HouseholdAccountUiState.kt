@@ -63,6 +63,16 @@ data class HouseholdAccountUiState(
     val isDownloadingUpdate: Boolean = false,
     val downloadProgress: Float = 0f,
     val availableUpdate: com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo? = null,
+    val isBugReportDialogOpen: Boolean = false,
+    val bugReportCategory: com.bitlabbr.minhadespensa.core.domain.model.SupportCategory = com.bitlabbr.minhadespensa.core.domain.model.SupportCategory.BUG,
+    val bugReportTitle: String = "",
+    val bugReportDescription: String = "",
+    val bugReportContact: String = "",
+    val bugReportIncludeLogs: Boolean = true,
+    val isSubmittingBugReport: Boolean = false,
+    val isSharingLogs: Boolean = false,
+    val pendingCrashStackTrace: String? = null,
+    val lastReportReceipt: com.bitlabbr.minhadespensa.core.domain.model.SupportReceipt? = null,
 ) {
     val isAuthenticated: Boolean
         get() = session != null

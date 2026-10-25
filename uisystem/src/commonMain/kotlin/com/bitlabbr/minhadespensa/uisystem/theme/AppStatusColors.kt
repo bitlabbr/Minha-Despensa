@@ -23,6 +23,8 @@
 
 package com.bitlabbr.minhadespensa.uisystem.theme
 
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 /**
@@ -63,3 +65,9 @@ val darkAppStatusColors = AppStatusColors(
     info = Color(0xFFA4C6C2),
     onInfo = Color(0xFF172B2A),
 )
+
+@Composable
+fun getAppStatusColors(): AppStatusColors {
+    return if (isSystemInDarkTheme()) darkAppStatusColors else lightAppStatusColors
+}
+

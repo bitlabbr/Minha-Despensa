@@ -46,6 +46,9 @@ uisystem/src/
 │   │       ├── pantry/            # PantryItemCard, ExpiringItemTile, ConsumptionTrendTile
 │   │       └── shopping/          # ShoppingItemRow, CartTotalSummary
 │   ├── features/                  # Level 3 & 4: Feature Screens & ViewModels
+│   │   ├── account/               # HouseholdAccountScreen, HouseholdAccountViewModel
+│   │   │   ├── model/             # HouseholdAccountUiState, AuthTab
+│   │   │   └── widgets/           # AppUpdateSection, BugReportDialog, SupportFeedbackSection, HouseholdMemberCard, etc.
 │   │   ├── home/                  # HomeScreen, HomeViewModel
 │   │   │   ├── model/             # HomeUiState, HomeFinancialUiModel, ConsumptionTrendItemUiModel
 │   │   │   └── widgets/           # FinancialWidget, ExpiringSoonWidget, ConsumptionTrendWidget, SetMonthlyBudgetDialog
@@ -166,6 +169,13 @@ Manages family household sharing, individual authentication (JWT login/register)
 - **Dialogs (`JoinHouseholdDialog`, `CreateHouseholdDialog`):** Modals for joining a family pantry via 8-char invite code or creating a new shared household (capped at 80 characters).
 - **Home Top Bar Shortcut:** `HomeScreen` features real-time cloud sync status indicator and profile shortcut navigating to `HouseholdAccountRoute`.
 
+### 4.10. In-App Bug Reporting & Diagnostic Log Sharing (`HouseholdAccountScreen`)
+Provides an integrated channel for users to submit feedback and bug reports, recover from unhandled crashes, and share diagnostic logs:
+- **`SupportFeedbackSection`:** Secondary glass card placed in `HouseholdAccountScreen` exposing action buttons to open the report dialog and export diagnostic logs via the native OS share sheet. Also renders a prominent warning banner when a crash report from a previous session (`pending_crash.txt`) is detected on startup.
+- **`BugReportDialog`:** Modal dialog supporting category selection (`BUG`, `SUGGESTION`, `QUESTION`, `CRASH`), title (3..255 chars), detailed description (min 5 chars), optional user contact, and an opt-in toggle to include device diagnostic logs (1500-entry ring buffer). Upon successful submission, displays an official protocol receipt (`BUG-YYYYMMDD-XXXX`).
+- **Post-Crash Recovery Flow:** Detects crashes captured by the uncaught exception handler from previous runs, pre-fills the report category as `CRASH` with the stack trace, and automatically clears the pending crash file upon successful submission or manual dismissal.
+- **Log Sharing:** Triggers native OS share sheet (`FileProvider` on Android, `UIActivityViewController` on iOS) to share diagnostic ring buffer logs as a plain text file.
+
 ---
 
 ## 5. Dependency Injection (`UiModule`)
@@ -175,7 +185,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
   - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, `SyncCoordinator`, logger, notification manager.
-  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `SyncRepository`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, `AppUpdateRepository?`, notification manager, logger.
+  - `HouseholdAccountViewModel`: Injects `AuthRepository`, `HouseholdRepository`, `SyncCoordinator`, `SyncRepository`, `ManageHouseholdUseCase`, `JoinHouseholdByInviteCodeUseCase`, `SwitchActiveHouseholdUseCase`, `LoginUserUseCase`, `RegisterUserUseCase`, `LogoutUserUseCase`, `AppUpdateRepository?`, `SupportRepository?`, `SubmitBugReportUseCase?`, notification manager, logger.
   - `PantryViewModel`: Injects pantry & catalog repositories, use cases (`CheckEanStatusUseCase`, `AddPantryItemUseCase`, `ParseInvoiceQrCodeUseCase`, `ImportInvoiceToPantryUseCase`), logger, notification manager.
   - `CatalogViewModel`: Injects catalog repository, `SaveCatalogProductUseCase`, `SaveProductCategoryUseCase`, `DeleteProductCategoryUseCase`, logger, notification manager, `CheckEanStatusUseCase`.
   - `QuickListViewModel`: Injects `CreateQuickShoppingListUseCase`, logger.
@@ -188,7 +198,7 @@ Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
 
 ## 6. Automated Unit Testing Suite
 
-All unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies (183 tests):
+All unit tests reside in `uisystem/src/commonTest` and execute across multiplatform targets without Android device or emulator dependencies (195 tests):
 
 | Test Class | Focus & Covered Behaviors |
 | :--- | :--- |
@@ -202,7 +212,7 @@ All unit tests reside in `uisystem/src/commonTest` and execute across multiplatf
 | `BarcodeRoiValidatorTest` | Validates barcode bounding box containment within scanner viewports. |
 | `BarcodeScanStabilizerTest` | Enforces consecutive matching barcode reads before triggering scan detection. |
 | `AppNotificationManagerTest` | Emits `SUCCESS`, `WARNING`, and `ERROR` snackbar notifications through `SharedFlow`. |
-| `HouseholdAccountViewModelTest` | Auth state transitions (login/register/logout), form validation, invite code normalization, household creation & switching, member list synchronization, manual sync triggering, in-app update checks and download/install triggers, dialog lifecycles. |
+| `HouseholdAccountViewModelTest` | Auth state transitions (login/register/logout), form validation, invite code normalization, household creation & switching, member list synchronization, manual sync triggering, in-app update checks and download/install triggers, bug report dialog open/dismiss, category and field updates, submission with protocol receipt and crash cleanup, validation error handling, diagnostic log sharing, and post-crash banner dismissal. |
 | `HomeViewModelTest` | Reactive state emissions, financial summary with and without budget, gauge overbudget progress, pantry stock value calculation (with priced/unpriced/deleted items), yearly analytics aggregations (12 monthly bars, elapsed month averages, purchase/stock unit costs), dynamic expiring labels (today, tomorrow, future, overdue), consumption trend product resolution, SetMonthlyBudgetDialog & FinancialAnalyticsDialog lifecycles and validation. |
 | `QuickListViewModelTest` | Title and raw content updates, save delegation, item generation. |
 | `ShoppingListsViewModelTest` | Active vs. completed list segregation, list deletion reactivity. |
