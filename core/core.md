@@ -68,6 +68,14 @@ All domain models are plain Kotlin data classes or enums annotated with `@Serial
 *   **`AuthTokens`**: JWT access and refresh token pair with expiration timestamps.
     *   *Fields*: `accessToken`, `refreshToken`, `tokenType`, `expiresInSeconds`, `issuedAtMillis`.
 *   **`AuthSession`**: Active authentication session state (`user`, `tokens`).
+*   **`SupportCategory`**: Classification enum for user reports:
+    *   `BUG`, `SUGGESTION`, `QUESTION`, `CRASH`.
+*   **`DeviceDiagnostics`**: Hardware, software, and log environment snapshot attached to reports:
+    *   *Fields*: `appVersion`, `deviceModel`, `osVersion`, `userId`, `householdId`, `deviceLogs`.
+*   **`SupportReport`**: Structured payload containing user feedback and diagnostics:
+    *   *Fields*: `category`, `title`, `description`, `diagnostics`, `userContact`.
+*   **`SupportReceipt`**: Acknowledgement returned upon report registration:
+    *   *Fields*: `id`, `protocol`, `category`, `title`, `status`, `hasLogs`, `createdAt`.
 *   **`AppVersionInfo`**: OTA software release information retrieved from server:
     *   *Fields*: `platform`, `versionName`, `versionCode`, `minRequiredVersion`, `releaseNotes`, `downloadUrl`, `sha256Checksum`, `fileSizeInBytes`, `releasedAt`, `isUpdateAvailable`.
 *   **`Household`**: Shared multi-tenant home/family grouping for products, pantries, and shopping lists.
@@ -182,6 +190,8 @@ The `:core` module defines 21 use cases encapsulating discrete application busin
     *   Terminates active auth session and clears credentials.
 *   **`CheckForAppUpdateUseCase`**:
     *   Verifies whether in-app self-update is supported by the current platform (Android) and queries `AppUpdateRepository` for newer software versions and changelogs.
+*   **`SubmitBugReportUseCase`**:
+    *   Validates title (3..255 chars) and description (min 5 chars), collects device diagnostics (and optional logs via `SupportRepository.getDeviceDiagnostics`), and submits the report returning a `SupportReceipt`.
 *   **`JoinHouseholdByInviteCodeUseCase`**:
     *   Flushes pending outbox mutations via `flushOutboxBeforeSwitch(forceDiscard = false)`, validates 8-character Crockford base32 invite code, links user to household, clears local cache via `clearLocalDataForHouseholdSwitch()`, switches active household, and triggers initial pull sync.
 *   **`SwitchActiveHouseholdUseCase`**:
@@ -297,6 +307,12 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `getCurrentVersionCode(): Long`
     *   `checkForUpdates(): Result<AppVersionInfo?>`
     *   `downloadAndInstall(versionInfo: AppVersionInfo, onProgress: (progress: Float) -> Unit): Result<Unit>`
+*   **`SupportRepository`**:
+    *   `submitReport(report: SupportReport): Result<SupportReceipt>`
+    *   `getDeviceDiagnostics(includeLogs: Boolean): DeviceDiagnostics`
+    *   `shareDiagnosticsLog(report: SupportReport?): Result<Unit>`
+    *   `getPendingCrashReport(): String?`
+    *   `clearPendingCrashReport()`
 
 ---
 
@@ -309,7 +325,8 @@ Interface definitions implemented by the data persistence layer (e.g. `:data`):
     *   `Pantry`: `EXPIRING_THRESHOLD_DAYS (7)`.
     *   `Validation`: Standard localized error strings (Portuguese) for domain validation messages.
     *   `CatalogCategories`: Predefined default product categories list.
-*   **`AppLogger` & `ConsoleLogger`**: Logging contract and multiplatform standard output implementation.
+*   **`AppLogger` & `ConsoleLogger`**: Logging contract and multiplatform standard output implementation, optionally forwarding log lines to an attached `DiagnosticLogRecorder`.
+*   **`DiagnosticLogRecorder` & `RingBufferLogRecorder`**: In-memory thread-safe circular log buffer (1500 entries) capturing formatted output across all layers for support reporting.
 *   **`DiQualifiers`**: Named injection qualifiers (`CORE_LOGGER`, `DATA_LOGGER`, `APP_LOGGER`, `UI_LOGGER`).
 *   **`Helpers.kt`**:
     *   `getCurrentTime()`: Epoch milliseconds using `Clock.System.now().toEpochMilliseconds()`.
@@ -353,6 +370,8 @@ The `:core` module contains comprehensive unit tests located in `core/src/common
 *   `CoreConstantsTest`: Ensures domain constants remain immutable and properly bounded.
 *   `TimestampToleranceTest`: Verifies clock skew tolerance and boundary enforcement.
 *   `ConsoleLoggerTest`: Verifies formatting and level output.
+*   `RingBufferLogRecorderTest`: Validates circular buffer capacity limits, oldest entry eviction, formatted dump string, clear, and integration with `ConsoleLogger`.
+*   `SubmitBugReportUseCaseTest`: Validates title/description length limits, mandatory constraints, diagnostic snapshot aggregation, and receipt propagation.
 *   `InvoiceUseCasesTest`: Tests QR code blank validation, invoice parsing delegation, item validation (positive quantities, non-blank names, non-negative unit prices), item selection filtering, and computed properties (`totalInvoiceInCents`, `totalSelectedItems`, `totalSelectedInCents`).
 
 All unit tests in `:core` run under Gradle via `./gradlew :core:test` and `./gradlew testDebugUnitTest`.
