@@ -25,11 +25,14 @@ package com.bitlabbr.minhadespensa.app.di
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.bitlabbr.minhadespensa.app.util.IosAppUpdateProviders
 import com.bitlabbr.minhadespensa.app.util.IosPackageInstaller
 import com.bitlabbr.minhadespensa.app.util.IosPlatformInfoProvider
+import com.bitlabbr.minhadespensa.app.util.IosSupportPlatformProvider
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.util.AppPackageInstaller
 import com.bitlabbr.minhadespensa.data.util.AppPlatformInfoProvider
+import com.bitlabbr.minhadespensa.data.util.SupportPlatformProvider
 import kotlinx.cinterop.ExperimentalForeignApi
 import org.koin.dsl.module
 import platform.Foundation.NSDocumentDirectory
@@ -50,6 +53,10 @@ val iosDatabaseModule = module {
 
     single<AppPackageInstaller> {
         IosPackageInstaller()
+    }
+
+    single<SupportPlatformProvider> {
+        IosSupportPlatformProvider()
     }
 }
 

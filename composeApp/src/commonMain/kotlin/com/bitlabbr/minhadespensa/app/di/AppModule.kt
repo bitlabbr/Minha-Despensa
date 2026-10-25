@@ -24,28 +24,33 @@
 
 package com.bitlabbr.minhadespensa.app.di
 
-import org.koin.core.context.startKoin
-import org.koin.dsl.module
-import org.koin.dsl.KoinAppDeclaration
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.ConsoleLogger
 import com.bitlabbr.minhadespensa.core.domain.util.DiQualifiers
-import com.bitlabbr.minhadespensa.uisystem.di.uiModule
-import org.koin.core.qualifier.named
+import com.bitlabbr.minhadespensa.core.domain.util.DiagnosticLogRecorder
+import com.bitlabbr.minhadespensa.core.domain.util.RingBufferLogRecorder
 import com.bitlabbr.minhadespensa.data.di.dataModule
-
+import com.bitlabbr.minhadespensa.uisystem.di.uiModule
+import org.koin.core.context.startKoin
+import org.koin.core.qualifier.named
+import org.koin.dsl.KoinAppDeclaration
+import org.koin.dsl.module
 
 val appModule = module {
+    single<DiagnosticLogRecorder> {
+        RingBufferLogRecorder()
+    }
+
     factory<AppLogger>(named(DiQualifiers.APP_LOGGER)) {
-        ConsoleLogger(moduleName = "App")
+        ConsoleLogger(moduleName = "App", recorder = get())
     }
 
     factory<AppLogger>(named(DiQualifiers.CORE_LOGGER)) {
-        ConsoleLogger(moduleName = "Core")
+        ConsoleLogger(moduleName = "Core", recorder = get())
     }
 
     factory<AppLogger>(named(DiQualifiers.DATA_LOGGER)) {
-        ConsoleLogger(moduleName = "Data")
+        ConsoleLogger(moduleName = "Data", recorder = get())
     }
 }
 
