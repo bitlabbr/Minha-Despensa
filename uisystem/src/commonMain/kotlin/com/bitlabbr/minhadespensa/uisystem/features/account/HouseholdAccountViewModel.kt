@@ -729,7 +729,12 @@ class HouseholdAccountViewModel(
                     _isSubmittingBugReport.value = false
                     _lastReportReceipt.value = receipt
                     logger?.i(TAG, "Bug report submitted successfully. Protocol: ${receipt.protocol}")
-                    notificationManager.showSuccess(UiText.Resource(Res.string.support_submit_success))
+                    notificationManager.showSuccess(
+                        UiText.Resource(
+                            resource = Res.string.support_submit_success,
+                            args = listOf(receipt.protocol),
+                        )
+                    )
 
                     if (_pendingCrashStackTrace.value != null || category == SupportCategory.CRASH) {
                         supportRepository?.clearPendingCrashReport()

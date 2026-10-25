@@ -580,18 +580,26 @@ class HouseholdAccountViewModelTest {
 
     @Test
     fun `submitBugReport success updates receipt and clears pending crash`() = runTest(testDispatcher) {
-        supportRepository.pendingCrash = "FATAL EXCEPTION: main"
-        viewModel.openBugReportDialog(SupportCategory.CRASH)
-        viewModel.onBugReportTitleChange("Falha no checkout")
-        viewModel.onBugReportDescriptionChange("App encerrou inesperadamente")
-        advanceUntilIdle()
+        notificationManager.notifications.test {
+            supportRepository.pendingCrash = "FATAL EXCEPTION: main"
+            viewModel.openBugReportDialog(SupportCategory.CRASH)
+            viewModel.onBugReportTitleChange("Falha no checkout")
+            viewModel.onBugReportDescriptionChange("App encerrou inesperadamente")
+            advanceUntilIdle()
 
-        viewModel.submitBugReport()
-        advanceUntilIdle()
+            viewModel.submitBugReport()
+            advanceUntilIdle()
 
-        assertTrue(supportRepository.submitReportCalled)
-        assertEquals("Falha no checkout", supportRepository.lastSubmittedReport?.title)
-        assertTrue(supportRepository.clearPendingCrashReportCalled)
+            assertTrue(supportRepository.submitReportCalled)
+            assertEquals("Falha no checkout", supportRepository.lastSubmittedReport?.title)
+            assertTrue(supportRepository.clearPendingCrashReportCalled)
+
+            val notification = awaitItem()
+            val text = notification.message
+            assertTrue(text is com.bitlabbr.minhadespensa.uisystem.model.UiText.Resource)
+            assertEquals(listOf("BUG-20261025-TEST"), (text as com.bitlabbr.minhadespensa.uisystem.model.UiText.Resource).args)
+            cancelAndIgnoreRemainingEvents()
+        }
 
         viewModel.uiState.test {
             val state = awaitLoadedState()

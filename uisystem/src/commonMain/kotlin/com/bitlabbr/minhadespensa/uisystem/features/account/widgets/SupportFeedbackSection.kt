@@ -115,19 +115,20 @@ fun SupportFeedbackSection(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Row(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         MinhaDespensaPrimaryButton(
                             text = stringResource(Res.string.support_crash_banner_action),
                             onClick = { onOpenReportDialog(SupportCategory.CRASH) },
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                         )
 
                         MinhaDespensaSecondaryButton(
                             text = stringResource(Res.string.support_crash_banner_dismiss),
                             onClick = onDismissPendingCrash,
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
