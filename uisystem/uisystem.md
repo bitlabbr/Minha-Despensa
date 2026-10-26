@@ -181,7 +181,7 @@ Provides an integrated channel for users to submit feedback and bug reports, rec
 ## 5. Dependency Injection (`UiModule`)
 
 Registered in `com.bitlabbr.minhadespensa.uisystem.di.UiModule`:
-- **Logger:** `AppLogger` qualifier `DiQualifiers.UI_LOGGER` bound to `ConsoleLogger("UISystem")`.
+- **Logger:** `AppLogger` qualifier `DiQualifiers.UI_LOGGER` bound to `ConsoleLogger("UISystem", recorder = getOrNull())`.
 - **Notification:** `AppNotificationManager` registered as a singleton.
 - **ViewModels:**
   - `HomeViewModel`: Injects `GetMonthlyFinancialSummaryUseCase`, `SetMonthlyBudgetUseCase`, `GetMostConsumedProductsUseCase`, `GetPantryTotalValueUseCase`, `GetYearlyFinancialSummaryUseCase`, `PantryRepository`, `PantryMovementRepository`, `CatalogRepository`, `SyncCoordinator`, logger, notification manager.

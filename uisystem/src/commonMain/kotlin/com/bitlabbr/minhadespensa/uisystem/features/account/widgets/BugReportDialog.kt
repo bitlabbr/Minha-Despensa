@@ -77,6 +77,10 @@ import minhadespensa.uisystem.generated.resources.support_dialog_submitting
 import minhadespensa.uisystem.generated.resources.support_dialog_title
 import minhadespensa.uisystem.generated.resources.support_dialog_title_label
 import minhadespensa.uisystem.generated.resources.support_dialog_title_placeholder
+import minhadespensa.uisystem.generated.resources.support_receipt_done_button
+import minhadespensa.uisystem.generated.resources.support_receipt_instruction
+import minhadespensa.uisystem.generated.resources.support_receipt_protocol_badge
+import minhadespensa.uisystem.generated.resources.support_receipt_title
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -115,7 +119,7 @@ fun BugReportDialog(
                     )
 
                     MinhaDespensaText(
-                        text = "Relato Registrado com Sucesso!",
+                        text = stringResource(Res.string.support_receipt_title),
                         fontStyle = typography.bodyLarge,
                         fontWeight = FontWeight.Bold,
                         color = statusColors.success,
@@ -134,7 +138,7 @@ fun BugReportDialog(
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             MinhaDespensaText(
-                                text = "PROTOCOLO DE ATENDIMENTO",
+                                text = stringResource(Res.string.support_receipt_protocol_badge),
                                 fontStyle = typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
                                 color = colors.onSurfaceVariant,
@@ -150,7 +154,7 @@ fun BugReportDialog(
                     }
 
                     MinhaDespensaText(
-                        text = "Guarde o número do protocolo acima para acompanhamento. Nossa equipe irá analisar os diagnósticos.",
+                        text = stringResource(Res.string.support_receipt_instruction),
                         fontStyle = typography.bodySmall,
                         color = colors.onSurfaceVariant,
                     )
@@ -275,7 +279,7 @@ fun BugReportDialog(
         buttons = {
             if (uiState.lastReportReceipt != null) {
                 MinhaDespensaPrimaryButton(
-                    text = "Concluir",
+                    text = stringResource(Res.string.support_receipt_done_button),
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth(),
                 )

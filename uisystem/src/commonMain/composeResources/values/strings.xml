@@ -583,4 +583,8 @@
     <string name="support_submit_error">Falha ao enviar relato de suporte.</string>
     <string name="support_share_success">Logs preparados para compartilhamento.</string>
     <string name="support_share_error">Falha ao compartilhar logs de diagnóstico.</string>
+    <string name="support_receipt_title">Relato Registrado com Sucesso!</string>
+    <string name="support_receipt_protocol_badge">PROTOCOLO DE ATENDIMENTO</string>
+    <string name="support_receipt_instruction">Guarde o número do protocolo acima para acompanhamento. Nossa equipe irá analisar os diagnósticos.</string>
+    <string name="support_receipt_done_button">Concluir</string>
 </resources>
