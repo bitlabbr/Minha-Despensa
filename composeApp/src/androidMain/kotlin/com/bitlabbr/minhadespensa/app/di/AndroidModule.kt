@@ -52,7 +52,7 @@ val androidDatabaseModule = module {
         AndroidPackageInstaller(context = androidContext())
     }
 
-    single<SupportPlatformProvider> {
+    single<SupportPlatformProvider>(createdAtStart = true) {
         val provider = AndroidSupportPlatformProvider(context = androidContext())
         provider.installCrashHandler(recorder = getOrNull())
         provider
