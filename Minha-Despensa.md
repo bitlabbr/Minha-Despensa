@@ -33,6 +33,7 @@ Catálogo de Produtos ──► Lista de Compras ──► Finalizar Compra (Che
 3. **Gestão Orçamentária e Valoração:** O usuário define tetos orçamentários mensais e acompanha em tempo real o valor financeiro do estoque estocado e as despesas consolidadas do mês e ano.
 4. **Sincronização em Nuvem & Despensas Compartilhadas (Protocolo v2.1):** Arquitetura Local-First híbrida com suporte a autenticação individual (JWT login/registro), multi-despensas (`Household`) e sincronização bidirecional resiliente baseada em Outbox e Last-Write-Wins (LWW), permitindo o compartilhamento em tempo real de produtos, lotes e listas entre familiares via código de convite de 8 caracteres.
 5. **Distribuição Autônoma de Atualizações In-App (Self-Hosted OTA):** O aplicativo conta com verificação e download de novas versões (APK) hospedadas no servidor próprio Domus, com acompanhamento de progresso de download e acionamento do instalador nativo Android (`FileProvider`). No iPhone (iOS), a funcionalidade é automaticamente e completamente ocultada da interface.
+6. **Suporte, Relato de Bugs In-App e Coleta de Diagnósticos:** Sistema integrado para envio proativo de relatos pelo usuário (bugs, sugestões, dúvidas), recuperação e envio de falhas não tratadas (crashes de sessões anteriores gravados em `pending_crash.txt`), e exportação de logs sanitizados capturados em buffer circular em memória (1500 entradas) via OS Share Sheet e API REST multipart (`/api/v1/support/bug-reports`).
 
 ---
 

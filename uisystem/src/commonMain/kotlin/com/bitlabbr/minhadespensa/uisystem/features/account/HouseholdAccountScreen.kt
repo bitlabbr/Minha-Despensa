@@ -80,6 +80,8 @@ import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaPrimaryButton
 import com.bitlabbr.minhadespensa.uisystem.components.core.button.MinhaDespensaSecondaryButton
 import com.bitlabbr.minhadespensa.uisystem.features.account.widgets.AppUpdateSection
+import com.bitlabbr.minhadespensa.uisystem.features.account.widgets.BugReportDialog
+import com.bitlabbr.minhadespensa.uisystem.features.account.widgets.SupportFeedbackSection
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.ItemContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.PrimaryContainerGlassCard
 import com.bitlabbr.minhadespensa.uisystem.components.core.card.SecondaryContainerGlassCard
@@ -251,6 +253,13 @@ fun HouseholdAccountScreen(
                 onDownloadAndInstall = viewModel::downloadAndInstallUpdate,
             )
 
+            SupportFeedbackSection(
+                uiState = uiState,
+                onOpenReportDialog = viewModel::openBugReportDialog,
+                onExportLogs = viewModel::shareDiagnosticsLog,
+                onDismissPendingCrash = viewModel::dismissPendingCrashBanner,
+            )
+
             Spacer(Modifier.height(dimens.paddingLarge))
         }
     }
@@ -327,6 +336,19 @@ fun HouseholdAccountScreen(
                 )
             }
         }
+    }
+
+    if (uiState.isBugReportDialogOpen) {
+        BugReportDialog(
+            uiState = uiState,
+            onCategoryChange = viewModel::onBugReportCategoryChange,
+            onTitleChange = viewModel::onBugReportTitleChange,
+            onDescriptionChange = viewModel::onBugReportDescriptionChange,
+            onContactChange = viewModel::onBugReportContactChange,
+            onIncludeLogsChange = viewModel::onBugReportIncludeLogsChange,
+            onSubmit = viewModel::submitBugReport,
+            onDismiss = viewModel::dismissBugReportDialog,
+        )
     }
 }
 

@@ -28,15 +28,19 @@ import androidx.lifecycle.viewModelScope
 import com.bitlabbr.minhadespensa.core.domain.model.AuthSession
 import com.bitlabbr.minhadespensa.core.domain.model.Household
 import com.bitlabbr.minhadespensa.core.domain.model.HouseholdDetail
+import com.bitlabbr.minhadespensa.core.domain.model.SupportCategory
+import com.bitlabbr.minhadespensa.core.domain.model.SupportReceipt
 import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.core.domain.repository.AuthRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.HouseholdRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.SupportRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.SyncRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.JoinHouseholdByInviteCodeUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.LoginUserUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.LogoutUserUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.ManageHouseholdUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.RegisterUserUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SubmitBugReportUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SwitchActiveHouseholdUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.AppLogger
 import com.bitlabbr.minhadespensa.core.domain.util.CoreConstants
@@ -60,6 +64,10 @@ import minhadespensa.uisystem.generated.resources.account_logout_success
 import minhadespensa.uisystem.generated.resources.account_register_success
 import minhadespensa.uisystem.generated.resources.app_update_error
 import minhadespensa.uisystem.generated.resources.app_update_up_to_date
+import minhadespensa.uisystem.generated.resources.support_share_error
+import minhadespensa.uisystem.generated.resources.support_share_success
+import minhadespensa.uisystem.generated.resources.support_submit_error
+import minhadespensa.uisystem.generated.resources.support_submit_success
 import minhadespensa.uisystem.generated.resources.sync_status_error
 
 class HouseholdAccountViewModel(
@@ -74,6 +82,8 @@ class HouseholdAccountViewModel(
     private val registerUserUseCase: RegisterUserUseCase,
     private val logoutUserUseCase: LogoutUserUseCase,
     private val appUpdateRepository: com.bitlabbr.minhadespensa.core.domain.repository.AppUpdateRepository? = null,
+    private val supportRepository: SupportRepository? = null,
+    private val submitBugReportUseCase: SubmitBugReportUseCase? = null,
     private val notificationManager: AppNotificationManager,
     private val logger: AppLogger? = null,
 ) : ViewModel() {
@@ -108,8 +118,80 @@ class HouseholdAccountViewModel(
     private val _downloadProgress = MutableStateFlow(0f)
     private val _availableUpdate = MutableStateFlow<com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo?>(null)
 
+    // Suporte, Bugs & Diagnósticos
+    private val _isBugReportDialogOpen = MutableStateFlow(false)
+    private val _bugReportCategory = MutableStateFlow(SupportCategory.BUG)
+    private val _bugReportTitle = MutableStateFlow("")
+    private val _bugReportDescription = MutableStateFlow("")
+    private val _bugReportContact = MutableStateFlow("")
+    private val _bugReportIncludeLogs = MutableStateFlow(true)
+    private val _isSubmittingBugReport = MutableStateFlow(false)
+    private val _isSharingLogs = MutableStateFlow(false)
+    private val _pendingCrashStackTrace = MutableStateFlow<String?>(null)
+    private val _lastReportReceipt = MutableStateFlow<SupportReceipt?>(null)
+
     init {
         refreshHouseholds()
+        checkForPendingCrash()
+    }
+
+    private fun checkForPendingCrash() {
+        viewModelScope.launch {
+            runCatching {
+                val crash = supportRepository?.getPendingCrashReport()
+                if (!crash.isNullOrBlank()) {
+                    _pendingCrashStackTrace.value = crash
+                    logger?.i(TAG, "Pending crash report detected from previous session (${crash.length} chars)")
+                }
+            }
+        }
+    }
+
+    private data class SupportFormState(
+        val isBugReportDialogOpen: Boolean,
+        val bugReportCategory: SupportCategory,
+        val bugReportTitle: String,
+        val bugReportDescription: String,
+        val bugReportContact: String,
+        val bugReportIncludeLogs: Boolean,
+        val isSubmittingBugReport: Boolean,
+        val isSharingLogs: Boolean,
+        val pendingCrashStackTrace: String?,
+        val lastReportReceipt: SupportReceipt?,
+    )
+
+    private val supportStateFlow = combine(
+        combine(
+            _isBugReportDialogOpen,
+            _bugReportCategory,
+            _bugReportTitle,
+            _bugReportDescription,
+            _bugReportContact,
+        ) { dialogOpen, category, title, desc, contact ->
+            Tuple5(dialogOpen, category, title, desc, contact)
+        },
+        combine(
+            _bugReportIncludeLogs,
+            _isSubmittingBugReport,
+            _isSharingLogs,
+            _pendingCrashStackTrace,
+            _lastReportReceipt,
+        ) { includeLogs, submitting, sharing, crash, receipt ->
+            Tuple5(includeLogs, submitting, sharing, crash, receipt)
+        }
+    ) { s1, s2 ->
+        SupportFormState(
+            isBugReportDialogOpen = s1.v1,
+            bugReportCategory = s1.v2,
+            bugReportTitle = s1.v3,
+            bugReportDescription = s1.v4,
+            bugReportContact = s1.v5,
+            bugReportIncludeLogs = s2.v1,
+            isSubmittingBugReport = s2.v2,
+            isSharingLogs = s2.v3,
+            pendingCrashStackTrace = s2.v4,
+            lastReportReceipt = s2.v5,
+        )
     }
 
     private data class FormState(
@@ -131,6 +213,7 @@ class HouseholdAccountViewModel(
         val isDownloadingUpdate: Boolean,
         val downloadProgress: Float,
         val availableUpdate: com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo?,
+        val support: SupportFormState,
     )
 
     private val formStateFlow = combine(
@@ -167,8 +250,9 @@ class HouseholdAccountViewModel(
             _availableUpdate,
         ) { checking, downloading, progress, available ->
             Tuple4(checking, downloading, progress, available)
-        }
-    ) { part1, part2, part3, part4 ->
+        },
+        supportStateFlow,
+    ) { part1, part2, part3, part4, support ->
         FormState(
             selectedTab = part1.v1,
             loginEmail = part1.v2,
@@ -188,6 +272,7 @@ class HouseholdAccountViewModel(
             isDownloadingUpdate = part4.v2,
             downloadProgress = part4.v3,
             availableUpdate = part4.v4,
+            support = support,
         )
     }
 
@@ -226,6 +311,16 @@ class HouseholdAccountViewModel(
             isDownloadingUpdate = form.isDownloadingUpdate,
             downloadProgress = form.downloadProgress,
             availableUpdate = form.availableUpdate,
+            isBugReportDialogOpen = form.support.isBugReportDialogOpen,
+            bugReportCategory = form.support.bugReportCategory,
+            bugReportTitle = form.support.bugReportTitle,
+            bugReportDescription = form.support.bugReportDescription,
+            bugReportContact = form.support.bugReportContact,
+            bugReportIncludeLogs = form.support.bugReportIncludeLogs,
+            isSubmittingBugReport = form.support.isSubmittingBugReport,
+            isSharingLogs = form.support.isSharingLogs,
+            pendingCrashStackTrace = form.support.pendingCrashStackTrace,
+            lastReportReceipt = form.support.lastReportReceipt,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -553,6 +648,142 @@ class HouseholdAccountViewModel(
                     notificationManager.showError(UiText.Resource(Res.string.app_update_error))
                 }
             )
+        }
+    }
+
+    fun openBugReportDialog(
+        category: SupportCategory = SupportCategory.BUG,
+        prefilledDescription: String = "",
+    ) {
+        _lastReportReceipt.value = null
+        _bugReportCategory.value = category
+        _bugReportTitle.value = if (category == SupportCategory.CRASH) "Falha inesperada no aplicativo" else ""
+        _bugReportDescription.value = if (category == SupportCategory.CRASH && prefilledDescription.isBlank()) {
+            _pendingCrashStackTrace.value?.take(1500) ?: ""
+        } else {
+            prefilledDescription
+        }
+        _bugReportIncludeLogs.value = (category == SupportCategory.BUG || category == SupportCategory.CRASH)
+        viewModelScope.launch {
+            val session = authRepository.getCurrentSession()
+            _bugReportContact.value = session?.user?.email ?: ""
+        }
+        _isBugReportDialogOpen.value = true
+    }
+
+    fun dismissBugReportDialog() {
+        _isBugReportDialogOpen.value = false
+    }
+
+    fun onBugReportCategoryChange(category: SupportCategory) {
+        _bugReportCategory.value = category
+        if (category == SupportCategory.BUG || category == SupportCategory.CRASH) {
+            _bugReportIncludeLogs.value = true
+        }
+    }
+
+    fun onBugReportTitleChange(title: String) {
+        _bugReportTitle.value = title
+    }
+
+    fun onBugReportDescriptionChange(description: String) {
+        _bugReportDescription.value = description
+    }
+
+    fun onBugReportContactChange(contact: String) {
+        _bugReportContact.value = contact
+    }
+
+    fun onBugReportIncludeLogsChange(includeLogs: Boolean) {
+        _bugReportIncludeLogs.value = includeLogs
+    }
+
+    fun submitBugReport() {
+        if (_isSubmittingBugReport.value) return
+        val useCase = submitBugReportUseCase
+        if (useCase == null) {
+            logger?.w(TAG, "SubmitBugReportUseCase is null in HouseholdAccountViewModel")
+            return
+        }
+
+        val category = _bugReportCategory.value
+        val title = _bugReportTitle.value
+        val description = _bugReportDescription.value
+        val contact = _bugReportContact.value.takeIf { it.isNotBlank() }
+        val includeLogs = _bugReportIncludeLogs.value
+
+        viewModelScope.launch {
+            _isSubmittingBugReport.value = true
+            logger?.i(TAG, "Submitting bug report: category=$category, title=$title, includeLogs=$includeLogs")
+
+            val result = useCase(
+                category = category,
+                title = title,
+                description = description,
+                userContact = contact,
+                includeLogs = includeLogs,
+            )
+
+            result.fold(
+                onSuccess = { receipt ->
+                    _isSubmittingBugReport.value = false
+                    _lastReportReceipt.value = receipt
+                    logger?.i(TAG, "Bug report submitted successfully. Protocol: ${receipt.protocol}")
+                    notificationManager.showSuccess(
+                        UiText.Resource(
+                            resource = Res.string.support_submit_success,
+                            args = listOf(receipt.protocol),
+                        )
+                    )
+
+                    if (_pendingCrashStackTrace.value != null || category == SupportCategory.CRASH) {
+                        supportRepository?.clearPendingCrashReport()
+                        _pendingCrashStackTrace.value = null
+                    }
+                },
+                onFailure = { error ->
+                    _isSubmittingBugReport.value = false
+                    logger?.e(TAG, "Failed to submit bug report: ${error.message}", error)
+                    val errorMsg = error.message?.let { UiText.DynamicString(it) }
+                        ?: UiText.Resource(Res.string.support_submit_error)
+                    notificationManager.showError(errorMsg)
+                }
+            )
+        }
+    }
+
+    fun shareDiagnosticsLog() {
+        if (_isSharingLogs.value) return
+        val repo = supportRepository
+        if (repo == null) {
+            logger?.w(TAG, "SupportRepository is null; cannot share logs.")
+            return
+        }
+
+        viewModelScope.launch {
+            _isSharingLogs.value = true
+            logger?.i(TAG, "Triggering diagnostic log export and share sheet...")
+            val result = repo.shareDiagnosticsLog()
+            result.fold(
+                onSuccess = {
+                    _isSharingLogs.value = false
+                    logger?.i(TAG, "Diagnostic log shared successfully.")
+                    notificationManager.showSuccess(UiText.Resource(Res.string.support_share_success))
+                },
+                onFailure = { error ->
+                    _isSharingLogs.value = false
+                    logger?.e(TAG, "Failed to share diagnostics log: ${error.message}", error)
+                    notificationManager.showError(UiText.Resource(Res.string.support_share_error))
+                }
+            )
+        }
+    }
+
+    fun dismissPendingCrashBanner() {
+        viewModelScope.launch {
+            supportRepository?.clearPendingCrashReport()
+            _pendingCrashStackTrace.value = null
+            logger?.i(TAG, "Pending crash report dismissed by user.")
         }
     }
 

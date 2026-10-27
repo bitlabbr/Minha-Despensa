@@ -26,15 +26,19 @@ package com.bitlabbr.minhadespensa.app
 import android.app.Application
 import com.bitlabbr.minhadespensa.app.di.androidDatabaseModule
 import com.bitlabbr.minhadespensa.app.di.initKoin
+import com.bitlabbr.minhadespensa.data.util.SupportPlatformProvider
 import org.koin.android.ext.koin.androidContext
 
 class MinhaDespensaApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        initKoin {
+        val koinApp = initKoin {
             androidContext(this@MinhaDespensaApplication)
             modules(androidDatabaseModule)
         }
+
+        // Garante que o crash handler nativo esteja ativo desde a inicialização do app
+        koinApp.koin.getOrNull<SupportPlatformProvider>()
     }
 }

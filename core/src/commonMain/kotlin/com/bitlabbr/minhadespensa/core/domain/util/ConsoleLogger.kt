@@ -27,26 +27,37 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-class ConsoleLogger(private val moduleName: String) : AppLogger {
+class ConsoleLogger(
+    private val moduleName: String,
+    private val recorder: DiagnosticLogRecorder? = null
+) : AppLogger {
 
     private val appName = "Minha Despensa"
 
     override fun d(tag: String, message: String) {
-        println(buildLogLine("D", tag, message))
+        val line = buildLogLine("D", tag, message)
+        println(line)
+        recorder?.record(line)
     }
 
     override fun i(tag: String, message: String) {
-        println(buildLogLine("I", tag, message))
+        val line = buildLogLine("I", tag, message)
+        println(line)
+        recorder?.record(line)
     }
 
     override fun w(tag: String, message: String, error: Throwable?) {
         val fullMessage = message + (error?.let { "\n${it.stackTraceToString()}" } ?: "")
-        println(buildLogLine("W", tag, fullMessage))
+        val line = buildLogLine("W", tag, fullMessage)
+        println(line)
+        recorder?.record(line)
     }
 
     override fun e(tag: String, message: String, error: Throwable?) {
         val fullMessage = message + (error?.let { "\n${it.stackTraceToString()}" } ?: "")
-        println(buildLogLine("E", tag, fullMessage))
+        val line = buildLogLine("E", tag, fullMessage)
+        println(line)
+        recorder?.record(line)
     }
 
     private fun buildLogLine(type: String, tag: String, message: String): String {

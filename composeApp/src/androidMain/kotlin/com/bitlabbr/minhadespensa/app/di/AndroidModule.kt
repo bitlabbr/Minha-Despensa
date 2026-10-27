@@ -27,9 +27,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.bitlabbr.minhadespensa.app.util.AndroidPackageInstaller
 import com.bitlabbr.minhadespensa.app.util.AndroidPlatformInfoProvider
+import com.bitlabbr.minhadespensa.app.util.AndroidSupportPlatformProvider
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.util.AppPackageInstaller
 import com.bitlabbr.minhadespensa.data.util.AppPlatformInfoProvider
+import com.bitlabbr.minhadespensa.data.util.SupportPlatformProvider
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
 
@@ -48,5 +50,11 @@ val androidDatabaseModule = module {
 
     single<AppPackageInstaller> {
         AndroidPackageInstaller(context = androidContext())
+    }
+
+    single<SupportPlatformProvider>(createdAtStart = true) {
+        val provider = AndroidSupportPlatformProvider(context = androidContext())
+        provider.installCrashHandler(recorder = getOrNull())
+        provider
     }
 }

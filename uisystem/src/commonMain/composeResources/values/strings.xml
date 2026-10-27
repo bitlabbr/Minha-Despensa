@@ -551,4 +551,40 @@
     <string name="app_update_button_download_install">Baixar e Atualizar</string>
     <string name="app_update_button_downloading">Baixando atualização (%1$d%%)...</string>
     <string name="app_update_error">Erro ao verificar ou baixar atualização.</string>
+
+    <!-- Suporte, Bugs & Diagnósticos -->
+    <string name="support_section_title">Suporte, Bugs &amp; Sugestões</string>
+    <string name="support_section_desc">Relate problemas, envie sugestões de melhoria ou exporte os logs de diagnóstico do seu aparelho.</string>
+    <string name="support_button_report">Reportar Problema ou Sugestão</string>
+    <string name="support_button_export_logs">Exportar Logs de Diagnóstico</string>
+    <string name="support_crash_banner_title">Encerramento Inesperado Detectado</string>
+    <string name="support_crash_banner_desc">Ocorreu uma falha na sessão anterior. Deseja enviar o relatório de diagnóstico para nossa equipe investigar?</string>
+    <string name="support_crash_banner_action">Enviar Relatório de Crash</string>
+    <string name="support_crash_banner_dismiss">Dispensar</string>
+
+    <string name="support_dialog_title">Central de Suporte &amp; Feedback</string>
+    <string name="support_dialog_category_label">Tipo de Relato</string>
+    <string name="support_dialog_category_bug">Bug / Falha</string>
+    <string name="support_dialog_category_suggestion">Sugestão</string>
+    <string name="support_dialog_category_question">Dúvida</string>
+    <string name="support_dialog_category_crash">Crash</string>
+    <string name="support_dialog_title_label">Título Resumido</string>
+    <string name="support_dialog_title_placeholder">Ex: Falha ao escanear código de barras</string>
+    <string name="support_dialog_desc_label">Descrição Detalhada</string>
+    <string name="support_dialog_desc_placeholder">Descreva o que aconteceu ou a sua sugestão...</string>
+    <string name="support_dialog_contact_label">Contato para Retorno (Opcional)</string>
+    <string name="support_dialog_contact_placeholder">Seu e-mail ou telefone</string>
+    <string name="support_dialog_include_logs">Anexar logs de diagnóstico do aparelho</string>
+    <string name="support_dialog_include_logs_privacy">Os logs são sanitizados e não contêm senhas ou tokens completos.</string>
+    <string name="support_dialog_submit_button">Enviar ao Servidor</string>
+    <string name="support_dialog_submitting">Enviando...</string>
+    <string name="support_dialog_cancel_button">Cancelar</string>
+    <string name="support_submit_success">Relato enviado com sucesso! Protocolo: %1$s</string>
+    <string name="support_submit_error">Falha ao enviar relato de suporte.</string>
+    <string name="support_share_success">Logs preparados para compartilhamento.</string>
+    <string name="support_share_error">Falha ao compartilhar logs de diagnóstico.</string>
+    <string name="support_receipt_title">Relato Registrado com Sucesso!</string>
+    <string name="support_receipt_protocol_badge">PROTOCOLO DE ATENDIMENTO</string>
+    <string name="support_receipt_instruction">Guarde o número do protocolo acima para acompanhamento. Nossa equipe irá analisar os diagnósticos.</string>
+    <string name="support_receipt_done_button">Concluir</string>
 </resources>

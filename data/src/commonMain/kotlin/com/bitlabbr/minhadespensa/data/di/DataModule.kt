@@ -34,9 +34,11 @@ import com.bitlabbr.minhadespensa.core.domain.repository.PantryMovementRepositor
 import com.bitlabbr.minhadespensa.core.domain.repository.PantryRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.PriceRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.ShoppingListRepository
+import com.bitlabbr.minhadespensa.core.domain.repository.SupportRepository
 import com.bitlabbr.minhadespensa.core.domain.repository.SyncRepository
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddCatalogItemToShoppingListUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckForAppUpdateUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SubmitBugReportUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddOrUpdateCartItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.AddPantryItemUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.CheckEanStatusUseCase
@@ -77,9 +79,12 @@ import com.bitlabbr.minhadespensa.data.remote.KtorAppUpdateRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorAuthRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorHouseholdRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.KtorSyncRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.KtorSupportRemoteDataSource
+import com.bitlabbr.minhadespensa.data.remote.SupportRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.SyncRemoteDataSource
 import com.bitlabbr.minhadespensa.data.remote.SyncServerConfig
 import com.bitlabbr.minhadespensa.data.repository.RealAppUpdateRepository
+import com.bitlabbr.minhadespensa.data.repository.RealSupportRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomAuthRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomBudgetRepository
 import com.bitlabbr.minhadespensa.data.repository.RoomCatalogRepository
@@ -266,7 +271,28 @@ val dataModule = module {
         )
     }
 
+    single<SupportRemoteDataSource> {
+        KtorSupportRemoteDataSource(
+            httpClient = get(),
+            config = get(),
+            authTokenProvider = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
+    single<SupportRepository> {
+        RealSupportRepository(
+            remoteDataSource = get(),
+            platformProvider = get(),
+            logRecorder = get(),
+            authRepository = get(),
+            householdRepository = get(),
+            logger = get(named(DiQualifiers.DATA_LOGGER)),
+        )
+    }
+
     factory { CheckForAppUpdateUseCase(appUpdateRepository = get()) }
+    factory { SubmitBugReportUseCase(supportRepository = get()) }
 
     factory { CheckEanStatusUseCase(catalogRepository = get()) }
     factory { SaveCatalogProductUseCase(catalogRepository = get()) }

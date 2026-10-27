@@ -42,7 +42,10 @@ import org.koin.dsl.module
 
 val uiModule = module {
     factory<AppLogger>(named(DiQualifiers.UI_LOGGER)) {
-        ConsoleLogger(moduleName = "UISystem")
+        ConsoleLogger(
+            moduleName = "UISystem",
+            recorder = getOrNull(),
+        )
     }
 
     viewModel {
@@ -151,6 +154,8 @@ val uiModule = module {
             registerUserUseCase = get(),
             logoutUserUseCase = get(),
             appUpdateRepository = getOrNull(),
+            supportRepository = getOrNull(),
+            submitBugReportUseCase = getOrNull(),
             notificationManager = get(),
             logger = get(named(DiQualifiers.UI_LOGGER)),
         )

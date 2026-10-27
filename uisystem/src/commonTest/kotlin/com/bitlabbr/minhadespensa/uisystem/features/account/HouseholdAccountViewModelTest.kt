@@ -26,12 +26,14 @@ package com.bitlabbr.minhadespensa.uisystem.features.account
 import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.bitlabbr.minhadespensa.core.domain.model.AppVersionInfo
+import com.bitlabbr.minhadespensa.core.domain.model.SupportCategory
 import com.bitlabbr.minhadespensa.core.domain.model.SyncState
 import com.bitlabbr.minhadespensa.core.domain.usecase.JoinHouseholdByInviteCodeUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.LoginUserUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.LogoutUserUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.ManageHouseholdUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.RegisterUserUseCase
+import com.bitlabbr.minhadespensa.core.domain.usecase.SubmitBugReportUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SwitchActiveHouseholdUseCase
 import com.bitlabbr.minhadespensa.core.domain.usecase.SyncHouseholdDataUseCase
 import com.bitlabbr.minhadespensa.core.domain.util.SyncCoordinator
@@ -39,6 +41,7 @@ import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppLogger
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAppUpdateRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeAuthRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeHouseholdRepository
+import com.bitlabbr.minhadespensa.uisystem.fakes.FakeSupportRepository
 import com.bitlabbr.minhadespensa.uisystem.fakes.FakeSyncRepository
 import com.bitlabbr.minhadespensa.uisystem.features.account.model.AuthTab
 import com.bitlabbr.minhadespensa.uisystem.features.account.model.HouseholdAccountUiState
@@ -68,6 +71,7 @@ class HouseholdAccountViewModelTest {
     private lateinit var householdRepository: FakeHouseholdRepository
     private lateinit var syncRepository: FakeSyncRepository
     private lateinit var appUpdateRepository: FakeAppUpdateRepository
+    private lateinit var supportRepository: FakeSupportRepository
     private lateinit var notificationManager: AppNotificationManager
     private lateinit var logger: FakeAppLogger
 
@@ -78,6 +82,7 @@ class HouseholdAccountViewModelTest {
     private lateinit var manageHouseholdUseCase: ManageHouseholdUseCase
     private lateinit var joinHouseholdByInviteCodeUseCase: JoinHouseholdByInviteCodeUseCase
     private lateinit var switchActiveHouseholdUseCase: SwitchActiveHouseholdUseCase
+    private lateinit var submitBugReportUseCase: SubmitBugReportUseCase
 
     private lateinit var viewModel: HouseholdAccountViewModel
 
@@ -89,6 +94,7 @@ class HouseholdAccountViewModelTest {
         householdRepository = FakeHouseholdRepository()
         syncRepository = FakeSyncRepository()
         appUpdateRepository = FakeAppUpdateRepository()
+        supportRepository = FakeSupportRepository()
         notificationManager = AppNotificationManager()
         logger = FakeAppLogger()
 
@@ -100,6 +106,7 @@ class HouseholdAccountViewModelTest {
         manageHouseholdUseCase = ManageHouseholdUseCase(householdRepository, syncRepository)
         joinHouseholdByInviteCodeUseCase = JoinHouseholdByInviteCodeUseCase(householdRepository, syncRepository)
         switchActiveHouseholdUseCase = SwitchActiveHouseholdUseCase(householdRepository, syncRepository)
+        submitBugReportUseCase = SubmitBugReportUseCase(supportRepository)
 
         viewModel = HouseholdAccountViewModel(
             authRepository = authRepository,
@@ -113,6 +120,8 @@ class HouseholdAccountViewModelTest {
             registerUserUseCase = registerUserUseCase,
             logoutUserUseCase = logoutUserUseCase,
             appUpdateRepository = appUpdateRepository,
+            supportRepository = supportRepository,
+            submitBugReportUseCase = submitBugReportUseCase,
             notificationManager = notificationManager,
             logger = logger,
         )
@@ -521,6 +530,148 @@ class HouseholdAccountViewModelTest {
             val state = awaitLoadedState()
             assertFalse(state.isDownloadingUpdate)
             assertEquals(1f, state.downloadProgress)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `openBugReportDialog and dismissBugReportDialog update state correctly`() = runTest(testDispatcher) {
+        viewModel.openBugReportDialog(SupportCategory.QUESTION, "Dúvida pré-preenchida")
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertTrue(state.isBugReportDialogOpen)
+            assertEquals(SupportCategory.QUESTION, state.bugReportCategory)
+            assertEquals("Dúvida pré-preenchida", state.bugReportDescription)
+            assertFalse(state.bugReportIncludeLogs)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.dismissBugReportDialog()
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isBugReportDialogOpen)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `onBugReport fields change update state`() = runTest(testDispatcher) {
+        viewModel.onBugReportCategoryChange(SupportCategory.BUG)
+        viewModel.onBugReportTitleChange("Título de teste")
+        viewModel.onBugReportDescriptionChange("Descrição detalhada do bug")
+        viewModel.onBugReportContactChange("dev@example.com")
+        viewModel.onBugReportIncludeLogsChange(true)
+        advanceUntilIdle()
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertEquals(SupportCategory.BUG, state.bugReportCategory)
+            assertEquals("Título de teste", state.bugReportTitle)
+            assertEquals("Descrição detalhada do bug", state.bugReportDescription)
+            assertEquals("dev@example.com", state.bugReportContact)
+            assertTrue(state.bugReportIncludeLogs)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `submitBugReport success updates receipt and clears pending crash`() = runTest(testDispatcher) {
+        notificationManager.notifications.test {
+            supportRepository.pendingCrash = "FATAL EXCEPTION: main"
+            viewModel.openBugReportDialog(SupportCategory.CRASH)
+            viewModel.onBugReportTitleChange("Falha no checkout")
+            viewModel.onBugReportDescriptionChange("App encerrou inesperadamente")
+            advanceUntilIdle()
+
+            viewModel.submitBugReport()
+            advanceUntilIdle()
+
+            assertTrue(supportRepository.submitReportCalled)
+            assertEquals("Falha no checkout", supportRepository.lastSubmittedReport?.title)
+            assertTrue(supportRepository.clearPendingCrashReportCalled)
+
+            val notification = awaitItem()
+            val text = notification.message
+            assertTrue(text is com.bitlabbr.minhadespensa.uisystem.model.UiText.Resource)
+            assertEquals(listOf("BUG-20261025-TEST"), (text as com.bitlabbr.minhadespensa.uisystem.model.UiText.Resource).args)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isSubmittingBugReport)
+            assertNotNull(state.lastReportReceipt)
+            assertEquals("BUG-20261025-TEST", state.lastReportReceipt?.protocol)
+            assertNull(state.pendingCrashStackTrace)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `submitBugReport validation failure shows error notification`() = runTest(testDispatcher) {
+        viewModel.openBugReportDialog(SupportCategory.BUG)
+        viewModel.onBugReportTitleChange("ab")
+        viewModel.onBugReportDescriptionChange("cd")
+        advanceUntilIdle()
+
+        viewModel.submitBugReport()
+        advanceUntilIdle()
+
+        assertFalse(supportRepository.submitReportCalled)
+    }
+
+    @Test
+    fun `shareDiagnosticsLog invokes supportRepository`() = runTest(testDispatcher) {
+        viewModel.shareDiagnosticsLog()
+        advanceUntilIdle()
+
+        assertTrue(supportRepository.shareDiagnosticsLogCalled)
+        viewModel.uiState.test {
+            val state = awaitLoadedState()
+            assertFalse(state.isSharingLogs)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `dismissPendingCrashBanner clears crash from repository and state`() = runTest(testDispatcher) {
+        supportRepository.pendingCrash = "FATAL EXCEPTION"
+        val vmWithCrash = HouseholdAccountViewModel(
+            authRepository = authRepository,
+            householdRepository = householdRepository,
+            syncCoordinator = syncCoordinator,
+            syncRepository = syncRepository,
+            manageHouseholdUseCase = manageHouseholdUseCase,
+            joinHouseholdByInviteCodeUseCase = joinHouseholdByInviteCodeUseCase,
+            switchActiveHouseholdUseCase = switchActiveHouseholdUseCase,
+            loginUserUseCase = loginUserUseCase,
+            registerUserUseCase = registerUserUseCase,
+            logoutUserUseCase = logoutUserUseCase,
+            appUpdateRepository = appUpdateRepository,
+            supportRepository = supportRepository,
+            submitBugReportUseCase = submitBugReportUseCase,
+            notificationManager = notificationManager,
+            logger = logger,
+        )
+        advanceUntilIdle()
+
+        vmWithCrash.uiState.test {
+            val state = awaitLoadedState()
+            assertEquals("FATAL EXCEPTION", state.pendingCrashStackTrace)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        vmWithCrash.dismissPendingCrashBanner()
+        advanceUntilIdle()
+
+        assertTrue(supportRepository.clearPendingCrashReportCalled)
+        vmWithCrash.uiState.test {
+            val state = awaitLoadedState()
+            assertNull(state.pendingCrashStackTrace)
             cancelAndIgnoreRemainingEvents()
         }
     }

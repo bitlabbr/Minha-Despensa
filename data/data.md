@@ -250,6 +250,12 @@ Implement domain contracts with encapsulated state, logging, input validation, a
         *   `isSelfUpdateSupported()`: Delegates to platform provider (`true` on Android, `false` on iOS).
         *   `checkForUpdates()`: Calls `AppUpdateRemoteDataSource.getLatestVersion()`, compares `versionCode > currentVersionCode`, and returns `AppVersionInfo` with `isUpdateAvailable`.
         *   `downloadAndInstall()`: Streams APK chunks via `ByteReadChannel` through `packageInstaller.openApkFile()`, tracking download percentage and invoking the platform package installer.
+*   **`RealSupportRepository` (`repository/RealSupportRepository.kt`)**:
+    *   Implements `SupportRepository` integrating `SupportRemoteDataSource`, `SupportPlatformProvider`, and `DiagnosticLogRecorder`:
+        *   `submitReport()`: Submits user bug/feedback/crash reports via Ktor multipart to `/api/v1/support/bug-reports`.
+        *   `getDeviceDiagnostics()`: Assembles hardware metadata, OS version, active user/household IDs, and circular log dump.
+        *   `shareDiagnosticsLog()`: Formats a complete diagnostic header and invokes the platform share provider.
+        *   `getPendingCrashReport()` & `clearPendingCrashReport()`: Reads and purges uncaught exception stack traces recorded across app launches.
 *   **`RoomSyncRepository`**:
     *   Implements `SyncRepository` with 6-step bidirectional CRDT/LWW synchronization:
         1. Outbox Push: Collects pending outbox mutations and pushes to `/api/v1/sync/push` in a loop until all pending mutations are drained.
@@ -271,9 +277,9 @@ Implement domain contracts with encapsulated state, logging, input validation, a
 Configures singletons and use case factories via Koin:
 *   `AppDatabase`: Initialized with platform database builder, `addMigrations(*ALL_MIGRATIONS)`, `BundledSQLiteDriver`, and background `Dispatchers.IO`.
 *   DAOs: `catalogDao`, `categoryDao`, `pantryDao`, `priceDao`, `shoppingListDao`, `budgetDao`, `movementDao`, `pendingSyncDao`, `appKeyValueDao`.
-*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, `RoomAuthRepository`, `RoomHouseholdRepository`, `RoomSyncRepository`.
-*   Networking: `SyncServerConfig`, `SyncClock`, `KtorAuthRemoteDataSource`, `KtorHouseholdRemoteDataSource`, `KtorSyncRemoteDataSource`.
-*   Use Case Factories: Registers all 29 domain use cases and `SyncCoordinator`.
+*   Networking: `SyncServerConfig`, `SyncClock`, `KtorAuthRemoteDataSource`, `KtorHouseholdRemoteDataSource`, `KtorSyncRemoteDataSource`, `KtorSupportRemoteDataSource`.
+*   Repositories: `RoomCatalogRepository`, `RoomPantryRepository`, `RoomPriceRepository`, `RoomShoppingListRepository`, `RoomBudgetRepository`, `RoomPantryMovementRepository`, `RoomInvoiceRepository`, `RoomAuthRepository`, `RoomHouseholdRepository`, `RoomSyncRepository`, `RealAppUpdateRepository`, `RealSupportRepository`.
+*   Use Case Factories: Registers all 30 domain use cases and `SyncCoordinator`.
 
 ---
 
@@ -294,6 +300,7 @@ The test suite resides in `data/src/commonTest/` and `data/src/androidUnitTest/`
 *   **`KtorAuthAndSyncRemoteDataSourceTest`**: Tests HTTP JSON request and response envelope serialization (`ApiResponseDto<T>`), endpoint routing, error status extraction (`ApiErrorResponseDto`), and delta pull/push parsing with Ktor `MockEngine`.
 *   **`InvoiceMapperTest`**: Tests mapping between remote DTOs and domain models (`Invoice`, `InvoiceItem`) and measurement unit normalization (`parseMeasureUnit`).
 *   **`RealAppUpdateRepositoryTest`**: Tests in-app update check logic, platform support gating, remote version parsing and comparison against local version code, APK chunk streaming with download progress callback assertions, and package installer invocation.
+*   **`RealSupportRepositoryTest`**: Tests diagnostic metadata assembly, log attachment filtering, native share payload formatting, crash report persistence, and `KtorSupportRemoteDataSource` multipart serialization with automatic retry fallback on 401 Unauthorized using Ktor's `MockEngine`.
 *   **`RoomSyncAndAuthRepositoryTest`**: Tests `RoomAuthRepository` session lifecycle, `RoomHouseholdRepository` tenant management, and `RoomSyncRepository` bidirectional sync: outbox initial queueing, atomic product ID remapping protecting child foreign keys from `ON DELETE CASCADE`, LWW pulled entity application, outbox flushing before switch, and multi-tenant cache cleanup.
 *   **`DataConsistencyTest`**: Cross-repository integration tests validating database cascade deletions, foreign key enforcement, and end-to-end multi-table transactions.
 *   **`ConvertersTest`**: Tests Room type conversion for Instant and MeasureUnit.
