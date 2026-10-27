@@ -26,3 +26,10 @@ package com.bitlabbr.minhadespensa.data.remote
 import io.ktor.client.engine.HttpClientEngine
 
 expect fun createPlatformHttpClientEngine(): HttpClientEngine
+
+internal fun isTrustedDevHostname(hostname: String): Boolean {
+    return hostname.endsWith("domus.arpa") ||
+        hostname == "localhost" ||
+        hostname == "10.0.2.2" ||
+        hostname.startsWith("100.")
+}
