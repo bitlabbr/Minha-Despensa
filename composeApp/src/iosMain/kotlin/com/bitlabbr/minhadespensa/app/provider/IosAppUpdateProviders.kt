@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.app.util
+package com.bitlabbr.minhadespensa.app.provider
 
 import com.bitlabbr.minhadespensa.data.util.AppPackageInstaller
 import com.bitlabbr.minhadespensa.data.util.AppPlatformInfoProvider

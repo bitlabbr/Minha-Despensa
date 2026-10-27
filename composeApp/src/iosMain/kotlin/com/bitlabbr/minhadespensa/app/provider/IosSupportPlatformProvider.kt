@@ -21,7 +21,7 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.app.util
+package com.bitlabbr.minhadespensa.app.provider
 
 import com.bitlabbr.minhadespensa.data.util.SupportPlatformProvider
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -54,6 +54,7 @@ class IosSupportPlatformProvider : SupportPlatformProvider {
         return "$basePath/pending_crash.txt"
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     override suspend fun savePendingCrash(stackTrace: String) {
         runCatching {
             val path = getCrashFilePath()
@@ -61,6 +62,7 @@ class IosSupportPlatformProvider : SupportPlatformProvider {
         }
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     override suspend fun getPendingCrash(): String? {
         return runCatching {
             val path = getCrashFilePath()
@@ -72,6 +74,7 @@ class IosSupportPlatformProvider : SupportPlatformProvider {
         }.getOrNull()
     }
 
+    @OptIn(ExperimentalForeignApi::class)
     override suspend fun clearPendingCrash() {
         runCatching {
             val path = getCrashFilePath()
