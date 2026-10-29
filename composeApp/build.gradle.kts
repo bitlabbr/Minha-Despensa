@@ -86,8 +86,8 @@ android {
         applicationId = "com.bitlabbr.minhadespensa.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 4
-        versionName = "1.2.0-alpha"
+        versionCode = 5
+        versionName = "1.2.1-alpha"
     }
     packaging {
         resources {

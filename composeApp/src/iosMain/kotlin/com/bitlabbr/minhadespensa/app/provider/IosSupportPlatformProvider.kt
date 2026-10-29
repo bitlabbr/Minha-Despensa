@@ -39,7 +39,7 @@ class IosSupportPlatformProvider : SupportPlatformProvider {
 
     override fun getOsVersion(): String = "iOS"
 
-    override fun getAppVersionName(): String = "1.2.0-alpha"
+    override fun getAppVersionName(): String = "1.2.1-alpha"
 
     @OptIn(ExperimentalForeignApi::class)
     private fun getCrashFilePath(): String {
