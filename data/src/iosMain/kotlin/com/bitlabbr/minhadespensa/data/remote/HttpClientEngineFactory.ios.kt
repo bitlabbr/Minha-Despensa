@@ -25,7 +25,33 @@ package com.bitlabbr.minhadespensa.data.remote
 
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
+import kotlinx.cinterop.ExperimentalForeignApi
+import platform.Foundation.NSURLAuthenticationChallenge
+import platform.Foundation.NSURLAuthenticationMethodServerTrust
+import platform.Foundation.NSURLCredential
+import platform.Foundation.NSURLSessionAuthChallengePerformDefaultHandling
+import platform.Foundation.NSURLSessionAuthChallengeUseCredential
+import platform.Foundation.credentialForTrust
+import platform.Foundation.serverTrust
 
+@OptIn(ExperimentalForeignApi::class)
 actual fun createPlatformHttpClientEngine(): HttpClientEngine {
-    return Darwin.create()
+    return Darwin.create {
+        handleChallenge { _, _, challenge, completionHandler ->
+            val host = challenge.protectionSpace.host
+            val serverTrust = challenge.protectionSpace.serverTrust
+
+            if (challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust &&
+                serverTrust != null &&
+                isTrustedDevHostname(host)
+            ) {
+                completionHandler(
+                    NSURLSessionAuthChallengeUseCredential,
+                    NSURLCredential.credentialForTrust(serverTrust)
+                )
+            } else {
+                completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, null)
+            }
+        }
+    }
 }

@@ -38,7 +38,6 @@ class MinhaDespensaApplication : Application() {
             modules(androidDatabaseModule)
         }
 
-        // Garante que o crash handler nativo esteja ativo desde a inicialização do app
         koinApp.koin.getOrNull<SupportPlatformProvider>()
     }
 }

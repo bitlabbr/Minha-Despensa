@@ -51,13 +51,6 @@ actual fun createPlatformHttpClientEngine(): HttpClientEngine {
     }
 }
 
-internal fun isTrustedDevHostname(hostname: String): Boolean {
-    return hostname.endsWith("domus.arpa") ||
-        hostname == "localhost" ||
-        hostname == "10.0.2.2" ||
-        hostname.startsWith("100.")
-}
-
 internal fun createTrustManager(): Pair<SSLSocketFactory, X509TrustManager> {
     val tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
     tmf.init(null as java.security.KeyStore?)

@@ -21,19 +21,18 @@
  *   Full license: https://creativecommons.org/licenses/by-nc/4.0/legalcode
  */
 
-package com.bitlabbr.minhadespensa.app.util
+package com.bitlabbr.minhadespensa.app.provider
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.FileProvider
 import com.bitlabbr.minhadespensa.data.util.AppPackageInstaller
 import com.bitlabbr.minhadespensa.data.util.AppPlatformInfoProvider
-import java.io.File
-import java.io.FileOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
+import java.io.FileOutputStream
 
 class AndroidPlatformInfoProvider(
     private val context: Context,

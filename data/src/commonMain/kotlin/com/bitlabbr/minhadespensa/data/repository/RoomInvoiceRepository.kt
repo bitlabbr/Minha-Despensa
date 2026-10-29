@@ -25,7 +25,6 @@ package com.bitlabbr.minhadespensa.data.repository
 
 import androidx.room.Transactor
 import androidx.room.useWriterConnection
-import androidx.room.withTransaction
 import com.bitlabbr.minhadespensa.core.domain.model.MovementType
 import com.bitlabbr.minhadespensa.core.domain.model.PantryItem
 import com.bitlabbr.minhadespensa.core.domain.model.PantryMovement

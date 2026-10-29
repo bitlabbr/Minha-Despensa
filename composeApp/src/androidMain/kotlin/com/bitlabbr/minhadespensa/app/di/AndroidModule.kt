@@ -25,9 +25,9 @@ package com.bitlabbr.minhadespensa.app.di
 
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.bitlabbr.minhadespensa.app.util.AndroidPackageInstaller
-import com.bitlabbr.minhadespensa.app.util.AndroidPlatformInfoProvider
-import com.bitlabbr.minhadespensa.app.util.AndroidSupportPlatformProvider
+import com.bitlabbr.minhadespensa.app.provider.AndroidPackageInstaller
+import com.bitlabbr.minhadespensa.app.provider.AndroidPlatformInfoProvider
+import com.bitlabbr.minhadespensa.app.provider.AndroidSupportPlatformProvider
 import com.bitlabbr.minhadespensa.data.local.AppDatabase
 import com.bitlabbr.minhadespensa.data.util.AppPackageInstaller
 import com.bitlabbr.minhadespensa.data.util.AppPlatformInfoProvider
