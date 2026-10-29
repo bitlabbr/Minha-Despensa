@@ -4,7 +4,7 @@
 > Este documento é a **fonte primária e norteadora** de governança, arquitetura e convenções do projeto **Minha Despensa**.  
 > **Para recuperar e entender o contexto completo da aplicação**, a IA ou desenvolvedor **DEVE OBRIGATORIAMENTE LER este arquivo (`Minha-Despensa.md`)** e, em seguida, os arquivos de contexto específicos de cada módulo impactado na raiz de seus respectivos diretórios:
 > - [`core/core.md`](core/core.md) — Camada de Domínio Puro, Casos de Uso, Modelos e Regras de Negócio.
-> - [`data/data.md`](data/data.md) — Persistência Room KMP (Schema v9), SQLite, Migrations, DAOs e Repositórios.
+> - [`data/data.md`](data/data.md) — Persistência Room KMP (Schema v10), SQLite, Migrations, DAOs e Repositórios.
 > - [`uisystem/uisystem.md`](uisystem/uisystem.md) — Design System (Glassmorphism), ViewModels, Telas, Máquinas de Estado e Componentes Compose Multiplatform.
 
 ---
@@ -57,7 +57,7 @@ O projeto adota estritamente os princípios de **Clean Architecture**, **MVVM (M
 └───────────────────────▲───────────────────────┘
                         │ implementa
 ┌───────────────────────┴───────────────────────┐
-│                     :data                     │  Persistência Room KMP (Schema v9), SQLite Bundled,
+│                     :data                     │  Persistência Room KMP (Schema v10), SQLite Bundled,
 │                                               │  DAOs, Entidades, Mappers, Pipeline de Migrations
 └───────────────────────────────────────────────┘
 ```

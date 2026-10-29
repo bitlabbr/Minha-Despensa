@@ -1,7 +1,7 @@
 # MinhaDespensa 🛒
 
 [![CI Check](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml/badge.svg)](https://github.com/bitlabbr/Minha-Despensa/actions/workflows/ci.yml)
-[![Release](https://img.shields.io/badge/Release-v1.2.0--alpha-00E676?logo=android&logoColor=white)](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.2.0-alpha)
+[![Release](https://img.shields.io/badge/Release-v1.2.1--alpha-00E676?logo=android&logoColor=white)](https://github.com/bitlabbr/Minha-Despensa/releases/tag/v1.2.1-alpha)
 ![Kotlin Multiplatform](https://img.shields.io/badge/Kotlin-Multiplatform-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpack-compose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room-KMP-3DDC84?logo=android&logoColor=white)
@@ -250,6 +250,10 @@ The `:core` domain layer defines 17 use cases that orchestrate application logic
 15. **`GetMostConsumedProductsUseCase`**: Calculates top consumed products over a given time range.
 16. **`GetPantryTotalValueUseCase`**: Calculates total monetary valuation of current active inventory in the pantry.
 17. **`GetYearlyFinancialSummaryUseCase`**: Aggregates a 12-month budget vs expense history for annual analytics.
+18. **`SaveProductCategoryUseCase` & `DeleteProductCategoryUseCase`**: Manages custom categories with accent-insensitive uniqueness and safe cascading fallback to "Outros".
+19. **`CheckForAppUpdateUseCase`**: Queries self-hosted Domus OTA server for updates and drives APK downloading and installation on Android.
+20. **`SubmitBugReportUseCase`**: Collects sanitized system diagnostics, circular log buffer (1500 lines) and submits support tickets / crashes.
+21. **`JoinHouseholdByInviteCodeUseCase` & `SwitchActiveHouseholdUseCase`**: Manages multi-tenant households, invite codes, and cache-isolated switching.
 
 ---
 
